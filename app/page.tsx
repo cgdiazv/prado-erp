@@ -73,10 +73,10 @@ export default async function MarketingHomePage() {
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
-          <Link href="/signup" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
-            Create Workspace Account
+          <Link href="/pricing" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
+            View Pricing
           </Link>
-          <Link href="/login" className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-850 text-slate-200 px-6 py-3 rounded-xl transition border border-slate-800">
+          <Link href="/demo" className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-850 text-slate-200 px-6 py-3 rounded-xl transition border border-slate-800">
             Explore Live Demo
           </Link>
         </div>
@@ -178,10 +178,10 @@ export default async function MarketingHomePage() {
           </p>
           <div className="pt-4">
             <Link 
-              href="/signup" 
+              href="/pricing" 
               className="inline-block text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-8 py-3.5 rounded-xl transition shadow-xl hover:scale-[1.01] active:scale-[0.99]"
             >
-              Create Workspace Account
+              View Pricing
             </Link>
           </div>
         </div>

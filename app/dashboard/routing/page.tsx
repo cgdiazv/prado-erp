@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import RouteEngine from '@/components/dashboard/RouteEngine';
+import { checkTrialExpiry } from '@/lib/trialCheck'; // Import utility
 
 export default async function RoutingPage() {
   const supabase = await createClient();
@@ -10,8 +11,20 @@ export default async function RoutingPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: org } = await supabase.from('organizations').select('id, name').eq('owner_id', user.id).single();
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id, name, trial_starts_at, subscription_status')
+    .eq('owner_id', user.id)
+    .single();
   if (!org) redirect('/signup');
+
+  // Verify trial lifecycle
+  const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
+
+  if (trial.isExpired) {
+    // Redirect them to a dedicated internal billing page to pay
+    redirect('/dashboard/billing?expired=true');
+  }
 
   const { data: customers } = await supabase.from('customers').select('id').eq('organization_id', org.id);
   const customerIds = customers?.map(c => c.id) || [];
@@ -38,7 +51,7 @@ export default async function RoutingPage() {
         <DashboardSidebar />
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           <div className="max-w-4xl ml-0 space-y-6 text-left">
-            <div>
+            <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">Dispatch Routing Optimization</h1>
               <p className="text-xs text-slate-400 mt-1">Calculate street fleet paths and coordinate target location dispatch matrices</p>
             </div>

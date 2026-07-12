@@ -1,4 +1,3 @@
-
 import { createCustomer } from '@/app/actions';
 
 interface AddCustomerFormProps {
@@ -41,6 +40,14 @@ export default function AddCustomerForm({ organizationId }: AddCustomerFormProps
           type="email"
           name="email"
           placeholder="Customer Email Address"
+          className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+        />
+
+        {/* NEW PHONE FIELD */}
+        <input
+          type="tel"
+          name="phone"
+          placeholder="Phone Number (Optional)"
           className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
         />
 
