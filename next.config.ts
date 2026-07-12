@@ -1,7 +1,10 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['pradojob.com', 'www.pradojob.com'],
+    },
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
