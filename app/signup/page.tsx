@@ -35,11 +35,11 @@ export default function SignUpPage() {
         </header>
 
         {/* ERROR DISPLAY ALERT */}
-        {errorMessage && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg font-medium animate-in fade-in duration-200">
-            {errorMessage}
-          </div>
-        )}
+{errorMessage && (
+  <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg font-medium">
+    {typeof errorMessage === 'object' ? JSON.stringify(errorMessage) : errorMessage}
+  </div>
+)}
 
         <form action={handleSubmit} className="space-y-4">
           <div>

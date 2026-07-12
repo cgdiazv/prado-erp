@@ -20,40 +20,53 @@ export async function login(formData: FormData) {
 }
 
 export async function signup(formData: FormData) {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const companyName = formData.get('companyName') as string;
-  const supabase = await createClient();
+  try {
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const companyName = formData.get('companyName') as string;
 
-  // 1. Register the raw user inside Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+    if (!email || !password || !companyName) {
+      return { error: 'All registration fields are required.' };
+    }
 
-  if (authError || !authData.user) {
-    console.error("Supabase Auth Error:", authError?.message);
-    return { error: authError?.message || 'Authentication signup failed.' };
+    const supabase = await createClient();
+
+    // 1. Register the raw user inside Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (authError || !authData.user) {
+      console.error("Supabase Auth Error:", authError?.message);
+      return { error: authError?.message || 'Authentication signup failed.' };
+    }
+
+    // 2. Create the Organization profile matching this new user account
+    const { data: orgData, error: orgError } = await supabase
+      .from('organizations')
+      .insert([
+        {
+          name: companyName,
+          owner_id: authData.user.id,
+        }
+      ])
+      .select()
+      .single();
+
+    if (orgError) {
+      console.error("Supabase Database Org Error:", orgError.message);
+      return { error: orgError.message };
+    }
+
+  } catch (err: any) {
+    console.error("Server Action Fatal Crash:", err);
+    // This stops Next.js from swallowing the crash and forcing an empty {}
+    return { error: err?.message || 'A secure server-side connection error occurred.' };
   }
 
-  // 2. Create the Organization profile matching this new user account
-  const { data: orgData, error: orgError } = await supabase
-    .from('organizations')
-    .insert([
-      {
-        name: companyName,
-        owner_id: authData.user.id,
-      }
-    ])
-    .select()
-    .single();
-
-  if (orgError) {
-    console.error("Supabase Database Org Error:", orgError.message);
-    return { error: orgError.message };
-  }
-
-  // Redirect must remain outside the try block structure to allow Next.js to navigate
+  // The redirect must happen outside the try/catch block because Next.js
+  // implements redirect() by intentionally throwing a navigation error.
   redirect('/signup/check-email');
 }
 
