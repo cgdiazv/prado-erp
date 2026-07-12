@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabaseServer';
+import { createClient, createAdminClient } from '@/lib/supabaseServer'; // Imported createAdminClient
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
@@ -38,16 +38,17 @@ export async function signup(formData: FormData) {
     });
 
     if (authError || !authData.user) {
-  // Inspecting the structural breakdown of the error directly
-  console.error("Full Supabase Auth Error Object:", JSON.stringify(authError, null, 2));
-  console.error("Auth Error Message String:", authError?.message);
-  console.error("Auth Error Status:", authError?.status);
-  
-  return { error: authError?.message || 'Authentication signup failed.' };
-}
+      console.error("Full Supabase Auth Error Object:", JSON.stringify(authError, null, 2));
+      console.error("Auth Error Message String:", authError?.message);
+      console.error("Auth Error Status:", authError?.status);
+      
+      return { error: authError?.message || 'Authentication signup failed.' };
+    }
 
-    // 2. Create the Organization profile matching this new user account
-    const { data: orgData, error: orgError } = await supabase
+    // 2. Create the Organization profile using the RLS-bypassing Admin Client
+    const supabaseAdmin = createAdminClient();
+    
+    const { data: orgData, error: orgError } = await supabaseAdmin
       .from('organizations')
       .insert([
         {
@@ -59,13 +60,12 @@ export async function signup(formData: FormData) {
       .single();
 
     if (orgError) {
-      console.error("Supabase Database Org Error:", orgError.message);
+      console.error("Supabase Database Org Error (Admin Override):", orgError.message);
       return { error: orgError.message };
     }
 
   } catch (err: any) {
     console.error("Server Action Fatal Crash:", err);
-    // This stops Next.js from swallowing the crash and forcing an empty {}
     return { error: err?.message || 'A secure server-side connection error occurred.' };
   }
 
