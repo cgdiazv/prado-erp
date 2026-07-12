@@ -1,15 +1,23 @@
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabaseServer';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { updateCustomer, deleteCustomer, createProperty } from '../../actions';
 
 interface CustomerPageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default async function CustomerDetailPage({ params }: CustomerPageProps) {
-  // Await the routing parameters safely in the App Router architecture
-  const { id: customerId } = await params;
+  const { id: customerId } = params;
+  const supabase = await createClient();
 
-  // Fetch all historical and structural details linked specifically to this customer
+  // 1. Verify authenticated context
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    redirect('/login');
+  }
+
+  // 2. Fetch all components securely isolated to this customer's profile scope
   const [
     { data: customer },
     { data: properties },
@@ -25,7 +33,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
   ]);
 
   // Filter out jobs that only belong to this customer's distinct properties
-  const customerJobs = jobs?.filter((job) => (job.properties as any)?.customer_id === customerId) || [];
+  const customerJobs = jobs?.filter((job) => job.properties && job.properties.customer_id === customerId) || [];
 
   if (!customer) {
     return (
@@ -42,11 +50,25 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
     <main className="min-h-screen bg-gray-50 p-6 md:p-12 text-gray-900">
       <div className="max-w-5xl mx-auto">
         
-        {/* Navigation Breadcrumb */}
-        <div className="mb-4">
+        {/* Navigation Breadcrumb Bar */}
+        <div className="mb-4 flex items-center justify-between">
           <Link href="/" className="text-xs font-semibold uppercase tracking-wider text-emerald-600 hover:text-emerald-700 transition">
             ← Back to Dispatch Hub
           </Link>
+
+          {/* SECURE ISOLATED DELETE MANAGEMENT TRIGGER */}
+          <form action={async () => {
+            'use server';
+            await deleteCustomer(customerId);
+            redirect('/');
+          }}>
+            <button 
+              type="submit"
+              className="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-semibold py-1 px-3 rounded-lg transition"
+            >
+              Delete Client Profile
+            </button>
+          </form>
         </div>
 
         {/* Client Master Profile Card */}
@@ -67,17 +89,157 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
             <div className="text-xs text-gray-500 space-y-1 md:text-right border-t md:border-t-0 pt-4 md:pt-0 border-gray-100">
               <div><strong className="text-gray-700">Email:</strong> {customer.email || '—'}</div>
               <div><strong className="text-gray-700">Phone:</strong> {customer.phone || '—'}</div>
-              <div><strong className="text-gray-700">Billing:</strong> {customer.billing_address || '—'}</div>
+              <div><strong className="text-gray-700">Billing Address:</strong> {customer.billing_address || '—'}</div>
             </div>
           </div>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
-          {/* Left Column: Properties / Service Sites Managed */}
+          {/* Left Column: Properties Layout & Live Edit Management Workspace */}
           <div className="md:col-span-1 space-y-6">
+            
+            {/* EDIT PROFILE INPUT FORMS CONTAINER */}
+            <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+              <h2 className="text-md font-bold text-gray-800 mb-1">Edit Client Details</h2>
+              <p className="text-[11px] text-gray-400 mb-3">Modify account registration entries directly.</p>
+              
+              <form action={async (formData: FormData) => {
+                'use server';
+                await updateCustomer(customerId, formData);
+              }} className="space-y-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">First Name</label>
+                  <input 
+                    type="text" 
+                    name="firstName" 
+                    defaultValue={customer.first_name} 
+                    required 
+                    className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white font-medium" 
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Last Name</label>
+                  <input 
+                    type="text" 
+                    name="lastName" 
+                    defaultValue={customer.last_name} 
+                    required 
+                    className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white font-medium" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Company (Optional)</label>
+                  <input 
+                    type="text" 
+                    name="companyName" 
+                    defaultValue={customer.company_name || ''} 
+                    className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white font-medium" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Email Address</label>
+                  <input 
+                    type="email" 
+                    name="email" 
+                    defaultValue={customer.email || ''} 
+                    className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white font-medium" 
+                  />
+                </div>
+
+                {/* NEW PHONE FIELD */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Phone Number</label>
+                  <input 
+                    type="text" 
+                    name="phone" 
+                    defaultValue={customer.phone || ''} 
+                    className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white font-medium" 
+                  />
+                </div>
+
+                {/* NEW BILLING ADDRESS FIELD */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Billing Address</label>
+                  <input 
+                    type="text" 
+                    name="billingAddress" 
+                    defaultValue={customer.billing_address || ''} 
+                    className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white font-medium" 
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 rounded-lg transition shadow-sm"
+                >
+                  Save Profile Adjustments
+                </button>
+              </form>
+            </section>
+
+            {/* Service Sites Container */}
             <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
               <h2 className="text-lg font-bold text-gray-800 mb-3 border-b pb-2">Service Sites</h2>
+
+              {/* INLINE ADD SERVICE SITE (PROPERTY) FORM */}
+              <form action={async (formData: FormData) => {
+                'use server';
+                await createProperty(customerId, formData);
+              }} className="mb-6 p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+                <p className="text-[11px] font-bold uppercase text-gray-500 tracking-wide">Add New Service Site</p>
+                
+                <input 
+                  type="text" 
+                  name="streetAddress" 
+                  placeholder="Street Address" 
+                  required 
+                  className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white" 
+                />
+                
+                <div className="grid grid-cols-3 gap-1.5">
+                  <input 
+                    type="text" 
+                    name="city" 
+                    placeholder="City" 
+                    required 
+                    className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white" 
+                  />
+                  <input 
+                    type="text" 
+                    name="state" 
+                    placeholder="State" 
+                    required 
+                    className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white" 
+                  />
+                  <input 
+                    type="text" 
+                    name="zipCode" 
+                    placeholder="Zip" 
+                    required 
+                    className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white" 
+                  />
+                </div>
+
+                <input 
+                  type="text" 
+                  name="serviceNotes" 
+                  placeholder="Gate codes, pet notices... (Optional)" 
+                  className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white" 
+                />
+
+                <button 
+                  type="submit" 
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold py-1.5 rounded-md transition shadow-sm"
+                >
+                  + Link Service Site
+                </button>
+              </form>
+
+              {/* Properties Display List */}
               {properties && properties.length > 0 ? (
                 <div className="space-y-3">
                   {properties.map((prop) => (
@@ -120,7 +282,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                       {customerJobs.map((job) => (
                         <tr key={job.id} className="hover:bg-gray-50/50">
                           <td className="py-2.5 font-semibold text-gray-700">{job.scheduled_date}</td>
-                          <td className="py-2.5 max-w-[140px] truncate text-gray-400">{(job.properties as any)?.street_address}</td>
+                          <td className="py-2.5 max-w-[140px] truncate text-gray-400">{job.properties?.street_address}</td>
                           <td className="py-2.5"><span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">{job.job_type}</span></td>
                           <td className="py-2.5 text-right font-mono">${job.cost_amount}</td>
                           <td className="py-2.5 text-right">

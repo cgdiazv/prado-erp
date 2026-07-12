@@ -22,7 +22,7 @@ export default function SignUpPage() {
         setErrorMessage(result.error);
         setLoading(false);
       }
-    } catch (err: any) {
+    } catch {
       setErrorMessage("An unexpected server error occurred.");
       setLoading(false);
     }

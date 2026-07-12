@@ -10,7 +10,7 @@ export default function LoginPage() {
           <p className="text-sm text-gray-500 mt-1">Access your operational dashboard hub</p>
         </header>
 
-        <form action={login as any} className="space-y-4">
+        <form action={login as (formData: FormData) => void} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Email Address</label>
             <input type="email" name="email" required className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500" />
