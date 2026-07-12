@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
+import PasswordForm from '@/app/dashboard/settings/PasswordForm'; // We render a clean interactive leaf component here
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -36,7 +37,6 @@ export default async function SettingsPage() {
 
         {/* Settings Form Configuration Viewport - Aligned Left */}
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-          {/* UPDATED: Changed mx-auto to ml-0 and expanded max-width to look standard left-aligned */}
           <div className="max-w-4xl ml-0 space-y-8 text-left">
             
             {/* Section Header Navigation Bridge */}
@@ -88,6 +88,9 @@ export default async function SettingsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* NEW MODULE SECTION: Change Credentials Security Fields */}
+              <PasswordForm />
 
               {/* Module Section 2: Fleet & Routing Optimization Automation Rules */}
               <div className="p-6 md:p-8 space-y-6">

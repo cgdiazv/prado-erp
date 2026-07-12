@@ -24,7 +24,7 @@ export default function Customers({ customers }: CustomersProps) {
               {customers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
-                    <Link href={`/customers/${customer.id}`}>{customer.first_name} {customer.last_name}</Link>
+                    <Link href={`/dashboard/customers/${customer.id}`}>{customer.first_name} {customer.last_name}</Link>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{customer.company_name || '—'}</td>
                   <td className="px-4 py-3 text-gray-500">{customer.email || '—'}</td>
