@@ -27,7 +27,7 @@ export default function SignUpPage() {
           </div>
 
           <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg transition text-sm shadow-sm mt-2">
-            Initialize Enterprise Portal
+            Create My Account & Get Started
           </button>
         </form>
 
