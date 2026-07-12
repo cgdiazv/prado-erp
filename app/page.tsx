@@ -1,109 +1,107 @@
 import { createClient } from '@/lib/supabaseServer';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import Header from '@/components/dashboard/Header';
-import Metrics from '@/components/dashboard/Metrics';
-import Customers from '@/components/dashboard/Customers';
-import RouteEngine from '@/components/dashboard/RouteEngine';
-import JobSchedule from '@/components/dashboard/JobSchedule';
-import ExpenseLedger from '@/components/dashboard/ExpenseLedger';
-import AddCustomerForm from '@/components/dashboard/AddCustomerForm';
-import ScheduleJobForm from '@/components/dashboard/ScheduleJobForm';
-import LogExpenseForm from '@/components/dashboard/LogExpenseForm';
 
-export default async function DashboardHome() {
+export default async function MarketingHomePage() {
   const supabase = await createClient();
 
-  // 1. Check authentication session
+  // 1. If already authenticated, fetch organization context to auto-route them in
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect('/login');
+  if (user) {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (org) {
+      redirect('/dashboard');
+    } else {
+      redirect('/signup');
+    }
   }
 
-  // 2. Fetch organization context
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name')
-    .eq('owner_id', user.id)
-    .single();
-
-  if (!org) {
-    redirect('/signup');
-  }
-
-  // 3. Parallel Secure Tenant Isolated Fetching (Customers & Expenses first)
-  const [customersResponse, expensesResponse] = await Promise.all([
-    supabase.from('customers').select('*').eq('organization_id', org.id),
-    supabase.from('expenses').select('*').eq('organization_id', org.id).order('expense_date', { ascending: false })
-  ]);
-
-  const customers = customersResponse.data;
-  const expenses = expensesResponse.data;
-
-  // 4. Resolve isolated properties, jobs, & invoices linked strictly to workspace accounts
-  const customerIds = customers?.map(c => c.id) || [];
-
-  // Fetch properties belonging to active workspace customers to avoid organization_id column crash
-  const propertiesResponse = customerIds.length > 0
-    ? await supabase.from('properties').select('*').in('customer_id', customerIds)
-    : { data: [] };
-
-  const properties = propertiesResponse.data;
-  const propertyIds = properties?.map(p => p.id) || [];
-
-  const [jobsResponse, invoicesResponse] = await Promise.all([
-    supabase
-      .from('jobs')
-      .select('*, properties(street_address, latitude, longitude, customer_id)')
-      .in('property_id', propertyIds)
-      .order('scheduled_date', { ascending: true }),
-    supabase
-      .from('invoices')
-      .select('*')
-      .in('customer_id', customerIds)
-      .order('created_at', { ascending: false })
-  ]);
-
-  const jobs = jobsResponse.data;
-  const invoices = invoicesResponse.data;
-
-  // Financial Metrics Compilation
-  const totalRevenue = invoices?.reduce((acc, inv) => acc + Number(inv.total_amount), 0) || 0;
-  const totalExpenses = expenses?.reduce((acc, exp) => acc + Number(exp.amount), 0) || 0;
-  const netProfit = totalRevenue - totalExpenses;
-
+  // 2. Render the public Supabase-style Marketing Front Page
   return (
-    <main className="min-h-screen bg-gray-50 p-6 md:p-12 text-gray-900">
-      <div className="max-w-6xl mx-auto">
-        
-        <Header orgName={org.name} />
-        
-        <Metrics totalRevenue={totalRevenue} totalExpenses={totalExpenses} netProfit={netProfit} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            
-            <Customers customers={customers} />
-            
-            <RouteEngine jobs={jobs} />
-            
-            <JobSchedule jobs={jobs} />
-            
-            <ExpenseLedger expenses={expenses} />
-
-          </div>
-
-          <div className="lg:col-span-1 space-y-6">
-
-            <AddCustomerForm organizationId={org.id} />
-            
-            <ScheduleJobForm properties={properties} />
-
-            <LogExpenseForm />
-            
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-950">
+      {/* Navigation Navbar */}
+      <nav className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <span className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            <span className="h-5 w-5 rounded bg-gradient-to-tr from-emerald-500 to-teal-400 block shadow-md shadow-emerald-500/20"></span>
+            Prado
+          </span>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="text-sm font-medium text-slate-400 hover:text-white transition">
+              Sign In
+            </Link>
+            <Link href="/login?tab=signup" className="text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg transition shadow-lg shadow-emerald-600/20">
+              Start Free Trial
+            </Link>
           </div>
         </div>
+      </nav>
 
-      </div>
-    </main>
+      {/* Hero Presentation Section */}
+      <main className="flex-1 max-w-4xl mx-auto px-6 pt-20 pb-16 text-center flex flex-col items-center justify-center">
+        <div className="inline-flex items-center gap-2.5 bg-emerald-950/40 border border-emerald-800/60 rounded-full px-3.5 py-1 text-xs text-emerald-400 font-medium mb-6 backdrop-blur-xs">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Next-Gen Field Service Management
+        </div>
+
+        <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight max-w-2xl">
+          Automate your jobs. <br />
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300">
+            Scale your workflow.
+          </span>
+        </h1>
+
+        <p className="mt-6 text-base md:text-lg text-slate-400 max-w-xl font-medium leading-relaxed">
+          Prado combines secure tenant multi-occupancy billing, predictive path dispatch optimization, and automated invoicing in one central operational hub.
+        </p>
+
+        <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
+          <Link href="/signup" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
+            Create Workspace Account
+          </Link>
+          <Link href="/login" className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-850 text-slate-200 px-6 py-3 rounded-xl transition border border-slate-800">
+            Explore Live Demo
+          </Link>
+        </div>
+
+        {/* Minimalist Dashboard Preview Wireframe */}
+        <div className="mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/40 p-2 shadow-2xl shadow-emerald-500/5 backdrop-blur-xs max-w-5xl">
+          <div className="rounded-xl border border-slate-800/80 bg-slate-950 overflow-hidden aspect-[16/9] flex flex-col text-left text-xs text-slate-500">
+            <div className="border-b border-slate-900 p-3 flex items-center gap-2 bg-slate-900/20">
+              <div className="flex gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+              </div>
+              <div className="h-4 w-32 bg-slate-900 rounded mx-auto"></div>
+            </div>
+            <div className="p-4 grid grid-cols-3 gap-4 flex-1">
+              <div className="border border-slate-900 rounded-lg p-3 space-y-2 bg-slate-900/10">
+                <div className="h-3 w-16 bg-slate-900 rounded"></div>
+                <div className="h-6 w-24 bg-slate-900/60 rounded"></div>
+              </div>
+              <div className="border border-slate-900 rounded-lg p-3 space-y-2 bg-slate-900/10">
+                <div className="h-3 w-16 bg-slate-900 rounded"></div>
+                <div className="h-6 w-24 bg-slate-900/60 rounded"></div>
+              </div>
+              <div className="border border-slate-900 rounded-lg p-3 space-y-2 bg-slate-900/10">
+                <div className="h-3 w-16 bg-slate-900 rounded"></div>
+                <div className="h-6 w-24 bg-slate-900/60 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-900 py-6 text-center text-xs text-slate-600 mt-auto">
+        &copy; {new Date().getFullYear()} Prado Systems Inc. All rights reserved.
+      </footer>
+    </div>
   );
 }
