@@ -12,6 +12,7 @@ export async function login(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    console.error("Supabase Login Error:", error.message);
     return { error: error.message };
   }
 
@@ -31,6 +32,7 @@ export async function signup(formData: FormData) {
   });
 
   if (authError || !authData.user) {
+    console.error("Supabase Auth Error:", authError?.message);
     return { error: authError?.message || 'Authentication signup failed.' };
   }
 
@@ -47,9 +49,11 @@ export async function signup(formData: FormData) {
     .single();
 
   if (orgError) {
+    console.error("Supabase Database Org Error:", orgError.message);
     return { error: orgError.message };
   }
 
+  // Redirect must remain outside the try block structure to allow Next.js to navigate
   redirect('/signup/check-email');
 }
 
@@ -88,6 +92,7 @@ export async function createCustomer(formData: FormData) {
     ]);
 
   if (error) {
+    console.error("Supabase Customer Creation Error:", error.message);
     throw new Error(`CRM ingestion failure: ${error.message}`);
   }
 
