@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
-import Header from '@/components/dashboard/Header';
+import DashboardNavbar from '@/components/DashboardNavbar';
+import DashboardSidebar from '@/components/DashboardSidebar';
 import Metrics from '@/components/dashboard/Metrics';
 import Customers from '@/components/dashboard/Customers';
 import RouteEngine from '@/components/dashboard/RouteEngine';
@@ -62,13 +63,13 @@ interface Expense {
 export default async function DashboardHome() {
   const supabase = await createClient();
 
-  // 1. Check authentication session
+  // 1. Check authentication session securely
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/login');
   }
 
-  // 2. Fetch organization context
+  // 2. Fetch specific workspace organization context
   const { data: org } = await supabase
     .from('organizations')
     .select('id, name')
@@ -79,7 +80,7 @@ export default async function DashboardHome() {
     redirect('/signup');
   }
 
-  // 3. Parallel Secure Tenant Isolated Fetching (Customers & Expenses first)
+  // 3. Secure Multi-Tenant Data Retrieval
   const [customersResponse, expensesResponse] = await Promise.all([
     supabase.from('customers').select('*').eq('organization_id', org.id),
     supabase.from('expenses').select('*').eq('organization_id', org.id).order('expense_date', { ascending: false })
@@ -88,10 +89,9 @@ export default async function DashboardHome() {
   const customers = customersResponse.data as Customer[] | null;
   const expenses = expensesResponse.data as Expense[] | null;
 
-  // 4. Resolve isolated properties, jobs, & invoices linked strictly to workspace accounts
   const customerIds = customers?.map(c => c.id) || [];
 
-  // Fetch properties belonging to active workspace customers to avoid organization_id column crash
+  // Fetch properties belonging directly to active workspace customers
   const propertiesResponse = customerIds.length > 0
     ? await supabase.from('properties').select('*').in('customer_id', customerIds)
     : { data: [] };
@@ -115,35 +115,55 @@ export default async function DashboardHome() {
   const jobs = jobsResponse.data as Job[] | null;
   const invoices = invoicesResponse.data as Invoice[] | null;
 
-  // Financial Metrics Compilation
+  // Compile Financial Accounting KPIs
   const totalRevenue = invoices?.reduce((acc, inv) => acc + Number(inv.total_amount), 0) || 0;
   const totalExpenses = expenses?.reduce((acc, exp) => acc + Number(exp.amount), 0) || 0;
   const netProfit = totalRevenue - totalExpenses;
 
+  const initial = org.name ? org.name.charAt(0) : "C";
+
   return (
-    <main className="min-h-screen bg-gray-50 p-6 md:p-12 text-gray-900">
-      <div className="max-w-6xl mx-auto">
-        
-        <Header orgName={org.name} />
-        
-        <Metrics totalRevenue={totalRevenue} totalExpenses={totalExpenses} netProfit={netProfit} />
+    <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
+      <DashboardNavbar userInitials={initial} />
+      
+      <div className="flex flex-1 relative">
+        {/* Reusable Operational Left Sidebar Panel */}
+        <DashboardSidebar />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            <Customers customers={customers} />
-            <RouteEngine jobs={jobs} />
-            <JobSchedule jobs={jobs} />
-            <ExpenseLedger expenses={expenses} />
+        {/* Dynamic Workspace Context Viewport */}
+        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
+          <div className="max-w-5xl mx-auto space-y-8">
+            
+            {/* Context Subheader */}
+            <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">{org.name}</h1>
+              <p className="text-xs text-slate-500 font-medium">Workspace operational metrics and fleet logs hub</p>
+            </div>
+            
+            {/* General Performance Metrics Cards */}
+            <Metrics totalRevenue={totalRevenue} totalExpenses={totalExpenses} netProfit={netProfit} />
+
+            {/* Core Operations Interface Grid Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Primary Workspace Engine Panels */}
+              <div className="lg:col-span-2 space-y-8">
+                <div id="customers"><Customers customers={customers} /></div>
+                <div id="routing"><RouteEngine jobs={jobs} /></div>
+                <div id="schedule"><JobSchedule jobs={jobs} /></div>
+                <div id="ledger"><ExpenseLedger expenses={expenses} /></div>
+              </div>
+
+              {/* Functional Sidebar Transaction Management Forms */}
+              <div className="lg:col-span-1 space-y-6">
+                <AddCustomerForm organizationId={org.id} />
+                <ScheduleJobForm properties={properties} />
+                <LogExpenseForm />
+              </div>
+            </div>
+
           </div>
-
-          <div className="lg:col-span-1 space-y-6">
-            <AddCustomerForm organizationId={org.id} />
-            <ScheduleJobForm properties={properties} />
-            <LogExpenseForm />
-          </div>
-        </div>
-
+        </main>
       </div>
-    </main>
+    </div>
   );
 }
