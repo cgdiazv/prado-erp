@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
-import { updateCustomer, deleteCustomer, createProperty } from '../../../actions';
+import DeleteSiteButton from '@/components/DeleteSiteButton';
+import { updateCustomer, deleteCustomer, createProperty, markInvoiceAsPaid } from '../../../actions';
 
 interface CustomerPageProps {
   params: Promise<{ id: string }> | { id: string };
@@ -285,8 +286,14 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                   {properties && properties.length > 0 ? (
                     <div className="space-y-2.5 pt-2 border-t border-gray-100">
                       {properties.map((prop) => (
-                        <div key={prop.id} className="p-3 bg-slate-50 rounded-lg border border-gray-200/60 text-xs">
-                          <p className="font-semibold text-slate-800">{prop.street_address}</p>
+                        <div key={prop.id} className="p-3 bg-slate-50 rounded-lg border border-gray-200/60 text-xs relative group">
+                          
+                          {/* SAFE INTERACTIVE CLIENT COMPONENT BUTTON */}
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <DeleteSiteButton propertyId={prop.id} customerId={customerId} />
+                          </div>
+
+                          <p className="font-semibold text-slate-800 pr-6">{prop.street_address}</p>
                           <p className="text-slate-400 mt-0.5">{prop.city}, {prop.state} {prop.zip_code}</p>
                           {prop.service_notes && (
                             <div className="mt-2 text-[11px] bg-amber-50/60 text-amber-900 p-2 rounded border border-amber-200/60 font-medium">
@@ -351,41 +358,61 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                 </section>
 
                 {/* Individual Client Financial Statements Ledger */}
-                <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs">
-                  <div className="mb-4 border-b border-gray-100 pb-3">
-                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Invoices & Statement Ledger</h2>
-                  </div>
-                  {invoices && invoices.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-left text-xs">
-                        <thead>
-                          <tr className="border-b border-gray-200 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                            <th className="pb-2">Due Date</th>
-                            <th className="pb-2">Tax Charge</th>
-                            <th className="pb-2 text-right">Total Owed</th>
-                            <th className="pb-2 text-right">Payment Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 font-medium text-slate-600">
-                          {invoices.map((inv) => (
-                            <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="py-3 text-slate-800 font-semibold">{inv.due_date}</td>
-                              <td className="py-3 font-mono text-slate-400">${inv.tax_amount}</td>
-                              <td className="py-3 text-right font-mono font-bold text-slate-950">${inv.total_amount}</td>
-                              <td className="py-3 text-right">
-                                <span className="px-2 py-0.5 bg-red-50 text-red-700 border border-red-200/80 rounded text-[10px] uppercase font-bold tracking-wide">
-                                  {inv.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-gray-400 text-xs italic text-center py-4">No statements cut for this profile yet.</p>
-                  )}
-                </section>
+<section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs">
+  <div className="mb-4 border-b border-gray-100 pb-3">
+    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Invoices & Statement Ledger</h2>
+  </div>
+  {invoices && invoices.length > 0 ? (
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-left text-xs">
+        <thead>
+          <tr className="border-b border-gray-200 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+            <th className="pb-2">Due Date</th>
+            <th className="pb-2">Tax Charge</th>
+            <th className="pb-2 text-right">Total Owed</th>
+            <th className="pb-2 text-right">Payment Status</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100 font-medium text-slate-600">
+          {invoices.map((inv) => (
+            <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
+              <td className="py-3 text-slate-800 font-semibold">{inv.due_date}</td>
+              <td className="py-3 font-mono text-slate-400">${inv.tax_amount}</td>
+              <td className="py-3 text-right font-mono font-bold text-slate-950">${inv.total_amount}</td>
+              <td className="py-3 text-right">
+                {inv.status === 'paid' ? (
+                  /* Rendered static badge once successfully paid */
+                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide">
+                    PAID
+                  </span>
+                ) : (
+                  /* Interactive Server Action Form to collect payment status updates */
+                  <form
+                    action={async () => {
+                      'use server';
+                      await markInvoiceAsPaid(inv.id, customerId);
+                    }}
+                    className="inline-block"
+                  >
+                    <button
+                      type="submit"
+                      title="Click to mark as Paid"
+                      className="px-2 py-0.5 bg-red-50 hover:bg-emerald-50 text-red-700 hover:text-emerald-700 border border-red-200/80 hover:border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide transition cursor-pointer"
+                    >
+                      UNPAID
+                    </button>
+                  </form>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <p className="text-gray-400 text-xs italic text-center py-4">No statements cut for this profile yet.</p>
+  )}
+</section>
 
               </div>
             </div>

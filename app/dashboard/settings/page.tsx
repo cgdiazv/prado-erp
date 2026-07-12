@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
-import PasswordForm from '@/app/dashboard/settings/PasswordForm'; // We render a clean interactive leaf component here
+import PasswordForm from '@/app/dashboard/settings/PasswordForm';
+import ExpenseCategoriesPanel from '@/app/dashboard/settings/ExpenseCategoriesPanel';
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -91,6 +92,8 @@ export default async function SettingsPage() {
 
               {/* NEW MODULE SECTION: Change Credentials Security Fields */}
               <PasswordForm />
+
+              <ExpenseCategoriesPanel />
 
               {/* Module Section 2: Fleet & Routing Optimization Automation Rules */}
               <div className="p-6 md:p-8 space-y-6">

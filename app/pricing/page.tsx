@@ -1,5 +1,7 @@
 'use client';
 
+import Footer from '@/components/Footer';
+
 export default function PricingPage() {
   const handleStripeCheckout = (planType: 'individual' | 'enterprise') => {
     if (planType === 'individual') {
@@ -40,7 +42,6 @@ export default function PricingPage() {
             Plans built to grow <br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300">with your fleet.</span>
           </h1>
-          {/* UPDATED: Stripe reference cleanly removed */}
           <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
             No long-term commitments. Select a configuration package below to instantly secure and launch your workspace.
           </p>
@@ -105,9 +106,8 @@ export default function PricingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-900 py-6 text-center text-xs text-slate-600 mt-auto">
-        &copy; {new Date().getFullYear()} Prado Systems Inc. All rights reserved.
-      </footer>
+      {/* Reusable Public Main Site Footer Component */}
+      <Footer />
     </div>
   );
 }

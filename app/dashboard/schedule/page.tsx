@@ -27,7 +27,12 @@ export default async function SchedulePage() {
     redirect('/dashboard/billing?expired=true');
   }
 
-  const { data: customers } = await supabase.from('customers').select('id').eq('organization_id', org.id);
+  // UPDATED: Now fetches names and company descriptors to display in the customer selection list
+  const { data: customers } = await supabase
+    .from('customers')
+    .select('id, first_name, last_name, company_name')
+    .eq('organization_id', org.id);
+    
   const customerIds = customers?.map(c => c.id) || [];
 
   const properties = customerIds.length > 0
@@ -61,9 +66,9 @@ export default async function SchedulePage() {
               <JobSchedule jobs={jobs} />
             </div>
             
-            {/* 3. Right Sidebar Form Column - Tops out at the exact same level */}
+            {/* 3. Right Sidebar Form Column - Now explicitly supplies the updated customer metadata array */}
             <div className="lg:col-span-1">
-              <ScheduleJobForm properties={properties} />
+              <ScheduleJobForm properties={properties} customers={customers} />
             </div>
 
           </div>

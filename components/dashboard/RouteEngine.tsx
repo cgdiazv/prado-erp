@@ -29,7 +29,7 @@ export default function RouteEngine({ jobs }: RouteEngineProps) {
       <div className="space-y-2">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Today&apos;s Route Order</span>
         {jobs?.filter(j => j.status === 'scheduled').map((job, idx) => (
-          <div key={job.id} className="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border text-xs">
+          <div key={job.id} className="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border border-gray-200 text-xs">
             <span className="px-2.5 py-1 bg-emerald-600 text-white font-bold rounded-md text-[10px] whitespace-nowrap tracking-wide uppercase">Stop {idx + 1}</span>
             <span className="font-medium text-gray-800">{job.properties?.street_address}</span>
             <span className="ml-auto text-gray-400 bg-white px-2 py-0.5 rounded border text-[11px]">Service: {job.job_type}</span>

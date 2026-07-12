@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import Footer from '@/components/Footer';
 
 export default function LiveDemoPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -117,9 +118,8 @@ export default function LiveDemoPage() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-900 py-6 text-center text-xs text-slate-600 mt-auto">
-        &copy; {new Date().getFullYear()} Prado Systems Inc. All rights reserved.
-      </footer>
+      {/* Reusable Public Main Site Footer Component */}
+      <Footer />
     </div>
   );
 }
