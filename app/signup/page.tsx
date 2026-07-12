@@ -2,20 +2,22 @@
 
 import { signup } from '../auth/actions';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 
 export default function SignUpPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setErrorMessage(null);
     setLoading(true);
+
+    const formData = new FormData(event.currentTarget);
 
     try {
       const result = await signup(formData);
       
-      // If the action returned an error instead of redirecting, render it to the UI
       if (result?.error) {
         setErrorMessage(result.error);
         setLoading(false);
@@ -41,7 +43,7 @@ export default function SignUpPage() {
   </div>
 )}
 
-        <form action={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Company Name</label>
             <input 

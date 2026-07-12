@@ -38,9 +38,13 @@ export async function signup(formData: FormData) {
     });
 
     if (authError || !authData.user) {
-      console.error("Supabase Auth Error:", authError?.message);
-      return { error: authError?.message || 'Authentication signup failed.' };
-    }
+  // Inspecting the structural breakdown of the error directly
+  console.error("Full Supabase Auth Error Object:", JSON.stringify(authError, null, 2));
+  console.error("Auth Error Message String:", authError?.message);
+  console.error("Auth Error Status:", authError?.status);
+  
+  return { error: authError?.message || 'Authentication signup failed.' };
+}
 
     // 2. Create the Organization profile matching this new user account
     const { data: orgData, error: orgError } = await supabase
