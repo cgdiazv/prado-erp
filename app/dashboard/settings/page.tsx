@@ -15,10 +15,10 @@ export default async function SettingsPage() {
     redirect('/login');
   }
 
-  // 2. Fetch specific tenant workspace profile metadata safely (email column omitted)
+  // 2. Fetch specific tenant workspace profile metadata safely (UPDATED: selected subscription_status)
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name')
+    .select('id, name, subscription_status')
     .eq('owner_id', user.id)
     .single();
 
@@ -33,8 +33,8 @@ export default async function SettingsPage() {
       <DashboardNavbar userInitials={initial} />
 
       <div className="flex flex-1 relative">
-        {/* Reusable Operational Left Sidebar Panel */}
-        <DashboardSidebar />
+        {/* UPDATED: Passing subscription_status to keep the sidebar contextually accurate */}
+        <DashboardSidebar subscriptionStatus={org.subscription_status} />
 
         {/* Settings Form Configuration Viewport - Aligned Left */}
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">

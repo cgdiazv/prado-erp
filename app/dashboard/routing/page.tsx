@@ -18,6 +18,11 @@ export default async function RoutingPage() {
     .single();
   if (!org) redirect('/signup');
 
+  // 1. SECURITY TIER GUARD: Allow 'enterprise' and active 'trial' profiles, block 'individual'
+if (org.subscription_status === 'individual') {
+  redirect('/dashboard?restricted=true');
+}
+
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
 
@@ -48,7 +53,8 @@ export default async function RoutingPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
       <DashboardNavbar userInitials={initial} />
       <div className="flex flex-1 relative">
-        <DashboardSidebar />
+        {/* UPDATED: Passing the explicit subscription status down to the sidebar component */}
+        <DashboardSidebar subscriptionStatus={org.subscription_status} />
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           <div className="max-w-4xl ml-0 space-y-6 text-left">
             <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">

@@ -5,9 +5,11 @@ import Footer from '@/components/Footer';
 export default function PricingPage() {
   const handleStripeCheckout = (planType: 'individual' | 'enterprise') => {
     if (planType === 'individual') {
-      window.location.href = 'https://buy.stripe.com/your_individual_plan_link';
+      // Opens first tier payment portal in a new tab securely
+      window.open('https://pay.indevasa.com/b/00wdR85i76E4dXg2Yl4Ni04', '_blank', 'noopener,noreferrer');
     } else {
-      window.location.href = 'https://buy.stripe.com/your_enterprise_plan_link';
+      // Opens second tier payment portal in a new tab securely
+      window.open('https://pay.indevasa.com/b/eVq4gy5i73rS5qKdCZ4Ni05', '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -106,7 +108,6 @@ export default function PricingPage() {
         </section>
       </main>
 
-      {/* Reusable Public Main Site Footer Component */}
       <Footer />
     </div>
   );

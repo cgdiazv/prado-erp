@@ -35,7 +35,8 @@ export default async function CustomersPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
       <DashboardNavbar userInitials={initial} />
       <div className="flex flex-1 relative">
-        <DashboardSidebar />
+        {/* UPDATED: Passing subscription_status to match the conditional sidebar links */}
+        <DashboardSidebar subscriptionStatus={org.subscription_status} />
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           {/* Main Grid Wrapper */}
           <div className="max-w-5xl ml-0 grid grid-cols-1 lg:grid-cols-3 gap-8 text-left">
