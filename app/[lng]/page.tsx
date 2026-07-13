@@ -4,8 +4,11 @@ import { redirect } from 'next/navigation';
 import Footer from '@/components/Footer';
 import Script from 'next/script';
 import PublicNavbar from '@/components/PublicNavbar';
+import { getTranslations } from '@/lib/translations';
 
-export default async function MarketingHomePage() {
+export default async function MarketingHomePage({ params }: { params: Promise<{ lng: string }> }) {
+  const { lng } = await params;
+  const translations = getTranslations(lng);
   const supabase = await createClient();
 
   // 1. If already authenticated, fetch organization context to auto-route them in
@@ -27,32 +30,32 @@ export default async function MarketingHomePage() {
   // 2. Render the public Supabase-style Marketing Front Page
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      <PublicNavbar />
+      <PublicNavbar locale={lng} />
 
       {/* Hero Presentation Section */}
       <main className="flex-1 max-w-4xl mx-auto px-6 pt-20 pb-16 text-center flex flex-col items-center justify-center">
         <div className="inline-flex items-center gap-2.5 bg-emerald-950/40 border border-emerald-800/60 rounded-full px-3.5 py-1 text-xs text-emerald-400 font-medium mb-6 backdrop-blur-xs">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          Next-Gen Field Service Management
+          {translations.home.badge}
         </div>
 
         <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight max-w-2xl">
-          Automate your jobs. <br />
+          {translations.home.heroTitleLine1} <br />
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300">
-            Scale your workflow.
+            {translations.home.heroTitleLine2}
           </span>
         </h1>
 
         <p className="mt-6 text-base md:text-lg text-slate-400 max-w-xl font-medium leading-relaxed">
-          Prado combines secure tenant multi-occupancy billing, predictive path dispatch optimization, and automated invoicing in one central operational hub.
+          {translations.home.heroDescription}
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
           <Link href="/pricing" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
-            View Pricing
+            {translations.home.viewPricing}
           </Link>
           <Link href="/demo" className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-850 text-slate-200 px-6 py-3 rounded-xl transition border border-slate-800">
-            Explore Live Demo
+            {translations.home.exploreDemo}
           </Link>
         </div>
 
@@ -91,10 +94,10 @@ export default async function MarketingHomePage() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-                Why run your business on <span className="text-emerald-400">Prado?</span>
+                {translations.home.whyChooseTitle.split('Prado?')[0]}<span className="text-emerald-400">Prado?</span>
               </h2>
               <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
-                Everything you need to manage your field operations, from scheduling the first visit to collecting the final invoice.
+                {translations.home.whyChooseSubtitle}
               </p>
             </div>
 
@@ -107,9 +110,9 @@ export default async function MarketingHomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-slate-100 mb-3">Smart Dispatch Routing</h3>
+                <h3 className="text-xl font-bold text-slate-100 mb-3">{translations.home.featureRoutingTitle}</h3>
                 <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
-                  Visualize your daily jobs on an interactive Google Maps interface. Optimize your team's driving paths, save on fuel expenses, and fit more jobs into your schedule automatically.
+                  {translations.home.featureRoutingDescription}
                 </p>
               </div>
 
@@ -120,9 +123,9 @@ export default async function MarketingHomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-slate-100 mb-3">Live Profit Tracking</h3>
+                <h3 className="text-xl font-bold text-slate-100 mb-3">{translations.home.featureFinancialsTitle}</h3>
                 <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
-                  Log expenses directly from the field and issue invoices seamlessly. Prado compiles your financial metrics in real-time so you always know your exact net profit margin.
+                  {translations.home.featureFinancialsDescription}
                 </p>
               </div>
 
@@ -133,9 +136,9 @@ export default async function MarketingHomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-slate-100 mb-3">Client CRM & Properties</h3>
+                <h3 className="text-xl font-bold text-slate-100 mb-3">{translations.home.featureCrmTitle}</h3>
                 <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
-                  Maintain a clean, searchable database of every customer and their linked service properties. Instantly pull up client history, pending jobs, and past billing records.
+                  {translations.home.featureCrmDescription}
                 </p>
               </div>
             </div>
@@ -146,17 +149,17 @@ export default async function MarketingHomePage() {
         <section className="border-t border-slate-900 bg-slate-950 py-20 px-6 text-center relative overflow-hidden">
           <div className="max-w-3xl mx-auto space-y-6">
             <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-              Ready to optimize your business operations?
+              {translations.home.ctaTitle}
             </h2>
             <p className="text-slate-400 text-sm md:text-base max-w-lg mx-auto leading-relaxed">
-              Join other organizations scaling up their service dispatch tracking setups securely on the cloud.
+              {translations.home.ctaDescription}
             </p>
             <div className="pt-4">
               <Link 
                 href="/pricing" 
                 className="inline-block text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-8 py-3.5 rounded-xl transition shadow-xl hover:scale-[1.01] active:scale-[0.99]"
               >
-                View Pricing
+                {translations.home.ctaButton}
               </Link>
             </div>
           </div>
@@ -164,16 +167,17 @@ export default async function MarketingHomePage() {
       </main>
 
       {/* Global Landing Page Footer Component */}
-      <Footer />
+      <Footer locale={lng} />
+      {/* 2. CHATBASE INTEGRATION EMBEDDABLE ENGINE */}
       <Script
-        id="chatbase-integration-root"
+        id="chatbase-integration"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
             window.chatbaseConfig = { chatbotId: 'QBldWxwKvYFFN27nBni1s' };
-            if (!document.getElementById('chatbase-script-root')) {
+            if (!document.getElementById('chatbase-script')) {
               const chatbaseScript = document.createElement('script');
-              chatbaseScript.id = 'chatbase-script-root';
+              chatbaseScript.id = 'chatbase-script';
               chatbaseScript.src = 'https://www.chatbase.co/embed.min.js';
               chatbaseScript.defer = true;
               document.head.appendChild(chatbaseScript);

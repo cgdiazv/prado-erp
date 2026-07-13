@@ -2,13 +2,16 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { getTranslations } from '@/lib/translations';
 
 interface PublicNavbarProps {
   theme?: 'dark' | 'light';
+  locale?: string;
 }
 
-export default function PublicNavbar({ theme = 'dark' }: PublicNavbarProps) {
+export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNavbarProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const translations = getTranslations(locale);
 
   const navClasses = {
     dark: 'border-slate-900 bg-slate-950 text-white',
@@ -58,7 +61,7 @@ export default function PublicNavbar({ theme = 'dark' }: PublicNavbarProps) {
             <button
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
               className={`focus:outline-none p-1 rounded-md transition cursor-pointer ${mobileButtonClasses[theme]}`}
-              aria-label="Toggle menu"
+              aria-label={translations.nav.menuAriaLabel}
             >
               {isDrawerOpen ? (
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -74,10 +77,10 @@ export default function PublicNavbar({ theme = 'dark' }: PublicNavbarProps) {
 
           {/* Desktop navigation links */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/pricing" className={`text-sm font-medium transition ${linkClasses[theme]}`}>Pricing</Link>
-            <Link href="/demo" className={`text-sm font-medium transition ${linkClasses[theme]}`}>Live Demo</Link>
-            <Link href="/login" className={`text-sm font-medium transition ${linkClasses[theme]}`}>Sign In</Link>
-            <Link href="/signup" className="text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg transition">Start Free Trial</Link>
+            <Link href="/pricing" className={`text-sm font-medium transition ${linkClasses[theme]}`}>{translations.nav.pricing}</Link>
+            <Link href="/demo" className={`text-sm font-medium transition ${linkClasses[theme]}`}>{translations.nav.liveDemo}</Link>
+            <Link href="/login" className={`text-sm font-medium transition ${linkClasses[theme]}`}>{translations.nav.signIn}</Link>
+            <Link href="/signup" className="text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg transition">{translations.nav.startFreeTrial}</Link>
           </div>
         </div>
       </nav>
@@ -113,7 +116,7 @@ export default function PublicNavbar({ theme = 'dark' }: PublicNavbarProps) {
                 <button
                   onClick={() => setIsDrawerOpen(false)}
                   className={`p-1 focus:outline-none transition cursor-pointer ${mobileButtonClasses[theme]}`}
-                  aria-label="Close menu"
+                  aria-label={translations.nav.closeMenuAriaLabel}
                 >
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -123,13 +126,13 @@ export default function PublicNavbar({ theme = 'dark' }: PublicNavbarProps) {
               
               <div className="flex flex-col gap-6">
                 <Link href="/pricing" className={`text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
-                  Pricing
+                  {translations.nav.pricing}
                 </Link>
                 <Link href="/demo" className={`text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
-                  Live Demo
+                  {translations.nav.liveDemo}
                 </Link>
                 <Link href="/login" className={`text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
-                  Sign In
+                  {translations.nav.signIn}
                 </Link>
               </div>
             </div>
@@ -140,7 +143,7 @@ export default function PublicNavbar({ theme = 'dark' }: PublicNavbarProps) {
                 className="block w-full text-center text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-lg transition"
                 onClick={() => setIsDrawerOpen(false)}
               >
-                Start Free Trial
+                {translations.nav.startFreeTrial}
               </Link>
             </div>
           </div>

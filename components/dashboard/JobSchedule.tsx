@@ -1,25 +1,71 @@
 import Link from 'next/link';
 import DeleteJobButton from '@/components/DeleteJobButton';
 import { completeJob } from '@/app/actions';
+import { getTranslations } from '@/lib/translations';
+import ScheduleJobModal from './ScheduleJobModal';
+
+interface Property {
+  id: string;
+  street_address: string;
+  customer_id: string;
+}
+
+interface Customer {
+  id: string;
+  first_name: string;
+  last_name: string;
+  company_name: string | null;
+}
+
+interface Service {
+  id: string;
+  name: string;
+  base_price: number | null;
+}
+
+interface Truck {
+  id: string;
+  name: string;
+  plate_number: string | null;
+  is_active: boolean | null;
+  status: string | null;
+}
 
 interface JobScheduleProps {
   jobs: any[] | null;
+  properties: Property[] | null;
+  customers: Customer[] | null;
+  services: Service[] | null;
+  trucks: Truck[] | null;
+  isIndividualAccount?: boolean;
+  locale?: string;
 }
 
-export default function JobSchedule({ jobs }: JobScheduleProps) {
+export default function JobSchedule({ jobs, properties, customers, services, trucks, isIndividualAccount = false, locale = 'en' }: JobScheduleProps) {
+  const translations = getTranslations(locale);
   return (
     <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">Live Job Schedule</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">{translations.dashboard.liveJobSchedule}</h2>
+        <ScheduleJobModal
+          properties={properties}
+          customers={customers}
+          services={services}
+          trucks={trucks}
+          isIndividualAccount={isIndividualAccount}
+          locale={locale}
+        />
+      </div>
       {jobs && jobs.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 text-left text-sm whitespace-nowrap">
             <thead className="bg-gray-50 text-xs font-medium uppercase text-gray-500">
               <tr>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Address</th>
-                <th className="px-4 py-3">Service</th>
-                <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3 text-right">Action</th>
+                <th className="px-4 py-3">{translations.dashboard.date}</th>
+                <th className="px-4 py-3">{translations.dashboard.address}</th>
+                <th className="px-4 py-3">{translations.dashboard.type}</th>
+                <th className="px-4 py-3">{translations.dashboard.cost}</th>
+                <th className="px-4 py-3 text-right">{translations.dashboard.action}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
@@ -43,7 +89,7 @@ export default function JobSchedule({ jobs }: JobScheduleProps) {
                         }}>
                           <button 
                             type="submit" 
-                            title="Mark Done" 
+                            title={translations.dashboard.markDone}
                             className="p-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-lg transition duration-200 border border-emerald-200 shadow-xs"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
@@ -53,7 +99,7 @@ export default function JobSchedule({ jobs }: JobScheduleProps) {
                         </form>
                       ) : (
                         <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">
-                          Completed
+                          {translations.dashboard.completed}
                         </span>
                       )}
 
@@ -67,7 +113,7 @@ export default function JobSchedule({ jobs }: JobScheduleProps) {
           </table>
         </div>
       ) : (
-        <p className="text-gray-500 text-sm italic">No active dispatch logs found.</p>
+        <p className="text-gray-500 text-sm italic">{translations.dashboard.noActiveDispatchLogs}</p>
       )}
     </section>
   );

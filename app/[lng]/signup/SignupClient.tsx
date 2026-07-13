@@ -1,0 +1,213 @@
+"use client";
+
+import { signup } from '../auth/actions';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState, FormEvent, ChangeEvent, use } from 'react';
+import PublicNavbar from '@/components/PublicNavbar';
+import { getTranslations } from '@/lib/translations';
+
+interface SignUpClientProps {
+  searchParams: Promise<{ plan?: string }>;
+  locale: string;
+}
+
+export default function SignUpClient({ searchParams, locale }: SignUpClientProps) {
+  const router = useRouter();
+  const translations = getTranslations(locale);
+  
+  // Unpack async searchParams cleanly in the Client Component
+  const resolvedParams = use(searchParams);
+  const targetPlan = resolvedParams.plan || 'trial';
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  
+  // States for Email Validation Checking
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+
+  // State to toggle password display text visibility
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Simple debounced email lookup verification
+  let debounceTimeout: NodeJS.Timeout;
+  
+  async function handleEmailChange(event: ChangeEvent<HTMLInputElement>) {
+    const email = event.target.value.trim();
+    
+    if (!email || !email.includes('@')) {
+      setEmailAvailable(null);
+      return;
+    }
+
+    setCheckingEmail(true);
+    clearTimeout(debounceTimeout);
+
+    debounceTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/validate-email?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        setEmailAvailable(data.available);
+      } catch {
+        setEmailAvailable(true);
+      } finally {
+        setCheckingEmail(false);
+      }
+    }, 500);
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    
+    if (emailAvailable === false) {
+      setErrorMessage(translations.signup.emailTaken);
+      return;
+    }
+
+    setErrorMessage(null);
+    setLoading(true);
+
+    const formData = new FormData(event.currentTarget);
+
+    try {
+      const result = await signup(formData);
+      
+      if (result?.error) {
+        setErrorMessage(result.error);
+        setLoading(false);
+        return;
+      }
+
+      // If a premium plan checkout URL was configured by the server action
+      if (result?.stripeUrl) {
+        // 1. Instantly open Stripe checkout link in a new tab securely
+        window.open(result.stripeUrl, '_blank', 'noopener,noreferrer');
+        
+        // 2. Pivot the underlying primary window page frame to the login page
+        router.push('/login?registered=true');
+        return;
+      }
+
+      // Fallback redirect pathing if they signed up for a regular free trial
+      if (result?.redirectTo) {
+        router.push(result.redirectTo);
+      }
+    } catch {
+      setErrorMessage(translations.signup.serverError);
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col selection:bg-emerald-500 selection:text-slate-950">
+      <PublicNavbar theme="light" locale={locale} />
+
+      <main className="flex-1 flex items-center justify-center p-6 text-gray-900 bg-white">
+        <div className="w-full max-w-md bg-white p-8 rounded-xl border border-gray-200 shadow-sm transition duration-150">
+          <header className="mb-6 text-center">
+            <h1 className="text-2xl font-bold text-emerald-700">{translations.signup.title}</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {targetPlan !== 'trial' 
+                ? translations.signup.subtitlePlan.replace('{plan}', targetPlan)
+                : translations.signup.subtitleTrial}
+            </p>
+          </header>
+
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg font-medium">
+              {typeof errorMessage === 'object' ? JSON.stringify(errorMessage) : errorMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* HIDDEN INPUT INTENT FLAG FOR THE SERVER ACTION */}
+            <input type="hidden" name="intendedPlan" value={targetPlan} />
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.signup.companyNameLabel}</label>
+              <input 
+                type="text" 
+                name="companyName" 
+                required 
+                placeholder={translations.signup.companyNamePlaceholder}
+                className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition" 
+              />
+            </div>
+            
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-semibold text-gray-500 uppercase">{translations.signup.emailLabel}</label>
+                {checkingEmail && <span className="text-[10px] text-gray-400 animate-pulse">{translations.signup.checking}</span>}
+                {emailAvailable === false && !checkingEmail && (
+                  <span className="text-[10px] text-red-600 font-bold">{translations.signup.emailAlreadyTaken}</span>
+                )}
+                {emailAvailable === true && !checkingEmail && (
+                  <span className="text-[10px] text-emerald-600 font-bold">{translations.signup.emailAvailable}</span>
+                )}
+              </div>
+              <input 
+                type="email" 
+                name="email" 
+                required 
+                onChange={handleEmailChange}
+                placeholder={translations.signup.emailPlaceholder}
+                className={`w-full rounded-lg border p-2.5 text-sm bg-white outline-none focus:ring-2 transition text-gray-900 ${
+                  emailAvailable === false 
+                    ? 'border-red-300 focus:ring-red-500 bg-red-50/30' 
+                    : 'border-gray-300 focus:ring-emerald-500'
+                }`} 
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.signup.passwordLabel}</label>
+              <div className="relative flex items-center">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  name="password" 
+                  required 
+                  placeholder="••••••••" 
+                  className="w-full rounded-lg border border-gray-300 p-2.5 pr-10 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition" 
+                />
+                
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? translations.signup.hidePassword : translations.signup.showPassword}
+                  className="absolute right-3 text-gray-400 hover:text-slate-600 transition outline-none p-0.5 rounded"
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.822 7.822L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading || emailAvailable === false}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition text-sm shadow-sm mt-2 flex items-center justify-center outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+            >
+              {loading ? translations.signup.loadingButton : translations.signup.submitButton}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center text-xs text-gray-400 border-t border-gray-100 pt-4">
+            {translations.signup.loginPrompt}{' '}
+            <Link href="/login" className="text-emerald-600 hover:underline font-semibold">
+              {translations.signup.loginLink}
+            </Link>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

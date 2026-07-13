@@ -1,15 +1,19 @@
 'use client';
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams, useParams } from 'next/navigation';
+import { getTranslations } from '@/lib/translations';
 
 interface TrialBannerProps {
   trialStartsAt: string;
+  locale?: string;
 }
 
-export default function TrialBanner({ trialStartsAt }: TrialBannerProps) {
+export default function TrialBanner({ trialStartsAt, locale = 'en' }: TrialBannerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const params = useParams();
+  const translations = getTranslations(locale);
 
   const totalTrialMs = 14 * 24 * 60 * 60 * 1000;
   const expiryDate = new Date(new Date(trialStartsAt).getTime() + totalTrialMs);
@@ -39,9 +43,11 @@ export default function TrialBanner({ trialStartsAt }: TrialBannerProps) {
           </svg>
         </span>
         <div>
-          <p className="text-sm font-semibold">You are currently using a Free Trial</p>
+          <p className="text-sm font-semibold">{translations.dashboard.trialActiveTitle}</p>
           <p className="text-xs text-emerald-100 font-medium">
-            Your full-access evaluation period has <strong className="text-white font-bold">{daysLeft} {daysLeft === 1 ? 'day' : 'days'} remaining</strong>.
+            {daysLeft === 1 
+              ? translations.dashboard.trialActiveDay
+              : translations.dashboard.trialActiveDays.replace('{days}', daysLeft.toString())}
           </p>
         </div>
       </div>
@@ -50,7 +56,7 @@ export default function TrialBanner({ trialStartsAt }: TrialBannerProps) {
         onClick={handleOpenBilling}
         className="inline-flex items-center justify-center bg-white hover:bg-emerald-50 text-emerald-700 text-xs font-bold px-4 py-2 rounded-lg transition whitespace-nowrap shadow-xs self-start sm:self-center cursor-pointer border-none outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
       >
-        Upgrade Workspace Plan
+        {translations.dashboard.upgradeButton}
       </button>
     </div>
   );

@@ -1,12 +1,16 @@
 'use client';
 
+import { getTranslations } from '@/lib/translations';
+
 interface PerformanceChartProps {
   totalRevenue: number;
   totalExpenses: number;
   netProfit: number;
+  locale?: string;
 }
 
-export default function PerformanceChart({ totalRevenue, totalExpenses, netProfit }: PerformanceChartProps) {
+export default function PerformanceChart({ totalRevenue, totalExpenses, netProfit, locale = 'en' }: PerformanceChartProps) {
+  const translations = getTranslations(locale);
   // Graceful fallback to prevent division by zero if there's no data yet
   const maxVal = Math.max(totalRevenue, totalExpenses, Math.abs(netProfit), 1000);
   
@@ -18,8 +22,8 @@ export default function PerformanceChart({ totalRevenue, totalExpenses, netProfi
   return (
     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs max-w-5xl">
       <div className="mb-6">
-        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-0.5">Financial breakdown</h3>
-        <p className="text-xs text-slate-400 font-medium">Visual comparison of workspace revenue pipelines vs cash outlays</p>
+        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-0.5">{translations.dashboard.financialBreakdown}</h3>
+        <p className="text-xs text-slate-400 font-medium">{translations.dashboard.financialBreakdownDesc}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4 min-h-[220px]">
@@ -27,7 +31,7 @@ export default function PerformanceChart({ totalRevenue, totalExpenses, netProfi
         {/* Revenue Bar */}
         <div className="space-y-3">
           <div className="flex justify-between items-baseline text-xs font-semibold px-1">
-            <span className="text-slate-500">Revenue</span>
+            <span className="text-slate-500">{translations.dashboard.revenue}</span>
             <span className="text-slate-900 font-mono">${totalRevenue.toFixed(2)}</span>
           </div>
           <div className="w-full bg-slate-100 rounded-lg h-24 flex items-end overflow-hidden">
@@ -41,7 +45,7 @@ export default function PerformanceChart({ totalRevenue, totalExpenses, netProfi
         {/* Expenses Bar */}
         <div className="space-y-3">
           <div className="flex justify-between items-baseline text-xs font-semibold px-1">
-            <span className="text-slate-500">Expenses</span>
+            <span className="text-slate-500">{translations.dashboard.expenses}</span>
             <span className="text-slate-900 font-mono">${totalExpenses.toFixed(2)}</span>
           </div>
           <div className="w-full bg-slate-100 rounded-lg h-24 flex items-end overflow-hidden">

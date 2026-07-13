@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { createJob } from '@/app/actions';
+import { getTranslations } from '@/lib/translations';
 
 // Extended Property interface to support customer matching
 interface Property {
@@ -36,9 +37,12 @@ interface ScheduleJobFormProps {
   customers: Customer[] | null;
   services: Service[] | null;
   trucks: Truck[] | null;
+  isIndividualAccount?: boolean;
+  locale?: string;
 }
 
-export default function ScheduleJobForm({ properties, customers, services, trucks }: ScheduleJobFormProps) {
+export default function ScheduleJobForm({ properties, customers, services, trucks, isIndividualAccount = false, locale = 'en' }: ScheduleJobFormProps) {
+  const translations = getTranslations(locale);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
 
@@ -55,7 +59,7 @@ export default function ScheduleJobForm({ properties, customers, services, truck
 
   return (
     <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-      <h3 className="text-lg font-semibold mb-3 text-gray-800">Schedule Job</h3>
+      <h3 className="text-lg font-semibold mb-3 text-gray-800">{translations.dashboard.scheduleJob}</h3>
       
       <form 
         action={async (formData: FormData) => {
@@ -78,7 +82,7 @@ export default function ScheduleJobForm({ properties, customers, services, truck
           onChange={handleCustomerChange}
           className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none cursor-pointer text-gray-700"
         >
-          <option value="">-- Select Customer --</option>
+          <option value="">{translations.dashboard.selectCustomer}</option>
           {customers?.map((c) => (
             <option key={c.id} value={c.id}>
               {c.first_name} {c.last_name} {c.company_name ? `(${c.company_name})` : ''}
@@ -96,7 +100,7 @@ export default function ScheduleJobForm({ properties, customers, services, truck
           className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none cursor-pointer disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed text-gray-700"
         >
           <option value="">
-            {!selectedCustomerId ? '-- Choose Customer First --' : '-- Select Target Site --'}
+            {!selectedCustomerId ? translations.dashboard.chooseCustomerFirst : translations.dashboard.selectTargetSite}
           </option>
           {filteredProperties.map((p) => (
             <option key={p.id} value={p.id}>{p.street_address}</option>
@@ -111,7 +115,7 @@ export default function ScheduleJobForm({ properties, customers, services, truck
           required
           className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none cursor-pointer text-gray-700"
         >
-          <option value="">-- Select Service --</option>
+          <option value="">{translations.dashboard.selectService}</option>
           {services?.map((service) => (
             <option key={service.id} value={service.name}>
               {service.name}
@@ -119,22 +123,24 @@ export default function ScheduleJobForm({ properties, customers, services, truck
           ))}
         </select>
 
-        <select
-          name="truckId"
-          className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none cursor-pointer text-gray-700"
-        >
-          <option value="">-- Select Truck (Optional) --</option>
-          {trucks?.map((truck) => (
-            <option key={truck.id} value={truck.id}>
-              {truck.name}{truck.plate_number ? ` • ${truck.plate_number}` : ''}
-            </option>
-          ))}
-        </select>
+        {!isIndividualAccount && (
+          <select
+            name="truckId"
+            className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none cursor-pointer text-gray-700"
+          >
+            <option value="">{translations.dashboard.selectTruckOptional}</option>
+            {trucks?.map((truck) => (
+              <option key={truck.id} value={truck.id}>
+                {truck.name}{truck.plate_number ? ` • ${truck.plate_number}` : ''}
+              </option>
+            ))}
+          </select>
+        )}
         
-        <input type="number" step="0.01" name="costAmount" placeholder="Price ($)" required className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700" />
+        <input type="number" step="0.01" name="costAmount" placeholder={translations.dashboard.price} required className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700" />
         
         <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium py-2 rounded-lg transition shadow-sm cursor-pointer">
-          Dispatch Job Target
+          {translations.dashboard.dispatchJobTarget}
         </button>
       </form>
     </section>

@@ -1,3 +1,5 @@
+import { getTranslations } from '@/lib/translations';
+import LogExpenseModal from './LogExpenseModal';
 
 interface Expense {
   id: string;
@@ -9,15 +11,29 @@ interface Expense {
 
 interface ExpenseLedgerProps {
   expenses: Expense[] | null;
+  locale?: string;
 }
 
-export default function ExpenseLedger({ expenses }: ExpenseLedgerProps) {
+export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedgerProps) {
+  const translations = getTranslations(locale);
+
   return (
     <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">Tracked Expenses</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">{translations.dashboard.trackedExpensesSection}</h2>
+        <LogExpenseModal locale={locale} />
+      </div>
       {expenses && expenses.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
+            <thead className="bg-gray-50 text-xs font-medium uppercase text-gray-500">
+              <tr>
+                <th className="px-4 py-3">{translations.dashboard.expenseDate}</th>
+                <th className="px-4 py-3">{translations.dashboard.category}</th>
+                <th className="px-4 py-3">{translations.dashboard.description}</th>
+                <th className="px-4 py-3 text-right">{translations.dashboard.amount}</th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
               {expenses.map((exp) => (
                 <tr key={exp.id} className="hover:bg-gray-50">
@@ -31,7 +47,7 @@ export default function ExpenseLedger({ expenses }: ExpenseLedgerProps) {
           </table>
         </div>
       ) : (
-        <p className="text-gray-400 text-sm italic">No operational expenses reported.</p>
+        <p className="text-gray-400 text-sm italic">{translations.dashboard.noOperationalExpenses}</p>
       )}
     </section>
   );
