@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
+import PublicNavbar from '@/components/PublicNavbar';
 import { submitSupportTicket } from '@/app/actions';
 
 export default function SupportHubPage() {
@@ -12,25 +13,8 @@ export default function SupportHubPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-950 font-sans">
       
-      {/* Navigation */}
-      <nav className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <span className="h-6 w-6 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-md shadow-emerald-500/20 text-white shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white">
-                <path d="M12 3c.12 4.96-3.03 9.04-7.96 9.17C8.96 12.29 12 16.31 12 21c0-4.69 3.04-8.71 7.96-8.83C15.03 12.04 11.88 7.96 12 3z" />
-              </svg>
-            </span>
-            Prado
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/pricing" className="text-sm font-medium text-slate-400 hover:text-white transition">Pricing</Link>
-            <Link href="/demo" className="text-sm font-medium text-slate-400 hover:text-white transition">Book Demo</Link>
-            <Link href="/login" className="text-sm font-medium text-slate-400 hover:text-white transition">Sign In</Link>
-            <Link href="/signup" className="text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg transition">Start Free Trial</Link>
-          </div>
-        </div>
-      </nav>
+      {/* Shared Navigation Header Component with Global Mobile Drawer Context */}
+      <PublicNavbar theme="dark" />
 
       {/* Main Container Grid Viewport */}
       <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-12 text-left items-start">
@@ -147,7 +131,7 @@ export default function SupportHubPage() {
               <button 
                 type="submit" 
                 disabled={formStatus === 'loading'} 
-                className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:cursor-not-allowed text-white text-xs font-bold py-3 rounded-xl transition shadow-xl mt-2 cursor-pointer"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:cursor-not-allowed text-white text-xs font-bold py-3 rounded-xl transition shadow-xl mt-2 cursor-pointer outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 {formStatus === 'loading' ? 'Transmitting Ticket Metrics...' : 'Dispatch Support Ticket'}
               </button>
