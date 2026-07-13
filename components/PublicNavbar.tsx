@@ -75,7 +75,7 @@ export default function PublicNavbar({ theme = 'dark' }: PublicNavbarProps) {
           {/* Desktop navigation links */}
           <div className="hidden md:flex items-center gap-6">
             <Link href="/pricing" className={`text-sm font-medium transition ${linkClasses[theme]}`}>Pricing</Link>
-            <Link href="/support" className={`text-sm font-medium transition ${linkClasses[theme]}`}>Support</Link>
+            <Link href="/demo" className={`text-sm font-medium transition ${linkClasses[theme]}`}>Live Demo</Link>
             <Link href="/login" className={`text-sm font-medium transition ${linkClasses[theme]}`}>Sign In</Link>
             <Link href="/signup" className="text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg transition">Start Free Trial</Link>
           </div>
@@ -125,8 +125,8 @@ export default function PublicNavbar({ theme = 'dark' }: PublicNavbarProps) {
                 <Link href="/pricing" className={`text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
                   Pricing
                 </Link>
-                <Link href="/support" className={`text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
-                  Support
+                <Link href="/demo" className={`text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
+                  Live Demo
                 </Link>
                 <Link href="/login" className={`text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
                   Sign In
