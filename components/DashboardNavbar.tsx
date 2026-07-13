@@ -1,12 +1,31 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 interface DashboardNavbarProps {
   userInitials?: string; // e.g., "CD" for Carlos Diaz
 }
 
 export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  
+  // Verify state criteria from current URL search parameters
+  const isSidebarOpen = searchParams.get('sidebar') === 'open';
+
+  const toggleSidebar = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (isSidebarOpen) {
+      params.delete('sidebar');
+    } else {
+      params.set('sidebar', 'open');
+    }
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    router.replace(newUrl, { scroll: false });
+  };
+
   return (
     <nav className="w-full border-b border-gray-200 bg-white sticky top-0 z-50 px-6 py-3 select-none">
       <div className="mx-auto flex justify-between items-center">
@@ -19,14 +38,13 @@ export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarP
             </svg>
           </span>
           <span className="font-sans">Prado</span>
-          {/* UPDATED: Badge label switched to Dashboard */}
           <span className="text-[10px] font-semibold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 ml-1">
             Dashboard
           </span>
         </Link>
 
-        {/* Right Side: Account Settings Avatar Shortcut Trigger */}
-        <div className="flex items-center gap-4">
+        {/* Right Side: Account Settings Avatar & Mobile Menu Toggle */}
+        <div className="flex items-center gap-3">
           <Link 
             href="/dashboard/settings" 
             className="h-8 w-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center text-xs font-bold tracking-wider shadow-sm transition transform hover:scale-[1.03] active:scale-[0.97] outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
@@ -34,6 +52,23 @@ export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarP
           >
             {userInitials.toUpperCase()}
           </Link>
+
+          {/* Mobile Hamburger Toggle Trigger Menu Button placed directly next to initials */}
+          <button
+            onClick={toggleSidebar}
+            className="md:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 focus:outline-none transition cursor-pointer"
+            aria-label="Toggle workspace side menu"
+          >
+            {isSidebarOpen ? (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
 
       </div>
