@@ -97,6 +97,74 @@ export async function deleteService(serviceId: string) {
   }
 }
 
+export async function createTruck(name: string, plateNumber: string | null) {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage trucks.' };
+
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (!org) return { error: 'Workspace not found.' };
+
+    const { data, error } = await supabase
+      .from('trucks')
+      .insert([
+        {
+          organization_id: org.id,
+          name,
+          plate_number: plateNumber,
+          is_active: true,
+          status: 'active'
+        }
+      ])
+      .select('id, name, plate_number, is_active, status')
+      .single();
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard/settings');
+    return { success: true, truck: data };
+  } catch (error: unknown) {
+    return { error: (error as Error)?.message || 'Failed to create truck.' };
+  }
+}
+
+export async function deactivateTruck(truckId: string) {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage trucks.' };
+
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (!org) return { error: 'Workspace not found.' };
+
+    const { error } = await supabase
+      .from('trucks')
+      .update({ is_active: false, status: 'inactive' })
+      .eq('id', truckId)
+      .eq('organization_id', org.id);
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard/settings');
+    return { success: true };
+  } catch (error: unknown) {
+    return { error: (error as Error)?.message || 'Failed to deactivate truck.' };
+  }
+}
+
 export async function cancelSubscription() {
   const supabase = await createClient();
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);

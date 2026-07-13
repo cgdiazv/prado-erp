@@ -23,13 +23,22 @@ interface Service {
   base_price: number | null;
 }
 
+interface Truck {
+  id: string;
+  name: string;
+  plate_number: string | null;
+  is_active: boolean | null;
+  status: string | null;
+}
+
 interface ScheduleJobFormProps {
   properties: Property[] | null;
   customers: Customer[] | null;
   services: Service[] | null;
+  trucks: Truck[] | null;
 }
 
-export default function ScheduleJobForm({ properties, customers, services }: ScheduleJobFormProps) {
+export default function ScheduleJobForm({ properties, customers, services, trucks }: ScheduleJobFormProps) {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
 
@@ -96,7 +105,7 @@ export default function ScheduleJobForm({ properties, customers, services }: Sch
 
         {/* 3. DATE AND LOGISTICS INPUTS */}
         <input type="date" name="scheduledDate" required className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700" />
-        
+
         <select
           name="jobType"
           required
@@ -106,6 +115,18 @@ export default function ScheduleJobForm({ properties, customers, services }: Sch
           {services?.map((service) => (
             <option key={service.id} value={service.name}>
               {service.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          name="truckId"
+          className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none cursor-pointer text-gray-700"
+        >
+          <option value="">-- Select Truck (Optional) --</option>
+          {trucks?.map((truck) => (
+            <option key={truck.id} value={truck.id}>
+              {truck.name}{truck.plate_number ? ` • ${truck.plate_number}` : ''}
             </option>
           ))}
         </select>

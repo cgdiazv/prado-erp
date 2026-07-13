@@ -5,6 +5,7 @@ import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import PasswordForm from '@/app/dashboard/settings/PasswordForm';
 import ServicesPanel from '@/app/dashboard/settings/ServicesPanel';
+import TrucksPanel from '@/app/dashboard/settings/TrucksPanel';
 import ExpenseCategoriesPanel from '@/app/dashboard/settings/ExpenseCategoriesPanel';
 import SubscriptionCancellationCard from '@/app/dashboard/settings/SubscriptionCancellationCard';
 
@@ -31,6 +32,12 @@ export default async function SettingsPage() {
   const { data: services } = await supabase
     .from('services')
     .select('id, name, base_price')
+    .eq('organization_id', org.id)
+    .order('name', { ascending: true });
+
+  const { data: trucks } = await supabase
+    .from('trucks')
+    .select('id, name, plate_number, is_active, status')
     .eq('organization_id', org.id)
     .order('name', { ascending: true });
 
@@ -102,6 +109,8 @@ export default async function SettingsPage() {
               <PasswordForm />
 
               <ServicesPanel initialServices={services || []} />
+
+              <TrucksPanel initialTrucks={trucks || []} />
 
               <ExpenseCategoriesPanel />
 

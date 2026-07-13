@@ -9,6 +9,7 @@ export async function createJob(formData: FormData) {
   const jobType = formData.get('jobType') as string;
   const costAmount = parseFloat(formData.get('costAmount') as string || '0');
   const notes = formData.get('notes') as string;
+  const truckId = formData.get('truckId') as string || null;
 
   if (!propertyId || !scheduledDate || !jobType) {
     return { error: 'Missing required fields' };
@@ -24,7 +25,9 @@ export async function createJob(formData: FormData) {
         job_type: jobType,
         cost_amount: costAmount,
         notes: notes,
-        status: 'scheduled'
+        status: 'scheduled',
+        // 2. SAVE IT TO YOUR NEW SUPABASE TRUCK_ID COLUMN
+        truck_id: truckId ? truckId : null 
       }
     ]);
 

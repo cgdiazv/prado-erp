@@ -25,14 +25,16 @@ export default async function SchedulePage() {
     redirect('/dashboard/billing?expired=true');
   }
 
-  // Fetch customer and service records for the schedule form
-  const [customersResponse, servicesResponse] = await Promise.all([
+  // Fetch customer, service, and active truck records for the schedule form
+  const [customersResponse, servicesResponse, trucksResponse] = await Promise.all([
     supabase.from('customers').select('id, first_name, last_name, company_name').eq('organization_id', org.id),
-    supabase.from('services').select('id, name, base_price').eq('organization_id', org.id).order('name', { ascending: true })
+    supabase.from('services').select('id, name, base_price').eq('organization_id', org.id).order('name', { ascending: true }),
+    supabase.from('trucks').select('id, name, plate_number, is_active, status').eq('organization_id', org.id).eq('is_active', true).order('name', { ascending: true })
   ]);
 
   const customers = customersResponse.data || [];
   const services = servicesResponse.data || [];
+  const trucks = trucksResponse.data || [];
   const customerIds = customers.map(c => c.id);
 
   const properties = customerIds.length > 0
@@ -71,6 +73,7 @@ export default async function SchedulePage() {
                 properties={properties || []} 
                 customers={customers} 
                 services={services} 
+                trucks={trucks} 
               />
             </div>
 
