@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import Footer from '@/components/Footer';
 
+import PublicNavbar from '@/components/PublicNavbar';
+
 export default function PricingPage() {
   const router = useRouter();
 
@@ -14,24 +16,7 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-950 font-sans">
       
-      {/* Navigation */}
-      <nav className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <a href="/" className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <span className="h-6 w-6 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-md shadow-emerald-500/20 text-white shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white">
-                <path d="M12 3c.12 4.96-3.03 9.04-7.96 9.17C8.96 12.29 12 16.31 12 21c0-4.69 3.04-8.71 7.96-8.83C15.03 12.04 11.88 7.96 12 3z" />
-              </svg>
-            </span>
-            Prado
-          </a>
-          <div className="flex items-center gap-4">
-            <a href="/demo" className="text-sm font-medium text-slate-400 hover:text-white transition">Book Demo</a>
-            <a href="/login" className="text-sm font-medium text-slate-400 hover:text-white transition">Sign In</a>
-            <a href="/signup" className="text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg transition">Start Free Trial</a>
-          </div>
-        </div>
-      </nav>
+      <PublicNavbar />
 
       <main className="flex-1 max-w-5xl mx-auto px-6 py-16 space-y-12">
         <header className="text-center max-w-2xl mx-auto space-y-4">

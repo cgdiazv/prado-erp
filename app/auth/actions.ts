@@ -7,11 +7,17 @@ export async function login(formData: FormData) {
   const password = formData.get('password') as string;
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     console.error("Supabase Login Error:", error.message);
     return { error: error.message };
+  }
+
+  // CATCH UNCONFIRMED EMAIL SIGN-IN RESTRICTION:
+  // If email confirmation is turned on in Supabase, the user is created but data.session will be null.
+  if (!data?.session) {
+    return { error: 'Please check your email and confirm your account before logging in.' };
   }
 
   // Return a clear indicator so the client knows login succeeded

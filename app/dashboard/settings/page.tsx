@@ -5,6 +5,7 @@ import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import PasswordForm from '@/app/dashboard/settings/PasswordForm';
 import ExpenseCategoriesPanel from '@/app/dashboard/settings/ExpenseCategoriesPanel';
+import SubscriptionCancellationCard from '@/app/dashboard/settings/SubscriptionCancellationCard';
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -117,6 +118,8 @@ export default async function SettingsPage() {
                   </div>
                 </div>
               </div>
+
+              <SubscriptionCancellationCard currentSubscriptionStatus={org.subscription_status} />
 
               {/* Module Section 3: Secure Signout Actions */}
               <div className="p-6 md:p-8 flex items-center justify-between max-w-2xl">
