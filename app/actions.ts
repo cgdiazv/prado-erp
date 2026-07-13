@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from '@/lib/supabaseServer';
 import { revalidatePath } from 'next/cache';
+import { Resend } from 'resend';
 
 export async function createJob(formData: FormData) {
   const propertyId = formData.get('propertyId') as string;
@@ -26,7 +27,6 @@ export async function createJob(formData: FormData) {
         cost_amount: costAmount,
         notes: notes,
         status: 'scheduled',
-        // 2. SAVE IT TO YOUR NEW SUPABASE TRUCK_ID COLUMN
         truck_id: truckId ? truckId : null 
       }
     ]);
@@ -44,10 +44,10 @@ export async function completeJob(jobId: string) {
 
   const supabase = await createClient();
 
-  // 1. Fetch the job details to know the cost, and find the customer through the property relation
+  // 1. Fetch job details AND include nested customer profile information for email delivery
   const { data: job, error: fetchError } = await supabase
     .from('jobs')
-    .select('*, properties(customer_id)')
+    .select('*, properties(customer_id, customers(first_name, last_name, email, company_name))')
     .eq('id', jobId)
     .single();
 
@@ -67,21 +67,22 @@ export async function completeJob(jobId: string) {
   const cost = job.cost_amount;
   const estimatedTax = parseFloat((cost * 0.0825).toFixed(2)); // Standard 8.25% tax rate example
   const total = parseFloat((cost + estimatedTax).toFixed(2));
+  
   if (!job.properties) {
     return { error: 'Job properties not found' };
   }
   const customerId = job.properties.customer_id;
+  const customerMeta = (job.properties as any).customers; 
   
-  // Set the invoice due date for 15 days out (Net 15 terms)
-  const dueDate = new Date();
-  dueDate.setDate(dueDate.getDate() + 15);
+  // Set the invoice due date to today (due immediately upon completion)
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const { error: invoiceError } = await supabase
     .from('invoices')
     .insert([
       {
         customer_id: customerId,
-        due_date: dueDate.toISOString().split('T')[0],
+        due_date: todayStr,
         status: 'unpaid',
         total_amount: total,
         tax_amount: estimatedTax
@@ -89,6 +90,54 @@ export async function completeJob(jobId: string) {
     ]);
 
   if (invoiceError) return { error: invoiceError.message };
+
+  // 4. EMAIL AUTOMATION ENGINE: Dispatches invoice instantly via Resend if email is verified
+  if (customerMeta?.email) {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    try {
+      await resend.emails.send({
+        from: 'notifications@indevasa.com', // Using your verified domain identity
+        to: customerMeta.email,
+        subject: `Invoice for Completed Service - ${job.job_type}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; color: #334155; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <h2 style="color: #0f172a; margin-bottom: 4px;">Service Invoice</h2>
+            <p style="font-size: 14px; color: #64748b; margin-top: 0;">Thank you for your business!</p>
+            
+            <p style="font-size: 14px; margin-top: 20px;">Hi ${customerMeta.first_name},</p>
+            <p style="font-size: 14px;">Your <strong>${job.job_type}</strong> service has been successfully completed. Below is the itemized billing breakdown for your records. Payment is due now that the service is finished:</p>
+            
+            <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 6px 0; color: #475569;"><strong>Service Rendered:</strong></td>
+                  <td style="padding: 6px 0; text-align: right; color: #0f172a;">${job.job_type}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #475569;">Base Amount:</td>
+                  <td style="padding: 6px 0; text-align: right; color: #0f172a;">$${cost.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #475569;">Estimated Tax (8.25%):</td>
+                  <td style="padding: 6px 0; text-align: right; color: #0f172a;">$${estimatedTax.toFixed(2)}</td>
+                </tr>
+                <tr style="border-top: 1px solid #e2e8f0; font-size: 16px;">
+                  <td style="padding: 12px 0 0 0; color: #0f172a;"><strong>Total Due:</strong></td>
+                  <td style="padding: 12px 0 0 0; text-align: right; color: #059669;"><strong>$${total.toFixed(2)}</strong></td>
+                </tr>
+              </table>
+            </div>
+            
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+              Please arrange payment at your earliest convenience. Thank you!
+            </p>
+          </div>
+        `,
+      });
+    } catch (emailErr) {
+      console.error('⚠️ Invoice recorded in database, but Resend pipe failed to deliver message:', emailErr);
+    }
+  }
 
   revalidatePath('/');
   return { success: true };
@@ -107,7 +156,6 @@ export async function createExpense(formData: FormData) {
 
   const supabase = await createClient();
   
-  // Resolve active user context to tag the expense to the correct organization profile
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Unauthorized operational execution.' };
 
@@ -149,7 +197,6 @@ export async function createCustomer(formData: FormData) {
     return { error: 'Missing required customer fields' };
   }
 
-  // Use the admin client to bypass the pending email verification status constraint completely
   const supabaseAdmin = createAdminClient();
   const { error } = await supabaseAdmin
     .from('customers')
@@ -176,11 +223,9 @@ export async function updateCustomer(customerId: string, formData: FormData) {
   try {
     const supabase = await createClient();
 
-    // 1. Verify session
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized operational execution.' };
 
-    // 2. Resolve organization context to verify ownership
     const { data: org } = await supabase
       .from('organizations')
       .select('id')
@@ -188,7 +233,6 @@ export async function updateCustomer(customerId: string, formData: FormData) {
       .single();
     if (!org) return { error: 'No organizational profile found.' };
 
-    // 3. Extract payload details including phone and billingAddress
     const firstName = formData.get('firstName') as string;
     const lastName = formData.get('lastName') as string;
     const companyName = formData.get('companyName') as string || null;
@@ -198,7 +242,6 @@ export async function updateCustomer(customerId: string, formData: FormData) {
 
     if (!firstName || !lastName) return { error: 'Missing required fields.' };
 
-    // 4. Update the customer record securely
     const { error } = await supabase
       .from('customers')
       .update({
@@ -225,11 +268,9 @@ export async function deleteCustomer(customerId: string) {
   try {
     const supabase = await createClient();
 
-    // 1. Verify session
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized operational execution.' };
 
-    // 2. Resolve organization context to verify ownership
     const { data: org } = await supabase
       .from('organizations')
       .select('id')
@@ -237,7 +278,6 @@ export async function deleteCustomer(customerId: string) {
       .single();
     if (!org) return { error: 'No organizational profile found.' };
 
-    // 3. Delete row ensuring it strictly belongs to this user's organization
     const { error } = await supabase
       .from('customers')
       .delete()
@@ -257,11 +297,9 @@ export async function createProperty(customerId: string, formData: FormData) {
   try {
     const supabase = await createClient();
 
-    // 1. Verify user session
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized operational execution.' };
 
-    // 2. Extract address input details
     const streetAddress = formData.get('streetAddress') as string;
     const city = formData.get('city') as string;
     const state = formData.get('state') as string;
@@ -272,7 +310,6 @@ export async function createProperty(customerId: string, formData: FormData) {
       return { error: 'Missing required address fields.' };
     }
 
-    // --- NEW MODIFICATION: GEOLOCATION COORDINATES ENGINE ---
     let latitude: number | null = null;
     let longitude: number | null = null;
     
@@ -299,9 +336,7 @@ export async function createProperty(customerId: string, formData: FormData) {
     } else {
       console.warn('⚠️ Geocoding skipped: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY environment token missing.');
     }
-    // --------------------------------------------------------
 
-    // 3. Use createAdminClient to bypass RLS restrictions and write cleanly with coordinates
     const supabaseAdmin = createAdminClient();
     const { error: insertError } = await supabaseAdmin
       .from('properties')
@@ -313,8 +348,8 @@ export async function createProperty(customerId: string, formData: FormData) {
           zip_code: zipCode,
           service_notes: serviceNotes,
           customer_id: customerId,
-          latitude: latitude,   // Writes to database layout dynamically
-          longitude: longitude  // Writes to database layout dynamically
+          latitude: latitude,   
+          longitude: longitude  
         }
       ]);
 
@@ -323,7 +358,6 @@ export async function createProperty(customerId: string, formData: FormData) {
       return { error: insertError.message };
     }
 
-    // 4. Instantly clear Next.js data caches to render updates across layouts
     revalidatePath(`/customers/${customerId}`);
     revalidatePath('/'); 
     return { success: true };
@@ -354,11 +388,9 @@ export async function deleteProperty(propertyId: string, customerId: string) {
   try {
     const supabase = await createClient();
 
-    // 1. Verify user session
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized operational execution.' };
 
-    // 2. Delete row securely
     const { error } = await supabase
       .from('properties')
       .delete()
@@ -366,7 +398,6 @@ export async function deleteProperty(propertyId: string, customerId: string) {
 
     if (error) return { error: error.message };
 
-    // 3. Revalidate path layers to instantly clear from interface view
     revalidatePath(`/customers/${customerId}`);
     revalidatePath('/');
     return { success: true };
@@ -381,11 +412,9 @@ export async function markInvoiceAsPaid(invoiceId: string, customerId: string) {
   try {
     const supabase = await createClient();
 
-    // 1. Verify user session context
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized operational execution.' };
 
-    // 2. Perform database mutation to flip status to paid
     const { error } = await supabase
       .from('invoices')
       .update({ status: 'paid' })
@@ -393,7 +422,6 @@ export async function markInvoiceAsPaid(invoiceId: string, customerId: string) {
 
     if (error) return { error: error.message };
 
-    // 3. Revalidate paths to instantly visually update ledger rows
     revalidatePath(`/dashboard/customers/${customerId}`);
     revalidatePath('/');
     return { success: true };
@@ -401,8 +429,6 @@ export async function markInvoiceAsPaid(invoiceId: string, customerId: string) {
     return { error: (err as Error)?.message || 'Failed to update invoice status.' };
   }
 }
-
-import { Resend } from 'resend';
 
 export async function submitSupportTicket(formData: FormData) {
   const name = formData.get('name') as string;
@@ -414,7 +440,6 @@ export async function submitSupportTicket(formData: FormData) {
     return { error: 'Please fill out all required fields.' };
   }
 
-  // Fallback to checking process.env.RESEND_API_KEY internally
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
