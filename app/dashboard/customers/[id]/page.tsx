@@ -22,10 +22,10 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
     redirect('/login');
   }
 
-  // 2. Fetch workspace organization context for navbar branding profile context
+  // 2. Fetch workspace organization context (UPDATED: Added subscription_status selection)
   const { data: org } = await supabase
     .from('organizations')
-    .select('name')
+    .select('name, subscription_status')
     .eq('owner_id', user.id)
     .single();
 
@@ -57,7 +57,8 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
       <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
         <DashboardNavbar userInitials={fallbackInitial} />
         <div className="flex flex-1 relative">
-          <DashboardSidebar />
+          {/* UPDATED: Forward subscription_status to sidebar context */}
+          <DashboardSidebar subscriptionStatus={org.subscription_status} />
           <main className="flex-1 p-12 text-left">
             <h1 className="text-xl font-bold text-gray-800">Customer Profile Not Found</h1>
             <Link href="/dashboard/customers" className="mt-4 inline-block text-sm text-emerald-600 hover:underline">
@@ -77,8 +78,8 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
       <DashboardNavbar userInitials={initial} />
       
       <div className="flex flex-1 relative">
-        {/* Reusable Operational Left Sidebar Panel */}
-        <DashboardSidebar />
+        {/* UPDATED: Forward subscription_status to maintain link layout guards */}
+        <DashboardSidebar subscriptionStatus={org.subscription_status} />
 
         {/* Dynamic Left-Aligned Inner Workspace Viewport */}
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
@@ -358,61 +359,61 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                 </section>
 
                 {/* Individual Client Financial Statements Ledger */}
-<section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs">
-  <div className="mb-4 border-b border-gray-100 pb-3">
-    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Invoices & Statement Ledger</h2>
-  </div>
-  {invoices && invoices.length > 0 ? (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-xs">
-        <thead>
-          <tr className="border-b border-gray-200 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-            <th className="pb-2">Due Date</th>
-            <th className="pb-2">Tax Charge</th>
-            <th className="pb-2 text-right">Total Owed</th>
-            <th className="pb-2 text-right">Payment Status</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100 font-medium text-slate-600">
-          {invoices.map((inv) => (
-            <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
-              <td className="py-3 text-slate-800 font-semibold">{inv.due_date}</td>
-              <td className="py-3 font-mono text-slate-400">${inv.tax_amount}</td>
-              <td className="py-3 text-right font-mono font-bold text-slate-950">${inv.total_amount}</td>
-              <td className="py-3 text-right">
-                {inv.status === 'paid' ? (
-                  /* Rendered static badge once successfully paid */
-                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide">
-                    PAID
-                  </span>
-                ) : (
-                  /* Interactive Server Action Form to collect payment status updates */
-                  <form
-                    action={async () => {
-                      'use server';
-                      await markInvoiceAsPaid(inv.id, customerId);
-                    }}
-                    className="inline-block"
-                  >
-                    <button
-                      type="submit"
-                      title="Click to mark as Paid"
-                      className="px-2 py-0.5 bg-red-50 hover:bg-emerald-50 text-red-700 hover:text-emerald-700 border border-red-200/80 hover:border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide transition cursor-pointer"
-                    >
-                      UNPAID
-                    </button>
-                  </form>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  ) : (
-    <p className="text-gray-400 text-xs italic text-center py-4">No statements cut for this profile yet.</p>
-  )}
-</section>
+                <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs">
+                  <div className="mb-4 border-b border-gray-100 pb-3">
+                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Invoices & Statement Ledger</h2>
+                  </div>
+                  {invoices && invoices.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-gray-200 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                            <th className="pb-2">Due Date</th>
+                            <th className="pb-2">Tax Charge</th>
+                            <th className="pb-2 text-right">Total Owed</th>
+                            <th className="pb-2 text-right">Payment Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 font-medium text-slate-600">
+                          {invoices.map((inv) => (
+                            <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="py-3 text-slate-800 font-semibold">{inv.due_date}</td>
+                              <td className="py-3 font-mono text-slate-400">${inv.tax_amount}</td>
+                              <td className="py-3 text-right font-mono font-bold text-slate-950">${inv.total_amount}</td>
+                              <td className="py-3 text-right">
+                                {inv.status === 'paid' ? (
+                                  /* Rendered static badge once successfully paid */
+                                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide">
+                                    PAID
+                                  </span>
+                                ) : (
+                                  /* Interactive Server Action Form to collect payment status updates */
+                                  <form
+                                    action={async () => {
+                                      'use server';
+                                      await markInvoiceAsPaid(inv.id, customerId);
+                                    }}
+                                    className="inline-block"
+                                  >
+                                    <button
+                                      type="submit"
+                                      title="Click to mark as Paid"
+                                      className="px-2 py-0.5 bg-red-50 hover:bg-emerald-50 text-red-700 hover:text-emerald-700 border border-red-200/80 hover:border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide transition cursor-pointer"
+                                    >
+                                      UNPAID
+                                    </button>
+                                  </form>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 text-xs italic text-center py-4">No statements cut for this profile yet.</p>
+                  )}
+                </section>
 
               </div>
             </div>
