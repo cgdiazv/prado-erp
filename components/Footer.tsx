@@ -9,7 +9,7 @@ export default function Footer() {
         
         {/* Left-Aligned Copyright Notice */}
         <div className="text-left font-medium text-slate-500">
-          &copy; {new Date().getFullYear()} Prado Systems Inc. All rights reserved.
+          &copy; {new Date().getFullYear()} Prado Systems. All rights reserved.
         </div>
 
         {/* Right-Aligned Marketing & Compliance Links */}

@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import Footer from '@/components/Footer';
 
+import PublicNavbar from '@/components/PublicNavbar';
+
 export default async function MarketingHomePage() {
   const supabase = await createClient();
 
@@ -24,36 +26,8 @@ export default async function MarketingHomePage() {
 
   // 2. Render the public Supabase-style Marketing Front Page
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-950">
-      {/* Navigation Navbar */}
-      <nav className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <span className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            {/* Sleek Geometric Negative-Space Leaf Logo */}
-            <span className="h-6 w-6 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-md shadow-emerald-500/20 text-white shrink-0">
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                viewBox="0 0 24 24" 
-                fill="currentColor" 
-                className="w-4 h-4 text-white"
-              >
-              <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.47.16.05.33.03.46-.07.13-.1.2-.26.2-.43V17.5c0-1.93 1.57-3.5 3.5-3.5h1c1.93 0 3.5-1.57 3.5-3.5V6.7c0-.5-.32-.93-.8-1.07C15.11 5.2 13.6 5 12 5V2zm1 8.5c0-.83-.67-1.5-1.5-1.5S10 9.67 10 10.5v2.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-2.5z" fillRule="evenodd" clipRule="evenodd" className="hidden" />
-              {/* Clean Modern Leaf Silhouette */}
-              <path d="M12 3c.12 4.96-3.03 9.04-7.96 9.17C8.96 12.29 12 16.31 12 21c0-4.69 3.04-8.71 7.96-8.83C15.03 12.04 11.88 7.96 12 3z" />
-              </svg>
-            </span>
-            Prado
-          </span>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium text-slate-400 hover:text-white transition">
-              Sign In
-            </Link>
-            <Link href="/signup" className="text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg transition shadow-lg shadow-emerald-600/20">
-              Start Free Trial
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-950 font-sans">
+      <PublicNavbar />
 
       {/* Hero Presentation Section */}
       <main className="flex-1 max-w-4xl mx-auto px-6 pt-20 pb-16 text-center flex flex-col items-center justify-center">

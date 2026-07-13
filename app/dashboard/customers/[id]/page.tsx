@@ -11,7 +11,6 @@ interface CustomerPageProps {
 }
 
 export default async function CustomerDetailPage({ params }: CustomerPageProps) {
-  // Resolve params cleanly if provided as a promise or static object in Next.js
   const resolvedParams = await params;
   const { id: customerId } = resolvedParams;
   const supabase = await createClient();
@@ -22,7 +21,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
     redirect('/login');
   }
 
-  // 2. Fetch workspace organization context (UPDATED: Added subscription_status selection)
+  // 2. Fetch workspace organization context
   const { data: org } = await supabase
     .from('organizations')
     .select('name, subscription_status')
@@ -57,7 +56,6 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
       <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
         <DashboardNavbar userInitials={fallbackInitial} />
         <div className="flex flex-1 relative">
-          {/* UPDATED: Forward subscription_status to sidebar context */}
           <DashboardSidebar subscriptionStatus={org.subscription_status} />
           <main className="flex-1 p-12 text-left">
             <h1 className="text-xl font-bold text-gray-800">Customer Profile Not Found</h1>
@@ -74,14 +72,11 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      {/* Unified Persistent Header Navbar */}
       <DashboardNavbar userInitials={initial} />
       
       <div className="flex flex-1 relative">
-        {/* UPDATED: Forward subscription_status to maintain link layout guards */}
         <DashboardSidebar subscriptionStatus={org.subscription_status} />
 
-        {/* Dynamic Left-Aligned Inner Workspace Viewport */}
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           <div className="max-w-5xl ml-0 space-y-8 text-left">
             
@@ -96,7 +91,6 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                 </Link>
               </div>
 
-              {/* SECURE ISOLATED DELETE MANAGEMENT TRIGGER */}
               <form action={async () => {
                 'use server';
                 await deleteCustomer(customerId);
@@ -104,7 +98,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
               }}>
                 <button 
                   type="submit"
-                  className="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-semibold py-1.5 px-3.5 rounded-lg transition shadow-xs"
+                  className="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-semibold py-1.5 px-3.5 rounded-lg transition shadow-xs cursor-pointer"
                 >
                   Delete Client Profile
                 </button>
@@ -134,23 +128,21 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
               </div>
             </header>
 
-            {/* Sub-grid Content Split Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* MAIN DATA VIEW AREA */}
+            <div className="space-y-8">
               
-              {/* Left Sidebars Forms Column Area */}
-              <div className="lg:col-span-1 space-y-6">
+              {/* HORIZONTAL PROFILE MANAGEMENT WORKSPACE FORM */}
+              <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs">
+                <div className="mb-4">
+                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-0.5">Edit Client Details</h2>
+                  <p className="text-[11px] text-slate-400 font-medium">Modify account directory parameters instantly across a master operational grid.</p>
+                </div>
                 
-                {/* LIVE PROFILE MANAGEMENT WORKSPACE FORM */}
-                <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs">
-                  <div className="mb-4">
-                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-0.5">Edit Client Details</h2>
-                    <p className="text-[11px] text-slate-400 font-medium">Modify account directory parameters instantly.</p>
-                  </div>
-                  
-                  <form action={async (formData: FormData) => {
-                    'use server';
-                    await updateCustomer(customerId, formData);
-                  }} className="space-y-3.5">
+                <form action={async (formData: FormData) => {
+                  'use server';
+                  await updateCustomer(customerId, formData);
+                }} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
                     <div>
                       <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">First Name</label>
                       <input 
@@ -212,212 +204,204 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                         className="w-full rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium transition" 
                       />
                     </div>
+                  </div>
 
+                  <div className="flex justify-start">
                     <button 
                       type="submit" 
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 rounded-lg transition shadow-xs mt-2"
+                      className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 px-6 rounded-lg transition shadow-xs cursor-pointer"
                     >
                       Save Profile Adjustments
                     </button>
-                  </form>
-                </section>
-
-                {/* Service Sites Container Section */}
-                <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs space-y-4">
-                  <div>
-                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-0.5">Service Sites</h2>
-                    <p className="text-[11px] text-slate-400 font-medium">Link dispatch operational target vectors</p>
                   </div>
+                </form>
+              </section>
 
-                  {/* INLINE ADD SERVICE SITE FORM */}
-                  <form action={async (formData: FormData) => {
-                    'use server';
-                    await createProperty(customerId, formData);
-                  }} className="p-3 bg-slate-50 rounded-lg border border-gray-200 space-y-2">
-                    <p className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">Add New Location</p>
-                    
-                    <input 
-                      type="text" 
-                      name="streetAddress" 
-                      placeholder="Street Address" 
-                      required 
-                      className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
-                    />
-                    
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <input 
-                        type="text" 
-                        name="city" 
-                        placeholder="City" 
-                        required 
-                        className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
-                      />
-                      <input 
-                        type="text" 
-                        name="state" 
-                        placeholder="State" 
-                        required 
-                        className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
-                      />
-                      <input 
-                        type="text" 
-                        name="zipCode" 
-                        placeholder="Zip" 
-                        required 
-                        className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
-                      />
-                    </div>
-
-                    <input 
-                      type="text" 
-                      name="serviceNotes" 
-                      placeholder="Gate codes, pet notices... (Optional)" 
-                      className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
-                    />
-
-                    <button 
-                      type="submit" 
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold py-1.5 rounded-md transition shadow-xs mt-1"
-                    >
-                      + Link Service Site
-                    </button>
-                  </form>
-
-                  {/* Properties Listing Layout Array */}
-                  {properties && properties.length > 0 ? (
-                    <div className="space-y-2.5 pt-2 border-t border-gray-100">
-                      {properties.map((prop) => (
-                        <div key={prop.id} className="p-3 bg-slate-50 rounded-lg border border-gray-200/60 text-xs relative group">
-                          
-                          {/* SAFE INTERACTIVE CLIENT COMPONENT BUTTON */}
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <DeleteSiteButton propertyId={prop.id} customerId={customerId} />
-                          </div>
-
-                          <p className="font-semibold text-slate-800 pr-6">{prop.street_address}</p>
-                          <p className="text-slate-400 mt-0.5">{prop.city}, {prop.state} {prop.zip_code}</p>
-                          {prop.service_notes && (
-                            <div className="mt-2 text-[11px] bg-amber-50/60 text-amber-900 p-2 rounded border border-amber-200/60 font-medium">
-                              <strong>Notes:</strong> {prop.service_notes}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400 text-xs italic pt-2 text-center">No properties registered.</p>
-                  )}
-                </section>
+              {/* Service Sites Container Section (MOVED UP ABOVE THE COLUMNS SPLIT) */}
+            <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs space-y-4">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-0.5">Service Sites</h2>
+                <p className="text-[11px] text-slate-400 font-medium">Link dispatch operational target vectors</p>
               </div>
 
-              {/* Right Side Tables Data Manifests Columns Area */}
-              <div className="lg:col-span-2 space-y-8">
+              <form action={async (formData: FormData) => {
+                'use server';
+                await createProperty(customerId, formData);
+              }} className="p-4 bg-slate-50 rounded-lg border border-gray-200 space-y-3">
+                <p className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">Add New Location</p>
                 
-                {/* Job History Manifest Timeline Log */}
-                <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs">
-                  <div className="mb-4 border-b border-gray-100 pb-3">
-                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Operational Job Log</h2>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <input 
+                    type="text" 
+                    name="streetAddress" 
+                    placeholder="Street Address" 
+                    required 
+                    className="md:col-span-2 rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
+                  />
+                  <input 
+                    type="text" 
+                    name="city" 
+                    placeholder="City" 
+                    required 
+                    className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input 
+                      type="text" 
+                      name="state" 
+                      placeholder="State" 
+                      required 
+                      className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
+                    />
+                    <input 
+                      type="text" 
+                      name="zipCode" 
+                      placeholder="Zip" 
+                      required 
+                      className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
+                    />
                   </div>
-                  {customerJobs.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-left text-xs">
-                        <thead>
-                          <tr className="border-b border-gray-200 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                            <th className="pb-2">Date</th>
-                            <th className="pb-2">Location</th>
-                            <th className="pb-2">Type</th>
-                            <th className="pb-2 text-right">Cost</th>
-                            <th className="pb-2 text-right">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 font-medium text-slate-600">
-                          {customerJobs.map((job) => (
-                            <tr key={job.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="py-3 font-semibold text-slate-800">{job.scheduled_date}</td>
-                              <td className="py-3 max-w-[180px] truncate text-slate-400">{job.properties?.street_address}</td>
-                              <td className="py-3">
-                                <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
-                                  {job.job_type}
-                                </span>
-                              </td>
-                              <td className="py-3 text-right font-mono font-semibold text-slate-700">${job.cost_amount}</td>
-                              <td className="py-3 text-right">
-                                <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wide ${
-                                  job.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                }`}>
-                                  {job.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-gray-400 text-xs italic text-center py-4">No service visits scheduled or logged.</p>
-                  )}
-                </section>
+                </div>
 
-                {/* Individual Client Financial Statements Ledger */}
-                <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs">
-                  <div className="mb-4 border-b border-gray-100 pb-3">
-                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Invoices & Statement Ledger</h2>
-                  </div>
-                  {invoices && invoices.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-left text-xs">
-                        <thead>
-                          <tr className="border-b border-gray-200 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                            <th className="pb-2">Due Date</th>
-                            <th className="pb-2">Tax Charge</th>
-                            <th className="pb-2 text-right">Total Owed</th>
-                            <th className="pb-2 text-right">Payment Status</th>
+                <div className="flex flex-col sm:flex-row gap-3 items-center">
+                  <input 
+                    type="text" 
+                    name="serviceNotes" 
+                    placeholder="Gate codes, pet notices... (Optional)" 
+                    className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
+                  />
+                  <button 
+                    type="submit" 
+                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold px-4 py-2 rounded-md transition shadow-xs whitespace-nowrap cursor-pointer"
+                  >
+                    + Link Service Site
+                  </button>
+                </div>
+              </form>
+
+              {properties && properties.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                  {properties.map((prop) => (
+                    <div key={prop.id} className="p-3 bg-slate-50 rounded-lg border border-gray-200/60 text-xs relative group">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <DeleteSiteButton propertyId={prop.id} customerId={customerId} />
+                      </div>
+                      <p className="font-semibold text-slate-800 pr-6">{prop.street_address}</p>
+                      <p className="text-slate-400 mt-0.5">{prop.city}, {prop.state} {prop.zip_code}</p>
+                      {prop.service_notes && (
+                        <div className="mt-2 text-[11px] bg-amber-50/60 text-amber-900 p-2 rounded border border-amber-200/60 font-medium">
+                          <strong>Notes:</strong> {prop.service_notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-400 text-xs italic pt-2 text-center">No properties registered.</p>
+              )}
+            </section>
+
+              {/* Job History Manifest Timeline Log */}
+              <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs">
+                <div className="mb-4 border-b border-gray-100 pb-3">
+                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Operational Job Log</h2>
+                </div>
+                {customerJobs.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-gray-200 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                          <th className="pb-2">Date</th>
+                          <th className="pb-2">Location</th>
+                          <th className="pb-2">Type</th>
+                          <th className="pb-2 text-right">Cost</th>
+                          <th className="pb-2 text-right">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-slate-600">
+                        {customerJobs.map((job) => (
+                          <tr key={job.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="py-3 font-semibold text-slate-800">{job.scheduled_date}</td>
+                            <td className="py-3 max-w-[180px] truncate text-slate-400">{job.properties?.street_address}</td>
+                            <td className="py-3">
+                              <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
+                                {job.job_type}
+                              </span>
+                            </td>
+                            <td className="py-3 text-right font-mono font-semibold text-slate-700">${job.cost_amount}</td>
+                            <td className="py-3 text-right">
+                              <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wide ${
+                                job.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {job.status}
+                              </span>
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 font-medium text-slate-600">
-                          {invoices.map((inv) => (
-                            <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="py-3 text-slate-800 font-semibold">{inv.due_date}</td>
-                              <td className="py-3 font-mono text-slate-400">${inv.tax_amount}</td>
-                              <td className="py-3 text-right font-mono font-bold text-slate-950">${inv.total_amount}</td>
-                              <td className="py-3 text-right">
-                                {inv.status === 'paid' ? (
-                                  /* Rendered static badge once successfully paid */
-                                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide">
-                                    PAID
-                                  </span>
-                                ) : (
-                                  /* Interactive Server Action Form to collect payment status updates */
-                                  <form
-                                    action={async () => {
-                                      'use server';
-                                      await markInvoiceAsPaid(inv.id, customerId);
-                                    }}
-                                    className="inline-block"
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-gray-400 text-xs italic text-center py-4">No service visits scheduled or logged.</p>
+                )}
+              </section>
+
+              {/* Individual Client Financial Statements Ledger */}
+              <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs">
+                <div className="mb-4 border-b border-gray-100 pb-3">
+                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Invoices & Statement Ledger</h2>
+                </div>
+                {invoices && invoices.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-gray-200 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                          <th className="pb-2">Due Date</th>
+                          <th className="pb-2">Tax Charge</th>
+                          <th className="pb-2 text-right">Total Owed</th>
+                          <th className="pb-2 text-right">Payment Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-slate-600">
+                        {invoices.map((inv) => (
+                          <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="py-3 text-slate-800 font-semibold">{inv.due_date}</td>
+                            <td className="py-3 font-mono text-slate-400">${inv.tax_amount}</td>
+                            <td className="py-3 text-right font-mono font-bold text-slate-950">${inv.total_amount}</td>
+                            <td className="py-3 text-right">
+                              {inv.status === 'paid' ? (
+                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide">
+                                  PAID
+                                </span>
+                              ) : (
+                                <form
+                                  action={async () => {
+                                    'use server';
+                                    await markInvoiceAsPaid(inv.id, customerId);
+                                  }}
+                                  className="inline-block"
+                                >
+                                  <button
+                                    type="submit"
+                                    title="Click to mark as Paid"
+                                    className="px-2 py-0.5 bg-red-50 hover:bg-emerald-50 text-red-700 hover:text-emerald-700 border border-red-200/80 hover:border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide transition cursor-pointer"
                                   >
-                                    <button
-                                      type="submit"
-                                      title="Click to mark as Paid"
-                                      className="px-2 py-0.5 bg-red-50 hover:bg-emerald-50 text-red-700 hover:text-emerald-700 border border-red-200/80 hover:border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide transition cursor-pointer"
-                                    >
-                                      UNPAID
-                                    </button>
-                                  </form>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-gray-400 text-xs italic text-center py-4">No statements cut for this profile yet.</p>
-                  )}
-                </section>
+                                    UNPAID
+                                  </button>
+                                </form>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-gray-400 text-xs italic text-center py-4">No statements cut for this profile yet.</p>
+                )}
+              </section>
 
-              </div>
             </div>
-
           </div>
         </main>
       </div>

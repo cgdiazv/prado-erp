@@ -98,7 +98,7 @@ export default function SignUpPage({ searchParams }: SignUpPageProps) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col selection:bg-emerald-500 selection:text-slate-950">
-      <PublicNavbar />
+      <PublicNavbar theme="light" />
 
       <main className="flex-1 flex items-center justify-center p-6 text-gray-900 bg-white">
         <div className="w-full max-w-md bg-white p-8 rounded-xl border border-gray-200 shadow-sm transition duration-150">
