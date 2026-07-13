@@ -49,11 +49,18 @@ type TranslationBundle = {
     buyIndividual: string;
     mostPopular: string;
     scaleTier: string;
+    growthOperations: string;
+    growthDescription: string;
+    buyGrowth: string;
+    enterpriseTier: string;
     enterpriseOperations: string;
     enterpriseDescription: string;
     feature4: string;
     feature5: string;
     feature6: string;
+    feature7: string;
+    feature8: string;
+    feature9: string;
     buyEnterprise: string;
   };
   demo: {

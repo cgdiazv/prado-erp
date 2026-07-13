@@ -5,7 +5,7 @@ import { usePathname, useSearchParams, useRouter, useParams } from 'next/navigat
 import { getTranslations } from '@/lib/translations';
 
 interface DashboardSidebarProps {
-  subscriptionStatus?: string; // 'trial' | 'individual' | 'enterprise'
+  subscriptionStatus?: string; // 'trial' | 'individual' | 'growth' | 'enterprise'
   locale?: string;
 }
 
@@ -20,8 +20,11 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: 
   // Check if mobile sidebar is open via URL parameters
   const isOpen = searchParams.get('sidebar') === 'open';
 
-  // Premium features are visible during trial OR with a full enterprise plan
-  const showPremiumFeatures = subscriptionStatus === 'trial' || subscriptionStatus === 'enterprise';
+  // Premium features are visible during trial OR with growth/enterprise plans
+  const showPremiumFeatures =
+    subscriptionStatus === 'trial' ||
+    subscriptionStatus === 'growth' ||
+    subscriptionStatus === 'enterprise';
 
   const linkStyle = (path: string) => {
     // Adjust the path for comparison to include the current language
@@ -92,7 +95,7 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: 
             {translations.dashboard.jobScheduling}
           </Link>
 
-          {/* PREMIUM CAPABILITIES: Available to Trial & Enterprise only */}
+          {/* PREMIUM CAPABILITIES: Available to Trial, Growth, and Enterprise */}
           {showPremiumFeatures && (
             <>
               <Link href="/dashboard/routing" onClick={closeSidebar} className={linkStyle('/dashboard/routing')}>

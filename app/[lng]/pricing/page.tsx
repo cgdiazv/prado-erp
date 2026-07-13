@@ -11,7 +11,7 @@ export default function PricingPage() {
   const locale = params?.lng ?? 'en';
   const translations = getTranslations(locale);
 
-  const handlePlanSelection = (planType: 'individual' | 'enterprise') => {
+  const handlePlanSelection = (planType: 'individual' | 'growth' | 'enterprise') => {
     // Intercepts anonymous checkout and forces registration step while preserving tier intent
     router.push(`/signup?plan=${planType}`);
   };
@@ -36,7 +36,7 @@ export default function PricingPage() {
         </header>
 
         {/* Pricing Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start max-w-4xl mx-auto">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start max-w-6xl mx-auto">
           
           {/* Individual Card */}
           <div className="bg-slate-900/40 border border-slate-800 p-6 md:p-8 rounded-2xl space-y-6 flex flex-col justify-between min-h-[380px]">
@@ -63,7 +63,7 @@ export default function PricingPage() {
             </button>
           </div>
 
-          {/* Enterprise Card */}
+          {/* Growth Card */}
           <div className="bg-slate-900/60 border-2 border-emerald-500/50 p-6 md:p-8 rounded-2xl space-y-6 flex flex-col justify-between min-h-[380px] relative">
             <span className="absolute -top-3 right-6 bg-emerald-500 text-slate-950 font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
               {translations.pricing.mostPopular}
@@ -71,6 +71,31 @@ export default function PricingPage() {
             <div className="space-y-4">
               <div>
                 <span className="text-xs font-bold text-emerald-400 tracking-widest uppercase">{translations.pricing.scaleTier}</span>
+                <h3 className="text-xl font-bold text-white mt-1">{translations.pricing.growthOperations}</h3>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                {translations.pricing.growthDescription}
+              </p>
+              <div className="pt-2">
+                <span className="text-4xl font-extrabold text-white font-mono">$59</span>
+                <span className="text-slate-500 text-xs font-semibold ml-2">{translations.pricing.monthly}</span>
+              </div>
+              <ul className="space-y-2.5 text-xs text-slate-300 pt-4 border-t border-slate-800/60">
+                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature4}</li>
+                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature5}</li>
+                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature6}</li>
+              </ul>
+            </div>
+            <button onClick={() => handlePlanSelection('growth')} className="w-full text-center text-xs font-bold bg-white hover:bg-slate-100 text-slate-950 py-3 rounded-xl transition shadow-lg shadow-emerald-500/5 cursor-pointer">
+              {translations.pricing.buyGrowth}
+            </button>
+          </div>
+
+          {/* Enterprise Card */}
+          <div className="bg-slate-900/40 border border-slate-800 p-6 md:p-8 rounded-2xl space-y-6 flex flex-col justify-between min-h-[380px]">
+            <div className="space-y-4">
+              <div>
+                <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">{translations.pricing.enterpriseTier}</span>
                 <h3 className="text-xl font-bold text-white mt-1">{translations.pricing.enterpriseOperations}</h3>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -81,12 +106,12 @@ export default function PricingPage() {
                 <span className="text-slate-500 text-xs font-semibold ml-2">{translations.pricing.monthly}</span>
               </div>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-4 border-t border-slate-800/60">
-                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature4}</li>
-                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature5}</li>
-                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature6}</li>
+                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature7}</li>
+                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature8}</li>
+                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature9}</li>
               </ul>
             </div>
-            <button onClick={() => handlePlanSelection('enterprise')} className="w-full text-center text-xs font-bold bg-white hover:bg-slate-100 text-slate-950 py-3 rounded-xl transition shadow-lg shadow-emerald-500/5 cursor-pointer">
+            <button onClick={() => handlePlanSelection('enterprise')} className="w-full text-center text-xs font-bold bg-slate-900 hover:bg-slate-850 text-slate-100 py-3 rounded-xl transition border border-slate-800 cursor-pointer">
               {translations.pricing.buyEnterprise}
             </button>
           </div>

@@ -10,6 +10,38 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
   const { lng } = await params;
   const translations = getTranslations(lng);
   const supabase = await createClient();
+  const industryCards = [
+    {
+      name: 'Landscaping',
+      image:
+        'https://images.unsplash.com/photo-1558904541-efa843a96f01?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      name: 'Construction',
+      image:
+        'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      name: 'Cleaning Services',
+      image:
+        'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      name: 'Carpentry',
+      image:
+        'https://images.unsplash.com/photo-1556912167-f556f1f39fdf?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      name: 'Roofing',
+      image:
+        'https://cdn.pixabay.com/photo/2016/11/29/03/53/house-1867187_1280.jpg',
+    },
+    {
+      name: 'HVAC Services',
+      image:
+        'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=1400&q=80',
+    },
+  ];
 
   // 1. If already authenticated, fetch organization context to auto-route them in
   const { data: { user } } = await supabase.auth.getUser();
@@ -141,6 +173,43 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
                   {translations.home.featureCrmDescription}
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Industries Section */}
+        <section className="border-t border-slate-900 bg-slate-950/40 py-24 px-6 relative overflow-hidden w-full">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+                Industries that grow with <span className="text-emerald-400">Prado</span>
+              </h2>
+              <p className="mt-3 text-sm md:text-base text-slate-400 max-w-2xl mx-auto">
+                Purpose-built workflows for teams in the field, from recurring jobs to invoice collection.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {industryCards.map((industry) => (
+                <article
+                  key={industry.name}
+                  className="group rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden shadow-lg shadow-slate-950/40"
+                >
+                  <div className="relative h-44 overflow-hidden">
+                    <img
+                      src={industry.image}
+                      alt={industry.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 rounded-t-2xl bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-transparent"></div>
+                  </div>
+                  <div className="p-5 text-left">
+                    <h3 className="text-lg font-bold text-white">{industry.name}</h3>
+                    <p className="mt-2 text-xs text-slate-400">Dispatch, scheduling, and billing in one operating view.</p>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
         </section>

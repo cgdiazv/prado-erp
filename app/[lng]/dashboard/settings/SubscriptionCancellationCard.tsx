@@ -15,6 +15,8 @@ function formatSubscriptionStatus(status: string | null, locale: string = 'en') 
   switch (status) {
     case 'individual':
       return 'Individual Plan';
+    case 'growth':
+      return 'Growth Plan';
     case 'enterprise':
       return 'Enterprise Plan';
     case 'trial':
@@ -31,7 +33,10 @@ export default function SubscriptionCancellationCard({ currentSubscriptionStatus
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const subscriptionLabel = formatSubscriptionStatus(currentSubscriptionStatus, locale);
-  const canCancel = currentSubscriptionStatus === 'individual' || currentSubscriptionStatus === 'enterprise';
+  const canCancel =
+    currentSubscriptionStatus === 'individual' ||
+    currentSubscriptionStatus === 'growth' ||
+    currentSubscriptionStatus === 'enterprise';
 
   async function handleCancel() {
     const confirmed = window.confirm(

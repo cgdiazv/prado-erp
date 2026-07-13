@@ -29,7 +29,7 @@ export async function signup(formData: FormData) {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const companyName = formData.get('companyName') as string;
-    const intendedPlan = formData.get('intendedPlan') as string; // 'trial' | 'individual' | 'enterprise'
+    const intendedPlan = formData.get('intendedPlan') as string; // 'trial' | 'individual' | 'growth' | 'enterprise'
 
     if (!email || !password || !companyName) {
       return { error: 'All registration fields are required.' };
@@ -74,6 +74,10 @@ export async function signup(formData: FormData) {
 
     if (intendedPlan === 'individual') {
       return { stripeUrl: `https://pay.indevasa.com/b/00wdR85i76E4dXg2Yl4Ni04?${queryParams}` };
+    }
+
+    if (intendedPlan === 'growth') {
+      return { stripeUrl: `https://pay.indevasa.com/b/9B614m39Z7I84mG6ax4Ni06?${queryParams}` };
     }
 
     if (intendedPlan === 'enterprise') {

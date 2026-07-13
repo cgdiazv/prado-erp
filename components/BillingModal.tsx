@@ -29,6 +29,7 @@ export default function BillingModal({ userEmail = '', orgId = '' }: BillingModa
   // Build secure URLs with parameters pre-mapped
   const queryParams = `prefilled_email=${encodeURIComponent(userEmail)}&client_reference_id=${orgId}`;
   const individualUrl = `https://pay.indevasa.com/b/00wdR85i76E4dXg2Yl4Ni04?${queryParams}`;
+  const growthUrl = `https://pay.indevasa.com/b/9B614m39Z7I84mG6ax4Ni06?${queryParams}`;
   const enterpriseUrl = `https://pay.indevasa.com/b/eVq4gy5i73rS5qKdCZ4Ni05?${queryParams}`;
 
   const handleClose = () => {
@@ -78,10 +79,18 @@ export default function BillingModal({ userEmail = '', orgId = '' }: BillingModa
             Activate Individual Plan — $29/mo
           </a>
           <a 
+            href={growthUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-700/10 text-center"
+          >
+            Activate Growth Plan — $59/mo
+          </a>
+          <a 
             href={enterpriseUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full bg-emerald-600 hover:bg-emerald-50 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-600/10 text-center"
+            className="block w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-600/10 text-center"
           >
             Activate Enterprise Operations — $99/mo
           </a>

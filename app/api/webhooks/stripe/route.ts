@@ -59,6 +59,9 @@ export async function POST(request: Request) {
 
       // Automatically determine tier names depending on checkout pricing lines
       let assignedStatus = 'individual';
+      if (productNames.toLowerCase().includes('growth')) {
+        assignedStatus = 'growth';
+      }
       if (productNames.toLowerCase().includes('enterprise')) {
         assignedStatus = 'enterprise';
       }
@@ -66,7 +69,7 @@ export async function POST(request: Request) {
       // 4. Update Database: Activate the organization's subscription status in Supabase
       const { error: dbError } = await supabaseAdmin
         .from('organizations')
-        .update({ subscription_status: assignedStatus }) // Upgrades to 'individual' or 'enterprise'
+        .update({ subscription_status: assignedStatus }) // Upgrades to 'individual', 'growth', or 'enterprise'
         .eq('id', organizationId);
 
       if (dbError) throw dbError;
