@@ -31,6 +31,72 @@ export async function updatePassword(formData: FormData) {
   return { success: true };
 }
 
+export async function createService(name: string) {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage services.' };
+
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (!org) return { error: 'Workspace not found.' };
+
+    const { data, error } = await supabase
+      .from('services')
+      .insert([
+        {
+          organization_id: org.id,
+          name,
+          base_price: 0
+        }
+      ])
+      .select('id, name, base_price')
+      .single();
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard/settings');
+    return { success: true, service: data };
+  } catch (error: unknown) {
+    return { error: (error as Error)?.message || 'Failed to create service.' };
+  }
+}
+
+export async function deleteService(serviceId: string) {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage services.' };
+
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (!org) return { error: 'Workspace not found.' };
+
+    const { error } = await supabase
+      .from('services')
+      .delete()
+      .eq('id', serviceId)
+      .eq('organization_id', org.id);
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard/settings');
+    return { success: true };
+  } catch (error: unknown) {
+    return { error: (error as Error)?.message || 'Failed to delete service.' };
+  }
+}
+
 export async function cancelSubscription() {
   const supabase = await createClient();
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);

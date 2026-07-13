@@ -4,6 +4,7 @@ import Link from 'next/link';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import PasswordForm from '@/app/dashboard/settings/PasswordForm';
+import ServicesPanel from '@/app/dashboard/settings/ServicesPanel';
 import ExpenseCategoriesPanel from '@/app/dashboard/settings/ExpenseCategoriesPanel';
 import SubscriptionCancellationCard from '@/app/dashboard/settings/SubscriptionCancellationCard';
 
@@ -26,6 +27,12 @@ export default async function SettingsPage() {
   if (!org) {
     redirect('/signup');
   }
+
+  const { data: services } = await supabase
+    .from('services')
+    .select('id, name, base_price')
+    .eq('organization_id', org.id)
+    .order('name', { ascending: true });
 
   const initial = org.name ? org.name.charAt(0) : "C";
 
@@ -93,6 +100,8 @@ export default async function SettingsPage() {
 
               {/* NEW MODULE SECTION: Change Credentials Security Fields */}
               <PasswordForm />
+
+              <ServicesPanel initialServices={services || []} />
 
               <ExpenseCategoriesPanel />
 

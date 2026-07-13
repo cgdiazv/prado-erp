@@ -17,12 +17,19 @@ interface Customer {
   company_name: string | null;
 }
 
-interface ScheduleJobFormProps {
-  properties: Property[] | null;
-  customers: Customer[] | null; // New prop to pass down customer list
+interface Service {
+  id: string;
+  name: string;
+  base_price: number | null;
 }
 
-export default function ScheduleJobForm({ properties, customers }: ScheduleJobFormProps) {
+interface ScheduleJobFormProps {
+  properties: Property[] | null;
+  customers: Customer[] | null;
+  services: Service[] | null;
+}
+
+export default function ScheduleJobForm({ properties, customers, services }: ScheduleJobFormProps) {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
 
@@ -90,9 +97,17 @@ export default function ScheduleJobForm({ properties, customers }: ScheduleJobFo
         {/* 3. DATE AND LOGISTICS INPUTS */}
         <input type="date" name="scheduledDate" required className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700" />
         
-        <select name="jobType" required className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none text-gray-700 cursor-pointer">
-          <option value="Mowing">Standard Lawn Mowing</option>
-          <option value="Trimming">Hedge & Tree Trimming</option>
+        <select
+          name="jobType"
+          required
+          className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none cursor-pointer text-gray-700"
+        >
+          <option value="">-- Select Service --</option>
+          {services?.map((service) => (
+            <option key={service.id} value={service.name}>
+              {service.name}
+            </option>
+          ))}
         </select>
         
         <input type="number" step="0.01" name="costAmount" placeholder="Price ($)" required className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700" />
