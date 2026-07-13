@@ -12,7 +12,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 3. Initialize Supabase Service Role Client 
-// (Crucial: Using the Service Role key bypasses Row Level Security rules because the webhook is an unauthenticated third-party actor)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -40,12 +39,12 @@ export async function POST(request: Request) {
     const session = event.data.object as Stripe.Checkout.Session;
 
     try {
-      // Pull target organization identifier passed securely out of Stripe metadata parameters
-      const organizationId = session.metadata?.organizationId;
+      // FIXED: Pull target organization identifier from client_reference_id matching your checkout links
+      const organizationId = session.client_reference_id || session.metadata?.organizationId;
 
       if (!organizationId) {
-        console.error('⚠️ Webhook received session without organizationId in metadata.');
-        return NextResponse.json({ error: 'Missing organizationId metadata' }, { status: 400 });
+        console.error('⚠️ Webhook received session without a valid organization tracker identifier.');
+        return NextResponse.json({ error: 'Missing organization reference ID context' }, { status: 400 });
       }
 
       let productNames = 'Prado Operating Plan';
@@ -58,14 +57,20 @@ export async function POST(request: Request) {
         console.log('ℹ️ Line items could not be parsed, utilizing default labels.');
       }
 
+      // Automatically determine tier names depending on checkout pricing lines
+      let assignedStatus = 'individual';
+      if (productNames.toLowerCase().includes('enterprise')) {
+        assignedStatus = 'enterprise';
+      }
+
       // 4. Update Database: Activate the organization's subscription status in Supabase
       const { error: dbError } = await supabaseAdmin
         .from('organizations')
-        .update({ subscription_status: 'active' })
+        .update({ subscription_status: assignedStatus }) // Upgrades to 'individual' or 'enterprise'
         .eq('id', organizationId);
 
       if (dbError) throw dbError;
-      console.log(`Supabase Synced: ✅ Organization ${organizationId} successfully upgraded to paid status.`);
+      console.log(`Supabase Synced: ✅ Organization ${organizationId} successfully upgraded to (${assignedStatus}) status.`);
 
       // Send Custom Branding Receipt HTML Email via Resend
       const customerName = session.customer_details?.name || 'Valued Operator';
@@ -75,7 +80,7 @@ export async function POST(request: Request) {
 
       if (customerEmail) {
         await resend.emails.send({
-          from: 'Prado Systems <billing@pradosa.com>',
+          from: 'Prado <billing@pradosa.com>',
           to: customerEmail,
           subject: `Your Prado Receipt Summary`,
           html: `

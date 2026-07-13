@@ -1,16 +1,14 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import Footer from '@/components/Footer';
 
 export default function PricingPage() {
-  const handleStripeCheckout = (planType: 'individual' | 'enterprise') => {
-    if (planType === 'individual') {
-      // Opens first tier payment portal in a new tab securely
-      window.open('https://pay.indevasa.com/b/00wdR85i76E4dXg2Yl4Ni04', '_blank', 'noopener,noreferrer');
-    } else {
-      // Opens second tier payment portal in a new tab securely
-      window.open('https://pay.indevasa.com/b/eVq4gy5i73rS5qKdCZ4Ni05', '_blank', 'noopener,noreferrer');
-    }
+  const router = useRouter();
+
+  const handlePlanSelection = (planType: 'individual' | 'enterprise') => {
+    // Intercepts anonymous checkout and forces registration step while preserving tier intent
+    router.push(`/signup?plan=${planType}`);
   };
 
   return (
@@ -72,7 +70,7 @@ export default function PricingPage() {
                 <li className="flex items-center gap-2 text-slate-400"><span className="text-emerald-400 font-bold">✓</span> Invoicing & Ledger Statements</li>
               </ul>
             </div>
-            <button onClick={() => handleStripeCheckout('individual')} className="w-full text-center text-xs font-bold bg-slate-900 hover:bg-slate-850 text-slate-100 py-3 rounded-xl transition border border-slate-800 cursor-pointer">
+            <button onClick={() => handlePlanSelection('individual')} className="w-full text-center text-xs font-bold bg-slate-900 hover:bg-slate-850 text-slate-100 py-3 rounded-xl transition border border-slate-800 cursor-pointer">
               Buy Individual Plan
             </button>
           </div>
@@ -100,7 +98,7 @@ export default function PricingPage() {
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> Real-Time Multi-Tenant Expense Auditing</li>
               </ul>
             </div>
-            <button onClick={() => handleStripeCheckout('enterprise')} className="w-full text-center text-xs font-bold bg-white hover:bg-slate-100 text-slate-950 py-3 rounded-xl transition shadow-lg shadow-emerald-500/5 cursor-pointer">
+            <button onClick={() => handlePlanSelection('enterprise')} className="w-full text-center text-xs font-bold bg-white hover:bg-slate-100 text-slate-950 py-3 rounded-xl transition shadow-lg shadow-emerald-500/5 cursor-pointer">
               Buy Enterprise Plan
             </button>
           </div>
