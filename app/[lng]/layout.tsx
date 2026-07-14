@@ -32,6 +32,19 @@ export default function LngLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-1005758859"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'AW-1005758859');
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
         {children}
       </body>
