@@ -24,6 +24,15 @@ type TranslationBundle = {
     featureFinancialsDescription: string;
     featureCrmTitle: string;
     featureCrmDescription: string;
+    industriesTitlePrefix: string;
+    industriesSubtitle: string;
+    industryLandscaping: string;
+    industryConstruction: string;
+    industryCleaning: string;
+    industryCarpentry: string;
+    industryRoofing: string;
+    industryHvac: string;
+    industryCardDescription: string;
     ctaTitle: string;
     ctaDescription: string;
     ctaButton: string;

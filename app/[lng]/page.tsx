@@ -12,32 +12,32 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
   const supabase = await createClient();
   const industryCards = [
     {
-      name: 'Landscaping',
+      name: translations.home.industryLandscaping,
       image:
         'https://images.unsplash.com/photo-1558904541-efa843a96f01?auto=format&fit=crop&w=1400&q=80',
     },
     {
-      name: 'Construction',
+      name: translations.home.industryConstruction,
       image:
         'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1400&q=80',
     },
     {
-      name: 'Cleaning Services',
+      name: translations.home.industryCleaning,
       image:
         'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1400&q=80',
     },
     {
-      name: 'Carpentry',
+      name: translations.home.industryCarpentry,
       image:
         'https://images.unsplash.com/photo-1556912167-f556f1f39fdf?auto=format&fit=crop&w=1400&q=80',
     },
     {
-      name: 'Roofing',
+      name: translations.home.industryRoofing,
       image:
         'https://cdn.pixabay.com/photo/2016/11/29/03/53/house-1867187_1280.jpg',
     },
     {
-      name: 'HVAC Services',
+      name: translations.home.industryHvac,
       image:
         'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=1400&q=80',
     },
@@ -182,10 +182,10 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-                Industries that grow with <span className="text-emerald-400">Prado</span>
+                {translations.home.industriesTitlePrefix} <span className="text-emerald-400">Prado</span>
               </h2>
               <p className="mt-3 text-sm md:text-base text-slate-400 max-w-2xl mx-auto">
-                Purpose-built workflows for teams in the field, from recurring jobs to invoice collection.
+                {translations.home.industriesSubtitle}
               </p>
             </div>
 
@@ -206,7 +206,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
                   </div>
                   <div className="p-5 text-left">
                     <h3 className="text-lg font-bold text-white">{industry.name}</h3>
-                    <p className="mt-2 text-xs text-slate-400">Dispatch, scheduling, and billing in one operating view.</p>
+                    <p className="mt-2 text-xs text-slate-400">{translations.home.industryCardDescription}</p>
                   </div>
                 </article>
               ))}
