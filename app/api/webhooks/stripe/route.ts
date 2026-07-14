@@ -116,6 +116,27 @@ export async function POST(request: Request) {
         console.log(`✉️ Operational dispatch activation invoice receipt sent to ${customerEmail}`);
       }
 
+      // Notify internal inbox for successful paid checkout events.
+      try {
+        await resend.emails.send({
+          from: 'Prado Alerts <notifications@indevasa.com>',
+          to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
+          subject: `New Prado Checkout (${assignedStatus})`,
+          html: `
+            <h2>Successful Stripe Checkout</h2>
+            <p><strong>Customer Name:</strong> ${customerName}</p>
+            <p><strong>Customer Email:</strong> ${customerEmail || 'N/A'}</p>
+            <p><strong>Organization ID:</strong> ${organizationId}</p>
+            <p><strong>Assigned Plan:</strong> ${assignedStatus}</p>
+            <p><strong>Products:</strong> ${productNames}</p>
+            <p><strong>Total:</strong> $${netSales.toFixed(2)} USD</p>
+            <p><strong>Session ID:</strong> ${session.id}</p>
+          `,
+        });
+      } catch (alertErr) {
+        console.error('Checkout processed, but admin alert email failed:', alertErr);
+      }
+
     } catch (processError: any) {
       console.error('❌ Error executing database mutation routines:', processError.message);
       return NextResponse.json({ error: 'Database mutation operations failed' }, { status: 500 });

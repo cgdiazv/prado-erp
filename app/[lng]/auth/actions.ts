@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient, createAdminClient } from '@/lib/supabaseServer'; 
+import { Resend } from 'resend';
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string;
@@ -67,6 +68,30 @@ export async function signup(formData: FormData) {
     if (orgError || !orgData) {
       console.error("Supabase Database Org Error (Admin Override):", orgError?.message);
       return { error: orgError?.message || 'Failed to create workspace profile.' };
+    }
+
+    // Notify internal inbox for both trial and paid-intent registrations.
+    try {
+      if (process.env.RESEND_API_KEY) {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        await resend.emails.send({
+          from: 'Prado Alerts <notifications@indevasa.com>',
+          to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
+          subject: `New Prado Registration (${intendedPlan || 'trial'})`,
+          html: `
+            <h2>New User Registration</h2>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Company:</strong> ${companyName}</p>
+            <p><strong>Intended Plan:</strong> ${intendedPlan || 'trial'}</p>
+            <p><strong>Organization ID:</strong> ${orgData.id}</p>
+            <p><strong>Created At:</strong> ${new Date().toISOString()}</p>
+          `,
+        });
+      } else {
+        console.warn('Registration admin alert skipped: RESEND_API_KEY is not configured.');
+      }
+    } catch (alertErr) {
+      console.error('Registration created, but admin alert email failed:', alertErr);
     }
 
     // 3. Conditional Branch Routing: Instead of throwing redirects, return target destination instructions
