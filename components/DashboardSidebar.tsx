@@ -130,6 +130,20 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: 
               </svg>
               {translations.dashboard.systemSettings}
             </Link>
+
+            <Link href="/dashboard/import-export" onClick={closeSidebar} className={linkStyle('/dashboard/import-export')}>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3m-4.5 6L12 4.5 16.5 9" />
+              </svg>
+              Import / Export
+            </Link>
+
+            <Link href="/dashboard/print-reports" onClick={closeSidebar} className={linkStyle('/dashboard/print-reports')}>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V3.75A.75.75 0 016.75 3h10.5a.75.75 0 01.75.75V9M6 18h12m-12 0H5.25A2.25 2.25 0 013 15.75v-4.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v4.5A2.25 2.25 0 0118.75 18H18m-12 0v2.25c0 .414.336.75.75.75h10.5a.75.75 0 00.75-.75V18m-9 0h6" />
+              </svg>
+              Print Reports
+            </Link>
           </div>
         </div>
       </aside>
