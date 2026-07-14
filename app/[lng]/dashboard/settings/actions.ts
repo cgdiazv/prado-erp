@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache';
 import Stripe from 'stripe';
 import { Resend } from 'resend';
 
+const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
+
 export async function updatePassword(formData: FormData) {
   const password = formData.get('password') as string;
   const confirmPassword = formData.get('confirmPassword') as string;
@@ -176,8 +178,27 @@ export async function updateWorkspaceIdentity(formData: FormData) {
   return { success: true, logoUrl: nextLogoUrl };
 }
 
-export async function createService(name: string) {
+export async function createService({
+  name,
+  description,
+  basePrice,
+}: {
+  name: string;
+  description?: string;
+  basePrice: number;
+}) {
   try {
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    const normalizedDescription = description?.trim() || null;
+
+    if (!normalizedName) {
+      return { error: 'Service name is required.' };
+    }
+
+    if (!Number.isFinite(basePrice) || basePrice < 0) {
+      return { error: 'Base price must be a valid non-negative number.' };
+    }
+
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -191,16 +212,51 @@ export async function createService(name: string) {
 
     if (!org) return { error: 'Workspace not found.' };
 
+    const archivedName = `${ARCHIVED_SERVICE_PREFIX}${normalizedName}`;
+    const { data: existingService, error: existingServiceError } = await supabase
+      .from('services')
+      .select('id, name')
+      .eq('organization_id', org.id)
+      .in('name', [normalizedName, archivedName])
+      .limit(1)
+      .maybeSingle();
+
+    if (existingServiceError) return { error: existingServiceError.message };
+
+    if (existingService?.name === normalizedName) {
+      return { error: 'That service already exists.' };
+    }
+
+    if (existingService?.name === archivedName) {
+      const { data: restoredService, error: restoreError } = await supabase
+        .from('services')
+        .update({
+          name: normalizedName,
+          description: normalizedDescription,
+          base_price: basePrice,
+        })
+        .eq('id', existingService.id)
+        .eq('organization_id', org.id)
+        .select('id, name, description, base_price')
+        .single();
+
+      if (restoreError) return { error: restoreError.message };
+
+      revalidatePath('/dashboard/settings');
+      return { success: true, service: restoredService };
+    }
+
     const { data, error } = await supabase
       .from('services')
       .insert([
         {
           organization_id: org.id,
-          name,
-          base_price: 0
+          name: normalizedName,
+          description: normalizedDescription,
+          base_price: basePrice,
         }
       ])
-      .select('id, name, base_price')
+      .select('id, name, description, base_price')
       .single();
 
     if (error) return { error: error.message };
@@ -227,9 +283,24 @@ export async function deleteService(serviceId: string) {
 
     if (!org) return { error: 'Workspace not found.' };
 
+    const { data: existingService, error: existingServiceError } = await supabase
+      .from('services')
+      .select('id, name')
+      .eq('id', serviceId)
+      .eq('organization_id', org.id)
+      .single();
+
+    if (existingServiceError || !existingService) {
+      return { error: existingServiceError?.message || 'Service not found.' };
+    }
+
+    const archivedName = existingService.name.startsWith(ARCHIVED_SERVICE_PREFIX)
+      ? existingService.name
+      : `${ARCHIVED_SERVICE_PREFIX}${existingService.name}`;
+
     const { error } = await supabase
       .from('services')
-      .delete()
+      .update({ name: archivedName })
       .eq('id', serviceId)
       .eq('organization_id', org.id);
 
@@ -244,6 +315,13 @@ export async function deleteService(serviceId: string) {
 
 export async function createTruck(name: string, plateNumber: string | null) {
   try {
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    const normalizedPlateNumber = plateNumber?.trim().replace(/\s+/g, ' ') || null;
+
+    if (!normalizedName) {
+      return { error: 'Truck name is required.' };
+    }
+
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -257,13 +335,48 @@ export async function createTruck(name: string, plateNumber: string | null) {
 
     if (!org) return { error: 'Workspace not found.' };
 
+    const { data: existingTruck, error: existingTruckError } = await supabase
+      .from('trucks')
+      .select('id, is_active')
+      .eq('organization_id', org.id)
+      .eq('name', normalizedName)
+      .eq('plate_number', normalizedPlateNumber)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingTruckError) return { error: existingTruckError.message };
+
+    if (existingTruck?.is_active) {
+      return { error: 'That truck already exists.' };
+    }
+
+    if (existingTruck && existingTruck.is_active === false) {
+      const { data: restoredTruck, error: restoreError } = await supabase
+        .from('trucks')
+        .update({
+          name: normalizedName,
+          plate_number: normalizedPlateNumber,
+          is_active: true,
+          status: 'active',
+        })
+        .eq('id', existingTruck.id)
+        .eq('organization_id', org.id)
+        .select('id, name, plate_number, is_active, status')
+        .single();
+
+      if (restoreError) return { error: restoreError.message };
+
+      revalidatePath('/dashboard/settings');
+      return { success: true, truck: restoredTruck };
+    }
+
     const { data, error } = await supabase
       .from('trucks')
       .insert([
         {
           organization_id: org.id,
-          name,
-          plate_number: plateNumber,
+          name: normalizedName,
+          plate_number: normalizedPlateNumber,
           is_active: true,
           status: 'active'
         }

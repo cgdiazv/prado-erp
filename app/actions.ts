@@ -7,6 +7,8 @@ import { render } from '@react-email/render';
 import EstimateEmail from '@/emails/estimate-email';
 import InvoiceEmail from '@/emails/invoice-email';
 
+const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
+
 export async function createJob(formData: FormData) {
   const propertyId = formData.get('propertyId') as string;
   const scheduledDate = formData.get('scheduledDate') as string;
@@ -804,6 +806,7 @@ export async function getEstimatesDashboardData() {
       .from('services')
       .select('id, name, base_price')
       .eq('organization_id', org.id)
+      .not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`)
       .order('name', { ascending: true });
 
     if (servicesError) {

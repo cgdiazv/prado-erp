@@ -19,11 +19,14 @@ interface TrucksPanelProps {
 
 export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPanelProps) {
   const translations = getTranslations(locale);
+  const isEs = locale.toLowerCase().startsWith('es');
   const [trucks, setTrucks] = useState(initialTrucks);
+  const [selectedTruckId, setSelectedTruckId] = useState(initialTrucks[0]?.id || '');
   const [draftName, setDraftName] = useState('');
   const [draftPlateNumber, setDraftPlateNumber] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const selectedTruck = trucks.find((truck) => truck.id === selectedTruckId) || null;
 
   const handleAddTruck = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -33,6 +36,17 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
 
     if (!normalizedName) {
       setStatusMessage('Enter a truck name first.');
+      return;
+    }
+
+    const isDuplicate = trucks.some(
+      (truck) =>
+        truck.name.toLowerCase() === normalizedName.toLowerCase() &&
+        (truck.plate_number || '').toLowerCase() === normalizedPlate.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      setStatusMessage(isEs ? 'Ese camion ya existe.' : 'That truck already exists.');
       return;
     }
 
@@ -50,6 +64,7 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
 
     if (response?.truck) {
       setTrucks((currentTrucks) => [response.truck, ...currentTrucks]);
+      setSelectedTruckId(response.truck.id);
       setDraftName('');
       setDraftPlateNumber('');
       setStatusMessage(`Added "${normalizedName}".`);
@@ -69,8 +84,16 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
       return;
     }
 
-    setTrucks((currentTrucks) => currentTrucks.filter((truck) => truck.id !== truckId));
-    setStatusMessage(`Deactivated "${truckName}".`);
+    const nextTrucks = trucks.filter((truck) => truck.id !== truckId);
+    setTrucks(nextTrucks);
+    setSelectedTruckId((currentSelected) => {
+      if (currentSelected !== truckId) {
+        return currentSelected;
+      }
+
+      return nextTrucks[0]?.id || '';
+    });
+    setStatusMessage(isEs ? `Camion archivado: "${truckName}".` : `Archived "${truckName}".`);
   };
 
   return (
@@ -106,24 +129,58 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
 
       {statusMessage ? <p className="text-xs text-slate-500">{statusMessage}</p> : null}
 
-      <div className="flex flex-wrap gap-2">
-        {trucks.map((truck) => (
-          <div
-            key={truck.id}
-            className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700"
-          >
-            <span>{truck.name}{truck.plate_number ? ` • ${truck.plate_number}` : ''}</span>
-            <button
-              type="button"
-              onClick={() => handleDeactivateTruck(truck.id, truck.name)}
-              disabled={loading}
-              className="text-xs font-semibold text-red-600 transition hover:text-red-700 disabled:text-gray-400"
-              aria-label={`Deactivate ${truck.name}`}
+      <div className="space-y-3 rounded-xl border border-gray-200 bg-slate-50 p-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+          <div className="flex-1 space-y-1">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {isEs ? 'Camiones guardados' : 'Saved trucks'}
+            </label>
+            <select
+              value={selectedTruckId}
+              onChange={(event) => setSelectedTruckId(event.target.value)}
+              disabled={trucks.length === 0}
+              className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-slate-900 outline-none disabled:bg-gray-100 disabled:text-gray-400"
             >
-              ×
-            </button>
+              {trucks.length === 0 ? (
+                <option value="">{isEs ? 'No hay camiones guardados' : 'No saved trucks'}</option>
+              ) : (
+                trucks.map((truck) => (
+                  <option key={truck.id} value={truck.id}>
+                    {truck.name}{truck.plate_number ? ` • ${truck.plate_number}` : ''}
+                  </option>
+                ))
+              )}
+            </select>
           </div>
-        ))}
+          <button
+            type="button"
+            onClick={() => selectedTruck && handleDeactivateTruck(selectedTruck.id, selectedTruck.name)}
+            disabled={loading || !selectedTruck}
+            className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
+          >
+            {isEs ? 'Archivar camion' : 'Archive truck'}
+          </button>
+        </div>
+
+        {selectedTruck ? (
+          <div className="space-y-1 text-sm text-slate-700">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+              <span className="font-semibold text-slate-900">{selectedTruck.name}</span>
+              {selectedTruck.plate_number ? (
+                <span className="text-xs font-semibold text-slate-500">{selectedTruck.plate_number}</span>
+              ) : null}
+            </div>
+            <p className="text-xs text-slate-500">
+              {selectedTruck.status === 'active'
+                ? isEs
+                  ? 'Disponible para programacion y rutas.'
+                  : 'Available for scheduling and routing.'
+                : isEs
+                  ? 'Camion archivado.'
+                  : 'Truck archived.'}
+            </p>
+          </div>
+        ) : null}
       </div>
     </div>
   );

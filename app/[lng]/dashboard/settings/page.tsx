@@ -11,6 +11,8 @@ import SubscriptionCancellationCard from './SubscriptionCancellationCard';
 import WorkspaceIdentityForm from './WorkspaceIdentityForm';
 import { getTranslations } from '@/lib/translations';
 
+const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
+
 export default async function SettingsPage({
   params,
 }: {
@@ -66,14 +68,16 @@ export default async function SettingsPage({
 
   const { data: services } = await supabase
     .from('services')
-    .select('id, name, base_price')
+    .select('id, name, description, base_price')
     .eq('organization_id', org.id)
+    .not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`)
     .order('name', { ascending: true });
 
   const { data: trucks } = await supabase
     .from('trucks')
     .select('id, name, plate_number, is_active, status')
     .eq('organization_id', org.id)
+    .eq('is_active', true)
     .order('name', { ascending: true });
 
   const initial = org.name ? org.name.charAt(0) : "C";
@@ -109,10 +113,8 @@ export default async function SettingsPage({
               </Link>
             </div>
 
-            {/* Main Configuration Card Module */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-xs divide-y divide-gray-100">
-              
-              {/* Module Section 1: Business Profile Information */}
+            {/* Module Section 1: Business Profile Information */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
               <WorkspaceIdentityForm
                 companyName={org.name || ''}
                 systemEmail={user.email || ''}
@@ -125,18 +127,32 @@ export default async function SettingsPage({
                 initialZipCode={normalizedZipCode}
                 locale={locale}
               />
+            </div>
 
-              {/* NEW MODULE SECTION: Change Credentials Security Fields */}
+            {/* NEW MODULE SECTION: Change Credentials Security Fields */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
               <PasswordForm locale={locale} />
+            </div>
 
+            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
               <ServicesPanel initialServices={services || []} locale={locale} />
+            </div>
 
-              {!isIndividualAccount && <TrucksPanel initialTrucks={trucks || []} locale={locale} />}
+            {!isIndividualAccount && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                <TrucksPanel initialTrucks={trucks || []} locale={locale} />
+              </div>
+            )}
 
-              {!isIndividualAccount && <ExpenseCategoriesPanel locale={locale} />}
+            {!isIndividualAccount && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                <ExpenseCategoriesPanel locale={locale} />
+              </div>
+            )}
 
-              {!isIndividualAccount && (
-                /* Module Section 2: Fleet & Routing Optimization Automation Rules */
+            {!isIndividualAccount && (
+              /* Module Section 2: Fleet & Routing Optimization Automation Rules */
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                 <div className="p-6 md:p-8 space-y-6">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{translations.dashboard.dispatchSettings}</h3>
@@ -158,11 +174,15 @@ export default async function SettingsPage({
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
+            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
               <SubscriptionCancellationCard currentSubscriptionStatus={org.subscription_status} locale={locale} />
+            </div>
 
-              {/* Module Section 3: Secure Signout Actions */}
+            {/* Module Section 3: Secure Signout Actions */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
               <div className="p-6 md:p-8 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{translations.dashboard.sessionSecurity}</h3>
@@ -178,7 +198,6 @@ export default async function SettingsPage({
                   </button>
                 </form>
               </div>
-
             </div>
 
           </div>

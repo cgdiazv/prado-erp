@@ -471,7 +471,6 @@ export default function EstimatesPage() {
     if (convertRes.error) {
       alert(`${t.approveConvertError} ${convertRes.error}`);
     } else {
-      alert(t.approveConvertSuccess);
       setConversionEstimate(null);
       setScheduledDate('');
       setSelectedTruckId('');

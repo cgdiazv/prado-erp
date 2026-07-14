@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter, useParams } from 'next/navigation';
+import SupportTicketForm from '@/components/SupportTicketForm';
 import { getTranslations } from '@/lib/translations';
 
 interface DashboardSidebarProps {
@@ -16,6 +18,7 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: 
   const params = useParams();
   const lng = params.lng;
   const translations = getTranslations(locale);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
   
   // Check if mobile sidebar is open via URL parameters
   const isOpen = searchParams.get('sidebar') === 'open';
@@ -52,6 +55,11 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: 
     params.delete('sidebar');
     const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
     router.replace(newUrl, { scroll: false });
+  };
+
+  const openSupportModal = () => {
+    setIsSupportOpen(true);
+    closeSidebar();
   };
 
   return (
@@ -146,7 +154,36 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: 
             </Link>
           </div>
         </div>
+
+        <div className="pt-4 mt-4 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={openSupportModal}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm transition rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm0 0H12m3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm-9 8.625h9c1.036 0 1.875-.84 1.875-1.875V6.75c0-1.035-.84-1.875-1.875-1.875h-9c-1.035 0-1.875.84-1.875 1.875V16.5c0 1.035.84 1.875 1.875 1.875Z" />
+            </svg>
+            {translations.footer.support}
+          </button>
+        </div>
       </aside>
+
+      {isSupportOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-2xl">
+            <button
+              type="button"
+              onClick={() => setIsSupportOpen(false)}
+              className="absolute right-3 top-3 z-10 rounded-full bg-white/90 px-2.5 py-1 text-lg leading-none text-slate-500 transition hover:text-slate-900"
+              aria-label="Close support form"
+            >
+              ×
+            </button>
+            <SupportTicketForm locale={locale} theme="light" />
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
