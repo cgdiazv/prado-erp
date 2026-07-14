@@ -683,6 +683,14 @@ export async function sendEstimateByEmail(estimateId: string) {
       data: { user },
     } = await supabase.auth.getUser();
 
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('owner_id', user?.id)
+      .single();
+
+    const organizationName = org?.name?.trim() || 'Prado ERP';
+
     // 1. Fetch Estimate and related Customer data
     const { data: estimate, error: estimateError } = await supabase
       .from('estimates')
@@ -710,7 +718,8 @@ export async function sendEstimateByEmail(estimateId: string) {
 
     // 2. Send email using Resend
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const fromAddress = process.env.RESEND_FROM_EMAIL || 'Prado ERP <notifications@indevasa.com>';
+    const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+    const fromAddress = `${organizationName} <${fromEmailAddress}>`;
     const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
     const emailHtml = await render(
       EstimateEmail({
@@ -723,7 +732,7 @@ export async function sendEstimateByEmail(estimateId: string) {
       from: fromAddress,
       to: [customer.email],
       replyTo: replyToAddress,
-      subject: `Your Estimate: ${estimate.title}`,
+      subject: `${organizationName} Estimate: ${estimate.title}`,
       html: emailHtml,
     });
 
