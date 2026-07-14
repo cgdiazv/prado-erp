@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import Footer from '@/components/Footer';
 import Script from 'next/script';
 import PublicNavbar from '@/components/PublicNavbar';
+import ScreenshotCarousel from '@/components/ScreenshotCarousel';
 import { getTranslations } from '@/lib/translations';
 
 export default async function MarketingHomePage({ params }: { params: Promise<{ lng: string }> }) {
@@ -82,7 +83,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
           {translations.home.heroDescription}
         </p>
 
-        <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
+        <div className="mt-10 mb-12 flex flex-col sm:flex-row items-center gap-4">
           <Link href="/pricing" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
             {translations.home.viewPricing}
           </Link>
@@ -91,7 +92,13 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
           </Link>
         </div>
 
-        {/* Minimalist Dashboard Preview Wireframe */}
+        <section className="bg-slate-950/40 py-24 px-6 relative overflow-hidden w-full">
+          <div className="max-w-6xl mx-auto flex justify-center">
+            <ScreenshotCarousel />
+          </div>
+        </section>
+
+        {/*
         <div className="mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/40 p-2 shadow-2xl shadow-emerald-500/5 backdrop-blur-xs max-w-5xl">
           <div className="rounded-xl border border-slate-800/80 bg-slate-950 overflow-hidden aspect-[16/9] flex flex-col text-left text-xs text-slate-500">
             <div className="border-b border-slate-900 p-3 flex items-center gap-2 bg-slate-900/20">
@@ -118,6 +125,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
             </div>
           </div>
         </div>
+        */}
 
         {/* Why Choose Prado Section */}
         <section className="border-t border-slate-900 bg-slate-950/50 py-24 px-6 relative overflow-hidden">
