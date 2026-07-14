@@ -24,7 +24,7 @@ export default async function DashboardHome({
   // Fetch organization context along with trial parameters
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, trial_starts_at, subscription_status')
+    .select('id, name, logo_url, trial_starts_at, subscription_status')
     .eq('owner_id', user.id)
     .single();
 
@@ -63,7 +63,7 @@ export default async function DashboardHome({
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      <DashboardNavbar userInitials={initial} />
+      <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
       <div className="flex flex-1 relative">
         <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />
         

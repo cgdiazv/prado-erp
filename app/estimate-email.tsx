@@ -22,9 +22,10 @@ interface Estimate {
 interface EstimateEmailProps {
   customerName: string;
   estimate: Estimate;
+  organizationSlogan?: string;
 }
 
-export const EstimateEmail = ({ customerName, estimate }: EstimateEmailProps) => {
+export const EstimateEmail = ({ customerName, estimate, organizationSlogan = 'Field Service Software' }: EstimateEmailProps) => {
   const previewText = `Tu propuesta para "${estimate.title}" está lista para revisión.`;
 
   return (
@@ -86,7 +87,7 @@ export const EstimateEmail = ({ customerName, estimate }: EstimateEmailProps) =>
           {/* Pie de Página */}
           <Section style={footerSection}>
             <Text style={footerText}>
-              &copy; {new Date().getFullYear()} Prado Systems. Todo el software operativo de campo en un solo lugar.
+              &copy; {new Date().getFullYear()} Prado Systems. {organizationSlogan}
             </Text>
           </Section>
         </Container>

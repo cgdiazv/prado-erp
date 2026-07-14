@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { updateWorkspaceIdentity } from './actions';
 import { getTranslations } from '@/lib/translations';
 
 interface WorkspaceIdentityFormProps {
   companyName: string;
   systemEmail: string;
+  initialLogoUrl?: string;
+  initialSlogan?: string;
   initialPhone?: string;
   initialStreetAddress?: string;
   initialCity?: string;
@@ -18,6 +20,8 @@ interface WorkspaceIdentityFormProps {
 export default function WorkspaceIdentityForm({
   companyName,
   systemEmail,
+  initialLogoUrl = '',
+  initialSlogan = '',
   initialPhone = '',
   initialStreetAddress = '',
   initialCity = '',
@@ -29,6 +33,9 @@ export default function WorkspaceIdentityForm({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>(initialLogoUrl);
+  const [removeLogoRequested, setRemoveLogoRequested] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,6 +45,7 @@ export default function WorkspaceIdentityForm({
 
     const formData = new FormData(event.currentTarget);
     formData.set('locale', locale);
+    formData.set('removeLogo', removeLogoRequested ? 'true' : 'false');
 
     const response = await updateWorkspaceIdentity(formData);
 
@@ -48,7 +56,35 @@ export default function WorkspaceIdentityForm({
       return;
     }
 
+    if (response?.logoUrl) {
+      setLogoPreviewUrl(response.logoUrl);
+      setRemoveLogoRequested(false);
+    }
+
+    if (response?.logoUrl === null) {
+      setLogoPreviewUrl('');
+      setRemoveLogoRequested(false);
+    }
+
     setSuccessMsg(translations.dashboard.workspaceIdentityUpdatedSuccess);
+  }
+
+  function handleLogoFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const objectUrl = URL.createObjectURL(file);
+    setLogoPreviewUrl(objectUrl);
+    setRemoveLogoRequested(false);
+  }
+
+  function handleRemoveLogo() {
+    setLogoPreviewUrl('');
+    setRemoveLogoRequested(true);
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
+    }
   }
 
   return (
@@ -88,6 +124,46 @@ export default function WorkspaceIdentityForm({
               disabled
               className="w-full rounded-lg border border-gray-200 bg-slate-50 p-2.5 text-sm text-gray-500 cursor-not-allowed outline-none"
             />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Slogan / Short Description</label>
+            <input
+              type="text"
+              name="slogan"
+              defaultValue={initialSlogan}
+              placeholder="Ex: Premium Field Service Solutions"
+              maxLength={160}
+              className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+            />
+            <p className="mt-1 text-[11px] text-slate-400">Shown in estimate and invoice emails.</p>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Organization Logo</label>
+            <input
+              type="file"
+              name="logoFile"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              ref={logoInputRef}
+              className="w-full rounded-lg border border-gray-300 p-2 text-sm bg-white outline-none file:mr-3 file:rounded-md file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
+              onChange={handleLogoFileChange}
+            />
+            <p className="mt-1 text-[11px] text-slate-400">Accepted: PNG, JPG, WEBP, SVG. Max size: 3MB.</p>
+            {logoPreviewUrl ? (
+              <div className="mt-2 flex items-center gap-3">
+                <img
+                  src={logoPreviewUrl}
+                  alt="Organization logo preview"
+                  className="h-14 w-14 rounded-lg border border-gray-200 bg-white object-contain p-1"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveLogo}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition"
+                >
+                  Remove Logo
+                </button>
+              </div>
+            ) : null}
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.dashboard.phone}</label>

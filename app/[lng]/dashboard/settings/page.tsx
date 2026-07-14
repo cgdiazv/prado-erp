@@ -39,6 +39,31 @@ export default async function SettingsPage({
     redirect('/signup');
   }
 
+  const looksLikeZip = (value: string) => /^\d{5}(?:-\d{4})?$/.test(value.trim());
+  const looksLikeStateCode = (value: string) => /^[A-Za-z]{2}$/.test(value.trim());
+  const looksLikeStreet = (value: string) => /\d/.test(value) && /[A-Za-z]/.test(value);
+  const looksLikePhone = (value: string) => /^[+()\d\s.-]{7,}$/.test(value.trim());
+
+  const rawPhone = org.phone || '';
+  const rawStreet = org.street_address || '';
+  const rawCity = org.city || '';
+  const rawState = org.state || '';
+  const rawZip = org.zip_code || '';
+
+  const hasShiftedIdentityValues =
+    !looksLikePhone(rawPhone) &&
+    looksLikeStreet(rawPhone) &&
+    rawStreet.length > 0 &&
+    looksLikeStateCode(rawCity) &&
+    looksLikeZip(rawState) &&
+    !looksLikeZip(rawZip);
+
+  const normalizedPhone = hasShiftedIdentityValues ? '' : rawPhone;
+  const normalizedStreetAddress = hasShiftedIdentityValues ? rawPhone : rawStreet;
+  const normalizedCity = hasShiftedIdentityValues ? rawStreet : rawCity;
+  const normalizedState = hasShiftedIdentityValues ? rawCity : rawState;
+  const normalizedZipCode = hasShiftedIdentityValues ? rawState : rawZip;
+
   const { data: services } = await supabase
     .from('services')
     .select('id, name, base_price')
@@ -56,7 +81,7 @@ export default async function SettingsPage({
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      <DashboardNavbar userInitials={initial} />
+      <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
 
       <div className="flex flex-1 relative">
         {/* UPDATED: Passing subscription_status to keep the sidebar contextually accurate */}
@@ -91,11 +116,13 @@ export default async function SettingsPage({
               <WorkspaceIdentityForm
                 companyName={org.name || ''}
                 systemEmail={user.email || ''}
-                initialPhone={org.phone || ''}
-                initialStreetAddress={org.street_address || ''}
-                initialCity={org.city || ''}
-                initialState={org.state || ''}
-                initialZipCode={org.zip_code || ''}
+                initialLogoUrl={org.logo_url || ''}
+                initialSlogan={org.slogan || ''}
+                initialPhone={normalizedPhone}
+                initialStreetAddress={normalizedStreetAddress}
+                initialCity={normalizedCity}
+                initialState={normalizedState}
+                initialZipCode={normalizedZipCode}
                 locale={locale}
               />
 

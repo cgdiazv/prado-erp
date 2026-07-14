@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
-import Customers from '@/components/dashboard/Customers';
+import AddCustomerModal from '@/components/dashboard/AddCustomerModal';
+import CustomersAccountsSection from '@/components/dashboard/CustomersAccountsSection';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 
@@ -21,7 +22,7 @@ export default async function CustomersPage({
 
   const { data: org } = await supabase
   .from('organizations')
-  .select('id, name, trial_starts_at, subscription_status')
+  .select('id, name, logo_url, trial_starts_at, subscription_status')
   .eq('owner_id', user.id)
   .single();
   if (!org) redirect('/signup');
@@ -51,11 +52,24 @@ export default async function CustomersPage({
     return accumulator;
   }, {});
 
+  const paidBalances = (invoices || []).reduce<Record<string, number>>((accumulator, invoice) => {
+    if (invoice.status !== 'paid') return accumulator;
+
+    const amount = Number(invoice.total_amount || 0);
+    accumulator[invoice.customer_id] = (accumulator[invoice.customer_id] || 0) + (Number.isFinite(amount) ? amount : 0);
+    return accumulator;
+  }, {});
+
+  const totalUnpaid = Object.values(unpaidBalances).reduce((sum, amount) => sum + amount, 0);
+  const totalPaid = Object.values(paidBalances).reduce((sum, amount) => sum + amount, 0);
+  const netOutstanding = Math.max(totalUnpaid - totalPaid, 0);
+  const isEs = locale.toLowerCase().startsWith('es');
+
   const initial = org.name ? org.name.charAt(0) : "C";
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-      <DashboardNavbar userInitials={initial} />
+      <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
       <div className="flex flex-1 relative">
         {/* UPDATED: Passing subscription_status to match the conditional sidebar links */}
         <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />
@@ -64,13 +78,36 @@ export default async function CustomersPage({
           <div className="max-w-5xl ml-0 grid grid-cols-1 gap-8 text-left">
             
             {/* 1. Header Row - Spans completely across the entire width */}
-            <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.customersTitle}</h1>
-              <p className="text-xs text-slate-400 mt-1">{translations.dashboard.customersSubtitle}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.customersTitle}</h1>
+                <p className="text-xs text-slate-400 mt-1">{translations.dashboard.customersSubtitle}</p>
+              </div>
+              <AddCustomerModal organizationId={org.id} locale={locale} />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600">{isEs ? 'Total pendiente' : 'Total Unpaid'}</span>
+                <p className="text-xl font-extrabold text-slate-900 mt-1">${totalUnpaid.toFixed(2)}</p>
+              </div>
+              <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600">{isEs ? 'Total pagado' : 'Total Paid'}</span>
+                <p className="text-xl font-extrabold text-slate-900 mt-1">${totalPaid.toFixed(2)}</p>
+              </div>
+              <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{isEs ? 'Neto pendiente' : 'Net Outstanding'}</span>
+                <p className="text-xl font-extrabold text-slate-900 mt-1">${netOutstanding.toFixed(2)}</p>
+              </div>
             </div>
             
             {/* 2. Customers Section - Now full width */}
-            <Customers customers={customers} unpaidBalances={unpaidBalances} organizationId={org.id} locale={locale} />
+            <CustomersAccountsSection
+              customers={customers}
+              unpaidBalances={unpaidBalances}
+              paidBalances={paidBalances}
+              locale={locale}
+            />
 
           </div>
         </main>

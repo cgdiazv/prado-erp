@@ -1,65 +1,20 @@
-import Link from 'next/link';
 import DeleteJobButton from '@/components/DeleteJobButton';
 import { completeJob } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
-import ScheduleJobModal from './ScheduleJobModal';
-
-interface Property {
-  id: string;
-  street_address: string;
-  customer_id: string;
-}
-
-interface Customer {
-  id: string;
-  first_name: string;
-  last_name: string;
-  company_name: string | null;
-}
-
-interface Service {
-  id: string;
-  name: string;
-  base_price: number | null;
-}
-
-interface Truck {
-  id: string;
-  name: string;
-  plate_number: string | null;
-  is_active: boolean | null;
-  status: string | null;
-}
 
 interface JobScheduleProps {
   jobs: any[] | null;
-  properties: Property[] | null;
-  customers: Customer[] | null;
-  services: Service[] | null;
-  trucks: Truck[] | null;
-  isIndividualAccount?: boolean;
   locale?: string;
 }
 
-export default function JobSchedule({ jobs, properties, customers, services, trucks, isIndividualAccount = false, locale = 'en' }: JobScheduleProps) {
+export default function JobSchedule({ jobs, locale = 'en' }: JobScheduleProps) {
   const translations = getTranslations(locale);
   return (
-    <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">{translations.dashboard.liveJobSchedule}</h2>
-        <ScheduleJobModal
-          properties={properties}
-          customers={customers}
-          services={services}
-          trucks={trucks}
-          isIndividualAccount={isIndividualAccount}
-          locale={locale}
-        />
-      </div>
+    <>
       {jobs && jobs.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 text-left text-sm whitespace-nowrap">
-            <thead className="bg-gray-50 text-xs font-medium uppercase text-gray-500">
+            <thead className="bg-gray-50 text-xs font-medium text-gray-500">
               <tr>
                 <th className="px-4 py-3">{translations.dashboard.date}</th>
                 <th className="px-4 py-3">{translations.dashboard.address}</th>
@@ -115,6 +70,6 @@ export default function JobSchedule({ jobs, properties, customers, services, tru
       ) : (
         <p className="text-gray-500 text-sm italic">{translations.dashboard.noActiveDispatchLogs}</p>
       )}
-    </section>
+    </>
   );
 }

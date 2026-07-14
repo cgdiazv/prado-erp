@@ -203,6 +203,7 @@ export default function EstimatesPage() {
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | undefined>(undefined);
   const [userInitials, setUserInitials] = useState('C');
+  const [organizationLogoUrl, setOrganizationLogoUrl] = useState('');
   
   // States de UI
   const [loading, setLoading] = useState(true);
@@ -236,6 +237,7 @@ export default function EstimatesPage() {
         setTrucks((result.trucks || []) as any);
         setSubscriptionStatus(result.subscriptionStatus || 'trial');
         setUserInitials(result.organizationName ? result.organizationName.charAt(0).toUpperCase() : 'C');
+        setOrganizationLogoUrl(result.organizationLogoUrl || '');
         setServiceLines((prev) => {
           if (loadedServices.length === 0) return prev;
           if (prev.length === 1 && !prev[0].serviceId && !prev[0].price) {
@@ -254,6 +256,7 @@ export default function EstimatesPage() {
         setCustomers([]);
         setServices([]);
         setTrucks([]);
+        setOrganizationLogoUrl('');
       }
 
       setLoading(false);
@@ -513,7 +516,7 @@ export default function EstimatesPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-        <DashboardNavbar userInitials={userInitials} />
+        <DashboardNavbar userInitials={userInitials} organizationLogoUrl={organizationLogoUrl} />
         <div className="flex flex-1 relative">
           <DashboardSidebar subscriptionStatus={resolvedSubscriptionStatus} locale={locale} />
           <main className="flex-1 p-6 md:p-12 overflow-y-auto">
@@ -528,7 +531,7 @@ export default function EstimatesPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-      <DashboardNavbar userInitials={userInitials} />
+      <DashboardNavbar userInitials={userInitials} organizationLogoUrl={organizationLogoUrl} />
       <div className="flex flex-1 relative">
         <DashboardSidebar subscriptionStatus={resolvedSubscriptionStatus} locale={locale} />
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">

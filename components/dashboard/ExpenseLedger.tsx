@@ -1,5 +1,4 @@
 import { getTranslations } from '@/lib/translations';
-import LogExpenseModal from './LogExpenseModal';
 
 interface Expense {
   id: string;
@@ -18,15 +17,11 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
   const translations = getTranslations(locale);
 
   return (
-    <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">{translations.dashboard.trackedExpensesSection}</h2>
-        <LogExpenseModal locale={locale} />
-      </div>
+    <>
       {expenses && expenses.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-            <thead className="bg-gray-50 text-xs font-medium uppercase text-gray-500">
+            <thead className="bg-gray-50 text-xs font-medium text-gray-500">
               <tr>
                 <th className="px-4 py-3">{translations.dashboard.expenseDate}</th>
                 <th className="px-4 py-3">{translations.dashboard.category}</th>
@@ -49,6 +44,6 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
       ) : (
         <p className="text-gray-400 text-sm italic">{translations.dashboard.noOperationalExpenses}</p>
       )}
-    </section>
+    </>
   );
 }

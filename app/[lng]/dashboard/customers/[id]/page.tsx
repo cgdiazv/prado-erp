@@ -27,7 +27,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
   // 2. Fetch workspace organization context
   const { data: org } = await supabase
     .from('organizations')
-    .select('name, subscription_status')
+    .select('name, logo_url, subscription_status')
     .eq('owner_id', user.id)
     .single();
 
@@ -57,7 +57,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
     const fallbackInitial = org.name ? org.name.charAt(0) : "C";
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-        <DashboardNavbar userInitials={fallbackInitial} />
+        <DashboardNavbar userInitials={fallbackInitial} organizationLogoUrl={org.logo_url || ''} />
         <div className="flex flex-1 relative">
         <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />
         <main className="flex-1 p-12 text-left">
@@ -75,7 +75,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      <DashboardNavbar userInitials={initial} />
+      <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
       
       <div className="flex flex-1 relative">
         <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />

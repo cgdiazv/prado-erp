@@ -32,15 +32,22 @@ export async function updatePassword(formData: FormData) {
 }
 
 export async function updateWorkspaceIdentity(formData: FormData) {
+  const slogan = (formData.get('slogan') as string | null)?.trim() || '';
   const phone = (formData.get('phone') as string | null)?.trim() || '';
   const streetAddress = (formData.get('streetAddress') as string | null)?.trim() || '';
   const city = (formData.get('city') as string | null)?.trim() || '';
   const state = (formData.get('state') as string | null)?.trim() || '';
   const zipCode = (formData.get('zipCode') as string | null)?.trim() || '';
   const locale = (formData.get('locale') as string | null)?.trim() || 'en';
+  const logoFile = formData.get('logoFile');
+  const removeLogo = (formData.get('removeLogo') as string | null) === 'true';
 
   if (phone.length > 50) {
     return { error: 'Phone must be 50 characters or fewer.' };
+  }
+
+  if (slogan.length > 160) {
+    return { error: 'Slogan must be 160 characters or fewer.' };
   }
 
   if (streetAddress.length > 255) {
@@ -66,24 +73,97 @@ export async function updateWorkspaceIdentity(formData: FormData) {
     return { error: 'You must be signed in to update workspace identity.' };
   }
 
-  const { data: org } = await supabase
+  const { data: org, error: orgError } = await supabase
     .from('organizations')
-    .select('id')
+    .select('id, logo_url')
     .eq('owner_id', user.id)
-    .single();
+    .limit(1)
+    .maybeSingle();
+
+  if (orgError) {
+    return { error: `Failed to load workspace: ${orgError.message}` };
+  }
 
   if (!org) {
     return { error: 'Workspace not found.' };
   }
 
+  let nextLogoUrl = org.logo_url || null;
+  const bucket = process.env.SUPABASE_ORG_LOGOS_BUCKET || 'organization-logos';
+
+  function getStoragePathFromPublicUrl(publicUrl: string | null, bucketName: string): string | null {
+    if (!publicUrl) return null;
+
+    const marker = `/storage/v1/object/public/${bucketName}/`;
+    const markerIndex = publicUrl.indexOf(marker);
+
+    if (markerIndex === -1) return null;
+
+    return publicUrl.substring(markerIndex + marker.length);
+  }
+
+  const previousLogoPath = getStoragePathFromPublicUrl(org.logo_url || null, bucket);
+
+  if (logoFile instanceof File && logoFile.size > 0) {
+    const maxSizeBytes = 3 * 1024 * 1024;
+    const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']);
+
+    if (!allowedTypes.has(logoFile.type)) {
+      return { error: 'Invalid logo format. Use PNG, JPG, WEBP, or SVG.' };
+    }
+
+    if (logoFile.size > maxSizeBytes) {
+      return { error: 'Logo image must be 3MB or smaller.' };
+    }
+
+    const extensionFromType =
+      logoFile.type === 'image/png'
+        ? 'png'
+        : logoFile.type === 'image/jpeg'
+          ? 'jpg'
+          : logoFile.type === 'image/webp'
+            ? 'webp'
+            : logoFile.type === 'image/svg+xml'
+              ? 'svg'
+              : 'png';
+    const extension = logoFile.name.split('.').pop()?.toLowerCase() || extensionFromType;
+    const objectPath = `${org.id}/logo-${Date.now()}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(objectPath, logoFile, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: logoFile.type,
+      });
+
+    if (uploadError) {
+      return { error: `Failed to upload logo: ${uploadError.message}` };
+    }
+
+    const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(objectPath);
+    nextLogoUrl = publicUrlData.publicUrl || null;
+
+    if (previousLogoPath && previousLogoPath !== objectPath) {
+      await supabase.storage.from(bucket).remove([previousLogoPath]);
+    }
+  } else if (removeLogo && previousLogoPath) {
+    await supabase.storage.from(bucket).remove([previousLogoPath]);
+    nextLogoUrl = null;
+  } else if (removeLogo) {
+    nextLogoUrl = null;
+  }
+
   const { error } = await supabase
     .from('organizations')
     .update({
+      slogan,
       phone,
       street_address: streetAddress,
       city,
       state,
       zip_code: zipCode,
+      logo_url: nextLogoUrl,
     })
     .eq('id', org.id);
 
@@ -93,7 +173,7 @@ export async function updateWorkspaceIdentity(formData: FormData) {
 
   revalidatePath('/dashboard/settings');
   revalidatePath(`/${locale}/dashboard/settings`);
-  return { success: true };
+  return { success: true, logoUrl: nextLogoUrl };
 }
 
 export async function createService(name: string) {

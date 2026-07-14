@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import ExpenseLedger from '@/components/dashboard/ExpenseLedger';
+import LogExpenseModal from '@/components/dashboard/LogExpenseModal';
 import { checkTrialExpiry } from '@/lib/trialCheck'; // Import utility
 import { getTranslations } from '@/lib/translations';
 
@@ -22,7 +23,7 @@ export default async function LedgerPage({
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, trial_starts_at, subscription_status')
+    .select('id, name, logo_url, trial_starts_at, subscription_status')
     .eq('owner_id', user.id)
     .single();
   if (!org) redirect('/signup');
@@ -50,7 +51,7 @@ if (org.subscription_status === 'individual') {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-      <DashboardNavbar userInitials={initial} />
+      <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
       <div className="flex flex-1 relative">
         {/* UPDATED: Passing the explicit subscription status down to the sidebar component */}
         <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />
@@ -59,9 +60,12 @@ if (org.subscription_status === 'individual') {
           <div className="max-w-5xl ml-0 grid grid-cols-1 gap-8 text-left">
             
             {/* 1. Header Row */}
-            <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.expenseLedger}</h1>
-              <p className="text-xs text-slate-400 mt-1">{translations.dashboard.expenseLedgerDescription}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.expenseLedger}</h1>
+                <p className="text-xs text-slate-400 mt-1">{translations.dashboard.expenseLedgerDescription}</p>
+              </div>
+              <LogExpenseModal locale={locale} />
             </div>
             
             {/* 2. Expense Ledger - full width with modal trigger in header */}

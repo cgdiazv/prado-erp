@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import JobSchedule from '@/components/dashboard/JobSchedule';
+import ScheduleJobModal from '@/components/dashboard/ScheduleJobModal';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 
@@ -22,7 +23,7 @@ export default async function SchedulePage({
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, trial_starts_at, subscription_status')
+    .select('id, name, logo_url, trial_starts_at, subscription_status')
     .eq('owner_id', user.id)
     .single();
   if (!org) redirect('/signup');
@@ -58,26 +59,31 @@ export default async function SchedulePage({
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-      <DashboardNavbar userInitials={initial} />
+      <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
       <div className="flex flex-1 relative">
         <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           <div className="max-w-5xl ml-0 grid grid-cols-1 gap-8 text-left">
             
             {/* Header Row */}
-            <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.jobScheduling}</h1>
-              <p className="text-xs text-slate-400 mt-1">{translations.dashboard.jobSchedulingDescription}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.jobScheduling}</h1>
+                <p className="text-xs text-slate-400 mt-1">{translations.dashboard.jobSchedulingDescription}</p>
+              </div>
+              <ScheduleJobModal
+                properties={properties || []}
+                customers={customers}
+                services={services}
+                trucks={trucks}
+                isIndividualAccount={org.subscription_status === 'individual'}
+                locale={locale}
+              />
             </div>
             
             {/* Job Schedule — full width with modal trigger in header */}
             <JobSchedule
               jobs={jobs}
-              properties={properties || []}
-              customers={customers}
-              services={services}
-              trucks={trucks}
-              isIndividualAccount={org.subscription_status === 'individual'}
               locale={locale}
             />
 

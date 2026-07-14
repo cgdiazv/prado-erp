@@ -47,7 +47,7 @@ export default async function RoutingPage({
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, trial_starts_at, subscription_status')
+    .select('id, name, logo_url, trial_starts_at, subscription_status')
     .eq('owner_id', user.id)
     .single();
   if (!org) redirect('/signup');
@@ -110,7 +110,7 @@ export default async function RoutingPage({
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-      <DashboardNavbar userInitials={initial} />
+      <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
       <div className="flex flex-1 relative">
         <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
