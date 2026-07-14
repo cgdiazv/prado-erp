@@ -26,12 +26,12 @@ function toPeriodStart(period: PeriodType): Date {
   return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 }
 
-function isReportType(value: string): value is ReportType {
-  return REPORT_TYPES.includes(value as ReportType);
+function isReportType(value: string | undefined): value is ReportType {
+  return typeof value === 'string' && REPORT_TYPES.includes(value as ReportType);
 }
 
-function isPeriodType(value: string): value is PeriodType {
-  return PERIOD_TYPES.includes(value as PeriodType);
+function isPeriodType(value: string | undefined): value is PeriodType {
+  return typeof value === 'string' && PERIOD_TYPES.includes(value as PeriodType);
 }
 
 function isDateInput(value: string | undefined): value is string {
@@ -66,12 +66,11 @@ export default async function PrintReportsPage({
   const locale = resolvedParams.lng ?? 'en';
   const isEs = locale.toLowerCase().startsWith('es');
 
-  const selectedReport: ReportType = isReportType(resolvedSearchParams.report || '')
-    ? resolvedSearchParams.report
-    : 'revenue';
-  const selectedPeriod: PeriodType = isPeriodType(resolvedSearchParams.period || '')
-    ? resolvedSearchParams.period
-    : '30d';
+  const reportParam = resolvedSearchParams.report;
+  const periodParam = resolvedSearchParams.period;
+
+  const selectedReport: ReportType = isReportType(reportParam) ? reportParam : 'revenue';
+  const selectedPeriod: PeriodType = isPeriodType(periodParam) ? periodParam : '30d';
 
   const fallbackStart = toPeriodStart(selectedPeriod === 'custom' ? '30d' : selectedPeriod);
   const today = new Date();
