@@ -171,6 +171,7 @@ type TranslationBundle = {
     overviewTerminal: string;
     customerCrm: string;
     jobScheduling: string;
+    estimates: string;
     dispatchRouting: string;
     expenseLedger: string;
     management: string;
@@ -228,6 +229,7 @@ type TranslationBundle = {
     dueDate: string;
     taxCharge: string;
     totalOwed: string;
+    unpaidBalance: string;
     paymentStatus: string;
     paid: string;
     unpaid: string;

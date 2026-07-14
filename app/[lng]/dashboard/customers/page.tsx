@@ -35,6 +35,21 @@ export default async function CustomersPage({
   }
 
   const { data: customers } = await supabase.from('customers').select('*').eq('organization_id', org.id);
+  const customerIds = customers?.map((customer) => customer.id) || [];
+  const { data: invoices } = customerIds.length > 0
+    ? await supabase
+        .from('invoices')
+        .select('customer_id, total_amount, status')
+        .in('customer_id', customerIds)
+    : { data: [] };
+
+  const unpaidBalances = (invoices || []).reduce<Record<string, number>>((accumulator, invoice) => {
+    if (invoice.status !== 'unpaid') return accumulator;
+
+    const amount = Number(invoice.total_amount || 0);
+    accumulator[invoice.customer_id] = (accumulator[invoice.customer_id] || 0) + (Number.isFinite(amount) ? amount : 0);
+    return accumulator;
+  }, {});
 
   const initial = org.name ? org.name.charAt(0) : "C";
 
@@ -55,7 +70,7 @@ export default async function CustomersPage({
             </div>
             
             {/* 2. Customers Section - Now full width */}
-            <Customers customers={customers} organizationId={org.id} locale={locale} />
+            <Customers customers={customers} unpaidBalances={unpaidBalances} organizationId={org.id} locale={locale} />
 
           </div>
         </main>

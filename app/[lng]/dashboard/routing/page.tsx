@@ -6,6 +6,31 @@ import RouteEngine from '@/components/dashboard/RouteEngine';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 
+async function geocodeAddress(address: string) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey || !address) return { latitude: null, longitude: null };
+
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
+    );
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.results?.length > 0) {
+      const location = data.results[0].geometry.location;
+      return {
+        latitude: location.lat as number,
+        longitude: location.lng as number,
+      };
+    }
+  } catch (error) {
+    console.error('Routing geocode failed:', error);
+  }
+
+  return { latitude: null, longitude: null };
+}
+
 export default async function RoutingPage({
   params,
 }: {
@@ -54,13 +79,32 @@ export default async function RoutingPage({
   const propertyIds = propertiesResponse.data?.map(p => p.id) || [];
 
   // UPDATED: Added truck_id to the field selection parameters
-  const { data: jobs } = propertyIds.length > 0
+  const { data: rawJobs } = propertyIds.length > 0
     ? await supabase
         .from('jobs')
         .select('*, truck_id, properties(street_address, latitude, longitude, customer_id)')
         .in('property_id', propertyIds)
         .order('scheduled_date', { ascending: true })
     : { data: [] };
+
+  const jobs = rawJobs
+    ? await Promise.all(rawJobs.map(async (job) => {
+        const streetAddress = job.properties?.street_address || '';
+        const hasCoordinates = job.properties?.latitude !== null && job.properties?.longitude !== null;
+
+        if (hasCoordinates) return job;
+
+        const geocoded = await geocodeAddress(streetAddress);
+        return {
+          ...job,
+          properties: {
+            ...job.properties,
+            latitude: geocoded.latitude,
+            longitude: geocoded.longitude,
+          },
+        };
+      }))
+    : [];
 
   const initial = org.name ? org.name.charAt(0) : "C";
 

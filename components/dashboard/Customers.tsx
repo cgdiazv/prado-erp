@@ -14,11 +14,12 @@ interface Customer {
 
 interface CustomersProps {
   customers: Customer[] | null;
+  unpaidBalances: Record<string, number>;
   organizationId: string;
   locale?: string;
 }
 
-export default function Customers({ customers, organizationId, locale = 'en' }: CustomersProps) {
+export default function Customers({ customers, unpaidBalances, organizationId, locale = 'en' }: CustomersProps) {
   const translations = getTranslations(locale);
   return (
     <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -35,6 +36,7 @@ export default function Customers({ customers, organizationId, locale = 'en' }: 
                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{translations.dashboard.companyName}</th>
                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{translations.dashboard.customerEmail}</th>
                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{translations.dashboard.phoneNumber}</th>
+                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{translations.dashboard.unpaidBalance}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
@@ -46,6 +48,9 @@ export default function Customers({ customers, organizationId, locale = 'en' }: 
                   <td className="px-4 py-3 text-gray-500">{customer.company_name || '—'}</td>
                   <td className="px-4 py-3 text-gray-500">{customer.email || '—'}</td>
                   <td className="px-4 py-3 text-gray-500">{customer.phone || '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 font-semibold">
+                    {unpaidBalances[customer.id] > 0 ? `$${unpaidBalances[customer.id].toFixed(2)}` : '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>
