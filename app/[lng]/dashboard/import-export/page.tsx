@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
+import ImportCsvPanel from '@/components/dashboard/ImportCsvPanel';
 
 export default async function ImportExportPage({
   params,
@@ -32,7 +33,15 @@ export default async function ImportExportPage({
         importJobs: 'Importar Jobs',
         importExpenses: 'Importar Gastos',
         importEstimates: 'Importar Cotizaciones',
-        soon: 'Proximamente: conectaremos estas acciones al pipeline de import/export.',
+        noFileSelected: 'Selecciona un archivo CSV antes de importar.',
+        importing: 'Importando...',
+        importDone: 'Importacion completada.',
+        importFailed: 'La importacion fallo.',
+        templatesTitle: 'Plantillas CSV',
+        templateCustomers: 'Plantilla Clientes',
+        templateJobs: 'Plantilla Jobs',
+        templateExpenses: 'Plantilla Gastos',
+        templateEstimates: 'Plantilla Cotizaciones',
       }
     : {
         title: 'Import / Export',
@@ -53,7 +62,15 @@ export default async function ImportExportPage({
         importJobs: 'Import Jobs',
         importExpenses: 'Import Expenses',
         importEstimates: 'Import Estimates',
-        soon: 'Coming soon: these actions will be connected to the full import/export pipeline.',
+        noFileSelected: 'Please select a CSV file before importing.',
+        importing: 'Importing...',
+        importDone: 'Import completed.',
+        importFailed: 'Import failed.',
+        templatesTitle: 'CSV Templates',
+        templateCustomers: 'Customers Template',
+        templateJobs: 'Jobs Template',
+        templateExpenses: 'Expenses Template',
+        templateEstimates: 'Estimates Template',
       };
 
   const supabase = await createClient();
@@ -95,59 +112,75 @@ export default async function ImportExportPage({
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs space-y-4">
                 <div>
-                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{t.exportTitle}</h2>
-                  <p className="text-xs text-slate-400 mt-1">{t.exportDescription}</p>
+                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{t.importTitle}</h2>
+                  <p className="text-xs text-slate-400 mt-1">{t.importDescription}</p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button className="text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition">
-                    {t.exportCustomers}
-                  </button>
-                  <button className="text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition">
-                    {t.exportJobs}
-                  </button>
-                  <button className="text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition">
-                    {t.exportExpenses}
-                  </button>
-                  <button className="text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition">
-                    {t.exportEstimates}
-                  </button>
+                <ImportCsvPanel
+                  uploadLabel={t.uploadLabel}
+                  importCustomers={t.importCustomers}
+                  importJobs={t.importJobs}
+                  importExpenses={t.importExpenses}
+                  importEstimates={t.importEstimates}
+                  noFileSelected={t.noFileSelected}
+                  importing={t.importing}
+                  importDone={t.importDone}
+                  importFailed={t.importFailed}
+                />
+
+                <div className="pt-2 border-t border-gray-100">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">{t.templatesTitle}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <a href="/api/import/template?entity=customers" className="text-center text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition">
+                      {t.templateCustomers}
+                    </a>
+                    <a href="/api/import/template?entity=jobs" className="text-center text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition">
+                      {t.templateJobs}
+                    </a>
+                    <a href="/api/import/template?entity=expenses" className="text-center text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition">
+                      {t.templateExpenses}
+                    </a>
+                    <a href="/api/import/template?entity=estimates" className="text-center text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition">
+                      {t.templateEstimates}
+                    </a>
+                  </div>
                 </div>
               </section>
 
               <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs space-y-4">
                 <div>
-                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{t.importTitle}</h2>
-                  <p className="text-xs text-slate-400 mt-1">{t.importDescription}</p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase">{t.uploadLabel}</label>
-                  <input
-                    type="file"
-                    accept=".csv,text/csv"
-                    className="w-full rounded-lg border border-gray-300 p-2 text-sm bg-white outline-none file:mr-3 file:rounded-md file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
-                  />
+                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{t.exportTitle}</h2>
+                  <p className="text-xs text-slate-400 mt-1">{t.exportDescription}</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button className="text-xs font-semibold px-4 py-2.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition">
-                    {t.importCustomers}
-                  </button>
-                  <button className="text-xs font-semibold px-4 py-2.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition">
-                    {t.importJobs}
-                  </button>
-                  <button className="text-xs font-semibold px-4 py-2.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition">
-                    {t.importExpenses}
-                  </button>
-                  <button className="text-xs font-semibold px-4 py-2.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition">
-                    {t.importEstimates}
-                  </button>
+                  <a
+                    href="/api/export/csv?entity=customers"
+                    className="text-center text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition"
+                  >
+                    {t.exportCustomers}
+                  </a>
+                  <a
+                    href="/api/export/csv?entity=jobs"
+                    className="text-center text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition"
+                  >
+                    {t.exportJobs}
+                  </a>
+                  <a
+                    href="/api/export/csv?entity=expenses"
+                    className="text-center text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition"
+                  >
+                    {t.exportExpenses}
+                  </a>
+                  <a
+                    href="/api/export/csv?entity=estimates"
+                    className="text-center text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition"
+                  >
+                    {t.exportEstimates}
+                  </a>
                 </div>
               </section>
             </div>
-
-            <p className="text-xs text-slate-500 italic">{t.soon}</p>
           </div>
         </main>
       </div>

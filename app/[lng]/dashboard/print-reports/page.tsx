@@ -263,6 +263,19 @@ export default async function PrintReportsPage({
     custom: t.periodCustom,
   };
 
+  const pdfQuery = new URLSearchParams({
+    report: selectedReport,
+    period: selectedPeriod,
+    lng: locale,
+  });
+
+  if (selectedPeriod === 'custom') {
+    pdfQuery.set('start', customStartValue);
+    pdfQuery.set('end', customEndValue);
+  }
+
+  const pdfHref = `/api/reports/pdf?${pdfQuery.toString()}`;
+
   let reportSummary: Array<{ label: string; value: string }> = [];
   let reportHeaders: string[] = [];
   let reportRows: Array<string[]> = [];
@@ -520,7 +533,7 @@ export default async function PrintReportsPage({
             <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{reportLabels[selectedReport]}</h3>
-                <PrintPageButton label={t.print} />
+                <PrintPageButton label={t.print} href={pdfHref} />
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
