@@ -65,7 +65,7 @@ export default function PricingPage() {
 
           {/* Growth Card */}
           <div className="bg-slate-900/60 border-2 border-emerald-500/50 p-6 md:p-8 rounded-2xl space-y-6 flex flex-col justify-between min-h-[380px] relative">
-            <span className="absolute -top-3 right-6 bg-emerald-500 text-slate-950 font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-slate-950 font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
               {translations.pricing.mostPopular}
             </span>
             <div className="space-y-4">
@@ -92,7 +92,10 @@ export default function PricingPage() {
           </div>
 
           {/* Enterprise Card */}
-          <div className="bg-slate-900/40 border border-slate-800 p-6 md:p-8 rounded-2xl space-y-6 flex flex-col justify-between min-h-[380px]">
+          <div className="bg-slate-900/40 border border-slate-800 p-6 md:p-8 rounded-2xl space-y-6 flex flex-col justify-between min-h-[380px] relative">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-200 text-slate-950 font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
+              Coming soon
+            </span>
             <div className="space-y-4">
               <div>
                 <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">{translations.pricing.enterpriseTier}</span>
@@ -111,7 +114,7 @@ export default function PricingPage() {
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature9}</li>
               </ul>
             </div>
-            <button onClick={() => handlePlanSelection('enterprise')} className="w-full text-center text-xs font-bold bg-slate-900 hover:bg-slate-850 text-slate-100 py-3 rounded-xl transition border border-slate-800 cursor-pointer">
+            <button disabled className="w-full text-center text-xs font-bold bg-slate-800 text-slate-500 py-3 rounded-xl transition border border-slate-700 cursor-not-allowed opacity-70">
               {translations.pricing.buyEnterprise}
             </button>
           </div>
