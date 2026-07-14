@@ -3,6 +3,9 @@ export interface TrialStatus {
   daysRemaining: number;
 }
 
+export const TRIAL_DAYS = 30;
+export const TRIAL_DURATION_MS = TRIAL_DAYS * 24 * 60 * 60 * 1000;
+
 export function checkTrialExpiry(trialStartsAt: string | Date | null, status: string | null): TrialStatus {
   // If their Stripe subscription status is already active, they are good to go
   if (status === 'active') {
@@ -14,7 +17,7 @@ export function checkTrialExpiry(trialStartsAt: string | Date | null, status: st
   }
 
   const startDate = new Date(trialStartsAt);
-  const expiryDate = new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 Days in milliseconds
+  const expiryDate = new Date(startDate.getTime() + TRIAL_DURATION_MS);
   const now = new Date();
 
   const timeDiff = expiryDate.getTime() - now.getTime();
@@ -26,11 +29,9 @@ export function checkTrialExpiry(trialStartsAt: string | Date | null, status: st
   };
 }
 
-// NEW: Add the helper function below to calculate the raw numeric days left
 export function getTrialDaysLeft(trialStartsAt: string | Date): number {
   const start = new Date(trialStartsAt);
-  const totalTrialMs = 14 * 24 * 60 * 60 * 1000; // 14 days in milliseconds
-  const expiryDate = new Date(start.getTime() + totalTrialMs);
+  const expiryDate = new Date(start.getTime() + TRIAL_DURATION_MS);
   const now = new Date();
   
   const diffMs = expiryDate.getTime() - now.getTime();

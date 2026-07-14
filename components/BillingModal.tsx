@@ -2,6 +2,7 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { TRIAL_DAYS } from '@/lib/trialCheck';
 
 interface BillingModalProps {
   userEmail?: string;
@@ -62,7 +63,7 @@ export default function BillingModal({ userEmail = '', orgId = '' }: BillingModa
 
         <div className="space-y-2">
           <h1 className="text-xl font-bold tracking-tight text-white">
-            {isExpiredParam ? 'Your 14-day trial has concluded' : 'Manage Subscription'}
+            {isExpiredParam ? `Your ${TRIAL_DAYS}-day trial has concluded` : 'Manage Subscription'}
           </h1>
           <p className="text-xs text-slate-400 leading-relaxed text-left sm:text-center">
             To unlock your fleet dispatch routes, database logs, and accounting metrics, choose an operating plan to continue.

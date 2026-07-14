@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabaseServer';
+import { TRIAL_DAYS } from '@/lib/trialCheck';
 import { redirect } from 'next/navigation';
 
 interface BillingPageProps {
@@ -24,7 +25,7 @@ export default async function DashboardBillingPage({ searchParams }: BillingPage
 
         <div className="space-y-2">
           <h1 className="text-xl font-bold tracking-tight text-white">
-            {expired ? 'Your 14-day trial has concluded' : 'Manage Subscription'}
+            {expired ? `Your ${TRIAL_DAYS}-day trial has concluded` : 'Manage Subscription'}
           </h1>
           <p className="text-xs text-slate-400 leading-relaxed">
             To unlock your fleet dispatch routes, database logs, and accounting metrics, choose an operating plan to continue.

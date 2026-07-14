@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams, useParams } from 'next/navigation';
 import { getTranslations } from '@/lib/translations';
+import { TRIAL_DURATION_MS } from '@/lib/trialCheck';
 
 interface TrialBannerProps {
   trialStartsAt: string;
@@ -15,8 +16,7 @@ export default function TrialBanner({ trialStartsAt, locale = 'en' }: TrialBanne
   const params = useParams();
   const translations = getTranslations(locale);
 
-  const totalTrialMs = 14 * 24 * 60 * 60 * 1000;
-  const expiryDate = new Date(new Date(trialStartsAt).getTime() + totalTrialMs);
+  const expiryDate = new Date(new Date(trialStartsAt).getTime() + TRIAL_DURATION_MS);
   const now = new Date();
   
   const diffMs = expiryDate.getTime() - now.getTime();

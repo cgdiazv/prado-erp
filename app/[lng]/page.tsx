@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabaseServer';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import Footer from '@/components/Footer';
-import Script from 'next/script';
 import PublicNavbar from '@/components/PublicNavbar';
 import ScreenshotCarousel from '@/components/ScreenshotCarousel';
 import { getTranslations } from '@/lib/translations';
@@ -84,7 +83,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
         </p>
 
         <div className="mt-10 mb-12 flex flex-col sm:flex-row items-center gap-4">
-          <Link href="/pricing" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
+          <Link href="/signup" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
             {translations.home.viewPricing}
           </Link>
           <Link href="/demo" className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-850 text-slate-200 px-6 py-3 rounded-xl transition border border-slate-800">
@@ -233,7 +232,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
             </p>
             <div className="pt-4">
               <Link 
-                href="/pricing" 
+                href="/signup" 
                 className="inline-block text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-8 py-3.5 rounded-xl transition shadow-xl hover:scale-[1.01] active:scale-[0.99]"
               >
                 {translations.home.ctaButton}
@@ -245,23 +244,6 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
 
       {/* Global Landing Page Footer Component */}
       <Footer locale={lng} />
-      {/* 2. CHATBASE INTEGRATION EMBEDDABLE ENGINE */}
-      <Script
-        id="chatbase-integration"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `
-            window.chatbaseConfig = { chatbotId: 'QBldWxwKvYFFN27nBni1s' };
-            if (!document.getElementById('chatbase-script')) {
-              const chatbaseScript = document.createElement('script');
-              chatbaseScript.id = 'chatbase-script';
-              chatbaseScript.src = 'https://www.chatbase.co/embed.min.js';
-              chatbaseScript.defer = true;
-              document.head.appendChild(chatbaseScript);
-            }
-          `,
-        }}
-      />
     </div>
   );
 }

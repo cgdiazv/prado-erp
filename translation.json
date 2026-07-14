@@ -4,7 +4,7 @@
       "pricing": "Pricing",
       "liveDemo": "Live Demo",
       "signIn": "Sign In",
-      "startFreeTrial": "Start Free Trial",
+      "startFreeTrial": "30-day Free Trial",
       "menuAriaLabel": "Toggle menu",
       "closeMenuAriaLabel": "Close menu"
     },
@@ -13,7 +13,7 @@
       "heroTitleLine1": "Automate your jobs.",
       "heroTitleLine2": "Scale your workflow.",
       "heroDescription": "Prado combines secure tenant multi-occupancy billing, predictive path dispatch optimization, and automated invoicing in one central operational hub.",
-      "viewPricing": "View Pricing",
+      "viewPricing": "Start 30-day Trial",
       "exploreDemo": "Explore Live Demo",
       "whyChooseTitle": "Why run your business on Prado?",
       "whyChooseSubtitle": "Everything you need to manage your field operations, from scheduling the first visit to collecting the final invoice.",
@@ -34,7 +34,7 @@
       "industryCardDescription": "Dispatch, scheduling, and billing in one operating view.",
       "ctaTitle": "Ready to optimize your business operations?",
       "ctaDescription": "Join other organizations scaling up their service dispatch tracking setups securely on the cloud.",
-      "ctaButton": "View Pricing"
+      "ctaButton": "Start 30-day Trial"
     },
     "footer": {
       "copyright": "All rights reserved.",
@@ -46,7 +46,7 @@
       "badge": "Simple Monthly Tiers",
       "titleLine1": "Plans built to grow",
       "titleLine2": "with your fleet.",
-      "description": "No long-term commitments. Select a configuration package below to instantly secure and launch your workspace.",
+      "description": "Start with a 30-day free trial, then choose the configuration package that fits your operation. No long-term commitments.",
       "coreTier": "Core Tier",
       "individualOperator": "Individual Operator",
       "coreDescription": "Best for single-person workspaces driving fundamental CRM records, manual route coordination matrices, and basic invoice runs.",
@@ -151,7 +151,7 @@
     },
     "signup": {
       "title": "Register",
-      "subtitleTrial": "Create workspace account",
+      "subtitleTrial": "Create your 30-day trial account",
       "subtitlePlan": "Create workspace for {plan} tier",
       "emailTaken": "Cannot register. This email address is already taken.",
       "serverError": "An unexpected server error occurred.",
@@ -335,7 +335,7 @@
       "pricing": "Precios",
       "liveDemo": "Demo en vivo",
       "signIn": "Iniciar sesión",
-      "startFreeTrial": "Comenzar prueba gratis",
+      "startFreeTrial": "Prueba gratis de 30 dias",
       "menuAriaLabel": "Abrir menú",
       "closeMenuAriaLabel": "Cerrar menú"
     },
@@ -344,7 +344,7 @@
       "heroTitleLine1": "Automatiza tus trabajos.",
       "heroTitleLine2": "Escala tu operación.",
       "heroDescription": "Prado combina facturación segura multiinquilino, optimización inteligente de rutas y facturación automatizada en un solo centro operativo.",
-      "viewPricing": "Ver precios",
+      "viewPricing": "Comenzar prueba de 30 dias",
       "exploreDemo": "Explorar demo en vivo",
       "whyChooseTitle": "¿Por qué hacer crecer tu negocio con Prado?",
       "whyChooseSubtitle": "Todo lo que necesitas para gestionar tus operaciones de campo, desde programar la primera visita hasta cobrar la factura final.",
@@ -365,7 +365,7 @@
       "industryCardDescription": "Despacho, programación y facturación en una sola vista operativa.",
       "ctaTitle": "¿Listo para optimizar tus operaciones?",
       "ctaDescription": "Únete a otras organizaciones que escalan su operación de despacho con seguridad en la nube.",
-      "ctaButton": "Ver precios"
+      "ctaButton": "Comenzar prueba de 30 dias"
     },
     "footer": {
       "copyright": "Todos los derechos reservados.",
@@ -377,7 +377,7 @@
       "badge": "Planes mensuales sencillos",
       "titleLine1": "Planes pensados para crecer",
       "titleLine2": "junto a tu flota.",
-      "description": "Sin compromisos a largo plazo. Selecciona el paquete que mejor se adapte a tu operación y activa tu espacio de trabajo de inmediato.",
+      "description": "Comienza con una prueba gratis de 30 dias y luego elige el paquete que mejor se adapte a tu operacion. Sin compromisos a largo plazo.",
       "coreTier": "Tier Básico",
       "individualOperator": "Operador individual",
       "coreDescription": "Ideal para espacios de trabajo individuales que necesitan registros básicos de CRM, coordinación manual de rutas y facturación sencilla.",
@@ -482,7 +482,7 @@
     },
     "signup": {
       "title": "Registrarse",
-      "subtitleTrial": "Crear cuenta de espacio de trabajo",
+      "subtitleTrial": "Crea tu cuenta de prueba de 30 dias",
       "subtitlePlan": "Crear espacio de trabajo para el tier {plan}",
       "emailTaken": "No se puede registrar. Este correo electrónico ya está en uso.",
       "serverError": "Ocurrió un error inesperado del servidor.",

@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabaseServer';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import Footer from '@/components/Footer';
-import Script from 'next/script';
 import PublicNavbar from '@/components/PublicNavbar';
 
 export default async function MarketingHomePage() {
@@ -234,22 +233,6 @@ export default async function MarketingHomePage() {
 
       {/* Global Landing Page Footer Component */}
       <Footer />
-      <Script
-        id="chatbase-integration-root"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `
-            window.chatbaseConfig = { chatbotId: 'QBldWxwKvYFFN27nBni1s' };
-            if (!document.getElementById('chatbase-script-root')) {
-              const chatbaseScript = document.createElement('script');
-              chatbaseScript.id = 'chatbase-script-root';
-              chatbaseScript.src = 'https://www.chatbase.co/embed.min.js';
-              chatbaseScript.defer = true;
-              document.head.appendChild(chatbaseScript);
-            }
-          `,
-        }}
-      />
     </div>
   );
 }
