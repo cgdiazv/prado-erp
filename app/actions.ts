@@ -478,6 +478,46 @@ export async function submitSupportTicket(formData: FormData) {
   }
 }
 
+export async function submitDemoRequest(formData: FormData) {
+  const name = (formData.get('name') as string | null)?.trim() || '';
+  const email = (formData.get('email') as string | null)?.trim() || '';
+  const companyName = (formData.get('companyName') as string | null)?.trim() || '';
+  const phone = (formData.get('phone') as string | null)?.trim() || '';
+  const preferredDate = (formData.get('preferredDate') as string | null)?.trim() || '';
+
+  if (!name || !email || !companyName || !phone || !preferredDate) {
+    return { error: 'Please fill out all required fields.' };
+  }
+
+  if (!process.env.RESEND_API_KEY) {
+    return { error: 'RESEND_API_KEY is missing.' };
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
+  try {
+    const { error } = await resend.emails.send({
+      from: 'Prado Demo <notifications@indevasa.com>',
+      to: 'info@pradojob.com',
+      replyTo: email,
+      subject: `[DEMO REQUEST] ${companyName} - ${name}`,
+      html: `
+        <h2>New Prado Demo Request</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Company:</strong> ${companyName}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Preferred Date:</strong> ${preferredDate}</p>
+      `,
+    });
+
+    if (error) return { error: error.message };
+    return { success: true };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to send demo request.' };
+  }
+}
+
 export async function hideDemoRecord(recordId: string, returnPath: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
