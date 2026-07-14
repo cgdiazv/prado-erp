@@ -286,6 +286,13 @@ type TranslationBundle = {
     workspaceIdentity: string;
     workspaceIdentityDescription: string;
     systemAccountEmail: string;
+    workspaceAddress: string;
+    workspaceAddressPlaceholder: string;
+    workspacePhoneNumber: string;
+    workspacePhonePlaceholder: string;
+    workspaceIdentitySave: string;
+    workspaceIdentitySaving: string;
+    workspaceIdentityUpdatedSuccess: string;
     securityCredentials: string;
     securityCredentialsDescription: string;
     passwordUpdatedSuccess: string;

@@ -31,6 +31,71 @@ export async function updatePassword(formData: FormData) {
   return { success: true };
 }
 
+export async function updateWorkspaceIdentity(formData: FormData) {
+  const phone = (formData.get('phone') as string | null)?.trim() || '';
+  const streetAddress = (formData.get('streetAddress') as string | null)?.trim() || '';
+  const city = (formData.get('city') as string | null)?.trim() || '';
+  const state = (formData.get('state') as string | null)?.trim() || '';
+  const zipCode = (formData.get('zipCode') as string | null)?.trim() || '';
+  const locale = (formData.get('locale') as string | null)?.trim() || 'en';
+
+  if (phone.length > 50) {
+    return { error: 'Phone must be 50 characters or fewer.' };
+  }
+
+  if (streetAddress.length > 255) {
+    return { error: 'Street address must be 255 characters or fewer.' };
+  }
+
+  if (city.length > 120) {
+    return { error: 'City must be 120 characters or fewer.' };
+  }
+
+  if (state.length > 120) {
+    return { error: 'State must be 120 characters or fewer.' };
+  }
+
+  if (zipCode.length > 20) {
+    return { error: 'ZIP code must be 20 characters or fewer.' };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be signed in to update workspace identity.' };
+  }
+
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('owner_id', user.id)
+    .single();
+
+  if (!org) {
+    return { error: 'Workspace not found.' };
+  }
+
+  const { error } = await supabase
+    .from('organizations')
+    .update({
+      phone,
+      street_address: streetAddress,
+      city,
+      state,
+      zip_code: zipCode,
+    })
+    .eq('id', org.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/dashboard/settings');
+  revalidatePath(`/${locale}/dashboard/settings`);
+  return { success: true };
+}
+
 export async function createService(name: string) {
   try {
     const supabase = await createClient();

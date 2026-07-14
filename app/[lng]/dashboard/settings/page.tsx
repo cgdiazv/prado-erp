@@ -8,6 +8,7 @@ import ServicesPanel from './ServicesPanel';
 import TrucksPanel from './TrucksPanel';
 import ExpenseCategoriesPanel from './ExpenseCategoriesPanel';
 import SubscriptionCancellationCard from './SubscriptionCancellationCard';
+import WorkspaceIdentityForm from './WorkspaceIdentityForm';
 import { getTranslations } from '@/lib/translations';
 
 export default async function SettingsPage({
@@ -30,7 +31,7 @@ export default async function SettingsPage({
   // 2. Fetch specific tenant workspace profile metadata safely (UPDATED: selected subscription_status)
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, subscription_status')
+    .select('*')
     .eq('owner_id', user.id)
     .single();
 
@@ -87,33 +88,16 @@ export default async function SettingsPage({
             <div className="bg-white rounded-xl border border-gray-200 shadow-xs divide-y divide-gray-100">
               
               {/* Module Section 1: Business Profile Information */}
-              <div className="p-6 md:p-8 space-y-6">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{translations.dashboard.workspaceIdentity}</h3>
-                  <p className="text-xs text-slate-400">{translations.dashboard.workspaceIdentityDescription}</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.dashboard.companyName}</label>
-                    <input 
-                      type="text" 
-                      defaultValue={org.name || ""} 
-                      disabled
-                      className="w-full rounded-lg border border-gray-200 bg-slate-50 p-2.5 text-sm text-gray-500 cursor-not-allowed outline-none" 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.dashboard.systemAccountEmail}</label>
-                    <input 
-                      type="email" 
-                      defaultValue={user.email || ""} 
-                      disabled
-                      className="w-full rounded-lg border border-gray-200 bg-slate-50 p-2.5 text-sm text-gray-500 cursor-not-allowed outline-none" 
-                    />
-                  </div>
-                </div>
-              </div>
+              <WorkspaceIdentityForm
+                companyName={org.name || ''}
+                systemEmail={user.email || ''}
+                initialPhone={org.phone || ''}
+                initialStreetAddress={org.street_address || ''}
+                initialCity={org.city || ''}
+                initialState={org.state || ''}
+                initialZipCode={org.zip_code || ''}
+                locale={locale}
+              />
 
               {/* NEW MODULE SECTION: Change Credentials Security Fields */}
               <PasswordForm locale={locale} />
