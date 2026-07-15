@@ -63,6 +63,13 @@ export default function LogExpenseModal({ locale = 'en' }: LogExpenseModalProps)
                   required
                   className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700"
                 />
+                <textarea
+                  name="description"
+                  placeholder="Description"
+                  rows={2}
+                  required
+                  className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700 resize-none"
+                />
 
                 <div className="flex gap-2 pt-2">
                   <button

@@ -145,6 +145,69 @@ export async function syncCompletedJobInvoiceToXero(payload: CompletedJobInvoice
   }
 }
 
+interface ExpensePayload {
+  organizationId: string;
+  vendorName: string;
+  expenseDate: string;
+  reference: string;
+  description: string;
+  amount: number;
+  accountCode?: string;
+}
+
+export async function syncExpenseToXeroBill(payload: ExpensePayload) {
+  try {
+    const { accessToken, tenantId } = await getValidXeroToken(payload.organizationId);
+
+    const xeroBillData = {
+      Invoices: [
+        {
+          Type: 'ACCPAY',
+          Contact: {
+            Name: payload.vendorName,
+          },
+          Date: payload.expenseDate,
+          DueDate: payload.expenseDate,
+          Reference: payload.reference,
+          LineItems: [
+            {
+              Description: payload.description,
+              Quantity: 1,
+              UnitAmount: payload.amount,
+              // Account code may vary by Xero org — 310 is typically Purchases/COGS
+              AccountCode: payload.accountCode ?? '310',
+            },
+          ],
+          Status: 'DRAFT',
+        },
+      ],
+    };
+
+    const response = await fetch('https://api.xero.com/api.xro/2.0/Invoices', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Xero-tenant-id': tenantId,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(xeroBillData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error detallado de Xero (expense bill):', errorData);
+      throw new Error('La API de Xero rechazó el registro del gasto.');
+    }
+
+    const result = await response.json();
+    return { success: true, bill: result.Invoices?.[0] };
+  } catch (error: any) {
+    console.error('Failed to sync expense to Xero:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // 1. Verificar si la organizacion esta conectada
 export async function checkXeroConnection(organizationId: string) {
   const supabase = createAdminClient();

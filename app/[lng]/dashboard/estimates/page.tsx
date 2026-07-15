@@ -573,15 +573,15 @@ export default function EstimatesPage() {
             </div>
 
             {/* Barra de Filtros */}
-            <div className="flex items-center gap-2 border-b border-gray-200 pb-4">
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit mb-6">
               {['all', 'draft', 'sent', 'approved', 'declined'].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setStatusFilter(filter)}
-                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg border capitalize transition cursor-pointer ${
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
                     statusFilter === filter
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'text-slate-600 border-gray-200 hover:bg-slate-50'
+                      ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
+                      : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   {filter === 'all' ? t.filterAll : filter === 'draft' ? t.filterDraft : filter === 'sent' ? t.filterSent : filter === 'approved' ? t.filterApproved : t.filterDeclined}
@@ -669,7 +669,7 @@ export default function EstimatesPage() {
                       </>
                     )}
                     {estimate.status === 'approved' && (
-                      <span className="text-[10px] text-emerald-500 font-bold">✓ {t.convertedToJob}</span>
+                      <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">{t.convertedToJob}</span>
                     )}
                     {estimate.status === 'declined' && (
                       <span className="text-[10px] text-red-500 font-bold">{t.declined}</span>

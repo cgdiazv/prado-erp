@@ -6,7 +6,7 @@ import { Resend } from 'resend';
 import { render } from '@react-email/render';
 import EstimateEmail from '@/emails/estimate-email';
 import InvoiceEmail from '@/emails/invoice-email';
-import { syncCompletedJobInvoiceToXero } from '@/app/actions/xeroActions';
+import { syncCompletedJobInvoiceToXero, syncExpenseToXeroBill } from '@/app/actions/xeroActions';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
@@ -208,6 +208,22 @@ export async function createExpense(formData: FormData) {
     ]);
 
   if (error) return { error: error.message };
+
+  // Sync expense to Xero as a draft Bill without blocking Prado save.
+  if (org?.id) {
+    const xeroSyncResult = await syncExpenseToXeroBill({
+      organizationId: org.id,
+      vendorName: vendor || 'Unknown Vendor',
+      expenseDate,
+      reference: `Prado Expense - ${category}`,
+      description: description || category,
+      amount,
+    });
+
+    if (!xeroSyncResult.success) {
+      console.error('Xero sync warning (expense kept in Prado):', xeroSyncResult.error);
+    }
+  }
 
   revalidatePath('/');
   return { success: true };

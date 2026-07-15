@@ -54,33 +54,33 @@ export default function CustomersAccountsSection({
 
   return (
     <>
-      <div className="flex items-center gap-2 border-b border-gray-200 pb-4">
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit mb-6">
         <button
           onClick={() => setBalanceFilter('all')}
-          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
             balanceFilter === 'all'
-              ? 'bg-slate-900 text-white border-slate-900'
-              : 'text-slate-600 border-gray-200 hover:bg-slate-50'
+              ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
+              : 'text-gray-500 hover:text-gray-700'
           }`}
         >
           {labels.filterAll}
         </button>
         <button
           onClick={() => setBalanceFilter('unpaid')}
-          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
             balanceFilter === 'unpaid'
-              ? 'bg-amber-600 text-white border-amber-600'
-              : 'text-amber-700 border-amber-200 hover:bg-amber-50'
+              ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
+              : 'text-gray-500 hover:text-gray-700'
           }`}
         >
           {labels.filterUnpaid}
         </button>
         <button
           onClick={() => setBalanceFilter('paid')}
-          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
             balanceFilter === 'paid'
-              ? 'bg-emerald-600 text-white border-emerald-600'
-              : 'text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+              ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
+              : 'text-gray-500 hover:text-gray-700'
           }`}
         >
           {labels.filterPaid}
