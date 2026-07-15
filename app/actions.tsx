@@ -564,7 +564,7 @@ export async function submitDemoRequest(formData: FormData) {
   try {
     if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const supabaseAdmin = createAdminClient();
-      const { error: insertError } = await supabaseAdmin.from('manual_download_leads').insert([
+      const { error: insertError } = await supabaseAdmin.from('leads').insert([
         {
           full_name: name,
           email,
@@ -575,7 +575,7 @@ export async function submitDemoRequest(formData: FormData) {
       ]);
 
       if (insertError) {
-        console.warn('Demo request insert failed (manual_download_leads):', insertError.message);
+        console.warn('Demo request insert failed (leads):', insertError.message);
       }
     }
 

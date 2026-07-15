@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const supabaseAdmin = createAdminClient();
       const { error: insertError } = await supabaseAdmin
-        .from('manual_download_leads')
+        .from('leads')
         .insert([
           {
             full_name: name,
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
         ]);
 
       if (insertError) {
-        console.warn('Lead capture insert failed (manual_download_leads):', insertError.message);
+        console.warn('Lead capture insert failed (leads):', insertError.message);
       }
     }
 

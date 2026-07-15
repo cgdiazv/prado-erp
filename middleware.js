@@ -3,13 +3,18 @@ import acceptLanguage from 'accept-language';
 import { fallbackLng, languages, cookieName } from './settings.js';
 
 acceptLanguage.languages(languages);
+const PUBLIC_FILE = /\.[^/]+$/;
 
 export const config = {
   // matcher: '/:lng*'
-  matcher: ['/((?!api|_next/static|_next/image|assets|favicon.ico|sw.js).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|assets|favicon.ico|sw.js|.*\\..*).*)'],
 };
 
 export function middleware(req) {
+  if (PUBLIC_FILE.test(req.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
   let lng;
   if (req.cookies.has(cookieName)) lng = acceptLanguage.get(req.cookies.get(cookieName).value);
   if (!lng) lng = acceptLanguage.get(req.headers.get('Accept-Language'));
