@@ -4,6 +4,7 @@ interface Expense {
   id: string;
   expense_date: string;
   category: string;
+  vendor?: string | null;
   description?: string | null;
   amount: number;
 }
@@ -25,6 +26,7 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
               <tr>
                 <th className="px-4 py-3">{translations.dashboard.expenseDate}</th>
                 <th className="px-4 py-3">{translations.dashboard.category}</th>
+                <th className="px-4 py-3">{translations.dashboard.vendor}</th>
                 <th className="px-4 py-3">{translations.dashboard.description}</th>
                 <th className="px-4 py-3 text-right">{translations.dashboard.amount}</th>
               </tr>
@@ -34,6 +36,7 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
                 <tr key={exp.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-600 text-xs">{exp.expense_date}</td>
                   <td className="px-4 py-3"><span className="bg-red-50 text-red-700 border border-red-100 px-2 py-0.5 rounded text-xs font-medium">{exp.category}</span></td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">{exp.vendor || '—'}</td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{exp.description || '—'}</td>
                   <td className="px-4 py-3 text-right text-red-600 font-mono font-semibold">-${exp.amount}</td>
                 </tr>

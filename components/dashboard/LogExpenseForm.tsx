@@ -20,6 +20,12 @@ export default function LogExpenseForm({ locale = 'en' }: LogExpenseFormProps) {
           name="category"
           className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none"
         />
+        <input
+          type="text"
+          name="vendor"
+          placeholder={translations.dashboard.vendorPlaceholder}
+          className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none"
+        />
         <input type="number" step="0.01" name="amount" placeholder={translations.dashboard.amountPlaceholder} required className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none" />
         <textarea name="description" placeholder="Description" rows={2} required className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none resize-none" />
         <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-medium py-2 rounded-lg transition shadow-sm">

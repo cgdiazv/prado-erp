@@ -290,6 +290,8 @@ type TranslationBundle = {
     logExpense: string;
     expenseDate: string;
     category: string;
+    vendor: string;
+    vendorPlaceholder: string;
     description: string;
     amount: string;
     amountPlaceholder: string;

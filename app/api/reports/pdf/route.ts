@@ -57,6 +57,21 @@ function fitText(text: string, maxLen = 120) {
   return `${text.slice(0, maxLen - 1)}...`;
 }
 
+function getColumnWeights(reportType: ReportType, columnCount: number): number[] {
+  const preset: Record<ReportType, number[]> = {
+    revenue: [1.2, 2.4, 1.1, 1],
+    expenses: [1.2, 1.7, 2.1, 1],
+    jobs: [1.2, 2.1, 2, 1, 1],
+    customers: [2.1, 2.6, 1.1, 1.1],
+    estimates: [1.2, 2.7, 1.1, 1],
+    schedule: [1.2, 1.8, 2.8, 1.6, 1],
+  };
+
+  const weights = preset[reportType] || [];
+  if (weights.length === columnCount) return weights;
+  return Array.from({ length: columnCount }, () => 1);
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -425,39 +440,118 @@ export async function GET(request: Request) {
     });
     y -= 16;
 
-    if (headers.length > 0) {
-      ensureSpace();
-      page.drawText(fitText(headers.join(' | '), 140), {
-        x: margin,
-        y,
-        size: 9,
-        font: bold,
-        color: rgb(0.1, 0.1, 0.1),
-      });
-      y -= lineHeight;
-    }
+    const tableWidth = page.getWidth() - margin * 2;
+    const cellPaddingX = 4;
+    const headerRowHeight = 20;
+    const dataRowHeight = 18;
+    const tableColumnCount = headers.length > 0 ? headers.length : Math.max(...rows.map((row) => row.length), 1);
+    const columnWeights = getColumnWeights(selectedReport, tableColumnCount);
+    const totalWeight = columnWeights.reduce((sum, weight) => sum + weight, 0);
+    const columnWidths = columnWeights.map((weight) => (tableWidth * weight) / totalWeight);
+    const columnXPositions = columnWidths.reduce<number[]>((positions, width, index) => {
+      if (index === 0) {
+        positions.push(margin);
+      } else {
+        positions.push(positions[index - 1] + columnWidths[index - 1]);
+      }
+      return positions;
+    }, []);
 
-    if (rows.length === 0) {
-      ensureSpace();
-      page.drawText('No records for selected range.', {
-        x: margin,
-        y,
-        size: 10,
-        font: regular,
-        color: rgb(0.3, 0.3, 0.3),
-      });
-      y -= lineHeight;
-    } else {
-      rows.forEach((row) => {
-        ensureSpace();
-        page.drawText(fitText(row.join(' | '), 140), {
-          x: margin,
-          y,
+    const textLimitForWidth = (width: number) => {
+      // Approximate glyph width in points for Helvetica text used in this report.
+      return Math.max(8, Math.floor((width - cellPaddingX * 2) / 4.6));
+    };
+
+    const drawHeaderRow = () => {
+      if (!headers.length) return;
+
+      ensureSpace(headerRowHeight + 4);
+      const headerY = y - headerRowHeight;
+
+      for (let col = 0; col < headers.length; col += 1) {
+        const x = columnXPositions[col] ?? margin;
+        const colWidth = columnWidths[col] ?? tableWidth;
+        page.drawRectangle({
+          x,
+          y: headerY,
+          width: colWidth,
+          height: headerRowHeight,
+          borderWidth: 1,
+          borderColor: rgb(0.75, 0.75, 0.75),
+          color: rgb(0.94, 0.96, 0.98),
+        });
+
+        page.drawText(fitText(headers[col], textLimitForWidth(colWidth)), {
+          x: x + cellPaddingX,
+          y: headerY + 6,
           size: 9,
+          font: bold,
+          color: rgb(0.1, 0.1, 0.1),
+        });
+      }
+
+      y = headerY;
+    };
+
+    const drawDataRow = (row: string[]) => {
+      ensureSpace(dataRowHeight + 2);
+      const rowY = y - dataRowHeight;
+
+      for (let col = 0; col < tableColumnCount; col += 1) {
+        const x = columnXPositions[col] ?? margin;
+        const colWidth = columnWidths[col] ?? tableWidth;
+        page.drawRectangle({
+          x,
+          y: rowY,
+          width: colWidth,
+          height: dataRowHeight,
+          borderWidth: 1,
+          borderColor: rgb(0.85, 0.85, 0.85),
+        });
+
+        const value = row[col] ?? '-';
+        page.drawText(fitText(String(value), textLimitForWidth(colWidth)), {
+          x: x + cellPaddingX,
+          y: rowY + 5,
+          size: 8,
           font: regular,
           color: rgb(0.2, 0.2, 0.2),
         });
-        y -= lineHeight;
+      }
+
+      y = rowY;
+    };
+
+    if (headers.length > 0) {
+      drawHeaderRow();
+    }
+
+    if (rows.length === 0) {
+      ensureSpace(dataRowHeight + 2);
+      page.drawRectangle({
+        x: margin,
+        y: y - dataRowHeight,
+        width: tableWidth,
+        height: dataRowHeight,
+        borderWidth: 1,
+        borderColor: rgb(0.85, 0.85, 0.85),
+      });
+      page.drawText('No records for selected range.', {
+        x: margin + cellPaddingX,
+        y: y - dataRowHeight + 5,
+        size: 9,
+        font: regular,
+        color: rgb(0.3, 0.3, 0.3),
+      });
+      y -= dataRowHeight;
+    } else {
+      rows.forEach((row) => {
+        if (y - (dataRowHeight + 2) < margin) {
+          page = pdfDoc.addPage([792, 612]);
+          y = page.getHeight() - margin;
+          drawHeaderRow();
+        }
+        drawDataRow(row);
       });
     }
 

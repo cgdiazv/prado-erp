@@ -56,6 +56,12 @@ export default function LogExpenseModal({ locale = 'en' }: LogExpenseModalProps)
                   className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none text-gray-700"
                 />
                 <input
+                  type="text"
+                  name="vendor"
+                  placeholder={translations.dashboard.vendorPlaceholder}
+                  className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700"
+                />
+                <input
                   type="number"
                   step="0.01"
                   name="amount"

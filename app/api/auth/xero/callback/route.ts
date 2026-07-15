@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const error = searchParams.get('error');
 
   if (error || !code) {
-    return NextResponse.redirect(new URL('/dashboard/settings?xero=error', request.url));
+    return NextResponse.redirect(new URL('/dashboard/settings/integrations?xero=error', request.url));
   }
 
   const clientId = process.env.NEXT_PUBLIC_XERO_CLIENT_ID;
@@ -101,7 +101,7 @@ export async function GET(request: Request) {
       throw upsertError;
     }
 
-    return NextResponse.redirect(new URL('/dashboard/settings?xero=success', request.url));
+    return NextResponse.redirect(new URL('/dashboard/settings/integrations?xero=success', request.url));
 
   } catch (err: any) {
     console.error('Xero OAuth Callback Error:', err);

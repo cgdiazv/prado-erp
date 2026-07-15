@@ -48,7 +48,7 @@ export default function XeroConnectionCard({ organizationId }: XeroConnectionCar
         setIsConnected(false);
         setTenantName(null);
         // Limpiamos los query params de la URL para dejar la interfaz limpia
-        router.push(locale ? `/${locale}/dashboard/settings` : '/dashboard/settings');
+        router.push(locale ? `/${locale}/dashboard/settings/integrations` : '/dashboard/settings/integrations');
       }
       setLoading(false);
     }
