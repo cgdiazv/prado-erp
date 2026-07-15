@@ -63,7 +63,7 @@ export default async function SettingsSectionPage({
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('*')
+    .select('id, name, logo_url, subscription_status, slogan, phone, street_address, city, state, zip_code')
     .eq('owner_id', user.id)
     .single();
 
@@ -134,19 +134,20 @@ export default async function SettingsSectionPage({
   let trucks: Array<{ id: string; name: string; plate_number: string | null; is_active: boolean; status: string | null }> = [];
 
   if (section === 'operations-settings') {
-    const { data: serviceRows } = await supabase
-      .from('services')
-      .select('id, name, description, base_price')
-      .eq('organization_id', org.id)
-      .not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`)
-      .order('name', { ascending: true });
-
-    const { data: truckRows } = await supabase
-      .from('trucks')
-      .select('id, name, plate_number, is_active, status')
-      .eq('organization_id', org.id)
-      .eq('is_active', true)
-      .order('name', { ascending: true });
+    const [{ data: serviceRows }, { data: truckRows }] = await Promise.all([
+      supabase
+        .from('services')
+        .select('id, name, description, base_price')
+        .eq('organization_id', org.id)
+        .not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`)
+        .order('name', { ascending: true }),
+      supabase
+        .from('trucks')
+        .select('id, name, plate_number, is_active, status')
+        .eq('organization_id', org.id)
+        .eq('is_active', true)
+        .order('name', { ascending: true }),
+    ]);
 
     services = serviceRows || [];
     trucks = truckRows || [];
