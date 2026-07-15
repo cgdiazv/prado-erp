@@ -9,6 +9,7 @@ import TrucksPanel from './TrucksPanel';
 import ExpenseCategoriesPanel from './ExpenseCategoriesPanel';
 import SubscriptionCancellationCard from './SubscriptionCancellationCard';
 import WorkspaceIdentityForm from './WorkspaceIdentityForm';
+import XeroConnectionCard from './XeroConnectionCard';
 import { getTranslations } from '@/lib/translations';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
@@ -82,6 +83,7 @@ export default async function SettingsPage({
 
   const initial = org.name ? org.name.charAt(0) : "C";
   const isIndividualAccount = org.subscription_status === 'individual';
+  const canAccessXeroSettings = org.subscription_status === 'trial' || org.subscription_status === 'enterprise';
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
@@ -147,6 +149,12 @@ export default async function SettingsPage({
             {!isIndividualAccount && (
               <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                 <ExpenseCategoriesPanel locale={locale} />
+              </div>
+            )}
+
+            {canAccessXeroSettings && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                <XeroConnectionCard organizationId={org.id} />
               </div>
             )}
 

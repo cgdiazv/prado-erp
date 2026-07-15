@@ -67,8 +67,9 @@
       "feature5": "Predictive Path Dispatch Engine",
       "feature6": "Real-Time Multi-Tenant Expense Auditing",
       "feature7": "Online Invoice Payments",
-      "feature8": "GPS Fleet Tracking",
+      "feature8": "GPS Fleet Tracking (Coming soon)",
       "feature9": "Priority Support with 4-Hour SLA",
+      "feature10": "Xero Integration Connection",
       "buyEnterprise": "Buy Enterprise Plan"
     },
     "demo": {
@@ -398,8 +399,9 @@
       "feature5": "Motor de despacho con rutas predictivas",
       "feature6": "Auditoría de gastos en tiempo real",
       "feature7": "Pagos en línea de facturas",
-      "feature8": "Seguimiento GPS de flota",
+      "feature8": "Seguimiento GPS de flota (Proximamente)",
       "feature9": "Soporte prioritario con SLA de 4 horas",
+      "feature10": "Conexión con Xero",
       "buyEnterprise": "Comprar plan empresarial"
     },
     "demo": {

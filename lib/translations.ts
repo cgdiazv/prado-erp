@@ -70,6 +70,7 @@ type TranslationBundle = {
     feature7: string;
     feature8: string;
     feature9: string;
+    feature10: string;
     buyEnterprise: string;
   };
   demo: {

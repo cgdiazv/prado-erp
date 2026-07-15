@@ -109,6 +109,7 @@ export default function PricingPage() {
                 <span className="text-slate-500 text-xs font-semibold ml-2">{translations.pricing.monthly}</span>
               </div>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-4 border-t border-slate-800/60">
+                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature10}</li>
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature7}</li>
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature8}</li>
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature9}</li>
