@@ -342,7 +342,10 @@
       "subscriptionCancellationMessage": "Cancelling will end the active paid plan and switch the workspace to the trial experience.",
       "sessionSecurity": "Session Security",
       "sessionSecurityDescription": "Terminate cookie authorization tokens securely",
-      "signOutOfAccount": "Sign Out of Account"
+      "signOutOfAccount": "Sign Out",
+      "deleteAccountTitle": "Delete Account",
+      "deleteAccountDescription": "Permanently delete your account and workspace data. This action cannot be undone.",
+      "deleteAccountButton": "Delete Account"
     }
   },
   "es": {
@@ -688,7 +691,10 @@
       "subscriptionCancellationMessage": "Cancelar finalizará el plan pagado activo e cambiará el espacio de trabajo a la experiencia de prueba.",
       "sessionSecurity": "Seguridad de sesión",
       "sessionSecurityDescription": "Termina los tokens de autorización de cookies de manera segura",
-      "signOutOfAccount": "Cerrar sesión de cuenta"
+      "signOutOfAccount": "Cerrar sesión",
+      "deleteAccountTitle": "Eliminar cuenta",
+      "deleteAccountDescription": "Elimina permanentemente tu cuenta y los datos de tu espacio de trabajo. Esta acción no se puede deshacer.",
+      "deleteAccountButton": "Eliminar cuenta"
     }
   }
 }

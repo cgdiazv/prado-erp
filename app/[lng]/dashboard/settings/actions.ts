@@ -423,10 +423,25 @@ export async function deactivateTruck(truckId: string) {
   }
 }
 
-export async function cancelSubscription() {
+export async function cancelSubscription(reasons: string[] = []) {
   const supabase = await createClient();
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
   const resend = new Resend(process.env.RESEND_API_KEY);
+
+  const normalizedReasons = Array.isArray(reasons)
+    ? reasons
+        .map((reason) => reason.trim())
+        .filter((reason) => reason.length > 0)
+        .slice(0, 10)
+    : [];
+
+  const escapeHtml = (value: string) =>
+    value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -462,6 +477,27 @@ export async function cancelSubscription() {
     if (dbError) {
       throw dbError;
     }
+
+    // Send cancellation feedback to admin inbox
+    await resend.emails.send({
+      from: 'Prado <billing@pradosa.com>',
+      to: 'info@pradojob.com',
+      subject: 'Subscription Canceled - User Feedback',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff; color: #0f172a;">
+          <h2 style="margin-top: 0; color: #0f172a;">Subscription cancellation reported</h2>
+          <p><strong>User email:</strong> ${escapeHtml(user.email || 'Unknown')}</p>
+          <p><strong>Organization ID:</strong> ${escapeHtml(org.id)}</p>
+          <p><strong>Previous plan:</strong> ${escapeHtml(org.subscription_status || 'Unknown')}</p>
+          <p><strong>Cancellation reasons:</strong></p>
+          ${
+            normalizedReasons.length > 0
+              ? `<ul>${normalizedReasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}</ul>`
+              : '<p>User canceled without selecting feedback reasons.</p>'
+          }
+        </div>
+      `,
+    });
 
     // Send a cancellation email
     if (user.email) {

@@ -85,6 +85,27 @@ export default async function SettingsPage({
   const initial = org.name ? org.name.charAt(0) : "C";
   const isIndividualAccount = org.subscription_status === 'individual';
   const canAccessXeroSettings = org.subscription_status === 'trial' || org.subscription_status === 'enterprise';
+  const sectionLinks: Array<{ id: string; label: string }> = [
+    { id: 'workspace-identity', label: locale.toLowerCase().startsWith('es') ? 'Perfil' : 'Profile' },
+    { id: 'security-credentials', label: locale.toLowerCase().startsWith('es') ? 'Credenciales' : 'Credentials' },
+    { id: 'services', label: translations.dashboard.servicesSection },
+  ];
+
+  if (!isIndividualAccount) {
+    sectionLinks.push({ id: 'trucks', label: translations.dashboard.trucksSection });
+    sectionLinks.push({ id: 'expense-categories', label: translations.dashboard.expenseCategoriesSection });
+    sectionLinks.push({ id: 'team-members', label: locale.toLowerCase().startsWith('es') ? 'Equipo' : 'Team' });
+  }
+
+  if (canAccessXeroSettings) {
+    sectionLinks.push({ id: 'xero-connection', label: 'Xero Connection' });
+  }
+
+  if (!isIndividualAccount) {
+    sectionLinks.push({ id: 'dispatch-settings', label: locale.toLowerCase().startsWith('es') ? 'Despacho' : 'Dispatch' });
+  }
+
+  sectionLinks.push({ id: 'subscription-management', label: locale.toLowerCase().startsWith('es') ? 'Suscripcion' : 'Subscription' });
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
@@ -116,8 +137,22 @@ export default async function SettingsPage({
               </Link>
             </div>
 
+            <nav className="-mt-3 overflow-x-auto pb-1">
+              <div className="flex min-w-max items-center gap-2">
+                {sectionLinks.map((section) => (
+                  <a
+                    key={section.id}
+                    href={`#${section.id}`}
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    {section.label}
+                  </a>
+                ))}
+              </div>
+            </nav>
+
             {/* Module Section 1: Business Profile Information */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+            <div id="workspace-identity" className="scroll-mt-28 bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
               <WorkspaceIdentityForm
                 companyName={org.name || ''}
                 systemEmail={user.email || ''}
@@ -133,41 +168,41 @@ export default async function SettingsPage({
             </div>
 
             {/* NEW MODULE SECTION: Change Credentials Security Fields */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+            <div id="security-credentials" className="scroll-mt-28 bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
               <PasswordForm locale={locale} />
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+            <div id="services" className="scroll-mt-28 bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
               <ServicesPanel initialServices={services || []} locale={locale} />
             </div>
 
             {!isIndividualAccount && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+              <div id="trucks" className="scroll-mt-28 bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                 <TrucksPanel initialTrucks={trucks || []} locale={locale} />
               </div>
             )}
 
             {!isIndividualAccount && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+              <div id="expense-categories" className="scroll-mt-28 bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                 <ExpenseCategoriesPanel locale={locale} />
               </div>
             )}
 
             {!isIndividualAccount && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+              <div id="team-members" className="scroll-mt-28 bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                 <TeamsPanel organizationId={org.id} locale={locale} />
               </div>
             )}
 
             {canAccessXeroSettings && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+              <div id="xero-connection" className="scroll-mt-28 bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                 <XeroConnectionCard organizationId={org.id} />
               </div>
             )}
 
             {!isIndividualAccount && (
               /* Module Section 2: Fleet & Routing Optimization Automation Rules */
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+              <div id="dispatch-settings" className="scroll-mt-28 bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                 <div className="p-6 md:p-8 space-y-6">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{translations.dashboard.dispatchSettings}</h3>
@@ -192,24 +227,24 @@ export default async function SettingsPage({
               </div>
             )}
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+            <div id="subscription-management" className="scroll-mt-28 bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
               <SubscriptionCancellationCard currentSubscriptionStatus={org.subscription_status} locale={locale} />
             </div>
 
-            {/* Module Section 3: Secure Signout Actions */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+            {/* Module Section 3: Account Deletion */}
+            <div id="delete-account" className="scroll-mt-28 bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
               <div className="p-6 md:p-8 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{translations.dashboard.sessionSecurity}</h3>
-                  <p className="text-xs text-slate-400">{translations.dashboard.sessionSecurityDescription}</p>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{translations.dashboard.deleteAccountTitle}</h3>
+                  <p className="text-xs text-slate-400">{translations.dashboard.deleteAccountDescription}</p>
                 </div>
                 
-                <form action="/auth/signout" method="POST">
+                <form action={`/${locale}/auth/delete-account`} method="POST">
                   <button 
                     type="submit" 
                     className="text-xs font-semibold px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition"
                   >
-                    {translations.dashboard.signOutOfAccount}
+                    {translations.dashboard.deleteAccountButton}
                   </button>
                 </form>
               </div>

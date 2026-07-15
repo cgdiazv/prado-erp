@@ -31,26 +31,44 @@ export default function SubscriptionCancellationCard({ currentSubscriptionStatus
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
+  const [otherReason, setOtherReason] = useState('');
+  const otherReasonOption = 'Other';
+
+  const cancellationReasons = [
+    'Too expensive for my current needs',
+    'Missing features I need',
+    'Switching to another platform',
+    'I am not using it enough',
+    'Technical issues or bugs',
+    'Support response was not fast enough',
+  ];
 
   const subscriptionLabel = formatSubscriptionStatus(currentSubscriptionStatus, locale);
   const canCancel =
     currentSubscriptionStatus === 'individual' ||
     currentSubscriptionStatus === 'growth' ||
     currentSubscriptionStatus === 'enterprise';
+  const hasOtherReasonSelected = selectedReasons.includes(otherReasonOption);
+  const canSubmitReasons =
+    selectedReasons.length > 0 &&
+    (!hasOtherReasonSelected || otherReason.trim().length > 0);
 
-  async function handleCancel() {
-    const confirmed = window.confirm(
-      `Cancel your current ${subscriptionLabel.toLowerCase()}? This will switch your workspace back to the trial experience.`
-    );
+  function toggleReason(reason: string) {
+    setSelectedReasons((previous) => {
+      if (previous.includes(reason)) {
+        return previous.filter((item) => item !== reason);
+      }
+      return [...previous, reason];
+    });
+  }
 
-    if (!confirmed) {
-      return;
-    }
-
+  async function handleCancel(reasons: string[]) {
     setIsPending(true);
     setFeedback(null);
 
-    const result = await cancelSubscription();
+    const result = await cancelSubscription(reasons);
 
     if (result?.error) {
       setFeedback(result.error);
@@ -59,8 +77,29 @@ export default function SubscriptionCancellationCard({ currentSubscriptionStatus
     }
 
     setFeedback('Your subscription has been canceled and the workspace is now on the trial plan.');
+    setIsModalOpen(false);
+    setSelectedReasons([]);
+    setOtherReason('');
     setIsPending(false);
     router.refresh();
+  }
+
+  async function handleCancelWithReasons() {
+    if (!canSubmitReasons) {
+      return;
+    }
+
+    const reasonPayload = hasOtherReasonSelected
+      ? selectedReasons
+          .filter((reason) => reason !== otherReasonOption)
+          .concat(`Other: ${otherReason.trim().slice(0, 500)}`)
+      : selectedReasons;
+
+    await handleCancel(reasonPayload);
+  }
+
+  async function handleCancelWithoutReasons() {
+    await handleCancel([]);
   }
 
   return (
@@ -85,7 +124,7 @@ export default function SubscriptionCancellationCard({ currentSubscriptionStatus
 
         <button
           type="button"
-          onClick={handleCancel}
+          onClick={() => setIsModalOpen(true)}
           disabled={isPending || !canCancel}
           className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
@@ -96,6 +135,81 @@ export default function SubscriptionCancellationCard({ currentSubscriptionStatus
           {translations.dashboard.subscriptionCancellationMessage}
         </p>
       </div>
+
+      {isModalOpen ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4">
+          <div className="w-full max-w-lg rounded-xl border border-gray-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h4 className="text-base font-semibold text-slate-900">Before you cancel</h4>
+                <p className="mt-1 text-sm text-slate-500">Select one or more reasons (optional but helpful).</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-md px-2 py-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                aria-label="Close cancellation modal"
+              >
+                x
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {cancellationReasons.map((reason) => (
+                <label key={reason} className="flex items-start gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={selectedReasons.includes(reason)}
+                    onChange={() => toggleReason(reason)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span>{reason}</span>
+                </label>
+              ))}
+
+              <label className="flex items-start gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={hasOtherReasonSelected}
+                  onChange={() => toggleReason(otherReasonOption)}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span>{otherReasonOption}</span>
+              </label>
+
+              {hasOtherReasonSelected ? (
+                <textarea
+                  value={otherReason}
+                  onChange={(event) => setOtherReason(event.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="Tell us more"
+                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                />
+              ) : null}
+            </div>
+
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={handleCancelWithoutReasons}
+                disabled={isPending}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Just cancel without answering
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelWithReasons}
+                disabled={isPending || !canSubmitReasons}
+                className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isPending ? translations.dashboard.cancelingLoading : 'Cancel and send feedback'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

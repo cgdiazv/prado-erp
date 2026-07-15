@@ -344,6 +344,9 @@ type TranslationBundle = {
     sessionSecurity: string;
     sessionSecurityDescription: string;
     signOutOfAccount: string;
+    deleteAccountTitle: string;
+    deleteAccountDescription: string;
+    deleteAccountButton: string;
   };
 };
 
