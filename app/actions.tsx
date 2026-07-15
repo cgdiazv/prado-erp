@@ -561,13 +561,30 @@ export async function submitDemoRequest(formData: FormData) {
     return { error: 'Please fill out all required fields.' };
   }
 
-  if (!process.env.RESEND_API_KEY) {
-    return { error: 'RESEND_API_KEY is missing.' };
-  }
-
-  const resend = new Resend(process.env.RESEND_API_KEY);
-
   try {
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const supabaseAdmin = createAdminClient();
+      const { error: insertError } = await supabaseAdmin.from('manual_download_leads').insert([
+        {
+          full_name: name,
+          email,
+          company_name: companyName,
+          locale: 'en',
+          source: 'demo-request',
+        },
+      ]);
+
+      if (insertError) {
+        console.warn('Demo request insert failed (manual_download_leads):', insertError.message);
+      }
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      return { success: true };
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
     const { error } = await resend.emails.send({
       from: 'Prado Demo <notifications@indevasa.com>',
       to: 'info@pradojob.com',
