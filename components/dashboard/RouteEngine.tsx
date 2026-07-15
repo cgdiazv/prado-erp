@@ -564,7 +564,7 @@ export default function RouteEngine({ orgId, jobs, trucks, locale = 'en' }: Rout
               event.preventDefault();
               void handleDropToUnassigned();
             }}
-            className="space-y-3 min-h-[260px] rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3"
+            className="grid grid-cols-1 md:grid-cols-2 gap-3 min-h-[260px] rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3"
           >
             {routeState.unassignedIds.length > 0 ? (
               routeState.unassignedIds.map((jobId, index) => renderJobCard(jobId, null, routeState.unassignedIds[index]))
@@ -625,7 +625,7 @@ export default function RouteEngine({ orgId, jobs, trucks, locale = 'en' }: Rout
                   </div>
                 )}
 
-                <div className="space-y-2 min-h-[72px]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 min-h-[72px]">
                   {assignedJobIds.length > 0 ? (
                     assignedJobIds.map((jobId, index) => {
                       const job = jobMap.get(jobId);

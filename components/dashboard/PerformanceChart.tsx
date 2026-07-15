@@ -65,7 +65,7 @@ export default function PerformanceChart({ totalRevenue, totalExpenses, netProfi
           </div>
           <div className="rounded-lg bg-white border border-slate-200 px-3 py-2 flex items-center justify-between text-xs font-semibold">
             <span className="text-slate-500">{translations.dashboard.netIncome}</span>
-            <span className={`font-mono ${netProfit >= 0 ? 'text-teal-600' : 'text-amber-600'}`}>
+            <span className={`font-mono ${netProfit >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
               ${netProfit.toFixed(2)}
             </span>
           </div>
@@ -75,7 +75,7 @@ export default function PerformanceChart({ totalRevenue, totalExpenses, netProfi
           <polyline points="0,20 100,20" fill="none" stroke="rgb(203 213 225)" strokeWidth="0.35" strokeDasharray="2 2" />
           <polyline points={revenueLine} fill="none" stroke="rgb(16 185 129)" strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
           <polyline points={expensesLine} fill="none" stroke="rgb(244 63 94)" strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
-          <polyline points={netLine} fill="none" stroke={netProfit >= 0 ? 'rgb(20 184 166)' : 'rgb(245 158 11)'} strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points={netLine} fill="none" stroke={netProfit >= 0 ? 'rgb(37 99 235)' : 'rgb(234 88 12)'} strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
 
         <div className="mt-3 relative h-4 text-[10px] font-semibold text-slate-500">
