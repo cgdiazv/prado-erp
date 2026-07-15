@@ -89,7 +89,9 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                         </span>
                       ) : (
                         <form
-                          action={markInvoiceAsPaid.bind(null, inv.id, inv.customer_id)}
+                          action={async () => {
+                            await markInvoiceAsPaid(inv.id, inv.customer_id);
+                          }}
                           className="inline-block"
                         >
                           <button

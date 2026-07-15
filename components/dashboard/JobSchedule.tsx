@@ -74,7 +74,11 @@ export default function JobSchedule({ jobs, locale = 'en' }: JobScheduleProps) {
                     <div className="flex items-center justify-end gap-2">
                       {/* MARK DONE ICON TRIGGER */}
                       {job.status === 'scheduled' ? (
-                        <form action={completeJob.bind(null, job.id)}>
+                        <form
+                          action={async () => {
+                            await completeJob(job.id);
+                          }}
+                        >
                           <button
                             type="submit"
                             title={translations.dashboard.markDone}
