@@ -6,6 +6,7 @@ import { Resend } from 'resend';
 import { render } from '@react-email/render';
 import EstimateEmail from '@/emails/estimate-email';
 import InvoiceEmail from '@/emails/invoice-email';
+import { syncCompletedJobInvoiceToXero } from '@/app/actions/xeroActions';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
@@ -54,7 +55,7 @@ export async function completeJob(jobId: string) {
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('name, slogan, logo_url')
+    .select('id, name, slogan, logo_url')
     .eq('owner_id', user?.id)
     .single();
 
@@ -95,7 +96,7 @@ export async function completeJob(jobId: string) {
   // Set the invoice due date to today (due immediately upon completion)
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const { error: invoiceError } = await supabase
+  const { data: invoiceRecord, error: invoiceError } = await supabase
     .from('invoices')
     .insert([
       {
@@ -105,9 +106,31 @@ export async function completeJob(jobId: string) {
         total_amount: total,
         tax_amount: estimatedTax,
       },
-    ]);
+    ])
+    .select('id')
+    .single();
 
   if (invoiceError) return { error: invoiceError.message };
+
+  // Sync the finalized Prado billing event to Xero without blocking Prado completion.
+  if (org?.id && invoiceRecord?.id) {
+    const customerDisplayName = `${customerMeta?.first_name || ''} ${customerMeta?.last_name || ''}`.trim() || customerMeta?.company_name || 'Prado Customer';
+
+    const xeroSyncResult = await syncCompletedJobInvoiceToXero({
+      organizationId: org.id,
+      customerName: customerDisplayName,
+      customerEmail: customerMeta?.email || null,
+      jobType: job.job_type,
+      invoiceId: invoiceRecord.id,
+      dueDate: todayStr,
+      baseAmount: Number(cost || 0),
+      taxAmount: Number(estimatedTax || 0),
+    });
+
+    if (!xeroSyncResult.success) {
+      console.error('Xero sync warning (invoice kept in Prado):', xeroSyncResult.error);
+    }
+  }
 
   // 4. EMAIL AUTOMATION ENGINE: Dispatches invoice instantly via Resend if email is verified
   if (customerMeta?.email) {

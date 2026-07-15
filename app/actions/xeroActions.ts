@@ -15,6 +15,17 @@ interface InvoicePayload {
   }>;
 }
 
+interface CompletedJobInvoicePayload {
+  organizationId: string;
+  customerName: string;
+  customerEmail?: string | null;
+  jobType: string;
+  invoiceId: string;
+  dueDate: string;
+  baseAmount: number;
+  taxAmount: number;
+}
+
 export async function syncEstimateToXeroInvoice(payload: InvoicePayload) {
   try {
     // Obtener los tokens válidos (se refrescan solos si es necesario)
@@ -66,6 +77,70 @@ export async function syncEstimateToXeroInvoice(payload: InvoicePayload) {
 
   } catch (error: any) {
     console.error('Failed to sync with Xero:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function syncCompletedJobInvoiceToXero(payload: CompletedJobInvoicePayload) {
+  try {
+    const { accessToken, tenantId } = await getValidXeroToken(payload.organizationId);
+
+    const contact: { Name: string; EmailAddress?: string } = {
+      Name: payload.customerName,
+    };
+
+    if (payload.customerEmail && payload.customerEmail.trim().length > 0) {
+      contact.EmailAddress = payload.customerEmail;
+    }
+
+    const xeroInvoiceData = {
+      Invoices: [
+        {
+          Type: 'ACCREC',
+          Contact: contact,
+          Date: new Date().toISOString().split('T')[0],
+          DueDate: payload.dueDate,
+          Reference: `Prado Invoice #${payload.invoiceId}`,
+          LineItems: [
+            {
+              Description: payload.jobType,
+              Quantity: 1,
+              UnitAmount: payload.baseAmount,
+              AccountCode: '200',
+            },
+            {
+              Description: 'Tax',
+              Quantity: 1,
+              UnitAmount: payload.taxAmount,
+              AccountCode: '200',
+            },
+          ],
+          Status: 'DRAFT',
+        },
+      ],
+    };
+
+    const response = await fetch('https://api.xero.com/api.xro/2.0/Invoices', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Xero-tenant-id': tenantId,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(xeroInvoiceData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error detallado de Xero (completed job invoice):', errorData);
+      throw new Error('La API de Xero rechazo la factura de job completado.');
+    }
+
+    const result = await response.json();
+    return { success: true, invoice: result.Invoices?.[0] };
+  } catch (error: any) {
+    console.error('Failed to sync completed job invoice with Xero:', error);
     return { success: false, error: error.message };
   }
 }
