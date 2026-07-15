@@ -51,6 +51,8 @@ export async function signup(formData: FormData) {
       return { error: authError?.message || 'Authentication signup failed.' };
     }
 
+    const userId = authData.user.id;
+
     // 2. Determine signup type: invite vs regular
     let ownerOrgId = inviteOrgId; // If invite signup, we'll use the inviting org
     let orgData = null;
@@ -63,7 +65,7 @@ export async function signup(formData: FormData) {
         .insert([
           {
             name: companyName,
-            owner_id: authData.user.id,
+            owner_id: userId,
             subscription_status: 'trial',
             trial_starts_at: new Date().toISOString()
           }
@@ -94,7 +96,7 @@ export async function signup(formData: FormData) {
       // Add user to each organization they were invited to
       const orgUserInserts = pendingInvites.map(invite => ({
         organization_id: invite.organization_id,
-        user_id: authData.user.id,
+        user_id: userId,
         role: invite.role,
       }));
 
