@@ -128,6 +128,7 @@ export default function EstimatesPage() {
         modalApproveTextEnd: 'Selecciona una fecha para agendarlo inmediatamente en el calendario operativo.',
         fieldDate: 'Fecha de Operacion en Campo',
         approveCreateJob: 'Aprobar y Crear Job',
+        approveProcessing: 'Procesando...',
         approveConvertError: 'Cotizacion aprobada, pero fallo la creacion del Job:',
         approveConvertSuccess: 'Cotizacion aprobada y Job agendado con exito!',
       }
@@ -193,6 +194,7 @@ export default function EstimatesPage() {
         modalApproveTextEnd: 'Select a date to schedule it immediately in the operations calendar.',
         fieldDate: 'Field Operation Date',
         approveCreateJob: 'Approve and Create Job',
+        approveProcessing: 'Processing...',
         approveConvertError: 'Quote approved, but job creation failed:',
         approveConvertSuccess: 'Quote approved and job scheduled successfully!',
       };
@@ -206,23 +208,18 @@ export default function EstimatesPage() {
   const [organizationLogoUrl, setOrganizationLogoUrl] = useState('');
   
   // States de UI
-  const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingEstimateId, setEditingEstimateId] = useState<string | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
-  const [selectedTruckId, setSelectedTruckId] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const resolvedSubscriptionStatus = subscriptionStatus ?? 'trial';
   const [serviceLines, setServiceLines] = useState<ServiceLine[]>([{ id: 1, serviceId: '', price: '' }]);
   const [scopeNotes, setScopeNotes] = useState('');
 
-  // State para conversión a Job
-  const [conversionEstimate, setConversionEstimate] = useState<Estimate | null>(null);
-  const [scheduledDate, setScheduledDate] = useState('');
-
   // State for sending email
   const [sendingEstimateId, setSendingEstimateId] = useState<string | null>(null);
+  const [approvingEstimateId, setApprovingEstimateId] = useState<string | null>(null);
 
   // Cargar datos iniciales desde Supabase
   useEffect(() => {
@@ -258,8 +255,6 @@ export default function EstimatesPage() {
         setTrucks([]);
         setOrganizationLogoUrl('');
       }
-
-      setLoading(false);
     }
     fetchData();
   }, []);
@@ -286,7 +281,6 @@ export default function EstimatesPage() {
     setEditingEstimateId(null);
     setSelectedCustomerId('');
     setSelectedPropertyId('');
-    setSelectedTruckId('');
     setScopeNotes('');
     setServiceLines([{ id: 1, serviceId: '', price: '' }]);
   };
@@ -341,7 +335,6 @@ export default function EstimatesPage() {
     setEditingEstimateId(null);
     setSelectedCustomerId('');
     setSelectedPropertyId('');
-    setSelectedTruckId('');
     setScopeNotes('');
     setServiceLines([{ id: 1, serviceId: '', price: '' }]);
     setIsCreateOpen(true);
@@ -352,7 +345,6 @@ export default function EstimatesPage() {
     setEditingEstimateId(estimate.id);
     setSelectedCustomerId(estimate.customer_id);
     setSelectedPropertyId(estimate.property_id || '');
-    setSelectedTruckId('');
     setScopeNotes(parsed.notes);
     setServiceLines(parsed.lines);
     setIsCreateOpen(true);
@@ -437,9 +429,30 @@ export default function EstimatesPage() {
   // Cambiar estado rápidamente
   async function handleStatusChange(id: string, status: 'draft' | 'sent' | 'approved' | 'declined') {
     if (status === 'approved') {
-      // Si se aprueba, abrimos el modal de agendamiento para convertir a Job
-      const est = estimates.find(e => e.id === id);
-      if (est) setConversionEstimate(est);
+      setApprovingEstimateId(id);
+
+      const statusRes = await updateEstimateStatus(id, 'approved');
+      if (statusRes.error) {
+        alert(statusRes.error);
+        setApprovingEstimateId(null);
+        return;
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T')[0];
+
+      const convertRes = await convertEstimateToJob(id, todayStr, null);
+      if (convertRes.error) {
+        alert(`${t.approveConvertError} ${convertRes.error}`);
+      }
+
+      const refreshed = await getEstimatesDashboardData();
+      if (!refreshed?.error) {
+        setEstimates((refreshed.estimates || []) as any);
+      }
+
+      setApprovingEstimateId(null);
       return;
     }
 
@@ -447,33 +460,6 @@ export default function EstimatesPage() {
     if (res.error) {
       alert(res.error);
     } else {
-      const refreshed = await getEstimatesDashboardData();
-      if (!refreshed?.error) {
-        setEstimates((refreshed.estimates || []) as any);
-      }
-    }
-  }
-
-  // Confirmar aprobación y convertir a Job agendado
-  async function handleApproveAndConvert(e: React.FormEvent) {
-    e.preventDefault();
-    if (!conversionEstimate || !scheduledDate) return;
-
-    // 1. Cambiamos el estado de la estimación a 'approved'
-    const statusRes = await updateEstimateStatus(conversionEstimate.id, 'approved');
-    if (statusRes.error) {
-      alert(statusRes.error);
-      return;
-    }
-
-    // 2. Ejecutamos el pipeline de conversión para insertar el Job automáticamente
-    const convertRes = await convertEstimateToJob(conversionEstimate.id, scheduledDate, selectedTruckId || null);
-    if (convertRes.error) {
-      alert(`${t.approveConvertError} ${convertRes.error}`);
-    } else {
-      setConversionEstimate(null);
-      setScheduledDate('');
-      setSelectedTruckId('');
       const refreshed = await getEstimatesDashboardData();
       if (!refreshed?.error) {
         setEstimates((refreshed.estimates || []) as any);
@@ -511,22 +497,6 @@ export default function EstimatesPage() {
       prev.map((line) => (line.id === id ? { ...line, [field]: value } : line))
     );
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-        <DashboardNavbar userInitials={userInitials} organizationLogoUrl={organizationLogoUrl} />
-        <div className="flex flex-1 relative">
-          <DashboardSidebar subscriptionStatus={resolvedSubscriptionStatus} locale={locale} />
-          <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-            <div className="max-w-5xl ml-0 border border-gray-200 bg-white rounded-xl p-6 text-sm text-slate-500 animate-pulse">
-              {t.loading}
-            </div>
-          </main>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
@@ -656,9 +626,10 @@ export default function EstimatesPage() {
                       <>
                         <button
                           onClick={() => handleStatusChange(estimate.id, 'approved')}
-                          className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 px-2 py-1 rounded transition cursor-pointer"
+                          disabled={approvingEstimateId === estimate.id}
+                          className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                         >
-                          {t.actionApproveSchedule}
+                          {approvingEstimateId === estimate.id ? t.approveProcessing : t.actionApproveSchedule}
                         </button>
                         <button
                           onClick={() => handleStatusChange(estimate.id, 'declined')}
@@ -821,66 +792,6 @@ export default function EstimatesPage() {
                   className="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-lg transition font-bold"
                 >
                   {editingEstimateId ? t.updateProposal : t.saveProposal}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: APROBAR Y CONVERTIR AUTOMATICAMENTE A JOB */}
-      {conversionEstimate && (
-        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white border border-gray-200 w-full max-w-md rounded-2xl overflow-hidden shadow-xl p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-2">{t.modalApproveTitle}</h2>
-            <p className="text-[11px] text-slate-500 mb-4">
-              {t.modalApproveTextStart}{' '}
-              <strong className="text-emerald-700">${conversionEstimate.estimated_amount.toFixed(2)}</strong>{' '}
-              {t.modalApproveTextMid}{' '}
-              <strong>{conversionEstimate.title}</strong>. {t.modalApproveTextEnd}
-            </p>
-            
-            <form onSubmit={handleApproveAndConvert} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="block text-slate-600 font-semibold">{t.fieldDate}</label>
-                <input
-                  type="date"
-                  required
-                  value={scheduledDate}
-                  onChange={(e) => setScheduledDate(e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-slate-600 font-semibold">{t.labelTruck}</label>
-                <select
-                  value={selectedTruckId}
-                  onChange={(e) => setSelectedTruckId(e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
-                >
-                  <option value="">{t.optionSelectTruckOptional}</option>
-                  {trucks.map((truck) => (
-                    <option key={truck.id} value={truck.id}>
-                      {truck.name}{truck.plate_number ? ` • ${truck.plate_number}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setConversionEstimate(null)}
-                  className="w-1/2 border border-gray-300 hover:bg-gray-50 p-2.5 rounded-lg transition font-bold text-slate-700"
-                >
-                  {t.cancel}
-                </button>
-                <button
-                  type="submit"
-                  className="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-lg transition font-bold"
-                >
-                  {t.approveCreateJob}
                 </button>
               </div>
             </form>

@@ -155,6 +155,19 @@ interface ExpensePayload {
   accountCode?: string;
 }
 
+type QueueWorkType = 'expense_bill' | 'completed_job_invoice';
+
+type QueueRow = {
+  id: string;
+  organization_id: string;
+  work_type: QueueWorkType;
+  source_id: string;
+  payload: any;
+  attempt_count: number;
+};
+
+const XERO_QUEUE_MAX_ATTEMPTS = 5;
+
 export async function syncExpenseToXeroBill(payload: ExpensePayload) {
   try {
     const { accessToken, tenantId } = await getValidXeroToken(payload.organizationId);
@@ -206,6 +219,238 @@ export async function syncExpenseToXeroBill(payload: ExpensePayload) {
     console.error('Failed to sync expense to Xero:', error);
     return { success: false, error: error.message };
   }
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  return String(error || 'Unknown error');
+}
+
+function nextRetryAtIso(attemptCount: number) {
+  const minutes = Math.min(2 ** attemptCount, 60);
+  return new Date(Date.now() + minutes * 60 * 1000).toISOString();
+}
+
+function buildExpenseBillInvoice(payload: ExpensePayload) {
+  return {
+    Type: 'ACCPAY',
+    Contact: {
+      Name: payload.vendorName || 'Unknown Vendor',
+    },
+    Date: payload.expenseDate,
+    DueDate: payload.expenseDate,
+    Reference: payload.reference,
+    LineItems: [
+      {
+        Description: payload.description,
+        Quantity: 1,
+        UnitAmount: payload.amount,
+        AccountCode: payload.accountCode ?? '310',
+      },
+    ],
+    Status: 'DRAFT',
+  };
+}
+
+function buildCompletedJobInvoice(payload: CompletedJobInvoicePayload) {
+  const contact: { Name: string; EmailAddress?: string } = {
+    Name: payload.customerName,
+  };
+
+  if (payload.customerEmail && payload.customerEmail.trim().length > 0) {
+    contact.EmailAddress = payload.customerEmail;
+  }
+
+  return {
+    Type: 'ACCREC',
+    Contact: contact,
+    Date: new Date().toISOString().split('T')[0],
+    DueDate: payload.dueDate,
+    Reference: `Prado Invoice #${payload.invoiceId}`,
+    LineItems: [
+      {
+        Description: payload.jobType,
+        Quantity: 1,
+        UnitAmount: payload.baseAmount,
+        AccountCode: '200',
+      },
+      {
+        Description: 'Tax',
+        Quantity: 1,
+        UnitAmount: payload.taxAmount,
+        AccountCode: '200',
+      },
+    ],
+    Status: 'DRAFT',
+  };
+}
+
+async function postInvoicesToXero(organizationId: string, invoices: any[]) {
+  const { accessToken, tenantId } = await getValidXeroToken(organizationId);
+
+  const response = await fetch('https://api.xero.com/api.xro/2.0/Invoices', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Xero-tenant-id': tenantId,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ Invoices: invoices }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    console.error('Error detallado de Xero (queue batch):', errorData);
+    throw new Error('Xero rejected batched sync request.');
+  }
+
+  return response.json();
+}
+
+async function enqueueXeroWork(workType: QueueWorkType, organizationId: string, sourceId: string, payload: object) {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from('xero_sync_queue')
+      .upsert(
+        {
+          organization_id: organizationId,
+          work_type: workType,
+          source_id: sourceId,
+          payload,
+          status: 'pending',
+          next_retry_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_error: null,
+        },
+        { onConflict: 'organization_id,work_type,source_id' }
+      );
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: unknown) {
+    return { success: false, error: getErrorMessage(error) };
+  }
+}
+
+export async function enqueueXeroExpenseBill(payload: ExpensePayload & { expenseId: string }) {
+  return enqueueXeroWork('expense_bill', payload.organizationId, payload.expenseId, payload);
+}
+
+export async function enqueueXeroCompletedJobInvoice(payload: CompletedJobInvoicePayload) {
+  return enqueueXeroWork('completed_job_invoice', payload.organizationId, payload.invoiceId, payload);
+}
+
+export async function processPendingXeroSyncQueue(batchSize = 100) {
+  const supabase = createAdminClient();
+  const nowIso = new Date().toISOString();
+
+  const { data: pendingRows, error: fetchError } = await supabase
+    .from('xero_sync_queue')
+    .select('id, organization_id, work_type, source_id, payload, attempt_count')
+    .eq('status', 'pending')
+    .lte('next_retry_at', nowIso)
+    .order('created_at', { ascending: true })
+    .limit(batchSize);
+
+  if (fetchError) {
+    return { success: false, error: fetchError.message };
+  }
+
+  if (!pendingRows || pendingRows.length === 0) {
+    return { success: true, processed: 0, synced: 0, retried: 0, failed: 0 };
+  }
+
+  const queueRows = pendingRows as QueueRow[];
+  const rowIds = queueRows.map((row) => row.id);
+
+  await supabase
+    .from('xero_sync_queue')
+    .update({ status: 'processing', updated_at: nowIso })
+    .in('id', rowIds)
+    .eq('status', 'pending');
+
+  let synced = 0;
+  let retried = 0;
+  let failed = 0;
+
+  const grouped = new Map<string, QueueRow[]>();
+  queueRows.forEach((row) => {
+    const key = `${row.organization_id}:${row.work_type}`;
+    const list = grouped.get(key) || [];
+    list.push(row);
+    grouped.set(key, list);
+  });
+
+  for (const [, rows] of grouped.entries()) {
+    const organizationId = rows[0].organization_id;
+    const workType = rows[0].work_type;
+
+    try {
+      const invoices = rows.map((row) =>
+        workType === 'expense_bill'
+          ? buildExpenseBillInvoice(row.payload as ExpensePayload)
+          : buildCompletedJobInvoice(row.payload as CompletedJobInvoicePayload)
+      );
+
+      const xeroResponse = await postInvoicesToXero(organizationId, invoices);
+      const xeroInvoices = Array.isArray(xeroResponse?.Invoices) ? xeroResponse.Invoices : [];
+
+      await Promise.all(
+        rows.map((row, index) =>
+          supabase
+            .from('xero_sync_queue')
+            .update({
+              status: 'synced',
+              processed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              last_error: null,
+              xero_document_id: xeroInvoices[index]?.InvoiceID || null,
+            })
+            .eq('id', row.id)
+        )
+      );
+
+      synced += rows.length;
+    } catch (error: unknown) {
+      const message = getErrorMessage(error).slice(0, 500);
+
+      await Promise.all(
+        rows.map((row) => {
+          const nextAttempt = row.attempt_count + 1;
+          const terminalFailure = nextAttempt >= XERO_QUEUE_MAX_ATTEMPTS;
+          if (terminalFailure) {
+            failed += 1;
+          } else {
+            retried += 1;
+          }
+
+          return supabase
+            .from('xero_sync_queue')
+            .update({
+              status: terminalFailure ? 'failed' : 'pending',
+              attempt_count: nextAttempt,
+              next_retry_at: terminalFailure ? null : nextRetryAtIso(nextAttempt),
+              last_error: message,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', row.id);
+        })
+      );
+    }
+  }
+
+  return {
+    success: true,
+    processed: queueRows.length,
+    synced,
+    retried,
+    failed,
+  };
 }
 
 // 1. Verificar si la organizacion esta conectada

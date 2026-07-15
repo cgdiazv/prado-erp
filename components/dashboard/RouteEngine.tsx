@@ -553,7 +553,7 @@ export default function RouteEngine({ orgId, jobs, trucks, locale = 'en' }: Rout
           <div className="flex items-start justify-between gap-4 mb-3">
             <div>
               <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">{translations.dashboard.unassignedJobs}</h2>
-              <p className="text-xs text-slate-400 mt-1">{translations.dashboard.routeDropHint}</p>
+              <p className="text-xs text-slate-400 mt-1">{translations.dashboard.routeReorderHint}</p>
             </div>
             <span className="text-xs font-medium text-slate-500">{routeState.unassignedIds.length} {translations.dashboard.routeStops}</span>
           </div>
@@ -580,7 +580,7 @@ export default function RouteEngine({ orgId, jobs, trucks, locale = 'en' }: Rout
         <div className="flex items-start justify-between gap-4 mb-3">
           <div>
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">{translations.dashboard.routeRoutes}</h2>
-            <p className="text-xs text-slate-400 mt-1">{translations.dashboard.routeReorderHint}</p>
+            <p className="text-xs text-slate-400 mt-1">{translations.dashboard.routeDropHint}</p>
           </div>
           <span className="text-xs font-medium text-slate-500">{translations.dashboard.routeSavedLocally}</span>
         </div>

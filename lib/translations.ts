@@ -272,6 +272,8 @@ type TranslationBundle = {
     price: string;
     dispatchJobTarget: string;
     liveJobSchedule: string;
+    scheduleDetails: string;
+    updateSchedule: string;
     markDone: string;
     completed: string;
     noActiveDispatchLogs: string;

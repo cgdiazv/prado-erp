@@ -7,7 +7,8 @@ import { render } from '@react-email/render';
 import EstimateEmail from '@/emails/estimate-email';
 import InvoiceEmail from '@/emails/invoice-email';
 import InviteMemberEmail from '@/emails/invite-member-email';
-import { syncCompletedJobInvoiceToXero, syncExpenseToXeroBill } from '@/app/actions/xeroActions';
+import { enqueueXeroCompletedJobInvoice, enqueueXeroExpenseBill } from '@/app/actions/xeroActions';
+import { geocodeAddressServer } from '@/lib/googleMapsServer';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
@@ -78,6 +79,72 @@ export async function updateJobTruckAssignment(jobId: string, truckId: string | 
   }
 }
 
+export async function updateJobScheduleDetails(jobId: string, scheduledDate: string, truckId: string | null) {
+  if (!jobId || !scheduledDate) return { error: 'Missing scheduling parameters.' };
+
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Unauthorized operational execution.' };
+
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (!org) return { error: 'No organizational profile found.' };
+
+    const { data: customers } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('organization_id', org.id);
+
+    const customerIds = (customers || []).map((customer) => customer.id);
+    if (customerIds.length === 0) {
+      return { error: 'No customers found for this organization.' };
+    }
+
+    const { data: properties } = await supabase
+      .from('properties')
+      .select('id')
+      .in('customer_id', customerIds);
+
+    const propertyIds = (properties || []).map((property) => property.id);
+    if (propertyIds.length === 0) {
+      return { error: 'No properties found for this organization.' };
+    }
+
+    const { data: targetJob } = await supabase
+      .from('jobs')
+      .select('id')
+      .eq('id', jobId)
+      .in('property_id', propertyIds)
+      .maybeSingle();
+
+    if (!targetJob) {
+      return { error: 'Job not found for this organization.' };
+    }
+
+    const { error } = await supabase
+      .from('jobs')
+      .update({
+        scheduled_date: scheduledDate,
+        truck_id: truckId || null,
+      })
+      .eq('id', jobId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard/schedule');
+    revalidatePath('/dashboard/routing');
+    return { success: true };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to update schedule details.' };
+  }
+}
+
 export async function completeJob(jobId: string) {
   if (!jobId) return { error: 'Missing Job ID' };
 
@@ -145,11 +212,11 @@ export async function completeJob(jobId: string) {
 
   if (invoiceError) return { error: invoiceError.message };
 
-  // Sync the finalized Prado billing event to Xero without blocking Prado completion.
+  // Queue the billing sync so user completion stays fast and Xero calls can be batched safely.
   if (org?.id && invoiceRecord?.id) {
     const customerDisplayName = `${customerMeta?.first_name || ''} ${customerMeta?.last_name || ''}`.trim() || customerMeta?.company_name || 'Prado Customer';
 
-    const xeroSyncResult = await syncCompletedJobInvoiceToXero({
+    const queueResult = await enqueueXeroCompletedJobInvoice({
       organizationId: org.id,
       customerName: customerDisplayName,
       customerEmail: customerMeta?.email || null,
@@ -160,8 +227,8 @@ export async function completeJob(jobId: string) {
       taxAmount: Number(estimatedTax || 0),
     });
 
-    if (!xeroSyncResult.success) {
-      console.error('Xero sync warning (invoice kept in Prado):', xeroSyncResult.error);
+    if (!queueResult.success) {
+      console.error('Xero queue warning (invoice kept in Prado):', queueResult.error);
     }
   }
 
@@ -227,7 +294,7 @@ export async function createExpense(formData: FormData) {
 
   if (!org) return { error: 'No organizational profile found.' };
 
-  const { error } = await supabase
+  const { data: expenseRecord, error } = await supabase
     .from('expenses')
     .insert([
       {
@@ -238,14 +305,17 @@ export async function createExpense(formData: FormData) {
         description,
         organization_id: org.id
       }
-    ]);
+    ])
+    .select('id')
+    .single();
 
   if (error) return { error: error.message };
 
-  // Sync expense to Xero as a draft Bill without blocking Prado save.
-  if (org?.id) {
-    const xeroSyncResult = await syncExpenseToXeroBill({
+  // Queue expense sync to Xero for batched processing.
+  if (org?.id && expenseRecord?.id) {
+    const queueResult = await enqueueXeroExpenseBill({
       organizationId: org.id,
+      expenseId: expenseRecord.id,
       vendorName: vendor || 'Unknown Vendor',
       expenseDate,
       reference: `Prado Expense - ${category}`,
@@ -253,8 +323,8 @@ export async function createExpense(formData: FormData) {
       amount,
     });
 
-    if (!xeroSyncResult.success) {
-      console.error('Xero sync warning (expense kept in Prado):', xeroSyncResult.error);
+    if (!queueResult.success) {
+      console.error('Xero queue warning (expense kept in Prado):', queueResult.error);
     }
   }
 
@@ -390,30 +460,11 @@ export async function createProperty(customerId: string, formData: FormData) {
 
     let latitude: number | null = null;
     let longitude: number | null = null;
-    
+
     const fullAddressString = `${streetAddress}, ${city}, ${state} ${zipCode}`;
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-    if (apiKey) {
-      try {
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddressString)}&key=${apiKey}`
-        );
-        const geocodeData = await response.json();
-
-        if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
-          const location = geocodeData.results[0].geometry.location;
-          latitude = location.lat;
-          longitude = location.lng;
-        } else {
-          console.warn(`⚠️ Geocoding resolution failed for: ${fullAddressString}. Status: ${geocodeData.status}`);
-        }
-      } catch (geoError) {
-        console.error('❌ Google Geocoding API execution failure:', geoError);
-      }
-    } else {
-      console.warn('⚠️ Geocoding skipped: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY environment token missing.');
-    }
+    const geocoded = await geocodeAddressServer(fullAddressString);
+    latitude = geocoded.latitude;
+    longitude = geocoded.longitude;
 
     const supabaseAdmin = createAdminClient();
     const { error: insertError } = await supabaseAdmin
@@ -1060,16 +1111,44 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
       return { error: 'Only approved estimates can be converted to jobs.' };
     }
 
+    const normalizedPropertyId =
+      typeof estimate.property_id === 'string' && estimate.property_id.trim() !== '' && estimate.property_id !== 'null'
+        ? estimate.property_id
+        : null;
+
+    if (!normalizedPropertyId) {
+      return { error: 'This estimate has no valid property selected. Please edit the estimate and choose a property before converting.' };
+    }
+
+    const conversionMarker = `[ESTIMATE_CONVERSION_ID:${estimate.id}]`;
+
+    // Guard against duplicate jobs from repeated submits for the same estimate.
+    const { data: existingConvertedJob, error: existingJobError } = await supabase
+      .from('jobs')
+      .select('id')
+      .eq('property_id', normalizedPropertyId)
+      .ilike('notes', `%${conversionMarker}%`)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingJobError) {
+      return { error: existingJobError.message };
+    }
+
+    if (existingConvertedJob?.id) {
+      return { success: true, duplicate: true };
+    }
+
     // 2. Insertar el nuevo Job basado en los datos de la estimación
     const { error: jobError } = await supabase
       .from('jobs')
       .insert([
         {
-          property_id: estimate.property_id,
+          property_id: normalizedPropertyId,
           scheduled_date: scheduledDate,
           job_type: estimate.title, // El título de la cotización pasa a ser el servicio
           cost_amount: estimate.estimated_amount,
-          notes: `Convertido automáticamente desde Cotización. Notas originales:\n${estimate.description || 'Ninguna.'}`,
+          notes: `${conversionMarker}\nConvertido automáticamente desde Cotización. Notas originales:\n${estimate.description || 'Ninguna.'}`,
           status: 'scheduled',
           truck_id: truckId || null
         }

@@ -86,6 +86,7 @@ export default async function SchedulePage({
             {/* Job Schedule — full width with modal trigger in header */}
             <JobSchedule
               jobs={jobs}
+              trucks={trucks}
               locale={locale}
             />
 

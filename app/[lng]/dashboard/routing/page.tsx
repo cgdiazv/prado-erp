@@ -5,31 +5,7 @@ import DashboardSidebar from '@/components/DashboardSidebar';
 import RouteEngine from '@/components/dashboard/RouteEngine';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
-
-async function geocodeAddress(address: string) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-  if (!apiKey || !address) return { latitude: null, longitude: null };
-
-  try {
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
-    );
-    const data = await response.json();
-
-    if (data.status === 'OK' && data.results?.length > 0) {
-      const location = data.results[0].geometry.location;
-      return {
-        latitude: location.lat as number,
-        longitude: location.lng as number,
-      };
-    }
-  } catch (error) {
-    console.error('Routing geocode failed:', error);
-  }
-
-  return { latitude: null, longitude: null };
-}
+import { geocodeAddressServer } from '@/lib/googleMapsServer';
 
 export default async function RoutingPage({
   params,
@@ -87,23 +63,58 @@ export default async function RoutingPage({
         .order('scheduled_date', { ascending: true })
     : { data: [] };
 
+  const geocodedByPropertyId = new Map<string, { latitude: number; longitude: number }>();
+
+  if (rawJobs && rawJobs.length > 0) {
+    const missingCoordinateProperties = Array.from(
+      new Map(
+        rawJobs
+          .filter((job) => {
+            const hasCoordinates = job.properties?.latitude !== null && job.properties?.longitude !== null;
+            return !hasCoordinates && !!job.property_id && !!job.properties?.street_address;
+          })
+          .map((job) => [job.property_id as string, job.properties?.street_address as string])
+      ).entries()
+    );
+
+    await Promise.all(
+      missingCoordinateProperties.map(async ([propertyId, streetAddress]) => {
+        const geocoded = await geocodeAddressServer(streetAddress);
+        if (geocoded.latitude === null || geocoded.longitude === null) return;
+
+        geocodedByPropertyId.set(propertyId, {
+          latitude: geocoded.latitude,
+          longitude: geocoded.longitude,
+        });
+
+        await supabase
+          .from('properties')
+          .update({
+            latitude: geocoded.latitude,
+            longitude: geocoded.longitude,
+          })
+          .eq('id', propertyId);
+      })
+    );
+  }
+
   const jobs = rawJobs
-    ? await Promise.all(rawJobs.map(async (job) => {
-        const streetAddress = job.properties?.street_address || '';
+    ? rawJobs.map((job) => {
         const hasCoordinates = job.properties?.latitude !== null && job.properties?.longitude !== null;
+        if (hasCoordinates || !job.property_id) return job;
 
-        if (hasCoordinates) return job;
+        const cachedCoordinates = geocodedByPropertyId.get(job.property_id as string);
+        if (!cachedCoordinates) return job;
 
-        const geocoded = await geocodeAddress(streetAddress);
         return {
           ...job,
           properties: {
             ...job.properties,
-            latitude: geocoded.latitude,
-            longitude: geocoded.longitude,
+            latitude: cachedCoordinates.latitude,
+            longitude: cachedCoordinates.longitude,
           },
         };
-      }))
+      })
     : [];
 
   const initial = org.name ? org.name.charAt(0) : "C";

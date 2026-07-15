@@ -39,9 +39,9 @@ export default async function DashboardHome({
         upcomingJobs: 'Jobs en los proximos 7 dias',
         sentEstimates: 'Estimaciones enviadas sin respuesta',
         draftEstimates: 'Estimaciones en borrador',
-        approvedEstimates: 'Estimaciones aprobadas por agendar',
+        incompleteJobs: 'Jobs incompletos',
         noUpcomingJobs: 'No hay jobs proximos. Programa tu siguiente servicio.',
-        nextActions: 'Siguientes Acciones',
+        nextActions: 'Plan de Ataque',
         actionScheduleJob: 'Agendar Job',
         actionManageInvoices: 'Gestionar Facturas',
         actionManageEstimates: 'Gestionar Estimaciones',
@@ -57,9 +57,9 @@ export default async function DashboardHome({
         upcomingJobs: 'Jobs in the next 7 days',
         sentEstimates: 'Sent estimates awaiting response',
         draftEstimates: 'Draft estimates pending send',
-        approvedEstimates: 'Approved estimates ready to schedule',
+        incompleteJobs: 'Incomplete jobs',
         noUpcomingJobs: 'No upcoming jobs. Schedule your next service.',
-        nextActions: 'Next Actions',
+        nextActions: 'Action Plan',
         actionScheduleJob: 'Schedule Job',
         actionManageInvoices: 'Manage Invoices',
         actionManageEstimates: 'Manage Estimates',
@@ -123,9 +123,60 @@ export default async function DashboardHome({
   const totalExpenses = expenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
   const netProfit = totalRevenue - totalExpenses;
 
+  const toDayKey = (value: Date) => {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const today = new Date();
   const sevenDaysFromNow = new Date(today);
   sevenDaysFromNow.setDate(today.getDate() + 7);
+
+  const rollingDates: Date[] = Array.from({ length: 25 }, (_, index) => {
+    const date = new Date(today);
+    date.setHours(0, 0, 0, 0);
+    date.setDate(today.getDate() - (24 - index));
+    return date;
+  });
+
+  const rollingDateKeys = new Set(rollingDates.map((date) => toDayKey(date)));
+  const revenueByDay = new Map<string, number>();
+  const expensesByDay = new Map<string, number>();
+
+  rollingDates.forEach((date) => {
+    const key = toDayKey(date);
+    revenueByDay.set(key, 0);
+    expensesByDay.set(key, 0);
+  });
+
+  invoices.forEach((invoice) => {
+    if (!invoice.due_date) return;
+    const key = invoice.due_date;
+    if (!rollingDateKeys.has(key)) return;
+    revenueByDay.set(key, (revenueByDay.get(key) || 0) + Number(invoice.total_amount || 0));
+  });
+
+  expenses.forEach((expense) => {
+    if (!expense.expense_date) return;
+    const key = expense.expense_date;
+    if (!rollingDateKeys.has(key)) return;
+    expensesByDay.set(key, (expensesByDay.get(key) || 0) + Number(expense.amount || 0));
+  });
+
+  const trendData = rollingDates.map((date) => {
+    const key = toDayKey(date);
+    const revenue = revenueByDay.get(key) || 0;
+    const expense = expensesByDay.get(key) || 0;
+
+    return {
+      dateLabel: date.toLocaleDateString(locale, { month: 'short', day: 'numeric' }),
+      revenue,
+      expenses: expense,
+      netIncome: revenue - expense,
+    };
+  });
 
   const overdueInvoices = invoices.filter((inv) => {
     if (inv.status !== 'unpaid' || !inv.due_date) return false;
@@ -139,9 +190,9 @@ export default async function DashboardHome({
     const scheduled = new Date(job.scheduled_date);
     return !Number.isNaN(scheduled.getTime()) && scheduled >= today && scheduled <= sevenDaysFromNow;
   }).length;
+  const incompleteJobs = jobs.filter((job) => job.status !== 'completed').length;
   const sentEstimates = estimates.filter((estimate) => estimate.status === 'sent').length;
   const draftEstimates = estimates.filter((estimate) => estimate.status === 'draft').length;
-  const approvedEstimates = estimates.filter((estimate) => estimate.status === 'approved').length;
 
   const initial = org.name ? org.name.charAt(0) : "C";
 
@@ -150,35 +201,35 @@ export default async function DashboardHome({
       <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">{t.priorityAlerts}</h2>
-          {(overdueInvoices === 0 && unassignedScheduledJobs === 0 && sentEstimates === 0 && draftEstimates === 0 && approvedEstimates === 0) && (
+          {(overdueInvoices === 0 && unassignedScheduledJobs === 0 && sentEstimates === 0 && draftEstimates === 0) && (
             <span className="text-xs font-medium text-emerald-600">{t.noAlerts}</span>
           )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">{t.overdueInvoices}</span>
-            <span className="text-sm font-bold text-slate-800">{overdueInvoices}</span>
+            <span className="text-xs font-semibold text-slate-700">{t.sentEstimates}</span>
+            <span className="text-sm font-bold text-slate-800">{sentEstimates}</span>
           </div>
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">{t.unassignedJobs}</span>
-            <span className="text-sm font-bold text-slate-800">{unassignedScheduledJobs}</span>
+            <span className="text-xs font-semibold text-slate-800">{t.draftEstimates}</span>
+            <span className="text-sm font-bold text-slate-700">{draftEstimates}</span>
           </div>
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-700">{t.upcomingJobs}</span>
             <span className="text-sm font-bold text-slate-800">{upcomingJobs}</span>
           </div>
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">{t.sentEstimates}</span>
-            <span className="text-sm font-bold text-slate-800">{sentEstimates}</span>
-          </div>
-          <div className="rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-800">{t.draftEstimates}</span>
-            <span className="text-sm font-bold text-slate-700">{draftEstimates}</span>
+            <span className="text-xs font-semibold text-slate-700">{t.unassignedJobs}</span>
+            <span className="text-sm font-bold text-slate-800">{unassignedScheduledJobs}</span>
           </div>
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">{t.approvedEstimates}</span>
-            <span className="text-sm font-bold text-slate-800">{approvedEstimates}</span>
+            <span className="text-xs font-semibold text-slate-700">{t.incompleteJobs}</span>
+            <span className="text-sm font-bold text-slate-800">{incompleteJobs}</span>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-700">{t.overdueInvoices}</span>
+            <span className="text-sm font-bold text-slate-800">{overdueInvoices}</span>
           </div>
         </div>
       </div>
@@ -237,12 +288,24 @@ export default async function DashboardHome({
               <>
                 {operationsPanel}
                 <Metrics totalRevenue={totalRevenue} totalExpenses={totalExpenses} netProfit={netProfit} locale={locale} />
-                <PerformanceChart totalRevenue={totalRevenue} totalExpenses={totalExpenses} netProfit={netProfit} locale={locale} />
+                <PerformanceChart
+                  totalRevenue={totalRevenue}
+                  totalExpenses={totalExpenses}
+                  netProfit={netProfit}
+                  trendData={trendData}
+                  locale={locale}
+                />
               </>
             ) : (
               <>
                 <Metrics totalRevenue={totalRevenue} totalExpenses={totalExpenses} netProfit={netProfit} locale={locale} />
-                <PerformanceChart totalRevenue={totalRevenue} totalExpenses={totalExpenses} netProfit={netProfit} locale={locale} />
+                <PerformanceChart
+                  totalRevenue={totalRevenue}
+                  totalExpenses={totalExpenses}
+                  netProfit={netProfit}
+                  trendData={trendData}
+                  locale={locale}
+                />
                 {operationsPanel}
               </>
             )}
