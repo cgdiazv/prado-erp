@@ -46,6 +46,38 @@ export async function createJob(formData: FormData) {
   return { success: true };
 }
 
+export async function updateJobTruckAssignment(jobId: string, truckId: string | null) {
+  if (!jobId) return { error: 'Missing Job ID' };
+
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Unauthorized operational execution.' };
+
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (!org) return { error: 'No organizational profile found.' };
+
+    const { error } = await supabase
+      .from('jobs')
+      .update({ truck_id: truckId })
+      .eq('id', jobId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard/routing');
+    revalidatePath('/dashboard/schedule');
+    return { success: true };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to update job assignment.' };
+  }
+}
+
 export async function completeJob(jobId: string) {
   if (!jobId) return { error: 'Missing Job ID' };
 

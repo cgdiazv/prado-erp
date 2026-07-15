@@ -82,7 +82,7 @@ export default async function RoutingPage({
   const { data: rawJobs } = propertyIds.length > 0
     ? await supabase
         .from('jobs')
-        .select('*, truck_id, properties(street_address, latitude, longitude, customer_id)')
+        .select('*, truck_id, properties(street_address, latitude, longitude, customer_id, customers(first_name, last_name, company_name))')
         .in('property_id', propertyIds)
         .order('scheduled_date', { ascending: true })
     : { data: [] };
@@ -119,8 +119,7 @@ export default async function RoutingPage({
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.dispatchRoutingOptimization}</h1>
               <p className="text-xs text-slate-400 mt-1">{translations.dashboard.dispatchRoutingDescription}</p>
             </div>
-            {/* UPDATED: Now supplying both the job records and the truck list to the engine */}
-            <RouteEngine jobs={jobs || []} trucks={trucks} locale={locale} />
+              <RouteEngine orgId={org.id} jobs={jobs || []} trucks={trucks} locale={locale} />
           </div>
         </main>
       </div>
