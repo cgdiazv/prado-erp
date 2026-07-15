@@ -1,5 +1,6 @@
 'use client';
 
+import { FormEvent, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Footer from '@/components/Footer';
 import PublicNavbar from '@/components/PublicNavbar';
@@ -10,10 +11,53 @@ export default function PricingPage() {
   const params = useParams<{ lng?: string }>();
   const locale = params?.lng ?? 'en';
   const translations = getTranslations(locale);
+  const [leadName, setLeadName] = useState('');
+  const [leadEmail, setLeadEmail] = useState('');
+  const [leadCompany, setLeadCompany] = useState('');
+  const [leadError, setLeadError] = useState<string | null>(null);
+  const [leadSuccess, setLeadSuccess] = useState<string | null>(null);
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
 
   const handlePlanSelection = (planType: 'individual' | 'growth' | 'enterprise') => {
     // Intercepts anonymous checkout and forces registration step while preserving tier intent
     router.push(`/signup?plan=${planType}`);
+  };
+
+  const handleManualLead = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLeadError(null);
+    setLeadSuccess(null);
+    setIsSubmittingLead(true);
+
+    try {
+      const response = await fetch('/api/lead-magnet/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: leadName,
+          email: leadEmail,
+          company: leadCompany,
+          locale,
+          source: 'pricing-page-banner',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setLeadError(result.error || translations.pricing.manualGenericError);
+        return;
+      }
+
+      setLeadSuccess(translations.pricing.manualSuccess);
+      setLeadName('');
+      setLeadEmail('');
+      setLeadCompany('');
+    } catch {
+      setLeadError(translations.pricing.manualGenericError);
+    } finally {
+      setIsSubmittingLead(false);
+    }
   };
 
   return (
@@ -36,7 +80,7 @@ export default function PricingPage() {
         </header>
 
         {/* Pricing Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start max-w-6xl mx-auto">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start max-w-6xl mx-auto mb-12 md:mb-16">
           
           {/* Individual Card */}
           <div className="bg-slate-900/40 border border-slate-800 p-6 md:p-8 rounded-2xl space-y-6 flex flex-col justify-between min-h-[380px]">
@@ -120,6 +164,77 @@ export default function PricingPage() {
             </button>
           </div>
 
+        </section>
+
+        <section className="mt-8 md:mt-12 relative overflow-hidden rounded-3xl border border-emerald-700/50 bg-gradient-to-br from-emerald-900/30 via-slate-900 to-teal-900/20 p-6 md:p-8">
+          <div className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" aria-hidden="true" />
+          <div className="pointer-events-none absolute -bottom-16 -left-8 h-48 w-48 rounded-full bg-teal-400/10 blur-3xl" aria-hidden="true" />
+
+          <div className="relative grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+            <div className="lg:col-span-3 space-y-4">
+              <p className="inline-flex items-center gap-2 rounded-full border border-emerald-500/50 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-300">
+                {translations.pricing.manualBadge}
+              </p>
+              <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight max-w-xl">
+                {translations.pricing.manualHeadline}
+              </h2>
+              <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+                {translations.pricing.manualDescription}
+              </p>
+            </div>
+
+            <form onSubmit={handleManualLead} className="lg:col-span-2 rounded-2xl border border-slate-700/80 bg-slate-950/70 p-4 md:p-5 space-y-3 backdrop-blur-sm">
+              <label className="text-xs font-semibold text-slate-300 block" htmlFor="lead-name">
+                {translations.pricing.manualNameLabel}
+              </label>
+              <input
+                id="lead-name"
+                type="text"
+                required
+                value={leadName}
+                onChange={(event) => setLeadName(event.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                placeholder={translations.pricing.manualNamePlaceholder}
+              />
+
+              <label className="text-xs font-semibold text-slate-300 block" htmlFor="lead-email">
+                {translations.pricing.manualEmailLabel}
+              </label>
+              <input
+                id="lead-email"
+                type="email"
+                required
+                value={leadEmail}
+                onChange={(event) => setLeadEmail(event.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                placeholder={translations.pricing.manualEmailPlaceholder}
+              />
+
+              <label className="text-xs font-semibold text-slate-300 block" htmlFor="lead-company">
+                {translations.pricing.manualCompanyLabel}
+              </label>
+              <input
+                id="lead-company"
+                type="text"
+                required
+                value={leadCompany}
+                onChange={(event) => setLeadCompany(event.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                placeholder={translations.pricing.manualCompanyPlaceholder}
+              />
+
+              {leadError && <p className="text-xs text-rose-400">{leadError}</p>}
+              {leadSuccess && <p className="text-xs text-emerald-300">{leadSuccess}</p>}
+
+              <button
+                type="submit"
+                disabled={isSubmittingLead}
+                className="w-full rounded-xl bg-emerald-400 text-slate-950 font-bold text-sm py-2.5 hover:bg-emerald-300 transition disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSubmittingLead ? translations.pricing.manualLoading : translations.pricing.manualSubmit}
+              </button>
+            </form>
+          </div>
         </section>
       </main>
 

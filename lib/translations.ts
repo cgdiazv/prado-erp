@@ -72,6 +72,20 @@ type TranslationBundle = {
     feature9: string;
     feature10: string;
     buyEnterprise: string;
+    manualBadge: string;
+    manualHeadline: string;
+    manualDescription: string;
+    manualNameLabel: string;
+    manualNamePlaceholder: string;
+    manualEmailLabel: string;
+    manualEmailPlaceholder: string;
+    manualCompanyLabel: string;
+    manualCompanyPlaceholder: string;
+    manualSubmit: string;
+    manualLoading: string;
+    manualSuccess: string;
+    manualDownloadUnavailable: string;
+    manualGenericError: string;
   };
   demo: {
     badge: string;
