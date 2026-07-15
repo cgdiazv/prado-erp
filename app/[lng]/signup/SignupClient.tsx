@@ -3,25 +3,27 @@
 import { signup } from '../auth/actions';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, FormEvent, ChangeEvent, use } from 'react';
+import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import PublicNavbar from '@/components/PublicNavbar';
 import { getTranslations } from '@/lib/translations';
 
 interface SignUpClientProps {
-  searchParams: Promise<{ plan?: string }>;
+  searchParams: Promise<{ plan?: string; email?: string; org_id?: string; org_name?: string }>;
   locale: string;
 }
 
 export default function SignUpClient({ searchParams, locale }: SignUpClientProps) {
   const router = useRouter();
   const translations = getTranslations(locale);
-  
-  // Unpack async searchParams cleanly in the Client Component
-  const resolvedParams = use(searchParams);
-  const targetPlan = resolvedParams.plan || 'trial';
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [orgId, setOrgId] = useState('');
+  const [orgName, setOrgName] = useState('');
+  const [targetPlan, setTargetPlan] = useState('trial');
   
   // States for Email Validation Checking
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
@@ -30,13 +32,47 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
   // State to toggle password display text visibility
   const [showPassword, setShowPassword] = useState(false);
 
+  // Extract and set all params from the Promise
+  useEffect(() => {
+    (async () => {
+      const resolvedParams = await searchParams;
+      const plan = resolvedParams.plan || 'trial';
+      const invEmail = resolvedParams.email || '';
+      const orgIDValue = resolvedParams.org_id || '';
+      const orgNameValue = resolvedParams.org_name || '';
+
+      setTargetPlan(plan);
+      setInviteEmail(invEmail);
+      setOrgId(orgIDValue);
+      setOrgName(orgNameValue);
+
+      // Pre-fill email if present
+      if (invEmail) {
+        setEmail(invEmail);
+        setEmailAvailable(true);
+      }
+
+      // Pre-fill company name if organization name is present
+      if (orgNameValue) {
+        setCompanyName(orgNameValue);
+      }
+    })();
+  }, [searchParams]);
+
   // Simple debounced email lookup verification
   let debounceTimeout: NodeJS.Timeout;
   
   async function handleEmailChange(event: ChangeEvent<HTMLInputElement>) {
-    const email = event.target.value.trim();
+    const newEmail = event.target.value.trim();
+    setEmail(newEmail);
+
+    // Skip validation if this is the invited email
+    if (newEmail === inviteEmail) {
+      setEmailAvailable(true);
+      return;
+    }
     
-    if (!email || !email.includes('@')) {
+    if (!newEmail || !newEmail.includes('@')) {
       setEmailAvailable(null);
       return;
     }
@@ -46,7 +82,7 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
 
     debounceTimeout = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/validate-email?email=${encodeURIComponent(email)}`);
+        const res = await fetch(`/api/validate-email?email=${encodeURIComponent(newEmail)}`);
         const data = await res.json();
         setEmailAvailable(data.available);
       } catch {
@@ -107,11 +143,17 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
         <div className="w-full max-w-md bg-white p-8 rounded-xl border border-gray-200 shadow-sm transition duration-150">
           <header className="mb-6 text-center">
             <h1 className="text-2xl font-bold text-emerald-700">{translations.signup.title}</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {targetPlan !== 'trial' 
-                ? translations.signup.subtitlePlan.replace('{plan}', targetPlan)
-                : translations.signup.subtitleTrial}
-            </p>
+            {orgName ? (
+              <p className="text-sm text-emerald-600 mt-2 font-medium">
+                {`Joining: ${orgName}`}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-500 mt-1">
+                {targetPlan !== 'trial' 
+                  ? translations.signup.subtitlePlan.replace('{plan}', targetPlan)
+                  : translations.signup.subtitleTrial}
+              </p>
+            )}
           </header>
 
           {errorMessage && (
@@ -123,6 +165,8 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* HIDDEN INPUT INTENT FLAG FOR THE SERVER ACTION */}
             <input type="hidden" name="intendedPlan" value={targetPlan} />
+            {orgId && <input type="hidden" name="organization_id" value={orgId} />}
+            {orgName && <input type="hidden" name="organization_name" value={orgName} />}
 
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.signup.companyNameLabel}</label>
@@ -130,6 +174,8 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
                 type="text" 
                 name="companyName" 
                 required 
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
                 placeholder={translations.signup.companyNamePlaceholder}
                 className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition" 
               />
@@ -142,7 +188,7 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
                 {emailAvailable === false && !checkingEmail && (
                   <span className="text-[10px] text-red-600 font-bold">{translations.signup.emailAlreadyTaken}</span>
                 )}
-                {emailAvailable === true && !checkingEmail && (
+                {emailAvailable === true && !checkingEmail && !inviteEmail && (
                   <span className="text-[10px] text-emerald-600 font-bold">{translations.signup.emailAvailable}</span>
                 )}
               </div>
@@ -150,6 +196,7 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
                 type="email" 
                 name="email" 
                 required 
+                value={email}
                 onChange={handleEmailChange}
                 placeholder={translations.signup.emailPlaceholder}
                 className={`w-full rounded-lg border p-2.5 text-sm bg-white outline-none focus:ring-2 transition text-gray-900 ${

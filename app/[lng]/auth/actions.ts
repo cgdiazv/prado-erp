@@ -31,12 +31,14 @@ export async function signup(formData: FormData) {
     const password = formData.get('password') as string;
     const companyName = formData.get('companyName') as string;
     const intendedPlan = formData.get('intendedPlan') as string; // 'trial' | 'individual' | 'growth' | 'enterprise'
+    const inviteOrgId = formData.get('organization_id') as string; // If present, this is an invite signup
 
     if (!email || !password || !companyName) {
       return { error: 'All registration fields are required.' };
     }
 
     const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
 
     // 1. Register the raw user inside Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -49,41 +51,83 @@ export async function signup(formData: FormData) {
       return { error: authError?.message || 'Authentication signup failed.' };
     }
 
-    // 2. Create the Organization profile using the RLS-bypassing Admin Client
-    const supabaseAdmin = createAdminClient();
-    
-    const { data: orgData, error: orgError } = await supabaseAdmin
-      .from('organizations')
-      .insert([
-        {
-          name: companyName,
-          owner_id: authData.user.id,
-          subscription_status: 'trial', // Always default table state to trial initially for database schema consistency
-          trial_starts_at: new Date().toISOString()
-        }
-      ])
-      .select()
-      .single();
+    // 2. Determine signup type: invite vs regular
+    let ownerOrgId = inviteOrgId; // If invite signup, we'll use the inviting org
+    let orgData = null;
 
-    if (orgError || !orgData) {
-      console.error("Supabase Database Org Error (Admin Override):", orgError?.message);
-      return { error: orgError?.message || 'Failed to create workspace profile.' };
+    // Only create a new organization if this is NOT an invite signup
+    if (!inviteOrgId) {
+      // Regular signup: create a new organization for this user
+      const { data: newOrgData, error: orgError } = await supabaseAdmin
+        .from('organizations')
+        .insert([
+          {
+            name: companyName,
+            owner_id: authData.user.id,
+            subscription_status: 'trial',
+            trial_starts_at: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
+
+      if (orgError || !newOrgData) {
+        console.error("Supabase Database Org Error (Admin Override):", orgError?.message);
+        return { error: orgError?.message || 'Failed to create workspace profile.' };
+      }
+      
+      orgData = newOrgData;
+      ownerOrgId = newOrgData.id;
+    } else {
+      // Invite signup: user joins existing organization, don't create new one
+      console.log('Invite signup detected - skipping organization creation');
     }
 
-    // Notify internal inbox for both trial and paid-intent registrations.
+    // 3. Check for pending team invitations and add user to those organizations
+    const { data: pendingInvites } = await supabase
+      .from('organization_invitations')
+      .select('organization_id, role')
+      .eq('email', email)
+      .is('accepted_at', null);
+
+    if (pendingInvites && pendingInvites.length > 0) {
+      // Add user to each organization they were invited to
+      const orgUserInserts = pendingInvites.map(invite => ({
+        organization_id: invite.organization_id,
+        user_id: authData.user.id,
+        role: invite.role,
+      }));
+
+      await supabaseAdmin
+        .from('organization_users')
+        .insert(orgUserInserts);
+
+      // Mark invitations as accepted
+      await supabase
+        .from('organization_invitations')
+        .update({ accepted_at: new Date().toISOString() })
+        .eq('email', email)
+        .is('accepted_at', null);
+      
+      console.log(`User ${email} added to ${pendingInvites.length} organization(s)`);
+    }
+
+    // 4. Notify internal inbox for registrations.
     try {
       if (process.env.RESEND_API_KEY) {
         const resend = new Resend(process.env.RESEND_API_KEY);
+        const signupType = inviteOrgId ? 'Invite Signup' : 'New Organization';
         await resend.emails.send({
           from: 'Prado Alerts <notifications@indevasa.com>',
           to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
-          subject: `New Prado Registration (${intendedPlan || 'trial'})`,
+          subject: `New Prado Registration - ${signupType} (${intendedPlan || 'trial'})`,
           html: `
             <h2>New User Registration</h2>
             <p><strong>Email:</strong> ${email}</p>
             <p><strong>Company:</strong> ${companyName}</p>
+            <p><strong>Signup Type:</strong> ${signupType}</p>
             <p><strong>Intended Plan:</strong> ${intendedPlan || 'trial'}</p>
-            <p><strong>Organization ID:</strong> ${orgData.id}</p>
+            <p><strong>Organization ID:</strong> ${ownerOrgId}</p>
             <p><strong>Created At:</strong> ${new Date().toISOString()}</p>
           `,
         });
@@ -94,8 +138,13 @@ export async function signup(formData: FormData) {
       console.error('Registration created, but admin alert email failed:', alertErr);
     }
 
-    // 3. Conditional Branch Routing: Instead of throwing redirects, return target destination instructions
-    const queryParams = `prefilled_email=${encodeURIComponent(email)}&client_reference_id=${orgData.id}`;
+    // 5. Conditional Branch Routing: Instead of throwing redirects, return target destination instructions
+    // For invite signups, skip Stripe checkout and go straight to login/dashboard
+    if (inviteOrgId) {
+      return { redirectTo: '/signup/check-email' };
+    }
+
+    const queryParams = `prefilled_email=${encodeURIComponent(email)}&client_reference_id=${ownerOrgId}`;
 
     if (intendedPlan === 'individual') {
       return { stripeUrl: `https://pay.indevasa.com/b/00wdR85i76E4dXg2Yl4Ni04?${queryParams}` };

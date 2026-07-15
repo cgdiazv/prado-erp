@@ -7,6 +7,7 @@ import PasswordForm from './PasswordForm';
 import ServicesPanel from './ServicesPanel';
 import TrucksPanel from './TrucksPanel';
 import ExpenseCategoriesPanel from './ExpenseCategoriesPanel';
+import TeamsPanel from './TeamsPanel';
 import SubscriptionCancellationCard from './SubscriptionCancellationCard';
 import WorkspaceIdentityForm from './WorkspaceIdentityForm';
 import XeroConnectionCard from './XeroConnectionCard';
@@ -149,6 +150,12 @@ export default async function SettingsPage({
             {!isIndividualAccount && (
               <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                 <ExpenseCategoriesPanel locale={locale} />
+              </div>
+            )}
+
+            {!isIndividualAccount && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                <TeamsPanel organizationId={org.id} locale={locale} />
               </div>
             )}
 

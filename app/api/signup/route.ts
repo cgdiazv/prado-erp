@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabaseServer';
+import { createClient, createAdminClient } from '@/lib/supabaseServer';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
@@ -10,6 +10,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
 
     // 1. Register user
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -21,13 +22,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: authError?.message || 'Signup failed.' }, { status: 400 });
     }
 
-    // 2. Create organization
-    const { error: orgError } = await supabase
-      .from('organizations')
-      .insert([{ name: companyName, owner_id: authData.user.id }]);
+    const userId = authData.user.id;
 
-    if (orgError) {
-      return NextResponse.json({ error: orgError.message }, { status: 400 });
+    // 2. Create their own organization
+    const { data: orgData, error: orgError } = await supabase
+      .from('organizations')
+      .insert([{ name: companyName, owner_id: userId }])
+      .select('id')
+      .single();
+
+    if (orgError || !orgData) {
+      return NextResponse.json({ error: orgError?.message || 'Failed to create organization.' }, { status: 400 });
+    }
+
+    // 3. Check for pending invitations and add user to those organizations
+    const { data: pendingInvites } = await supabase
+      .from('organization_invitations')
+      .select('organization_id, role')
+      .eq('email', email)
+      .is('accepted_at', null);
+
+    if (pendingInvites && pendingInvites.length > 0) {
+      // Add user to each organization they were invited to
+      const orgUserInserts = pendingInvites.map(invite => ({
+        organization_id: invite.organization_id,
+        user_id: userId,
+        role: invite.role,
+      }));
+
+      await supabase
+        .from('organization_users')
+        .insert(orgUserInserts);
+
+      // Mark invitations as accepted
+      await supabase
+        .from('organization_invitations')
+        .update({ accepted_at: new Date().toISOString() })
+        .eq('email', email)
+        .is('accepted_at', null);
     }
 
     return NextResponse.json({ success: true });

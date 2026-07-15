@@ -6,6 +6,7 @@ import { Resend } from 'resend';
 import { render } from '@react-email/render';
 import EstimateEmail from '@/emails/estimate-email';
 import InvoiceEmail from '@/emails/invoice-email';
+import InviteMemberEmail from '@/emails/invite-member-email';
 import { syncCompletedJobInvoiceToXero, syncExpenseToXeroBill } from '@/app/actions/xeroActions';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
@@ -1123,5 +1124,372 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
     return { success: true };
   } catch (err: unknown) {
     return { error: (err as Error)?.message || 'Conversion pipeline failed.' };
+  }
+}
+
+// ==========================================
+// TEAM MEMBER MANAGEMENT
+// ==========================================
+
+interface CanAddMemberResponse {
+  allowed: boolean;
+  currentCount: number;
+  message?: string;
+}
+
+export async function verifyPlanLimitBeforeAddingMember(organizationId: string): Promise<CanAddMemberResponse> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { allowed: false, currentCount: 0, message: 'Unauthorized.' };
+    }
+
+    // 1. Query the organization's subscription plan
+    const { data: orgData, error: orgError } = await supabase
+      .from('organizations')
+      .select('subscription_status, owner_id')
+      .eq('id', organizationId)
+      .single();
+
+    if (orgError || !orgData) {
+      return { allowed: false, currentCount: 0, message: 'Unable to verify organization plan.' };
+    }
+
+    // Verify user is the owner or an admin
+    if (orgData.owner_id !== user.id) {
+      return { allowed: false, currentCount: 0, message: 'Only organization owner can manage team members.' };
+    }
+
+    const currentPlan = orgData.subscription_status;
+
+    // Enterprise has no restrictions
+    if (currentPlan === 'enterprise') {
+      return { allowed: true, currentCount: 0 };
+    }
+
+    // 2. Count active members - use admin client to bypass RLS
+    const supabaseAdmin = createAdminClient();
+    const { data: members, error: countError } = await supabaseAdmin
+      .from('organization_users')
+      .select('id', { count: 'exact' })
+      .eq('organization_id', organizationId);
+
+    if (countError) {
+      console.error('Detailed error counting organization members:', {
+        message: countError.message,
+        code: countError.code,
+        details: countError.details,
+      });
+      return { allowed: false, currentCount: 0, message: `Error verifying current members: ${countError.message}` };
+    }
+
+    const activeMembers = members?.length || 0;
+
+    // 3. Validate based on Prado business rules
+    if (currentPlan === 'individual' && activeMembers >= 1) {
+      return { 
+        allowed: false, 
+        currentCount: activeMembers, 
+        message: 'Individual plan ($29) allows only 1 user. Upgrade to Growth plan ($59) to add team members.' 
+      };
+    }
+
+    if (currentPlan === 'growth' && activeMembers >= 5) {
+      return { 
+        allowed: false, 
+        currentCount: activeMembers, 
+        message: 'Growth plan ($59) maximum limit of 5 users reached. Upgrade to Enterprise ($99) for unlimited access.' 
+      };
+    }
+
+    return { allowed: true, currentCount: activeMembers };
+  } catch (error: unknown) {
+    console.error('Failed to verify plan limits:', error);
+    return { allowed: false, currentCount: 0, message: 'Failed to verify plan limits.' };
+  }
+}
+
+interface AddTeamMemberPayload {
+  organizationId: string;
+  email: string;
+  role: 'member' | 'admin' | 'accountant' | 'viewer'; // Supervisor, Manager, Accountant, Guest
+}
+
+export async function inviteTeamMember(payload: AddTeamMemberPayload) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Unauthorized.' };
+    }
+
+    // 1. Validate plan limits before adding
+    const limitCheck = await verifyPlanLimitBeforeAddingMember(payload.organizationId);
+    if (!limitCheck.allowed) {
+      return { success: false, error: limitCheck.message || 'Plan limit reached.' };
+    }
+
+    // 2. Look up user by email via admin API
+    const supabaseAdmin = createAdminClient();
+    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const authUser = authUsers?.users?.find(u => u.email === payload.email);
+
+    if (authUser) {
+      // User already has an account - add them directly to organization_users
+      // Check if they're already a member
+      const { data: existingOrgUser } = await supabase
+        .from('organization_users')
+        .select('id')
+        .eq('organization_id', payload.organizationId)
+        .eq('user_id', authUser.id)
+        .single();
+
+      if (existingOrgUser) {
+        return { success: false, error: 'This user is already a member of this organization.' };
+      }
+
+      // Insert the team member record
+      const { error: insertError } = await supabase
+        .from('organization_users')
+        .insert([
+          {
+            organization_id: payload.organizationId,
+            user_id: authUser.id,
+            role: payload.role,
+          }
+        ]);
+
+      if (insertError) {
+        console.error('Error adding team member:', insertError);
+        return { success: false, error: insertError.message };
+      }
+    } else {
+      // User doesn't have an account yet - create a pending invitation
+      const { error: inviteError } = await supabase
+        .from('organization_invitations')
+        .insert([
+          {
+            organization_id: payload.organizationId,
+            email: payload.email,
+            role: payload.role,
+            invited_by_user_id: user.id,
+          }
+        ]);
+
+      if (inviteError) {
+        console.error('Error creating invitation:', inviteError);
+        return { success: false, error: inviteError.message };
+      }
+    }
+
+    // 4. Send notification email
+    try {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('name, slogan, logo_url')
+        .eq('id', payload.organizationId)
+        .single();
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('first_name, last_name')
+        .eq('user_id', user.id)
+        .single();
+
+      const inviterName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'Your Team';
+
+      const inviteLink = authUser 
+        ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://pradojob.com'}/en/dashboard`
+        : `${process.env.NEXT_PUBLIC_APP_URL || 'https://pradojob.com'}/en/signup?email=${encodeURIComponent(payload.email)}&org_id=${payload.organizationId}&org_name=${encodeURIComponent(org?.name || 'Prado Systems')}`;
+
+      const emailHtml = await render(
+        <InviteMemberEmail
+          inviteeEmail={payload.email}
+          inviterName={inviterName}
+          organizationName={org?.name || 'Prado ERP'}
+          organizationSlogan={org?.slogan || 'Field Service Software'}
+          organizationLogoUrl={org?.logo_url || ''}
+          role={payload.role}
+          inviteLink={inviteLink}
+        />
+      );
+
+      const htmlString = typeof emailHtml === 'string' ? emailHtml : String(emailHtml);
+
+      if (!htmlString || htmlString === '[object Object]' || htmlString === '[object Promise]') {
+        throw new Error('Failed to render email HTML');
+      }
+
+      const subject = authUser 
+        ? `${inviterName} added you to ${org?.name || 'Prado ERP'}`
+        : `You're invited to join ${org?.name || 'Prado ERP'}`;
+
+      if (!process.env.RESEND_API_KEY) {
+        console.warn('RESEND_API_KEY not set - email not sent');
+        console.log('Email would be sent to:', payload.email, 'Subject:', subject);
+      } else {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+        const response = await resend.emails.send({
+          from: `${org?.name || 'Prado ERP'} <${fromEmailAddress}>`,
+          to: payload.email,
+          subject,
+          html: htmlString,
+        });
+        
+        if (response.error) {
+          console.error('Resend API error:', {
+            message: response.error.message,
+            name: response.error.name,
+          });
+        } else {
+          console.log('Email sent successfully to', payload.email, 'ID:', response.data?.id);
+        }
+      }
+    } catch (emailError: unknown) {
+      const errorMessage = emailError instanceof Error ? emailError.message : String(emailError);
+      console.error('Failed to send notification email:', errorMessage);
+      // Don't fail the invitation if email fails - the member is still added
+    }
+
+    revalidatePath('/dashboard/settings');
+    return { success: true, message: `Invitation sent to ${payload.email}` };
+  } catch (error: unknown) {
+    console.error('Failed to invite team member:', error);
+    return { success: false, error: (error as Error)?.message || 'Failed to invite team member.' };
+  }
+}
+
+export async function removeTeamMember(organizationId: string, email: string) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Unauthorized.' };
+    }
+
+    // Verify user is the owner of the organization
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('owner_id')
+      .eq('id', organizationId)
+      .single();
+
+    if (orgData?.owner_id !== user.id) {
+      return { success: false, error: 'Only organization owner can remove members.' };
+    }
+
+    // First, try to remove from organization_invitations (pending invites)
+    const { error: inviteDeleteError } = await supabase
+      .from('organization_invitations')
+      .delete()
+      .eq('organization_id', organizationId)
+      .eq('email', email);
+
+    // Second, try to remove from organization_users (accepted members)
+    const supabaseAdmin = createAdminClient();
+    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const targetUser = authUsers?.users?.find(u => u.email === email);
+
+    if (targetUser) {
+      const { error: memberDeleteError } = await supabase
+        .from('organization_users')
+        .delete()
+        .eq('organization_id', organizationId)
+        .eq('user_id', targetUser.id);
+
+      if (memberDeleteError && !inviteDeleteError) {
+        return { success: false, error: memberDeleteError.message };
+      }
+    }
+
+    if (inviteDeleteError && !targetUser) {
+      return { success: false, error: inviteDeleteError.message };
+    }
+
+    revalidatePath('/dashboard/settings');
+    return { success: true, message: `${email} removed from the team.` };
+  } catch (error: unknown) {
+    console.error('Failed to remove team member:', error);
+    return { success: false, error: (error as Error)?.message || 'Failed to remove team member.' };
+  }
+}
+
+export async function getTeamMembers(organizationId: string) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, members: [], error: 'Unauthorized.' };
+    }
+
+    // Verify user is the owner
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('owner_id')
+      .eq('id', organizationId)
+      .single();
+
+    if (orgData?.owner_id !== user.id) {
+      return { success: false, members: [], error: 'Only organization owner can view members.' };
+    }
+
+    // Get accepted team members from organization_users
+    const { data: orgUsers, error: usersError } = await supabase
+      .from('organization_users')
+      .select('user_id, role, created_at')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false });
+
+    if (usersError) {
+      return { success: false, members: [], error: usersError.message };
+    }
+
+    // Get pending invitations
+    const { data: pendingInvites, error: invitesError } = await supabase
+      .from('organization_invitations')
+      .select('email, role, created_at')
+      .eq('organization_id', organizationId)
+      .is('accepted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (invitesError) {
+      return { success: false, members: [], error: invitesError.message };
+    }
+
+    // Look up emails from auth.users for accepted members
+    const supabaseAdmin = createAdminClient();
+    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+
+    const acceptedMembers = orgUsers?.map(ou => {
+      const authUser = authUsers?.users?.find(u => u.id === ou.user_id);
+      return {
+        email: authUser?.email || 'unknown@example.com',
+        role: ou.role,
+        invited_at: ou.created_at,
+        status: 'accepted' as const,
+      };
+    }) || [];
+
+    // Map pending invitations
+    const pendingMembers = pendingInvites?.map(pi => ({
+      email: pi.email,
+      role: pi.role,
+      invited_at: pi.created_at,
+      status: 'pending' as const,
+    })) || [];
+
+    // Combine both lists (accepted first, then pending)
+    const members = [...acceptedMembers, ...pendingMembers];
+
+    return { success: true, members };
+  } catch (error: unknown) {
+    console.error('Failed to fetch team members:', error);
+    return { success: false, members: [], error: (error as Error)?.message || 'Failed to fetch team members.' };
   }
 }
