@@ -89,7 +89,7 @@ export default async function DashboardHome({
 
   // Fetch headline metrics and customer scope.
   const [expensesResponse, customersResponse, estimatesResponse] = await Promise.all([
-    supabase.from('expenses').select('amount').eq('organization_id', org.id),
+    supabase.from('expenses').select('amount, expense_date').eq('organization_id', org.id),
     supabase.from('customers').select('id').eq('organization_id', org.id),
     supabase.from('estimates').select('status').eq('organization_id', org.id),
   ]);
