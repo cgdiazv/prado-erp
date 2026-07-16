@@ -37,11 +37,14 @@ function normalizeOrganizationRow(row: any): UserOrganization {
 export async function getUserOrganization(userId: string): Promise<UserOrganizationResult> {
   const supabase = await createClient();
 
-  let { data: ownedOrg, error: ownedOrgError } = await supabase
+  const withMaxOwned = await supabase
     .from('organizations')
     .select(ORG_SELECT_WITH_MAX)
     .eq('owner_id', userId)
     .maybeSingle();
+
+  let ownedOrg: any = withMaxOwned.data;
+  let ownedOrgError: any = withMaxOwned.error;
 
   if (ownedOrgError) {
     const fallbackOwned = await supabase
@@ -58,11 +61,14 @@ export async function getUserOrganization(userId: string): Promise<UserOrganizat
     return { organization: normalizeOrganizationRow(ownedOrg), role: 'owner' };
   }
 
-  let { data: membership, error: membershipError } = await supabase
+  const withMaxMembership = await supabase
     .from('organization_users')
     .select(`role, organizations(${ORG_SELECT_WITH_MAX})`)
     .eq('user_id', userId)
     .maybeSingle();
+
+  let membership: any = withMaxMembership.data;
+  let membershipError: any = withMaxMembership.error;
 
   if (membershipError) {
     const fallbackMembership = await supabase
