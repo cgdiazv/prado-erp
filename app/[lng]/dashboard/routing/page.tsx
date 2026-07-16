@@ -129,7 +129,14 @@ export default async function RoutingPage({
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.dispatchRoutingOptimization}</h1>
               <p className="text-xs text-slate-400 mt-1">{translations.dashboard.dispatchRoutingDescription}</p>
             </div>
-              <RouteEngine orgId={org.id} jobs={jobs || []} trucks={trucks} locale={locale} />
+              <RouteEngine
+                orgId={org.id}
+                jobs={jobs || []}
+                trucks={trucks}
+                locale={locale}
+                maxStopsPerTruck={org.max_jobs_per_truck ?? 4}
+                autoOptimizeDriveRoutes={org.auto_optimize_drive_routes ?? true}
+              />
           </div>
         </main>
       </div>

@@ -178,6 +178,59 @@ export async function updateWorkspaceIdentity(formData: FormData) {
   return { success: true, logoUrl: nextLogoUrl };
 }
 
+export async function updateDispatchSettings(formData: FormData) {
+  const locale = (formData.get('locale') as string | null)?.trim() || 'en';
+  const maxJobsRaw = (formData.get('maxJobsPerTruck') as string | null)?.trim() || '';
+  const autoOptimizeDriveRoutes = formData
+    .getAll('autoOptimizeDriveRoutes')
+    .some((value) => String(value) === 'true');
+  const maxJobsPerTruck = Number.parseInt(maxJobsRaw, 10);
+
+  if (!Number.isFinite(maxJobsPerTruck) || maxJobsPerTruck < 1 || maxJobsPerTruck > 100) {
+    return { error: 'Max jobs per truck must be a number between 1 and 100.' };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be signed in to update dispatch settings.' };
+  }
+
+  const { data: org, error: orgError } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('owner_id', user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (orgError) {
+    return { error: `Failed to load workspace: ${orgError.message}` };
+  }
+
+  if (!org) {
+    return { error: 'Workspace not found.' };
+  }
+
+  const { error } = await supabase
+    .from('organizations')
+    .update({
+      max_jobs_per_truck: maxJobsPerTruck,
+      auto_optimize_drive_routes: autoOptimizeDriveRoutes,
+    })
+    .eq('id', org.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/dashboard/settings');
+  revalidatePath(`/${locale}/dashboard/settings`);
+  revalidatePath('/dashboard/routing');
+  revalidatePath(`/${locale}/dashboard/routing`);
+  return { success: true };
+}
+
 export async function createService({
   name,
   description,

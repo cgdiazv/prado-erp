@@ -67,7 +67,8 @@ export async function signup(formData: FormData) {
             name: companyName,
             owner_id: userId,
             subscription_status: 'trial',
-            trial_starts_at: new Date().toISOString()
+            trial_starts_at: new Date().toISOString(),
+            auto_optimize_drive_routes: false,
           }
         ])
         .select()

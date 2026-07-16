@@ -3,6 +3,8 @@
 import { useId, useRef, useState } from 'react';
 import { updateWorkspaceIdentity } from './actions';
 import { getTranslations } from '@/lib/translations';
+import { US_STATES } from '@/lib/usStates';
+import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 
 interface WorkspaceIdentityFormProps {
   companyName: string;
@@ -39,6 +41,17 @@ export default function WorkspaceIdentityForm({
   const [removeLogoRequested, setRemoveLogoRequested] = useState(false);
   const logoInputId = useId();
   const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const normalizedState = (() => {
+    const value = initialState.trim();
+    if (!value) return '';
+
+    const byName = US_STATES.find((state) => state.name.toLowerCase() === value.toLowerCase());
+    if (byName) return byName.name;
+
+    const byCode = US_STATES.find((state) => state.code.toLowerCase() === value.toLowerCase());
+    return byCode ? byCode.name : '';
+  })();
+  const stateDefaultValue = normalizedState || initialState.trim();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -193,12 +206,10 @@ export default function WorkspaceIdentityForm({
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.dashboard.streetAddress}</label>
-            <input
-              type="text"
+            <AddressAutocompleteInput
               name="streetAddress"
               defaultValue={initialStreetAddress}
               placeholder={translations.dashboard.workspaceAddressPlaceholder}
-              maxLength={255}
               className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
             />
           </div>
@@ -215,14 +226,21 @@ export default function WorkspaceIdentityForm({
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.dashboard.state}</label>
-            <input
-              type="text"
+            <select
               name="state"
-              defaultValue={initialState}
-              placeholder={translations.dashboard.state}
-              maxLength={120}
+              defaultValue={stateDefaultValue}
               className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-            />
+            >
+              <option value="">{isEs ? 'Selecciona estado' : 'Select state'}</option>
+              {initialState.trim() && !normalizedState && (
+                <option value={initialState.trim()}>{initialState.trim()}</option>
+              )}
+              {US_STATES.map((state) => (
+                <option key={state.code} value={state.name}>
+                  {state.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.dashboard.zip}</label>

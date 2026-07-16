@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     // 2. Create their own organization
     const { data: orgData, error: orgError } = await supabase
       .from('organizations')
-      .insert([{ name: companyName, owner_id: userId }])
+      .insert([{ name: companyName, owner_id: userId, auto_optimize_drive_routes: false }])
       .select('id')
       .single();
 

@@ -4,9 +4,11 @@ import { redirect } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import DeleteSiteButton from '@/components/DeleteSiteButton';
+import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import { updateCustomer, deleteCustomer, createProperty, markInvoiceAsPaid } from '../../../../actions';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
+import { US_STATES } from '@/lib/usStates';
 
 interface CustomerPageProps {
   params: Promise<{ id: string; lng?: string }> | { id: string; lng?: string };
@@ -16,6 +18,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
   const resolvedParams = await params;
   const { id: customerId, lng } = resolvedParams;
   const locale = lng ?? 'en';
+  const isEs = locale.toLowerCase().startsWith('es');
   const translations = getTranslations(locale);
   const supabase = await createClient();
 
@@ -69,6 +72,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
   }
 
   const initial = org.name ? org.name.charAt(0) : "C";
+  const withoutOptional = (label: string) => label.replace(/\s*\((?:optional|opcional)\)\s*/gi, '').trim();
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
@@ -166,7 +170,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{translations.dashboard.companyOptional}</label>
+                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{withoutOptional(translations.dashboard.companyOptional)}</label>
                       <input 
                         type="text" 
                         name="companyName" 
@@ -186,7 +190,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{translations.dashboard.phoneNumber}</label>
+                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{withoutOptional(translations.dashboard.phoneNumber)}</label>
                       <input 
                         type="text" 
                         name="phone" 
@@ -231,12 +235,11 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                 <p className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">{translations.dashboard.addNewLocation}</p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                  <input 
-                    type="text" 
-                    name="streetAddress" 
-                    placeholder={translations.dashboard.streetAddress} 
-                    required 
-                    className="md:col-span-2 rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
+                  <AddressAutocompleteInput
+                    name="streetAddress"
+                    placeholder={translations.dashboard.streetAddress}
+                    required
+                    className="md:col-span-2 rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium"
                   />
                   <input 
                     type="text" 
@@ -246,13 +249,19 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                     className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
                   />
                   <div className="grid grid-cols-2 gap-2">
-                    <input 
-                      type="text" 
-                      name="state" 
-                      placeholder={translations.dashboard.state} 
-                      required 
-                      className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
-                    />
+                    <select
+                      name="state"
+                      required
+                      defaultValue=""
+                      className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium"
+                    >
+                      <option value="">{isEs ? 'Selecciona estado' : 'Select state'}</option>
+                      {US_STATES.map((state) => (
+                        <option key={state.code} value={state.name}>
+                          {state.name}
+                        </option>
+                      ))}
+                    </select>
                     <input 
                       type="text" 
                       name="zipCode" 

@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { markInvoiceAsPaid } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 
 type FilterType = 'all' | 'unpaid' | 'paid';
+type SortColumn = 'customer' | 'date' | 'tax' | 'total' | 'status';
+type SortDirection = 'asc' | 'desc';
 
 interface InvoiceRow {
   id: string;
@@ -27,10 +29,79 @@ interface InvoicesLedgerTableProps {
 
 export default function InvoicesLedgerTable({ invoices, locale = 'en' }: InvoicesLedgerTableProps) {
   const translations = getTranslations(locale);
+  const isEs = locale.toLowerCase().startsWith('es');
   const [filter, setFilter] = useState<FilterType>('all');
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [sortColumn, setSortColumn] = useState<SortColumn>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const filteredInvoices =
     filter === 'all' ? invoices : invoices.filter((inv) => inv.status === filter);
+
+  const sortedInvoices = useMemo(() => {
+    const getCustomerName = (inv: InvoiceRow) => {
+      return (
+        `${inv.customers?.first_name || ''} ${inv.customers?.last_name || ''}`.trim() ||
+        inv.customers?.company_name ||
+        'Customer'
+      ).toLowerCase();
+    };
+    const getDate = (inv: InvoiceRow) => new Date(inv.due_date || 0).getTime();
+    const getTax = (inv: InvoiceRow) => Number(inv.tax_amount || 0);
+    const getTotal = (inv: InvoiceRow) => Number(inv.total_amount || 0);
+    const getStatus = (inv: InvoiceRow) => (inv.status === 'paid' ? 2 : 1);
+
+    const sorted = [...filteredInvoices].sort((a, b) => {
+      let result = 0;
+
+      if (sortColumn === 'customer') {
+        result = getCustomerName(a).localeCompare(getCustomerName(b));
+      } else if (sortColumn === 'date') {
+        result = getDate(a) - getDate(b);
+      } else if (sortColumn === 'tax') {
+        result = getTax(a) - getTax(b);
+      } else if (sortColumn === 'total') {
+        result = getTotal(a) - getTotal(b);
+      } else if (sortColumn === 'status') {
+        result = getStatus(a) - getStatus(b);
+      }
+
+      return sortDirection === 'asc' ? result : -result;
+    });
+
+    return sorted;
+  }, [filteredInvoices, sortColumn, sortDirection]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedInvoices.length / pageSize));
+  const paginatedInvoices = sortedInvoices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+
+    setSortColumn(column);
+    setSortDirection('asc');
+  };
+
+  const renderSortIndicator = (column: SortColumn) => (
+    <span className="inline-flex flex-col leading-none text-[8px]">
+      <span className={sortColumn === column && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+      <span className={sortColumn === column && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+    </span>
+  );
 
   const filters: { key: FilterType; label: string }[] = [
     { key: 'all', label: translations.dashboard.filterAll },
@@ -40,37 +111,102 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
 
   return (
     <>
-      {/* Filter tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit mb-6">
-        {filters.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setFilter(key)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 ${
-              filter === key
-                ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
+      {/* Filter tabs + pagination */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+          {filters.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 ${
+                filter === key
+                  ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 sm:ml-auto">
+          <label htmlFor="invoices-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+            {isEs ? 'Registros por pagina' : 'Rows per page'}
+          </label>
+          <select
+            id="invoices-page-size"
+            value={pageSize}
+            onChange={(event) => setPageSize(Number(event.target.value))}
+            className="text-xs bg-white border border-gray-300 rounded-md px-2 py-1.5 text-slate-700"
           >
-            {label}
+            {[25, 50, 100].map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isEs ? 'Anterior' : 'Prev'}
           </button>
-        ))}
+
+          <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+            {isEs ? 'Pagina' : 'Page'} {currentPage} / {totalPages}
+          </span>
+
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={currentPage >= totalPages}
+            className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isEs ? 'Siguiente' : 'Next'}
+          </button>
+        </div>
       </div>
 
-      {filteredInvoices.length > 0 ? (
+      {sortedInvoices.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 text-left text-sm whitespace-nowrap">
             <thead className="bg-gray-50 text-xs font-medium text-gray-500">
               <tr>
-                <th className="px-4 py-3">{translations.dashboard.customerCrm}</th>
-                <th className="px-4 py-3">{translations.dashboard.dueDate}</th>
-                <th className="px-4 py-3">{translations.dashboard.taxCharge}</th>
-                <th className="px-4 py-3 text-right">{translations.dashboard.totalOwed}</th>
-                <th className="px-4 py-3 text-right">{translations.dashboard.paymentStatus}</th>
+                <th className="px-4 py-3">
+                  <button type="button" onClick={() => handleSort('customer')} className="inline-flex items-center gap-1">
+                    <span>{translations.dashboard.customerCrm}</span>
+                    {renderSortIndicator('customer')}
+                  </button>
+                </th>
+                <th className="px-4 py-3">
+                  <button type="button" onClick={() => handleSort('date')} className="inline-flex items-center gap-1">
+                    <span>{translations.dashboard.dueDate}</span>
+                    {renderSortIndicator('date')}
+                  </button>
+                </th>
+                <th className="px-4 py-3">
+                  <button type="button" onClick={() => handleSort('tax')} className="inline-flex items-center gap-1">
+                    <span>{translations.dashboard.taxCharge}</span>
+                    {renderSortIndicator('tax')}
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-right">
+                  <button type="button" onClick={() => handleSort('total')} className="inline-flex items-center gap-1 justify-end">
+                    <span>{translations.dashboard.totalOwed}</span>
+                    {renderSortIndicator('total')}
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-right">
+                  <button type="button" onClick={() => handleSort('status')} className="inline-flex items-center gap-1 justify-end">
+                    <span>{translations.dashboard.paymentStatus}</span>
+                    {renderSortIndicator('status')}
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
-              {filteredInvoices.map((inv) => {
+              {paginatedInvoices.map((inv) => {
                 const customerName =
                   `${inv.customers?.first_name || ''} ${inv.customers?.last_name || ''}`.trim() ||
                   inv.customers?.company_name ||
@@ -79,9 +215,11 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                 return (
                   <tr key={inv.id} className="hover:bg-gray-50/50 transition duration-150">
                     <td className="px-4 py-3 font-medium text-gray-700">{customerName}</td>
-                    <td className="px-4 py-3 font-medium text-gray-700">{inv.due_date}</td>
+                    <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
+                      {new Date(inv.due_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
+                    </td>
                     <td className="px-4 py-3 text-gray-500 font-mono">${inv.tax_amount}</td>
-                    <td className="px-4 py-3 text-right font-mono text-gray-900 font-medium">${inv.total_amount}</td>
+                    <td className="px-4 py-3 text-right font-bold text-slate-800">${Number(inv.total_amount || 0).toFixed(2)}</td>
                     <td className="px-4 py-3 text-right">
                       {inv.status === 'paid' ? (
                         <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">

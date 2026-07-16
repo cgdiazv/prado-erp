@@ -40,6 +40,8 @@ interface RouteEngineProps {
   jobs: Job[] | null;
   trucks: Truck[] | null;
   locale?: string;
+  maxStopsPerTruck?: number;
+  autoOptimizeDriveRoutes?: boolean;
 }
 
 type RouteState = {
@@ -55,8 +57,6 @@ type DragSource = {
 type SerializedRouteState = RouteState;
 
 const ROUTE_STORAGE_PREFIX = 'dispatch-routing:planner:';
-const MAX_STOPS_PER_TRUCK = 4;
-
 function getCustomerLabel(job: Job) {
   const customer = job.properties?.customers;
   if (!customer) return '';
@@ -232,7 +232,14 @@ function buildOptimizedState(routeState: RouteState, jobMap: Map<string, Job>) {
   } satisfies RouteState;
 }
 
-export default function RouteEngine({ orgId, jobs, trucks, locale = 'en' }: RouteEngineProps) {
+export default function RouteEngine({
+  orgId,
+  jobs,
+  trucks,
+  locale = 'en',
+  maxStopsPerTruck = 4,
+  autoOptimizeDriveRoutes = true,
+}: RouteEngineProps) {
   const router = useRouter();
   const translations = getTranslations(locale);
   const routeJobs = useMemo(
@@ -272,6 +279,11 @@ export default function RouteEngine({ orgId, jobs, trucks, locale = 'en' }: Rout
     if (!isHydrated) return;
     window.localStorage.setItem(storageKey, JSON.stringify(routeState));
   }, [routeState, isHydrated, storageKey]);
+
+  useEffect(() => {
+    if (!isHydrated || !autoOptimizeDriveRoutes) return;
+    setRouteState((previous) => buildOptimizedState(previous, jobMap));
+  }, [isHydrated, autoOptimizeDriveRoutes, jobMap]);
 
   const persistAssignment = async (jobId: string, truckId: string | null) => {
     setSyncingJobId(jobId);
@@ -467,7 +479,7 @@ export default function RouteEngine({ orgId, jobs, trucks, locale = 'en' }: Rout
     ? translations.dashboard.routeAutoAssignMap
     : translations.dashboard.routeSavedLocally;
 
-  const overloadedTrucks = routeTrucks.filter((truck) => (routeState.truckRoutes[truck.id] || []).length > MAX_STOPS_PER_TRUCK);
+  const overloadedTrucks = routeTrucks.filter((truck) => (routeState.truckRoutes[truck.id] || []).length > maxStopsPerTruck);
   const missingGeoCount = routeJobs.filter((job) => !hasCoordinates(job)).length;
   const routeAlerts = [
     {
@@ -589,7 +601,7 @@ export default function RouteEngine({ orgId, jobs, trucks, locale = 'en' }: Rout
           {routeTrucks.map((truck) => {
             const assignedJobIds = routeState.truckRoutes[truck.id] || [];
             const routeLoad = assignedJobIds.length;
-            const loadWarning = routeLoad > MAX_STOPS_PER_TRUCK;
+            const loadWarning = routeLoad > maxStopsPerTruck;
             return (
               <div
                 key={truck.id}
@@ -621,7 +633,7 @@ export default function RouteEngine({ orgId, jobs, trucks, locale = 'en' }: Rout
 
                 {loadWarning && (
                   <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-                    {translations.dashboard.routeCapacityWarning}: {routeLoad}/{MAX_STOPS_PER_TRUCK}
+                    {translations.dashboard.routeCapacityWarning}: {routeLoad}/{maxStopsPerTruck}
                   </div>
                 )}
 

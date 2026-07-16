@@ -60,6 +60,9 @@ interface ServiceLine {
   price: string;
 }
 
+type SortColumn = 'customer' | 'proposal' | 'date' | 'amount' | 'status' | 'actions';
+type SortDirection = 'asc' | 'desc';
+
 export default function EstimatesPage() {
   const router = useRouter();
   const params = useParams<{ lng?: string }>();
@@ -79,9 +82,14 @@ export default function EstimatesPage() {
         filterSent: 'Enviados',
         filterApproved: 'Aprobados',
         filterDeclined: 'Rechazados',
-        thCustomer: 'Cliente / Propiedad',
-        thProposal: 'Propuesta / Servicio',
-        thAmount: 'Importe Estimado',
+        rowsPerPage: 'Registros por pagina',
+        pageLabel: 'Pagina',
+        prevPage: 'Anterior',
+        nextPage: 'Siguiente',
+        thCustomer: 'Cliente',
+        thProposal: 'Servicio',
+        thDate: 'Fecha',
+        thAmount: 'Importe',
         thStatus: 'Estado',
         thActions: 'Acciones de Flujo',
         noRecords: 'No se encontraron estimaciones en esta categoria.',
@@ -90,7 +98,7 @@ export default function EstimatesPage() {
         actionMarkSent: 'Enviar',
         actionApproveSchedule: 'Aprobar',
         actionDecline: 'Rechazar',
-        convertedToJob: 'Convertido a Job',
+        convertedToJob: 'Enviado a Job',
         declined: 'Rechazado',
         sendingEmail: 'Enviando...',
         sendSuccess: 'Presupuesto enviado exitosamente.',
@@ -145,9 +153,14 @@ export default function EstimatesPage() {
         filterSent: 'Sent',
         filterApproved: 'Approved',
         filterDeclined: 'Declined',
-        thCustomer: 'Customer / Property',
-        thProposal: 'Proposal / Service',
-        thAmount: 'Estimated Amount',
+        rowsPerPage: 'Rows per page',
+        pageLabel: 'Page',
+        prevPage: 'Prev',
+        nextPage: 'Next',
+        thCustomer: 'Customer',
+        thProposal: 'Service',
+        thDate: 'Date',
+        thAmount: 'Amount',
         thStatus: 'Status',
         thActions: 'Workflow Actions',
         noRecords: 'No estimates were found in this category.',
@@ -156,7 +169,7 @@ export default function EstimatesPage() {
         actionMarkSent: 'Send',
         actionApproveSchedule: 'Approve',
         actionDecline: 'Decline',
-        convertedToJob: 'Converted to Job',
+        convertedToJob: 'Sent to Job',
         declined: 'Declined',
         sendingEmail: 'Sending...',
         sendSuccess: 'Estimate sent successfully.',
@@ -213,6 +226,10 @@ export default function EstimatesPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [sortColumn, setSortColumn] = useState<SortColumn>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const resolvedSubscriptionStatus = subscriptionStatus ?? 'trial';
   const [serviceLines, setServiceLines] = useState<ServiceLine[]>([{ id: 1, serviceId: '', price: '' }]);
   const [scopeNotes, setScopeNotes] = useState('');
@@ -471,6 +488,69 @@ export default function EstimatesPage() {
     ? estimates 
     : estimates.filter(e => e.status === statusFilter);
 
+  const getCustomerLabel = (estimate: Estimate) =>
+    (estimate.customers.company_name || `${estimate.customers.first_name} ${estimate.customers.last_name}`).trim().toLowerCase();
+
+  const getStatusRank = (status: Estimate['status']) => {
+    const rank: Record<Estimate['status'], number> = {
+      draft: 1,
+      sent: 2,
+      approved: 3,
+      declined: 4,
+    };
+    return rank[status];
+  };
+
+  const getActionsRank = (estimate: Estimate) => {
+    if (estimate.status === 'draft') return 1;
+    if (estimate.status === 'sent') return 2;
+    if (estimate.status === 'approved') return 3;
+    return 4;
+  };
+
+  const sortedEstimates = [...filteredEstimates].sort((a, b) => {
+    let result = 0;
+
+    if (sortColumn === 'customer') {
+      result = getCustomerLabel(a).localeCompare(getCustomerLabel(b));
+    } else if (sortColumn === 'proposal') {
+      result = a.title.localeCompare(b.title);
+    } else if (sortColumn === 'date') {
+      result = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    } else if (sortColumn === 'amount') {
+      result = a.estimated_amount - b.estimated_amount;
+    } else if (sortColumn === 'status') {
+      result = getStatusRank(a.status) - getStatusRank(b.status);
+    } else if (sortColumn === 'actions') {
+      result = getActionsRank(a) - getActionsRank(b);
+    }
+
+    return sortDirection === 'asc' ? result : -result;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sortedEstimates.length / pageSize));
+  const paginatedEstimates = sortedEstimates.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+
+    setSortColumn(column);
+    setSortDirection('asc');
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const estimateTotal = serviceLines.reduce((sum, line) => {
     const price = Number.parseFloat(line.price || '0');
     return sum + (Number.isFinite(price) ? price : 0);
@@ -542,21 +622,61 @@ export default function EstimatesPage() {
               </div>
             </div>
 
-            {/* Barra de Filtros */}
-            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit mb-6">
-              {['all', 'draft', 'sent', 'approved', 'declined'].map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setStatusFilter(filter)}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
-                    statusFilter === filter
-                      ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
+            {/* Barra de Filtros + Paginacion */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+              <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+                {['all', 'draft', 'sent', 'approved', 'declined'].map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setStatusFilter(filter)}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
+                      statusFilter === filter
+                        ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {filter === 'all' ? t.filterAll : filter === 'draft' ? t.filterDraft : filter === 'sent' ? t.filterSent : filter === 'approved' ? t.filterApproved : t.filterDeclined}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 sm:ml-auto">
+                <label htmlFor="estimate-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+                  {t.rowsPerPage}
+                </label>
+                <select
+                  id="estimate-page-size"
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="text-xs bg-white border border-gray-300 rounded-md px-2 py-1.5 text-slate-700"
                 >
-                  {filter === 'all' ? t.filterAll : filter === 'draft' ? t.filterDraft : filter === 'sent' ? t.filterSent : filter === 'approved' ? t.filterApproved : t.filterDeclined}
+                  {[25, 50, 100].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t.prevPage}
                 </button>
-              ))}
+
+                <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+                  {t.pageLabel} {currentPage} / {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t.nextPage}
+                </button>
+              </div>
             </div>
 
             {/* Tabla de Resultados */}
@@ -564,20 +684,93 @@ export default function EstimatesPage() {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-gray-200 bg-slate-50 text-slate-500 font-bold">
-                    <th className="p-4">{t.thCustomer}</th>
-                    <th className="p-4">{t.thProposal}</th>
-                    <th className="p-4">{t.thAmount}</th>
-                    <th className="p-4">{t.thStatus}</th>
-                    <th className="p-4 text-right">{t.thActions}</th>
+                    <th className="p-4 w-52">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('customer')}
+                        className="inline-flex items-center gap-1"
+                      >
+                        <span>{t.thCustomer}</span>
+                        <span className="inline-flex flex-col leading-none text-[8px]">
+                          <span className={sortColumn === 'customer' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                          <span className={sortColumn === 'customer' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                        </span>
+                      </button>
+                    </th>
+                    <th className="p-4">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('proposal')}
+                        className="inline-flex items-center gap-1"
+                      >
+                        <span>{t.thProposal}</span>
+                        <span className="inline-flex flex-col leading-none text-[8px]">
+                          <span className={sortColumn === 'proposal' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                          <span className={sortColumn === 'proposal' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                        </span>
+                      </button>
+                    </th>
+                    <th className="p-4">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('date')}
+                        className="inline-flex items-center gap-1"
+                      >
+                        <span>{t.thDate}</span>
+                        <span className="inline-flex flex-col leading-none text-[8px]">
+                          <span className={sortColumn === 'date' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                          <span className={sortColumn === 'date' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                        </span>
+                      </button>
+                    </th>
+                    <th className="p-4">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('amount')}
+                        className="inline-flex items-center gap-1"
+                      >
+                        <span>{t.thAmount}</span>
+                        <span className="inline-flex flex-col leading-none text-[8px]">
+                          <span className={sortColumn === 'amount' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                          <span className={sortColumn === 'amount' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                        </span>
+                      </button>
+                    </th>
+                    <th className="p-4">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('status')}
+                        className="inline-flex items-center gap-1"
+                      >
+                        <span>{t.thStatus}</span>
+                        <span className="inline-flex flex-col leading-none text-[8px]">
+                          <span className={sortColumn === 'status' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                          <span className={sortColumn === 'status' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                        </span>
+                      </button>
+                    </th>
+                    <th className="p-4 text-right w-64">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('actions')}
+                        className="inline-flex items-center gap-1 justify-end"
+                      >
+                        <span>{t.thActions}</span>
+                        <span className="inline-flex flex-col leading-none text-[8px]">
+                          <span className={sortColumn === 'actions' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                          <span className={sortColumn === 'actions' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                        </span>
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
             {filteredEstimates.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-slate-500 font-medium">{t.noRecords}</td>
+                <td colSpan={6} className="p-8 text-center text-slate-500 font-medium">{t.noRecords}</td>
               </tr>
             ) : (
-              filteredEstimates.map((estimate) => (
+              paginatedEstimates.map((estimate) => (
                 <tr key={estimate.id} className="hover:bg-slate-50 transition">
                   <td className="p-4">
                     <span className="font-bold text-slate-900">
@@ -587,11 +780,14 @@ export default function EstimatesPage() {
                       {estimate.properties?.street_address || t.noProperty}
                     </span>
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 w-52">
                     <span className="font-semibold text-slate-800">{estimate.title}</span>
                     {estimate.description && (
                       <span className="block text-[10px] text-slate-500 truncate max-w-xs mt-0.5">{estimate.description}</span>
                     )}
+                  </td>
+                  <td className="p-4 text-slate-700 whitespace-nowrap">
+                    {new Date(estimate.created_at).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                   </td>
                   <td className="p-4 font-bold text-slate-800">${estimate.estimated_amount.toFixed(2)}</td>
                   <td className="p-4">
@@ -604,7 +800,7 @@ export default function EstimatesPage() {
                       {estimate.status === 'draft' ? t.filterDraft : estimate.status === 'sent' ? t.filterSent : estimate.status === 'approved' ? t.filterApproved : t.filterDeclined}
                     </span>
                   </td>
-                  <td className="p-4 text-right space-x-2">
+                  <td className="p-4 text-right space-x-2 w-64">
                     {estimate.status === 'draft' && (
                       <>
                         <button

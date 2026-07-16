@@ -42,6 +42,21 @@ export default async function DashboardHome({
         draftEstimates: 'Estimaciones en borrador',
         incompleteJobs: 'Jobs incompletos',
         noUpcomingJobs: 'No hay jobs proximos. Programa tu siguiente servicio.',
+        alertPendingCustomer: 'Estimaciones Enviadas: Cliente Pendiente',
+        alertNextSteps: 'Estimaciones en Borrador: Siguientes Pasos',
+        alertNextSevenDays: 'Trabajo Proximo: 7 Dias',
+        alertUnassignedJobs: 'Alerta Critica: Jobs Sin Camion',
+        alertIncompleteWork: 'Tareas: Trabajo Incompleto',
+        alertOverdueInvoices: 'Accion Urgente: Facturas Vencidas',
+        alertAwaitingCustomer: 'Esperando interaccion del cliente.',
+        alertReadyToFinalize: 'Listo para finalizar y enviar.',
+        alertReviewSchedule: 'Revisa la agenda y recursos requeridos.',
+        alertAssignAssets: 'Asigna activos a jobs sin camion.',
+        alertResolvePending: 'Identifica y resuelve tareas pendientes.',
+        alertSendReminders: 'Envia recordatorios para cuentas sin pagar.',
+        alertViewAll: 'Ver Todo',
+        alertResolveAll: 'Resolver Todo',
+        alertResolveNow: 'Resolver Ahora',
         nextActions: 'Plan de Accion',
         actionScheduleJob: 'Agendar Job',
         actionManageInvoices: 'Gestionar Facturas',
@@ -60,6 +75,21 @@ export default async function DashboardHome({
         draftEstimates: 'Draft estimates pending send',
         incompleteJobs: 'Incomplete jobs',
         noUpcomingJobs: 'No upcoming jobs. Schedule your next service.',
+        alertPendingCustomer: 'Sent Estimates: Pending Customer',
+        alertNextSteps: 'Draft Estimates: Next Steps',
+        alertNextSevenDays: 'Upcoming Work: Next 7 Days',
+        alertUnassignedJobs: 'Critical Alert: Unassigned Jobs',
+        alertIncompleteWork: 'Tasks: Incomplete Work',
+        alertOverdueInvoices: 'Urgent Action: Overdue Invoices',
+        alertAwaitingCustomer: 'Awaiting customer interaction.',
+        alertReadyToFinalize: 'Ready to finalize and send.',
+        alertReviewSchedule: 'Review schedule and resource requirements.',
+        alertAssignAssets: 'Assign assets to jobs without a truck.',
+        alertResolvePending: 'Identify and resolve pending job-related tasks.',
+        alertSendReminders: 'Send reminders for unpaid customer accounts.',
+        alertViewAll: 'View All',
+        alertResolveAll: 'Resolve All',
+        alertResolveNow: 'Resolve Now',
         nextActions: 'Action Plan',
         actionScheduleJob: 'Schedule Job',
         actionManageInvoices: 'Manage Invoices',
@@ -193,9 +223,78 @@ export default async function DashboardHome({
 
   const initial = org.name ? org.name.charAt(0) : "C";
 
+  const priorityAlertCards = [
+    {
+      key: 'sent-estimates',
+      count: sentEstimates,
+      title: t.alertPendingCustomer,
+      subtitle: t.alertAwaitingCustomer,
+      cta: t.alertViewAll,
+      href: `/${locale}/dashboard/estimates`,
+      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      badgeClass: 'bg-emerald-600 text-white',
+      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
+    },
+    {
+      key: 'draft-estimates',
+      count: draftEstimates,
+      title: t.alertNextSteps,
+      subtitle: t.alertReadyToFinalize,
+      cta: t.alertViewAll,
+      href: `/${locale}/dashboard/estimates`,
+      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      badgeClass: 'bg-emerald-600 text-white',
+      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
+    },
+    {
+      key: 'upcoming-jobs',
+      count: upcomingJobs,
+      title: t.alertNextSevenDays,
+      subtitle: t.alertReviewSchedule,
+      cta: t.alertViewAll,
+      href: `/${locale}/dashboard/schedule`,
+      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      badgeClass: 'bg-emerald-600 text-white',
+      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
+    },
+    {
+      key: 'unassigned-jobs',
+      count: unassignedScheduledJobs,
+      title: t.alertUnassignedJobs,
+      subtitle: t.alertAssignAssets,
+      cta: t.alertResolveAll,
+      href: `/${locale}/dashboard/schedule`,
+      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      badgeClass: 'bg-emerald-600 text-white',
+      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
+    },
+    {
+      key: 'incomplete-jobs',
+      count: incompleteJobs,
+      title: t.alertIncompleteWork,
+      subtitle: t.alertResolvePending,
+      cta: t.alertViewAll,
+      href: `/${locale}/dashboard/schedule`,
+      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      badgeClass: 'bg-emerald-600 text-white',
+      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
+    },
+    {
+      key: 'overdue-invoices',
+      count: overdueInvoices,
+      title: t.alertOverdueInvoices,
+      subtitle: t.alertSendReminders,
+      cta: t.alertResolveNow,
+      href: `/${locale}/dashboard/invoices-ledger`,
+      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      badgeClass: 'bg-emerald-600 text-white',
+      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
+    },
+  ];
+
   const operationsPanel = (
     <section className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-      <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
+      <div className="lg:col-span-5 bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">{t.priorityAlerts}</h2>
           {(overdueInvoices === 0 && unassignedScheduledJobs === 0 && sentEstimates === 0 && draftEstimates === 0) && (
@@ -204,53 +303,23 @@ export default async function DashboardHome({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">{t.sentEstimates}</span>
-            <span className="text-sm font-bold text-slate-800">{sentEstimates}</span>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-800">{t.draftEstimates}</span>
-            <span className="text-sm font-bold text-slate-700">{draftEstimates}</span>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">{t.upcomingJobs}</span>
-            <span className="text-sm font-bold text-slate-800">{upcomingJobs}</span>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">{t.unassignedJobs}</span>
-            <span className="text-sm font-bold text-slate-800">{unassignedScheduledJobs}</span>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">{t.incompleteJobs}</span>
-            <span className="text-sm font-bold text-slate-800">{incompleteJobs}</span>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">{t.overdueInvoices}</span>
-            <span className="text-sm font-bold text-slate-800">{overdueInvoices}</span>
-          </div>
+          {priorityAlertCards.map((card) => (
+            <div key={card.key} className={`rounded-lg border px-3 py-2.5 flex items-center justify-between gap-3 ${card.cardClass}`}>
+              <div className="flex items-center gap-3 min-w-0">
+                <span className={`h-7 w-7 rounded-full text-xs font-extrabold flex items-center justify-center shrink-0 ${card.badgeClass}`}>
+                  {card.count}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{card.title}</p>
+                  <p className="text-xs text-slate-600 truncate">{card.subtitle}</p>
+                </div>
+              </div>
+              <Link href={card.href} className={`shrink-0 rounded-md border px-2.5 py-1 text-[11px] font-semibold transition ${card.buttonClass}`}>
+                {card.cta}
+              </Link>
+            </div>
+          ))}
         </div>
-      </div>
-
-      <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">{t.nextActions}</h2>
-        <div className="space-y-2">
-          <Link href={`/${locale}/dashboard/estimates`} className="block rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-            {t.actionManageEstimates}
-          </Link>
-          <Link href={`/${locale}/dashboard/schedule`} className="block rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-            {t.actionScheduleJob}
-          </Link>
-          <Link href={`/${locale}/dashboard/invoices-ledger`} className="block rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-            {t.actionManageInvoices}
-          </Link>
-          <Link href={`/${locale}/dashboard/ledger`} className="block rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-            {t.actionTrackExpenses}
-          </Link>
-        </div>
-
-        {upcomingJobs === 0 && (
-          <p className="text-xs text-slate-400 mt-4">{t.noUpcomingJobs}</p>
-        )}
       </div>
     </section>
   );
@@ -275,11 +344,28 @@ export default async function DashboardHome({
               <p className="text-xs text-slate-500 font-medium">{translations.dashboard.metricsSubtitle}</p>
             </div>
 
-            <DashboardViewToggle
-              activeView={activeView}
-              operationsLabel={t.modeOperations}
-              financialsLabel={t.modeFinancials}
-            />
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <DashboardViewToggle
+                activeView={activeView}
+                operationsLabel={t.modeOperations}
+                financialsLabel={t.modeFinancials}
+              />
+
+              <div className="flex flex-wrap gap-2 sm:justify-end sm:ml-auto">
+                <Link href={`/${locale}/dashboard/estimates`} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                  {t.actionManageEstimates}
+                </Link>
+                <Link href={`/${locale}/dashboard/schedule`} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                  {t.actionScheduleJob}
+                </Link>
+                <Link href={`/${locale}/dashboard/invoices-ledger`} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                  {t.actionManageInvoices}
+                </Link>
+                <Link href={`/${locale}/dashboard/ledger`} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                  {t.actionTrackExpenses}
+                </Link>
+              </div>
+            </div>
 
             {activeView === 'operations' ? (
               <>

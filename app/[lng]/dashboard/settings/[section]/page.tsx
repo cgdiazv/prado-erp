@@ -11,6 +11,7 @@ import TeamsPanel from '../TeamsPanel';
 import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
 import XeroConnectionCard from '../XeroConnectionCard';
+import { updateDispatchSettings } from '../actions';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
 
@@ -285,12 +286,20 @@ export default async function SettingsSectionPage({
                     <p className="text-xs text-slate-400">{translations.dashboard.dispatchSettingsDescription}</p>
                   </div>
 
-                  <div className="space-y-4">
+                  <form action={updateDispatchSettings} className="space-y-4">
+                    <input type="hidden" name="locale" value={locale} />
                     <div className="flex items-start gap-3">
+                      <input
+                        type="hidden"
+                        name="autoOptimizeDriveRoutes"
+                        value="false"
+                      />
                       <input
                         id="optimize-paths"
                         type="checkbox"
-                        defaultChecked
+                        name="autoOptimizeDriveRoutes"
+                        value="true"
+                        defaultChecked={org.auto_optimize_drive_routes ?? true}
                         className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                       />
                       <div>
@@ -300,7 +309,35 @@ export default async function SettingsSectionPage({
                         <span className="text-xs text-slate-400">{translations.dashboard.autoOptimizeDescription}</span>
                       </div>
                     </div>
-                  </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="max-jobs-per-truck" className="block text-xs font-semibold text-gray-500 uppercase">
+                        {translations.dashboard.routeMaxStops}
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="max-jobs-per-truck"
+                          type="number"
+                          name="maxJobsPerTruck"
+                          min={1}
+                          max={100}
+                          defaultValue={org.max_jobs_per_truck ?? 4}
+                          className="w-32 rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                        />
+                        <button
+                          type="submit"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition shadow-sm"
+                        >
+                          Update Dispatch Settings
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        {locale.toLowerCase().startsWith('es')
+                          ? 'Define el umbral de sobrecarga para alertas y planificacion de rutas por camion.'
+                          : 'Defines the overload threshold for route planning and truck capacity alerts.'}
+                      </p>
+                    </div>
+                  </form>
                 </div>
               </div>
             )}
