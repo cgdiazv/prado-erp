@@ -17,7 +17,7 @@ export default async function ImportExportPage({
   const t = isEs
     ? {
         title: 'Importar / Exportar',
-        subtitle: 'Gestiona cargas y descargas de datos operativos para tu organización.',
+        subtitle: 'Gestiona cargas y descargas de datos operativos para tu organizacion.',
         exportTitle: 'Exportar Datos',
         exportDescription:
           'Descarga la informacion de tu cuenta en formato CSV para respaldos, migraciones o analisis externo.',
@@ -169,7 +169,11 @@ export default async function ImportExportPage({
                   </a>
                   <a
                     href="/api/export/csv?entity=expenses"
-                  const { organization: org } = await getUserOrganization(user.id);
+                    className="text-center text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition"
+                  >
+                    {t.exportExpenses}
+                  </a>
+                  <a
                     href="/api/export/csv?entity=estimates"
                     className="text-center text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition"
                   >

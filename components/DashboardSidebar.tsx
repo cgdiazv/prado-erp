@@ -7,7 +7,7 @@ import SupportTicketForm from '@/components/SupportTicketForm';
 import { getTranslations } from '@/lib/translations';
 
 interface DashboardSidebarProps {
-  subscriptionStatus?: string; // 'trial' | 'individual' | 'growth' | 'enterprise'
+  subscriptionStatus?: string | null; // 'trial' | 'individual' | 'growth' | 'enterprise'
   locale?: string;
 }
 

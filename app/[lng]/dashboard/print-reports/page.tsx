@@ -4,6 +4,7 @@ import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import PrintPageButton from '@/components/dashboard/PrintPageButton';
 import PrintReportFilters from '@/components/dashboard/PrintReportFilters';
+import { getUserOrganization } from '@/lib/organization';
 
 type ReportType = 'revenue' | 'expenses' | 'jobs' | 'customers' | 'estimates' | 'schedule';
 type PeriodType = '30d' | 'quarter' | 'year' | 'custom';
