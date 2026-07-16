@@ -103,6 +103,7 @@ export default async function DashboardHome({
   const { organization: org } = await getUserOrganization(user.id);
 
   if (!org) redirect('/signup');
+  const isIndividualAccount = org.subscription_status === 'individual';
 
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
@@ -361,9 +362,11 @@ export default async function DashboardHome({
                 <Link href={`/${locale}/dashboard/invoices-ledger`} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
                   {t.actionManageInvoices}
                 </Link>
-                <Link href={`/${locale}/dashboard/ledger`} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-                  {t.actionTrackExpenses}
-                </Link>
+                {!isIndividualAccount && (
+                  <Link href={`/${locale}/dashboard/ledger`} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    {t.actionTrackExpenses}
+                  </Link>
+                )}
               </div>
             </div>
 

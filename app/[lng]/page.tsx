@@ -8,6 +8,7 @@ import { getTranslations } from '@/lib/translations';
 
 export default async function MarketingHomePage({ params }: { params: Promise<{ lng: string }> }) {
   const { lng } = await params;
+  const isEs = lng.toLowerCase().startsWith('es');
   const translations = getTranslations(lng);
   const supabase = await createClient();
   const industryCards = [
@@ -166,6 +167,12 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
                 <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
                   {translations.home.featureFinancialsDescription}
                 </p>
+                <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-cyan-700/60 bg-cyan-950/30 px-3 py-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Xero</span>
+                  <span className="text-[10px] text-cyan-200">
+                    {isEs ? 'Conecta y sincroniza facturas automaticamente.' : 'Connect and sync invoices automatically.'}
+                  </span>
+                </div>
               </div>
 
               {/* Feature 3: CRM */}
