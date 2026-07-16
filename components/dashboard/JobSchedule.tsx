@@ -19,6 +19,8 @@ interface JobScheduleProps {
 export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobScheduleProps) {
   const router = useRouter();
   const translations = getTranslations(locale);
+  const isEs = locale.toLowerCase().startsWith('es');
+  const jobsList = jobs || [];
   const [filter, setFilter] = useState<FilterType>('all');
   const [pageSize, setPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -60,13 +62,19 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
     router.refresh();
   };
 
-  const filteredJobs = jobs
+  const filteredJobs = jobsList
     ? filter === 'all'
-      ? jobs.filter((job) => job.status !== 'archived')
+      ? jobsList.filter((job) => job.status !== 'archived')
       : filter === 'archived'
-        ? jobs.filter((job) => job.status === 'archived')
-      : jobs.filter((job) => job.status === filter)
+        ? jobsList.filter((job) => job.status === 'archived')
+      : jobsList.filter((job) => job.status === filter)
     : [];
+
+  const scheduledJobsCount = jobsList.filter((job) => job.status === 'scheduled').length;
+  const completedJobsCount = jobsList.filter((job) => job.status === 'completed').length;
+  const unassignedJobsCount = jobsList.filter(
+    (job) => job.status !== 'archived' && !job.truck_id
+  ).length;
 
   const sortedJobs = useMemo(() => {
     const getAddress = (job: any) => (job.properties?.street_address || '').toLowerCase();
@@ -140,6 +148,29 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
 
   return (
     <>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600">
+            {isEs ? 'Jobs Agendados' : 'Scheduled Jobs'}
+          </span>
+          <p className="text-xl font-extrabold text-slate-900 mt-1">{scheduledJobsCount}</p>
+        </div>
+
+        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600">
+            {isEs ? 'Jobs Completados' : 'Completed Jobs'}
+          </span>
+          <p className="text-xl font-extrabold text-slate-900 mt-1">{completedJobsCount}</p>
+        </div>
+
+        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-red-600">
+            {isEs ? 'Sin Camion Asignado' : 'Unassigned Truck Jobs'}
+          </span>
+          <p className="text-xl font-extrabold text-slate-900 mt-1">{unassignedJobsCount}</p>
+        </div>
+      </div>
+
       {/* Filter tabs + pagination */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
@@ -160,7 +191,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
 
         <div className="flex items-center gap-2 sm:ml-auto">
           <label htmlFor="jobs-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
-            {locale.toLowerCase().startsWith('es') ? 'Registros por pagina' : 'Rows per page'}
+            {isEs ? 'Registros por pagina' : 'Rows per page'}
           </label>
           <select
             id="jobs-page-size"
@@ -180,11 +211,11 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
             disabled={currentPage === 1}
             className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {locale.toLowerCase().startsWith('es') ? 'Anterior' : 'Prev'}
+            {isEs ? 'Anterior' : 'Prev'}
           </button>
 
           <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">
-            {locale.toLowerCase().startsWith('es') ? 'Pagina' : 'Page'} {currentPage} / {totalPages}
+            {isEs ? 'Pagina' : 'Page'} {currentPage} / {totalPages}
           </span>
 
           <button
@@ -192,7 +223,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
             disabled={currentPage >= totalPages}
             className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {locale.toLowerCase().startsWith('es') ? 'Siguiente' : 'Next'}
+            {isEs ? 'Siguiente' : 'Next'}
           </button>
         </div>
       </div>
@@ -238,7 +269,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
               {paginatedJobs.map((job) => (
                 <tr key={job.id} className="hover:bg-gray-50/50 transition duration-150">
                   <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
-                    {new Date(job.scheduled_date).toLocaleDateString(locale.toLowerCase().startsWith('es') ? 'es-ES' : 'en-US')}
+                    {new Date(job.scheduled_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                   </td>
                   <td className="px-4 py-3 text-gray-500">{job.properties?.street_address || '—'}</td>
                   <td className="px-4 py-3 text-gray-500">{job.job_type}</td>

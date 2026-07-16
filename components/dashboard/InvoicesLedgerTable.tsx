@@ -109,8 +109,39 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
     { key: 'paid', label: translations.dashboard.filterPaid },
   ];
 
+  const unpaidTotal = invoices
+    .filter((invoice) => invoice.status === 'unpaid')
+    .reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
+  const paidTotal = invoices
+    .filter((invoice) => invoice.status === 'paid')
+    .reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
+  const totalInvoices = invoices.length;
+
   return (
     <>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-red-600">
+            {isEs ? 'Total Pendiente' : 'Unpaid Total'}
+          </span>
+          <p className="text-xl font-extrabold text-slate-900 mt-1">${unpaidTotal.toFixed(2)}</p>
+        </div>
+
+        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600">
+            {isEs ? 'Total Pagado' : 'Paid Total'}
+          </span>
+          <p className="text-xl font-extrabold text-slate-900 mt-1">${paidTotal.toFixed(2)}</p>
+        </div>
+
+        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
+            {isEs ? 'Facturas Totales' : 'Total Invoices'}
+          </span>
+          <p className="text-xl font-extrabold text-slate-900 mt-1">{totalInvoices}</p>
+        </div>
+      </div>
+
       {/* Filter tabs + pagination */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">

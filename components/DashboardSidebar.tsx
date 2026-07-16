@@ -19,6 +19,7 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: 
   const lng = params.lng;
   const activeLocale = typeof lng === 'string' && lng.length > 0 ? lng : locale;
   const translations = getTranslations(locale);
+  const isEs = activeLocale.toLowerCase().startsWith('es');
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   
   // Check if mobile sidebar is open via URL parameters
@@ -83,7 +84,7 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: 
         ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:shadow-none'}
       `}>
         <div className="space-y-1 flex-1 overflow-y-auto overflow-x-hidden pt-2 md:pt-0">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-3 mb-2">{translations.dashboard.operationsHub}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-3 mb-2">{isEs ? 'Operaciones' : 'Operations'}</p>
           
           <Link href={localizedHref('/dashboard')} onClick={closeSidebar} className={linkStyle('/dashboard')}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
@@ -123,19 +124,25 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: 
                 {translations.dashboard.dispatchRouting}
               </Link>
 
-              <Link href={localizedHref('/dashboard/invoices-ledger')} onClick={closeSidebar} className={linkStyle('/dashboard/invoices-ledger')}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M7.5 4.5h9A1.5 1.5 0 0118 6v12a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 016 18V6a1.5 1.5 0 011.5-1.5z" />
-                </svg>
-                Invoices Ledger
-              </Link>
+              <div className="pt-2 mt-1 border-t border-gray-100">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-3 mb-2">
+                  {isEs ? 'Finanzas' : 'Finances'}
+                </p>
 
-              <Link href={localizedHref('/dashboard/ledger')} onClick={closeSidebar} className={linkStyle('/dashboard/ledger')}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {translations.dashboard.expenseLedger}
-              </Link>
+                <Link href={localizedHref('/dashboard/invoices-ledger')} onClick={closeSidebar} className={linkStyle('/dashboard/invoices-ledger')}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M7.5 4.5h9A1.5 1.5 0 0118 6v12a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 016 18V6a1.5 1.5 0 011.5-1.5z" />
+                  </svg>
+                  Invoices Ledger
+                </Link>
+
+                <Link href={localizedHref('/dashboard/ledger')} onClick={closeSidebar} className={linkStyle('/dashboard/ledger')}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {translations.dashboard.expenseLedger}
+                </Link>
+              </div>
             </>
           )}
 
