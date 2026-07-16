@@ -103,7 +103,7 @@ export default function EstimatesPage() {
         sendingEmail: 'Enviando...',
         sendSuccess: 'Presupuesto enviado exitosamente.',
         sendError: 'Error al enviar presupuesto:',
-        modalCreateTitle: 'Nueva Propuesta',
+        modalCreateTitle: 'Nueva Estimacion',
         modalEditTitle: 'Editar Propuesta',
         labelCustomer: 'Cliente Receptor',
         optionSelectCustomer: 'Selecciona un cliente...',
@@ -128,7 +128,7 @@ export default function EstimatesPage() {
         labelTruck: 'Camion (opcional)',
         optionSelectTruckOptional: 'Selecciona un camion...',
         cancel: 'Cancelar',
-        saveProposal: 'Guardar Propuesta',
+        saveProposal: 'Guardar Estimacion',
         updateProposal: 'Actualizar Propuesta',
         modalApproveTitle: 'Aprobar y Agendar Servicio',
         modalApproveTextStart: 'Estas aprobando el presupuesto por',
@@ -174,7 +174,7 @@ export default function EstimatesPage() {
         sendingEmail: 'Sending...',
         sendSuccess: 'Estimate sent successfully.',
         sendError: 'Error sending estimate:',
-        modalCreateTitle: 'New Proposal',
+        modalCreateTitle: 'New Estimate',
         modalEditTitle: 'Edit Proposal',
         labelCustomer: 'Customer',
         optionSelectCustomer: 'Select a customer...',
@@ -199,7 +199,7 @@ export default function EstimatesPage() {
         labelTruck: 'Truck (optional)',
         optionSelectTruckOptional: 'Select a truck...',
         cancel: 'Cancel',
-        saveProposal: 'Save Proposal',
+        saveProposal: 'Save Estimate',
         updateProposal: 'Update Proposal',
         modalApproveTitle: 'Approve and Schedule Service',
         modalApproveTextStart: 'You are approving the quote for',
@@ -977,17 +977,17 @@ export default function EstimatesPage() {
 
               <div className="flex gap-2 pt-2">
                 <button
+                  type="submit"
+                  className="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-lg transition font-bold"
+                >
+                  {editingEstimateId ? t.updateProposal : t.saveProposal}
+                </button>
+                <button
                   type="button"
                   onClick={closeEstimateModal}
                   className="w-1/2 border border-gray-300 hover:bg-gray-50 p-2.5 rounded-lg transition font-bold text-slate-700"
                 >
                   {t.cancel}
-                </button>
-                <button
-                  type="submit"
-                  className="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-lg transition font-bold"
-                >
-                  {editingEstimateId ? t.updateProposal : t.saveProposal}
                 </button>
               </div>
             </form>
