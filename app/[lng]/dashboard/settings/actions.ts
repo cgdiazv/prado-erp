@@ -178,7 +178,7 @@ export async function updateWorkspaceIdentity(formData: FormData) {
   return { success: true, logoUrl: nextLogoUrl };
 }
 
-export async function updateDispatchSettings(formData: FormData) {
+export async function updateDispatchSettings(formData: FormData): Promise<void> {
   const locale = (formData.get('locale') as string | null)?.trim() || 'en';
   const maxJobsRaw = (formData.get('maxJobsPerTruck') as string | null)?.trim() || '';
   const autoOptimizeDriveRoutes = formData
@@ -187,14 +187,14 @@ export async function updateDispatchSettings(formData: FormData) {
   const maxJobsPerTruck = Number.parseInt(maxJobsRaw, 10);
 
   if (!Number.isFinite(maxJobsPerTruck) || maxJobsPerTruck < 1 || maxJobsPerTruck > 100) {
-    return { error: 'Max jobs per truck must be a number between 1 and 100.' };
+    return;
   }
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'You must be signed in to update dispatch settings.' };
+    return;
   }
 
   const { data: org, error: orgError } = await supabase
@@ -205,11 +205,11 @@ export async function updateDispatchSettings(formData: FormData) {
     .maybeSingle();
 
   if (orgError) {
-    return { error: `Failed to load workspace: ${orgError.message}` };
+    return;
   }
 
   if (!org) {
-    return { error: 'Workspace not found.' };
+    return;
   }
 
   const { error } = await supabase
@@ -221,14 +221,13 @@ export async function updateDispatchSettings(formData: FormData) {
     .eq('id', org.id);
 
   if (error) {
-    return { error: error.message };
+    return;
   }
 
   revalidatePath('/dashboard/settings');
   revalidatePath(`/${locale}/dashboard/settings`);
   revalidatePath('/dashboard/routing');
   revalidatePath(`/${locale}/dashboard/routing`);
-  return { success: true };
 }
 
 export async function createService({
