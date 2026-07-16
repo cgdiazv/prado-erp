@@ -26,10 +26,7 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: 
   const isOpen = searchParams.get('sidebar') === 'open';
 
   // Premium features are visible during trial OR with growth/enterprise plans
-  const showPremiumFeatures =
-    subscriptionStatus === 'trial' ||
-    subscriptionStatus === 'growth' ||
-    subscriptionStatus === 'enterprise';
+  const showPremiumFeatures = subscriptionStatus !== 'individual';
 
   const linkStyle = (path: string) => {
     // Adjust the path for comparison to include the current language
