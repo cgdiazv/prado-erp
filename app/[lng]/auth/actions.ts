@@ -168,3 +168,96 @@ export async function signup(formData: FormData) {
     return { error: (err as Error)?.message || 'A secure server-side connection error occurred.' };
   }
 }
+
+export async function acceptTeamInvitation(formData: FormData) {
+  try {
+    const token = formData.get('token') as string;
+    const password = formData.get('password') as string;
+
+    if (!token || !password) {
+      return { error: 'Invitation token and password are required.' };
+    }
+
+    const supabaseAdmin = createAdminClient();
+
+    const { data: invite, error: inviteError } = await supabaseAdmin
+      .from('organization_invitations')
+      .select('organization_id, email, role, accepted_at')
+      .eq('invite_token', token)
+      .is('accepted_at', null)
+      .maybeSingle();
+
+    if (inviteError || !invite) {
+      return { error: 'Invalid or expired invitation link.' };
+    }
+
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find((user) => user.email === invite.email) || null;
+
+    let authUserId = existingUser?.id || null;
+
+    if (existingUser) {
+      const { error: updateUserError } = await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
+        password,
+        email_confirm: true,
+      });
+
+      if (updateUserError) {
+        return { error: updateUserError.message };
+      }
+    } else {
+      const { data: createdUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+        email: invite.email,
+        password,
+        email_confirm: true,
+      });
+
+      if (createUserError || !createdUser.user) {
+        return { error: createUserError?.message || 'Failed to create authentication user.' };
+      }
+
+      authUserId = createdUser.user.id;
+    }
+
+    if (!authUserId) {
+      return { error: 'Failed to resolve authentication user.' };
+    }
+
+    const { data: existingMembership } = await supabaseAdmin
+      .from('organization_users')
+      .select('id')
+      .eq('organization_id', invite.organization_id)
+      .eq('user_id', authUserId)
+      .maybeSingle();
+
+    if (!existingMembership) {
+      const { error: membershipError } = await supabaseAdmin
+        .from('organization_users')
+        .insert([
+          {
+            organization_id: invite.organization_id,
+            user_id: authUserId,
+            role: invite.role,
+          },
+        ]);
+
+      if (membershipError) {
+        return { error: membershipError.message };
+      }
+    }
+
+    const { error: acceptError } = await supabaseAdmin
+      .from('organization_invitations')
+      .update({ accepted_at: new Date().toISOString() })
+      .eq('invite_token', token)
+      .is('accepted_at', null);
+
+    if (acceptError) {
+      return { error: acceptError.message };
+    }
+
+    return { success: true, email: invite.email };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to accept invitation.' };
+  }
+}

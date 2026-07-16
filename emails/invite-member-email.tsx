@@ -40,6 +40,7 @@ export default function InviteMemberEmail({
 }: InviteMemberEmailProps) {
   const fallbackInitial = organizationName.trim().charAt(0).toUpperCase() || 'P';
   const roleInfo = roleLabels[role] || roleLabels.member;
+  const ctaText = 'Set Password and Accept Invitation';
 
   return (
     <div style={{ fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', maxWidth: 600, margin: '20px auto', color: '#0f172a', padding: '10px' }}>
@@ -108,7 +109,7 @@ export default function InviteMemberEmail({
               boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
             }}
           >
-            Accept Invitation
+            {ctaText}
           </a>
         </div>
 
@@ -116,8 +117,8 @@ export default function InviteMemberEmail({
         <div style={{ marginTop: 32, borderTop: '1px solid #e2e8f0', paddingTop: 16, background: '#f9fafb', borderRadius: 8, padding: 16 }}>
           <p style={{ margin: '0 0 12px 0', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Next Steps:</p>
           <ol style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: '#475569', lineHeight: '20px' }}>
-            <li style={{ marginBottom: 6 }}>Click the button above to accept the invitation</li>
-            <li style={{ marginBottom: 6 }}>Create your account or sign in with your email</li>
+            <li style={{ marginBottom: 6 }}>Click the button above to continue</li>
+            <li style={{ marginBottom: 6 }}>Set your password to verify your invitation</li>
             <li>You will immediately have access to {organizationName}</li>
           </ol>
         </div>

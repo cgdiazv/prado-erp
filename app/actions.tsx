@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from '@/lib/supabaseServer';
 import { revalidatePath } from 'next/cache';
+import { randomUUID } from 'crypto';
 import { Resend } from 'resend';
 import { render } from '@react-email/render';
 import EstimateEmail from '@/emails/estimate-email';
@@ -1391,6 +1392,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    let inviteToken: string | null = null;
 
     if (!user) {
       return { success: false, error: 'Unauthorized.' };
@@ -1438,6 +1440,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
       }
     } else {
       // User doesn't have an account yet - create a pending invitation
+      inviteToken = randomUUID();
       const { error: inviteError } = await supabase
         .from('organization_invitations')
         .insert([
@@ -1446,6 +1449,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
             email: payload.email,
             role: payload.role,
             invited_by_user_id: user.id,
+            invite_token: inviteToken,
           }
         ]);
 
@@ -1473,7 +1477,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
 
       const inviteLink = authUser 
         ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://pradojob.com'}/en/dashboard`
-        : `${process.env.NEXT_PUBLIC_APP_URL || 'https://pradojob.com'}/en/signup?email=${encodeURIComponent(payload.email)}&org_id=${payload.organizationId}&org_name=${encodeURIComponent(org?.name || 'Prado Systems')}`;
+        : `${process.env.NEXT_PUBLIC_APP_URL || 'https://pradojob.com'}/en/auth/accept-invite?token=${encodeURIComponent(inviteToken || '')}`;
 
       const emailHtml = await render(
         <InviteMemberEmail
