@@ -5,6 +5,7 @@ import DashboardSidebar from '@/components/DashboardSidebar';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import InvoicesLedgerTable from '@/components/dashboard/InvoicesLedgerTable';
+import { getUserOrganization } from '@/lib/organization';
 
 interface InvoiceRow {
   id: string;
@@ -35,11 +36,7 @@ export default async function InvoicesLedgerPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name, logo_url, trial_starts_at, subscription_status')
-    .eq('owner_id', user.id)
-    .single();
+  const { organization: org } = await getUserOrganization(user.id);
 
   if (!org) redirect('/signup');
 

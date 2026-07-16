@@ -6,6 +6,7 @@ import DashboardSidebar from '@/components/DashboardSidebar';
 import DeleteSiteButton from '@/components/DeleteSiteButton';
 import { updateCustomer, deleteCustomer, createProperty, markInvoiceAsPaid } from '../../../../actions';
 import { getTranslations } from '@/lib/translations';
+import { getUserOrganization } from '@/lib/organization';
 
 interface CustomerPageProps {
   params: Promise<{ id: string; lng?: string }> | { id: string; lng?: string };
@@ -25,11 +26,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
   }
 
   // 2. Fetch workspace organization context
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('name, logo_url, subscription_status')
-    .eq('owner_id', user.id)
-    .single();
+  const { organization: org } = await getUserOrganization(user.id);
 
   if (!org) {
     redirect('/signup');

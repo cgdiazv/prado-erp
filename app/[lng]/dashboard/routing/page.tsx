@@ -6,6 +6,7 @@ import RouteEngine from '@/components/dashboard/RouteEngine';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
+import { getUserOrganization } from '@/lib/organization';
 
 export default async function RoutingPage({
   params,
@@ -21,11 +22,7 @@ export default async function RoutingPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name, logo_url, trial_starts_at, subscription_status')
-    .eq('owner_id', user.id)
-    .single();
+  const { organization: org } = await getUserOrganization(user.id);
   if (!org) redirect('/signup');
 
   // 1. SECURITY TIER GUARD: Allow 'enterprise' and active 'trial' profiles, block 'individual'

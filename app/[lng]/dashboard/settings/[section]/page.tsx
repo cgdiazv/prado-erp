@@ -12,6 +12,7 @@ import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
 import XeroConnectionCard from '../XeroConnectionCard';
 import { getTranslations } from '@/lib/translations';
+import { getUserOrganization } from '@/lib/organization';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
@@ -61,11 +62,7 @@ export default async function SettingsSectionPage({
     redirect('/login');
   }
 
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name, logo_url, subscription_status, slogan, phone, street_address, city, state, zip_code')
-    .eq('owner_id', user.id)
-    .single();
+  const { organization: org } = await getUserOrganization(user.id);
 
   if (!org) {
     redirect('/signup');

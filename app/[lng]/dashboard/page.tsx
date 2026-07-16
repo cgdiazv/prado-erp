@@ -9,6 +9,7 @@ import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import TrialBanner from '@/components/TrialBanner';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
+import { getUserOrganization } from '@/lib/organization';
 
 type DashboardView = 'operations' | 'financials';
 
@@ -69,12 +70,7 @@ export default async function DashboardHome({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
   
-  // Fetch organization context along with trial parameters
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name, logo_url, trial_starts_at, subscription_status')
-    .eq('owner_id', user.id)
-    .single();
+  const { organization: org } = await getUserOrganization(user.id);
 
   if (!org) redirect('/signup');
 

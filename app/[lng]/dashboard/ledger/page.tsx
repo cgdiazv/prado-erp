@@ -6,6 +6,7 @@ import ExpenseLedger from '@/components/dashboard/ExpenseLedger';
 import LogExpenseModal from '@/components/dashboard/LogExpenseModal';
 import { checkTrialExpiry } from '@/lib/trialCheck'; // Import utility
 import { getTranslations } from '@/lib/translations';
+import { getUserOrganization } from '@/lib/organization';
 
 export default async function LedgerPage({
   params,
@@ -21,11 +22,7 @@ export default async function LedgerPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name, logo_url, trial_starts_at, subscription_status')
-    .eq('owner_id', user.id)
-    .single();
+  const { organization: org } = await getUserOrganization(user.id);
   if (!org) redirect('/signup');
 
   // 1. SECURITY TIER GUARD: Allow 'enterprise' and active 'trial' profiles, block 'individual'

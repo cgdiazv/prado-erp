@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import ImportCsvPanel from '@/components/dashboard/ImportCsvPanel';
+import { getUserOrganization } from '@/lib/organization';
 
 export default async function ImportExportPage({
   params,
@@ -85,11 +86,7 @@ export default async function ImportExportPage({
     redirect('/login');
   }
 
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name, logo_url, subscription_status')
-    .eq('owner_id', user.id)
-    .single();
+  const { organization: org } = await getUserOrganization(user.id);
 
   if (!org) {
     redirect('/signup');
@@ -172,11 +169,7 @@ export default async function ImportExportPage({
                   </a>
                   <a
                     href="/api/export/csv?entity=expenses"
-                    className="text-center text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition"
-                  >
-                    {t.exportExpenses}
-                  </a>
-                  <a
+                  const { organization: org } = await getUserOrganization(user.id);
                     href="/api/export/csv?entity=estimates"
                     className="text-center text-xs font-semibold px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-slate-50 transition"
                   >

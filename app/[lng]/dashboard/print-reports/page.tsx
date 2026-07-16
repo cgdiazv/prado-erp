@@ -235,11 +235,7 @@ export default async function PrintReportsPage({
     redirect('/login');
   }
 
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name, logo_url, subscription_status')
-    .eq('owner_id', user.id)
-    .single();
+  const { organization: org } = await getUserOrganization(user.id);
 
   if (!org) {
     redirect('/signup');
