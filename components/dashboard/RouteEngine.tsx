@@ -612,7 +612,7 @@ export default function RouteEngine({ orgId, jobs, trucks, locale = 'en' }: Rout
                     <button
                       type="button"
                       onClick={() => optimizeTruckRoute(truck.id)}
-                      className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600 hover:bg-slate-50 transition"
+                      className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition shadow-sm"
                     >
                       {translations.dashboard.routeOptimizeTruck}
                     </button>

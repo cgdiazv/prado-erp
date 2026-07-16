@@ -33,9 +33,9 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
     filter === 'all' ? invoices : invoices.filter((inv) => inv.status === filter);
 
   const filters: { key: FilterType; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'unpaid', label: 'Unpaid' },
-    { key: 'paid', label: 'Paid' },
+    { key: 'all', label: translations.dashboard.filterAll },
+    { key: 'unpaid', label: translations.dashboard.filterUnpaid },
+    { key: 'paid', label: translations.dashboard.filterPaid },
   ];
 
   return (
@@ -72,8 +72,8 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
             <tbody className="divide-y divide-gray-200 bg-white">
               {filteredInvoices.map((inv) => {
                 const customerName =
-                  inv.customers?.company_name ||
                   `${inv.customers?.first_name || ''} ${inv.customers?.last_name || ''}`.trim() ||
+                  inv.customers?.company_name ||
                   'Customer';
 
                 return (

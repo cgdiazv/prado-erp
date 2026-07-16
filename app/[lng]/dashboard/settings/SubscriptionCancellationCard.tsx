@@ -28,22 +28,35 @@ function formatSubscriptionStatus(status: string | null, locale: string = 'en') 
 
 export default function SubscriptionCancellationCard({ currentSubscriptionStatus, locale = 'en' }: SubscriptionCancellationCardProps) {
   const translations = getTranslations(locale);
+  const isEs = locale.toLowerCase().startsWith('es');
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
   const [otherReason, setOtherReason] = useState('');
-  const otherReasonOption = 'Other';
+  const otherReasonOption = isEs ? 'Otro' : 'Other';
 
   const cancellationReasons = [
-    'Too expensive for my current needs',
-    'Missing features I need',
-    'Switching to another platform',
-    'I am not using it enough',
-    'Technical issues or bugs',
-    'Support response was not fast enough',
+    isEs ? 'Demasiado caro para mis necesidades actuales' : 'Too expensive for my current needs',
+    isEs ? 'Faltan funciones que necesito' : 'Missing features I need',
+    isEs ? 'Cambiando a otra plataforma' : 'Switching to another platform',
+    isEs ? 'No lo estoy usando lo suficiente' : 'I am not using it enough',
+    isEs ? 'Problemas tecnicos o errores' : 'Technical issues or bugs',
+    isEs ? 'La respuesta del soporte no fue lo suficientemente rapida' : 'Support response was not fast enough',
   ];
+
+  const modalTitle = isEs ? 'Antes de cancelar' : 'Before you cancel';
+  const modalSubtitle = isEs
+    ? 'Selecciona una o mas razones (opcional, pero util).'
+    : 'Select one or more reasons (optional but helpful).';
+  const closeModalLabel = isEs ? 'Cerrar modal de cancelacion' : 'Close cancellation modal';
+  const otherReasonPlaceholder = isEs ? 'Cuéntanos más' : 'Tell us more';
+  const cancelWithoutAnswering = isEs ? 'Cancelar sin responder' : 'Just cancel without answering';
+  const cancelAndSendFeedback = isEs ? 'Cancelar y enviar comentarios' : 'Cancel and send feedback';
+  const canceledFeedback = isEs
+    ? 'Tu suscripcion se ha cancelado y el espacio de trabajo ahora esta en el plan de prueba.'
+    : 'Your subscription has been canceled and the workspace is now on the trial plan.';
 
   const subscriptionLabel = formatSubscriptionStatus(currentSubscriptionStatus, locale);
   const canCancel =
@@ -76,7 +89,7 @@ export default function SubscriptionCancellationCard({ currentSubscriptionStatus
       return;
     }
 
-    setFeedback('Your subscription has been canceled and the workspace is now on the trial plan.');
+    setFeedback(canceledFeedback);
     setIsModalOpen(false);
     setSelectedReasons([]);
     setOtherReason('');
@@ -141,14 +154,14 @@ export default function SubscriptionCancellationCard({ currentSubscriptionStatus
           <div className="w-full max-w-lg rounded-xl border border-gray-200 bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h4 className="text-base font-semibold text-slate-900">Before you cancel</h4>
-                <p className="mt-1 text-sm text-slate-500">Select one or more reasons (optional but helpful).</p>
+                <h4 className="text-base font-semibold text-slate-900">{modalTitle}</h4>
+                <p className="mt-1 text-sm text-slate-500">{modalSubtitle}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="rounded-md px-2 py-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
-                aria-label="Close cancellation modal"
+                aria-label={closeModalLabel}
               >
                 x
               </button>
@@ -183,7 +196,7 @@ export default function SubscriptionCancellationCard({ currentSubscriptionStatus
                   onChange={(event) => setOtherReason(event.target.value)}
                   maxLength={500}
                   rows={3}
-                  placeholder="Tell us more"
+                  placeholder={otherReasonPlaceholder}
                   className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                 />
               ) : null}
@@ -196,7 +209,7 @@ export default function SubscriptionCancellationCard({ currentSubscriptionStatus
                 disabled={isPending}
                 className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Just cancel without answering
+                {cancelWithoutAnswering}
               </button>
               <button
                 type="button"
@@ -204,7 +217,7 @@ export default function SubscriptionCancellationCard({ currentSubscriptionStatus
                 disabled={isPending || !canSubmitReasons}
                 className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isPending ? translations.dashboard.cancelingLoading : 'Cancel and send feedback'}
+                {isPending ? translations.dashboard.cancelingLoading : cancelAndSendFeedback}
               </button>
             </div>
           </div>

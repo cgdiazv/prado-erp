@@ -19,32 +19,22 @@ interface TeamsPanelProps {
 const USER_ROLES = [
   {
     id: 'owner',
-    label: 'Owner',
-    description: 'Full access. Manages billing, team, and all settings.',
     permissions: ['manage_team', 'manage_billing', 'manage_settings', 'edit_data', 'view_data']
   },
   {
     id: 'admin',
-    label: 'Manager',
-    description: 'Can manage team members, settings, and view all data.',
     permissions: ['manage_team', 'manage_settings', 'edit_data', 'view_data']
   },
   {
     id: 'member',
-    label: 'Supervisor',
-    description: 'Can edit and create work orders, estimates, and customer data.',
     permissions: ['edit_data', 'view_data']
   },
   {
     id: 'accountant',
-    label: 'Accountant',
-    description: 'Can view data and manage billing and financial records.',
     permissions: ['manage_billing', 'view_data']
   },
   {
     id: 'viewer',
-    label: 'Guest',
-    description: 'Read-only access to dashboards and reports.',
     permissions: ['view_data']
   }
 ];
@@ -125,7 +115,63 @@ export default function TeamsPanel({ organizationId, locale = 'en' }: TeamsPanel
   };
 
   const getRoleLabel = (roleId: string) => {
-    return USER_ROLES.find(r => r.id === roleId)?.label || roleId;
+    const labels: Record<string, string> = isEs
+      ? {
+          owner: 'Propietario',
+          admin: 'Gestor',
+          member: 'Supervisor',
+          accountant: 'Contador',
+          viewer: 'Invitado',
+        }
+      : {
+          owner: 'Owner',
+          admin: 'Manager',
+          member: 'Supervisor',
+          accountant: 'Accountant',
+          viewer: 'Guest',
+        };
+
+    return labels[roleId] || roleId;
+  };
+
+  const getRoleDescription = (roleId: string) => {
+    const descriptions: Record<string, string> = isEs
+      ? {
+          owner: 'Acceso total. Gestiona facturacion, equipo y toda la configuracion.',
+          admin: 'Puede gestionar miembros del equipo, configuracion y ver todos los datos.',
+          member: 'Puede editar y crear ordenes de trabajo, estimaciones y datos de clientes.',
+          accountant: 'Puede ver datos y gestionar facturacion y registros financieros.',
+          viewer: 'Acceso de solo lectura a paneles e informes.',
+        }
+      : {
+          owner: 'Full access. Manages billing, team, and all settings.',
+          admin: 'Can manage team members, settings, and view all data.',
+          member: 'Can edit and create work orders, estimates, and customer data.',
+          accountant: 'Can view data and manage billing and financial records.',
+          viewer: 'Read-only access to dashboards and reports.',
+        };
+
+    return descriptions[roleId] || '';
+  };
+
+  const getPermissionLabel = (permission: string) => {
+    const labels: Record<string, string> = isEs
+      ? {
+          manage_team: 'Gestionar equipo',
+          manage_billing: 'Gestionar facturacion',
+          manage_settings: 'Gestionar configuracion',
+          edit_data: 'Editar datos',
+          view_data: 'Ver datos',
+        }
+      : {
+          manage_team: 'Manage team',
+          manage_billing: 'Manage billing',
+          manage_settings: 'Manage settings',
+          edit_data: 'Edit data',
+          view_data: 'View data',
+        };
+
+    return labels[permission] || permission.replace('_', ' ');
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -217,8 +263,8 @@ export default function TeamsPanel({ organizationId, locale = 'en' }: TeamsPanel
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900">{userRole.label}</h4>
-                  <p className="text-xs text-slate-500 mt-1">{userRole.description}</p>
+                  <h4 className="text-xs font-bold text-slate-900">{getRoleLabel(userRole.id)}</h4>
+                  <p className="text-xs text-slate-500 mt-1">{getRoleDescription(userRole.id)}</p>
                 </div>
                 {userRole.id === 'owner' && (
                   <span className="text-[10px] uppercase font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
@@ -229,7 +275,7 @@ export default function TeamsPanel({ organizationId, locale = 'en' }: TeamsPanel
               <div className="mt-2 flex flex-wrap gap-1">
                 {userRole.permissions.map((perm) => (
                   <span key={perm} className="text-[10px] bg-white text-slate-600 border border-gray-200 px-1.5 py-0.5 rounded">
-                    {perm.replace('_', ' ')}
+                    {getPermissionLabel(perm)}
                   </span>
                 ))}
               </div>

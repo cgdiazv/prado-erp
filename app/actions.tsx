@@ -44,6 +44,10 @@ export async function createJob(formData: FormData) {
   }
 
   revalidatePath('/');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/schedule');
+  revalidatePath('/dashboard/routing');
+  revalidatePath('/dashboard/print-reports');
   return { success: true };
 }
 
@@ -267,6 +271,10 @@ export async function completeJob(jobId: string) {
   }
 
   revalidatePath('/');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/schedule');
+  revalidatePath('/dashboard/routing');
+  revalidatePath('/dashboard/print-reports');
   return { success: true };
 }
 
@@ -496,13 +504,47 @@ export async function createProperty(customerId: string, formData: FormData) {
   }
 }
 
-export async function deleteJob(jobId: string) {
+export async function archiveJob(jobId: string) {
   if (!jobId) return { error: 'Missing Job ID' };
 
   const supabase = await createClient();
+  const { data: job } = await supabase
+    .from('jobs')
+    .select('status')
+    .eq('id', jobId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from('jobs')
-    .delete()
+    .update({
+      status: 'archived',
+      previous_status: job?.status || null,
+    })
+    .eq('id', jobId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/');
+  return { success: true };
+}
+
+export async function restoreJob(jobId: string) {
+  if (!jobId) return { error: 'Missing Job ID' };
+
+  const supabase = await createClient();
+  const { data: job } = await supabase
+    .from('jobs')
+    .select('previous_status')
+    .eq('id', jobId)
+    .maybeSingle();
+
+  const restoredStatus = job?.previous_status || 'scheduled';
+  const { error } = await supabase
+    .from('jobs')
+    .update({
+      status: restoredStatus,
+      previous_status: null,
+    })
     .eq('id', jobId);
 
   if (error) return { error: error.message };

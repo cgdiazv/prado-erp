@@ -6,7 +6,7 @@ import DeleteJobButton from '@/components/DeleteJobButton';
 import { completeJob, updateJobScheduleDetails } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 
-type FilterType = 'all' | 'scheduled' | 'completed';
+type FilterType = 'all' | 'scheduled' | 'completed' | 'archived';
 
 interface JobScheduleProps {
   jobs: any[] | null;
@@ -56,14 +56,17 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
 
   const filteredJobs = jobs
     ? filter === 'all'
-      ? jobs
+      ? jobs.filter((job) => job.status !== 'archived')
+      : filter === 'archived'
+        ? jobs.filter((job) => job.status === 'archived')
       : jobs.filter((job) => job.status === filter)
     : [];
 
   const filters: { key: FilterType; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'scheduled', label: 'In Progress' },
-    { key: 'completed', label: 'Completed' },
+    { key: 'all', label: translations.dashboard.filterAll },
+    { key: 'scheduled', label: translations.dashboard.filterInProgress },
+    { key: 'completed', label: translations.dashboard.completed },
+    { key: 'archived', label: translations.dashboard.filterArchived },
   ];
 
   return (
@@ -135,6 +138,10 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                             </button>
                           </form>
                         </>
+                      ) : job.status === 'archived' ? (
+                        <span className="text-[10px] uppercase tracking-wider font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200 shadow-xs select-none">
+                          {translations.dashboard.archived}
+                        </span>
                       ) : (
                         <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">
                           {translations.dashboard.completed}
@@ -142,7 +149,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                       )}
 
                       {/* CLIENT COMPONENT ISOLATION FOR DELETE INTERACTIVITY */}
-                      <DeleteJobButton jobId={job.id} />
+                      <DeleteJobButton jobId={job.id} jobStatus={job.status} locale={locale} />
                     </div>
                   </td>
                 </tr>

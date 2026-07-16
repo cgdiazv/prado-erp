@@ -41,7 +41,7 @@ export default async function DashboardHome({
         draftEstimates: 'Estimaciones en borrador',
         incompleteJobs: 'Jobs incompletos',
         noUpcomingJobs: 'No hay jobs proximos. Programa tu siguiente servicio.',
-        nextActions: 'Plan de Ataque',
+        nextActions: 'Plan de Accion',
         actionScheduleJob: 'Agendar Job',
         actionManageInvoices: 'Gestionar Facturas',
         actionManageEstimates: 'Gestionar Estimaciones',
@@ -118,6 +118,7 @@ export default async function DashboardHome({
 
   const invoices = invoicesResponse.data || [];
   const jobs = jobsResponse.data || [];
+  const activeJobs = jobs.filter((job) => job.status !== 'archived');
 
   const totalRevenue = invoices.reduce((acc, inv) => acc + Number(inv.total_amount), 0);
   const totalExpenses = expenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
@@ -184,13 +185,13 @@ export default async function DashboardHome({
     return !Number.isNaN(dueDate.getTime()) && dueDate < today;
   }).length;
 
-  const unassignedScheduledJobs = jobs.filter((job) => job.status === 'scheduled' && !job.truck_id).length;
-  const upcomingJobs = jobs.filter((job) => {
+  const unassignedScheduledJobs = activeJobs.filter((job) => job.status === 'scheduled' && !job.truck_id).length;
+  const upcomingJobs = activeJobs.filter((job) => {
     if (!job.scheduled_date || job.status === 'completed') return false;
     const scheduled = new Date(job.scheduled_date);
     return !Number.isNaN(scheduled.getTime()) && scheduled >= today && scheduled <= sevenDaysFromNow;
   }).length;
-  const incompleteJobs = jobs.filter((job) => job.status !== 'completed').length;
+  const incompleteJobs = activeJobs.filter((job) => job.status !== 'completed').length;
   const sentEstimates = estimates.filter((estimate) => estimate.status === 'sent').length;
   const draftEstimates = estimates.filter((estimate) => estimate.status === 'draft').length;
 

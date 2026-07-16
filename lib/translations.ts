@@ -272,10 +272,16 @@ type TranslationBundle = {
     price: string;
     dispatchJobTarget: string;
     liveJobSchedule: string;
+    filterAll: string;
+    filterInProgress: string;
+    filterArchived: string;
+    filterUnpaid: string;
+    filterPaid: string;
     scheduleDetails: string;
     updateSchedule: string;
     markDone: string;
     completed: string;
+    archived: string;
     noActiveDispatchLogs: string;
     address: string;
     action: string;
@@ -319,6 +325,9 @@ type TranslationBundle = {
     backToDashboard: string;
     workspaceIdentity: string;
     workspaceIdentityDescription: string;
+    organizationLogo: string;
+    chooseFile: string;
+    noFileChosen: string;
     systemAccountEmail: string;
     workspaceAddress: string;
     workspaceAddressPlaceholder: string;
@@ -352,6 +361,8 @@ type TranslationBundle = {
     dispatchSettingsDescription: string;
     autoOptimizeDriveRoutes: string;
     autoOptimizeDescription: string;
+    printReports: string;
+    importExport: string;
     subscriptionManagement: string;
     subscriptionManagementDescription: string;
     currentSubscription: string;

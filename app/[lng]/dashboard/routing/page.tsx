@@ -99,7 +99,9 @@ export default async function RoutingPage({
   }
 
   const jobs = rawJobs
-    ? rawJobs.map((job) => {
+    ? rawJobs
+      .filter((job) => job.status !== 'archived')
+      .map((job) => {
         const hasCoordinates = job.properties?.latitude !== null && job.properties?.longitude !== null;
         if (hasCoordinates || !job.property_id) return job;
 

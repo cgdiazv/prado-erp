@@ -92,7 +92,7 @@ export default function CustomersAccountsSection({
           <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-4 py-3 text-xs font-semibold text-gray-500 tracking-wider">Name</th>
+                <th className="px-4 py-3 text-xs font-semibold text-gray-500 tracking-wider">{isEs ? 'Nombre' : 'Name'}</th>
                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 tracking-wider">{translations.dashboard.companyName}</th>
                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 tracking-wider">{translations.dashboard.customerEmail}</th>
                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 tracking-wider">{translations.dashboard.phoneNumber}</th>

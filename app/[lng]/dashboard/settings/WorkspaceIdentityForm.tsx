@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { updateWorkspaceIdentity } from './actions';
 import { getTranslations } from '@/lib/translations';
 
@@ -30,11 +30,14 @@ export default function WorkspaceIdentityForm({
   locale = 'en',
 }: WorkspaceIdentityFormProps) {
   const translations = getTranslations(locale);
+  const isEs = locale.toLowerCase().startsWith('es');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>(initialLogoUrl);
+  const [logoFileName, setLogoFileName] = useState('');
   const [removeLogoRequested, setRemoveLogoRequested] = useState(false);
+  const logoInputId = useId();
   const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -74,6 +77,7 @@ export default function WorkspaceIdentityForm({
 
     if (!file) return;
 
+    setLogoFileName(file.name);
     const objectUrl = URL.createObjectURL(file);
     setLogoPreviewUrl(objectUrl);
     setRemoveLogoRequested(false);
@@ -81,6 +85,7 @@ export default function WorkspaceIdentityForm({
 
   function handleRemoveLogo() {
     setLogoPreviewUrl('');
+    setLogoFileName('');
     setRemoveLogoRequested(true);
     if (logoInputRef.current) {
       logoInputRef.current.value = '';
@@ -135,19 +140,29 @@ export default function WorkspaceIdentityForm({
               maxLength={160}
               className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
             />
-            <p className="mt-1 text-[11px] text-slate-400">Shown in estimate and invoice emails.</p>
+            <p className="mt-1 text-[11px] text-slate-400">{isEs ? 'Se muestra en correos de estimaciones y facturas.' : 'Shown in estimate and invoice emails.'}</p>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Organization Logo</label>
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.dashboard.organizationLogo}</label>
             <input
+              id={logoInputId}
               type="file"
               name="logoFile"
               accept="image/png,image/jpeg,image/webp,image/svg+xml"
               ref={logoInputRef}
-              className="w-full rounded-lg border border-gray-300 p-2 text-sm bg-white outline-none file:mr-3 file:rounded-md file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
+              className="hidden"
               onChange={handleLogoFileChange}
             />
-            <p className="mt-1 text-[11px] text-slate-400">Accepted: PNG, JPG, WEBP, SVG. Max size: 3MB.</p>
+            <div className="flex items-center gap-3 rounded-lg border border-gray-300 bg-white p-2">
+              <label
+                htmlFor={logoInputId}
+                className="inline-flex cursor-pointer rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
+              >
+                {translations.dashboard.chooseFile}
+              </label>
+              <span className="text-xs text-gray-600 truncate">{logoFileName || translations.dashboard.noFileChosen}</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">{isEs ? 'Acepta: PNG, JPG, WEBP, SVG. Tamano maximo: 3MB.' : 'Accepted: PNG, JPG, WEBP, SVG. Max size: 3MB.'}</p>
             {logoPreviewUrl ? (
               <div className="mt-2 flex items-center gap-3">
                 <img

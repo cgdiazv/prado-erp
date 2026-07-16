@@ -95,7 +95,7 @@ export default async function SettingsSectionPage({
     },
     {
       id: 'operations-settings',
-      label: 'Operations Settings',
+      label: locale.toLowerCase().startsWith('es') ? 'Configuracion de operaciones' : 'Operations Settings',
       href: `/${locale}/dashboard/settings/operations-settings`,
     },
   ];
@@ -111,7 +111,7 @@ export default async function SettingsSectionPage({
   if (canAccessXeroSettings) {
     sectionLinks.push({
       id: 'integrations',
-      label: 'Integrations',
+      label: locale.toLowerCase().startsWith('es') ? 'Integraciones' : 'Integrations',
       href: `/${locale}/dashboard/settings/integrations`,
     });
   }

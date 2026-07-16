@@ -23,16 +23,17 @@ export default async function ImportExportPage({
         exportCustomers: 'Exportar Clientes',
         exportJobs: 'Exportar Jobs',
         exportExpenses: 'Exportar Gastos',
-        exportEstimates: 'Exportar Cotizaciones',
+        exportEstimates: 'Exportar Estimaciones',
         importTitle: 'Importar Datos',
         importDescription:
           'Sube archivos CSV para cargar informacion en bloque. Revisa el formato antes de importar.',
         uploadLabel: 'Archivo CSV',
         chooseFile: 'Seleccionar Archivo',
+        noFileChosen: 'Ningun archivo seleccionado',
         importCustomers: 'Importar Clientes',
         importJobs: 'Importar Jobs',
         importExpenses: 'Importar Gastos',
-        importEstimates: 'Importar Cotizaciones',
+        importEstimates: 'Importar Estimaciones',
         noFileSelected: 'Selecciona un archivo CSV antes de importar.',
         importing: 'Importando...',
         importDone: 'Importacion completada.',
@@ -41,7 +42,7 @@ export default async function ImportExportPage({
         templateCustomers: 'Plantilla Clientes',
         templateJobs: 'Plantilla Jobs',
         templateExpenses: 'Plantilla Gastos',
-        templateEstimates: 'Plantilla Cotizaciones',
+        templateEstimates: 'Plantilla Estimaciones',
       }
     : {
         title: 'Import / Export',
@@ -58,6 +59,7 @@ export default async function ImportExportPage({
           'Upload CSV files to batch-load records. Review file format before importing.',
         uploadLabel: 'CSV File',
         chooseFile: 'Choose File',
+        noFileChosen: 'No file chosen',
         importCustomers: 'Import Customers',
         importJobs: 'Import Jobs',
         importExpenses: 'Import Expenses',
@@ -118,6 +120,8 @@ export default async function ImportExportPage({
 
                 <ImportCsvPanel
                   uploadLabel={t.uploadLabel}
+                  chooseFile={t.chooseFile}
+                  noFileChosen={t.noFileChosen}
                   importCustomers={t.importCustomers}
                   importJobs={t.importJobs}
                   importExpenses={t.importExpenses}

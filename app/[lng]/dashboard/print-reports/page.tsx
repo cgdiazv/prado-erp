@@ -127,7 +127,7 @@ export default async function PrintReportsPage({
         reportExpenses: 'Resumen de Gastos',
         reportJobs: 'Rendimiento de Jobs',
         reportCustomers: 'Estado de Clientes',
-        reportEstimates: 'Conversion de Cotizaciones',
+        reportEstimates: 'Conversion de Estimaciones',
         reportSchedule: 'Agenda Semanal',
         periodLabel: 'Periodo',
         periodMonth: 'Ultimos 30 dias',
@@ -161,7 +161,7 @@ export default async function PrintReportsPage({
         thEmail: 'Email',
         thOutstanding: 'Saldo pendiente',
         thPaid: 'Pagado',
-        estimatesCreated: 'Cotizaciones creadas',
+        estimatesCreated: 'Estimaciones creadas',
         approved: 'Aprobadas',
         conversionRate: 'Tasa de conversion',
         thTitle: 'Titulo',
@@ -383,17 +383,18 @@ export default async function PrintReportsPage({
           .order('scheduled_date', { ascending: true })
       : { data: [] as any[] };
 
-    const completedCount = (jobs || []).filter((job) => job.status === 'completed').length;
-    const scheduledCount = (jobs || []).filter((job) => job.status === 'scheduled').length;
+    const activeJobs = (jobs || []).filter((job) => job.status !== 'archived');
+    const completedCount = activeJobs.filter((job) => job.status === 'completed').length;
+    const scheduledCount = activeJobs.filter((job) => job.status === 'scheduled').length;
 
     if (selectedReport === 'jobs') {
       reportSummary = [
         { label: t.completedJobs, value: String(completedCount) },
         { label: t.scheduledJobs, value: String(scheduledCount) },
-        { label: t.records, value: String(jobs?.length || 0) },
+        { label: t.records, value: String(activeJobs.length) },
       ];
       reportHeaders = [t.thWhen, t.thCustomer, t.thJobType, t.thAmount, t.thStatus];
-      reportRows = (jobs || []).map((job) => [
+      reportRows = activeJobs.map((job) => [
         formatDateShort(job.scheduled_date, locale),
         propertyMap.get(job.property_id)?.customerName || 'Unknown',
         String(job.job_type || '-'),
@@ -402,11 +403,11 @@ export default async function PrintReportsPage({
       ]);
     } else {
       reportSummary = [
-        { label: t.upcomingJobs, value: String(jobs?.length || 0) },
+        { label: t.upcomingJobs, value: String(activeJobs.length) },
         { label: t.scheduledJobs, value: String(scheduledCount) },
       ];
       reportHeaders = [t.thWhen, t.thCustomer, t.thAddress, t.thJobType, t.thStatus];
-      reportRows = (jobs || []).map((job) => [
+      reportRows = activeJobs.map((job) => [
         formatDateShort(job.scheduled_date, locale),
         propertyMap.get(job.property_id)?.customerName || 'Unknown',
         propertyMap.get(job.property_id)?.address || '-',

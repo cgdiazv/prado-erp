@@ -130,7 +130,7 @@ export async function GET(request: Request) {
           expenses: 'Resumen de Gastos',
           jobs: 'Rendimiento de Jobs',
           customers: 'Estado de Clientes',
-          estimates: 'Conversion de Cotizaciones',
+          estimates: 'Conversion de Estimaciones',
           schedule: 'Agenda Semanal',
         }
       : {
