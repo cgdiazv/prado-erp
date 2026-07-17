@@ -7,6 +7,7 @@ type InvoiceEmailProps = {
   baseAmount: number;
   taxAmount: number;
   totalAmount: number;
+  paymentUrl?: string;
   organizationName?: string;
   organizationSlogan?: string;
   organizationLogoUrl?: string;
@@ -19,6 +20,7 @@ export default function InvoiceEmail({
   baseAmount,
   taxAmount,
   totalAmount,
+  paymentUrl,
   organizationName = 'Prado Systems',
   organizationSlogan = 'Field Service Software',
   organizationLogoUrl = '',
@@ -93,6 +95,29 @@ export default function InvoiceEmail({
             </tbody>
           </table>
         </div>
+
+        {paymentUrl ? (
+          <div style={{ marginBottom: 24, textAlign: 'center' }}>
+            <a
+              href={paymentUrl}
+              style={{
+                display: 'inline-block',
+                background: '#10b981',
+                color: '#ffffff',
+                textDecoration: 'none',
+                fontWeight: 700,
+                fontSize: 14,
+                padding: '12px 20px',
+                borderRadius: 10,
+              }}
+            >
+              Pay Invoice Online
+            </a>
+            <p style={{ margin: '12px 0 0 0', fontSize: 11, color: '#64748b', lineHeight: '16px' }}>
+              Secure checkout powered by Stripe.
+            </p>
+          </div>
+        ) : null}
 
         <div style={{ marginTop: 40, borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
           <p style={{ margin: 0, fontSize: 11, color: '#64748b', lineHeight: '16px' }}>

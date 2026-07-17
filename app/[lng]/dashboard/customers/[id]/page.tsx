@@ -368,6 +368,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                           <th className="pb-2">{translations.dashboard.dueDate}</th>
                           <th className="pb-2">{translations.dashboard.taxCharge}</th>
                           <th className="pb-2 text-right">{translations.dashboard.totalOwed}</th>
+                          <th className="pb-2 text-right">{isEs ? 'Pago' : 'Payment'}</th>
                           <th className="pb-2 text-right">{translations.dashboard.paymentStatus}</th>
                         </tr>
                       </thead>
@@ -377,6 +378,20 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                             <td className="py-3 text-slate-800 font-semibold">{inv.due_date}</td>
                             <td className="py-3 font-mono text-slate-400">${inv.tax_amount}</td>
                             <td className="py-3 text-right font-mono font-bold text-slate-950">${inv.total_amount}</td>
+                            <td className="py-3 text-right">
+                              {inv.status !== 'paid' && inv.stripe_payment_url ? (
+                                <a
+                                  href={inv.stripe_payment_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-700 transition hover:bg-sky-100"
+                                >
+                                  {isEs ? 'Cobrar' : 'Pay Link'}
+                                </a>
+                              ) : (
+                                <span className="text-[10px] uppercase tracking-wide text-slate-300">N/A</span>
+                              )}
+                            </td>
                             <td className="py-3 text-right">
                               {inv.status === 'paid' ? (
                                 <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide">

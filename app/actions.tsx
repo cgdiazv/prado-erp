@@ -13,8 +13,117 @@ import JobCompletedEmail from '@/emails/job-completed-email';
 import { enqueueXeroCompletedJobInvoice, enqueueXeroExpenseBill } from '@/app/actions/xeroActions';
 import { syncInvoiceToQBO } from '@/app/actions/qboActions';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
+import Stripe from 'stripe';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
+
+function getAppBaseUrl() {
+  const configured = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL;
+
+  if (configured) {
+    return configured.replace(/\/$/, '');
+  }
+
+  return 'https://pradojob.com';
+}
+
+async function createInvoiceCheckoutSession({
+  invoiceId,
+  organizationId,
+  stripeAccountId,
+  customerEmail,
+  customerName,
+  serviceName,
+  baseAmount,
+  taxAmount,
+  totalAmount,
+}: {
+  invoiceId: string;
+  organizationId: string;
+  stripeAccountId: string;
+  customerEmail: string;
+  customerName: string;
+  serviceName: string;
+  baseAmount: number;
+  taxAmount: number;
+  totalAmount: number;
+}) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return null;
+  }
+
+  const totalAmountCents = Math.round(Number(totalAmount || 0) * 100);
+  const baseAmountCents = Math.round(Number(baseAmount || 0) * 100);
+  const taxAmountCents = Math.round(Number(taxAmount || 0) * 100);
+
+  if (totalAmountCents <= 0 || baseAmountCents < 0 || taxAmountCents < 0) {
+    return null;
+  }
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+  const baseUrl = getAppBaseUrl();
+
+  const session = await stripe.checkout.sessions.create(
+    {
+      mode: 'payment',
+      client_reference_id: invoiceId,
+      customer_email: customerEmail,
+      success_url: `${baseUrl}/en/payment/success?invoice=${encodeURIComponent(invoiceId)}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/en/payment/cancel?invoice=${encodeURIComponent(invoiceId)}`,
+      metadata: {
+        invoiceId,
+        organizationId,
+        customerName,
+        source: 'prado_invoice',
+      },
+      payment_intent_data: {
+        transfer_data: {
+          destination: stripeAccountId,
+        },
+        metadata: {
+          invoiceId,
+          organizationId,
+          source: 'prado_invoice',
+        },
+      },
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'usd',
+            unit_amount: baseAmountCents,
+            product_data: {
+              name: serviceName,
+            },
+          },
+        },
+        ...(taxAmountCents > 0
+          ? [
+              {
+                quantity: 1,
+                price_data: {
+                  currency: 'usd',
+                  unit_amount: taxAmountCents,
+                  product_data: {
+                    name: 'Estimated Tax (8.25%)',
+                  },
+                },
+              },
+            ]
+          : []),
+      ],
+    },
+    {
+      idempotencyKey: `invoice-session-${invoiceId}`,
+    }
+  );
+
+  return {
+    sessionId: session.id,
+    paymentUrl: session.url,
+  };
+}
 
 export async function createJob(formData: FormData) {
   const propertyId = formData.get('propertyId') as string;
@@ -224,7 +333,7 @@ export async function completeJob(jobId: string) {
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, slogan, logo_url')
+    .select('id, name, slogan, logo_url, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled')
     .eq('owner_id', user?.id)
     .single();
 
@@ -281,10 +390,57 @@ export async function completeJob(jobId: string) {
 
   if (invoiceError) return { error: invoiceError.message };
 
-  // Queue the billing sync so user completion stays fast and Xero calls can be batched safely.
-  if (org?.id && invoiceRecord?.id) {
-    const customerDisplayName = `${customerMeta?.first_name || ''} ${customerMeta?.last_name || ''}`.trim() || customerMeta?.company_name || 'Prado Customer';
+  const customerDisplayName = `${customerMeta?.first_name || ''} ${customerMeta?.last_name || ''}`.trim() || customerMeta?.company_name || 'Prado Customer';
 
+  let paymentUrl: string | null = null;
+  let stripeCheckoutSessionId: string | null = null;
+
+  if (
+    org?.id &&
+    org?.subscription_status !== 'individual' &&
+    org?.stripe_account_id &&
+    org?.stripe_account_charges_enabled &&
+    org?.stripe_account_payouts_enabled &&
+    customerMeta?.email
+  ) {
+    try {
+      const paymentSession = await createInvoiceCheckoutSession({
+        invoiceId: invoiceRecord.id,
+        organizationId: org.id,
+        stripeAccountId: org.stripe_account_id,
+        customerEmail: customerMeta.email,
+        customerName: customerDisplayName,
+        serviceName: job.job_type,
+        baseAmount: Number(cost || 0),
+        taxAmount: Number(estimatedTax || 0),
+        totalAmount: Number(total || 0),
+      });
+
+      paymentUrl = paymentSession?.paymentUrl || null;
+      stripeCheckoutSessionId = paymentSession?.sessionId || null;
+    } catch (paymentErr) {
+      console.error('⚠️ Invoice created, but Stripe payment link generation failed:', paymentErr);
+    }
+  }
+
+  if (paymentUrl || stripeCheckoutSessionId) {
+    const { error: paymentUpdateError } = await supabase
+      .from('invoices')
+      .update({
+        stripe_payment_url: paymentUrl,
+        stripe_checkout_session_id: stripeCheckoutSessionId,
+        stripe_payment_status: 'open',
+      })
+      .eq('id', invoiceRecord.id);
+
+    if (paymentUpdateError) {
+      console.error('⚠️ Failed to persist Stripe payment metadata on invoice:', paymentUpdateError.message);
+    }
+  }
+
+  // Queue accounting sync immediately only when no Stripe checkout session exists.
+  // For online payments, sync is triggered after successful payment from the Stripe webhook.
+  if (org?.id && invoiceRecord?.id && !stripeCheckoutSessionId) {
     const queueResult = await enqueueXeroCompletedJobInvoice({
       organizationId: org.id,
       customerName: customerDisplayName,
@@ -327,6 +483,7 @@ export async function completeJob(jobId: string) {
         baseAmount: cost,
         taxAmount: estimatedTax,
         totalAmount: total,
+        paymentUrl: paymentUrl || undefined,
         organizationName,
         organizationSlogan,
         organizationLogoUrl,

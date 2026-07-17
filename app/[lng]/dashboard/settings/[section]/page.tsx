@@ -12,6 +12,7 @@ import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
 import XeroConnectionCard from '../XeroConnectionCard';
 import QBOConnectionCard from '../QBOConnectionCard';
+import StripeConnectSettings from '@/components/dashboard/StripeConnectSettings';
 import { updateDispatchSettings } from '../actions';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
@@ -72,7 +73,12 @@ export default async function SettingsSectionPage({
 
   const initial = org.name ? org.name.charAt(0) : 'C';
   const isIndividualAccount = org.subscription_status === 'individual';
+  const canAccessStripeSettings = org.subscription_status === 'trial' || org.subscription_status === 'growth' || org.subscription_status === 'enterprise';
   const canAccessXeroSettings = org.subscription_status === 'trial' || org.subscription_status === 'enterprise';
+
+  if (sectionParam === 'payments') {
+    redirect(`/${locale}/dashboard/settings/integrations`);
+  }
 
   if (section === 'team-settings' && isIndividualAccount) {
     redirect(`/${locale}/dashboard/settings/profile-settings`);
@@ -82,7 +88,7 @@ export default async function SettingsSectionPage({
     redirect(`/${locale}/dashboard/settings/profile-settings`);
   }
 
-  if (section === 'integrations' && !canAccessXeroSettings) {
+  if (section === 'integrations' && !canAccessStripeSettings) {
     redirect(`/${locale}/dashboard/settings/profile-settings`);
   }
 
@@ -107,7 +113,7 @@ export default async function SettingsSectionPage({
     });
   }
 
-  if (canAccessXeroSettings) {
+  if (canAccessStripeSettings) {
     sectionLinks.push({
       id: 'integrations',
       label: locale.toLowerCase().startsWith('es') ? 'Integraciones' : 'Integrations',
@@ -273,14 +279,27 @@ export default async function SettingsSectionPage({
               </div>
             )}
 
-            {section === 'integrations' && canAccessXeroSettings && (
+            {section === 'integrations' && canAccessStripeSettings && (
               <>
                 <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                  <QBOConnectionCard organizationId={org.id} />
+                  <StripeConnectSettings
+                    locale={locale}
+                    initialStripeAccountId={org.stripe_account_id || null}
+                    initialChargesEnabled={Boolean(org.stripe_account_charges_enabled)}
+                    initialPayoutsEnabled={Boolean(org.stripe_account_payouts_enabled)}
+                  />
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                  <XeroConnectionCard organizationId={org.id} />
-                </div>
+
+                {canAccessXeroSettings ? (
+                  <>
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                      <QBOConnectionCard organizationId={org.id} />
+                    </div>
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                      <XeroConnectionCard organizationId={org.id} />
+                    </div>
+                  </>
+                ) : null}
               </>
             )}
 

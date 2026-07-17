@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { enqueueXeroCompletedJobInvoice } from '@/app/actions/xeroActions';
+import { syncInvoiceToQBO } from '@/app/actions/qboActions';
 
 // 1. Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-10-28' as any,
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 // 2. Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -18,6 +18,116 @@ const supabaseAdmin = createClient(
 );
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+
+function getInvoiceIdFromSession(session: Stripe.Checkout.Session) {
+  const metadataInvoiceId = session.metadata?.invoiceId || session.metadata?.invoice_id;
+  return metadataInvoiceId || session.client_reference_id || null;
+}
+
+async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
+  const invoiceId = getInvoiceIdFromSession(session);
+  if (!invoiceId) {
+    return NextResponse.json({ ignored: true, reason: 'Missing invoice id' }, { status: 200 });
+  }
+
+  const { data: invoiceRow, error: invoiceError } = await supabaseAdmin
+    .from('invoices')
+    .select('id, customer_id, due_date, total_amount, tax_amount, status, stripe_payment_status, customers(first_name, last_name, company_name, email, organization_id)')
+    .eq('id', invoiceId)
+    .maybeSingle();
+
+  if (invoiceError || !invoiceRow) {
+    console.error('Invoice checkout webhook received unknown invoice id:', invoiceId, invoiceError?.message);
+    return NextResponse.json({ ignored: true, reason: 'Invoice not found' }, { status: 200 });
+  }
+
+  if (invoiceRow.status === 'paid' || invoiceRow.stripe_payment_status === 'paid') {
+    return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
+  }
+
+  const paidAt = new Date().toISOString();
+  const { error: updateError } = await supabaseAdmin
+    .from('invoices')
+    .update({
+      status: 'paid',
+      stripe_payment_status: 'paid',
+      paid_at: paidAt,
+    })
+    .eq('id', invoiceRow.id);
+
+  if (updateError) {
+    console.error('Failed updating invoice paid status from Stripe webhook:', updateError.message);
+    return NextResponse.json({ error: 'Failed to mark invoice paid' }, { status: 500 });
+  }
+
+  const customer = (invoiceRow as any).customers || null;
+  const organizationId = customer?.organization_id;
+  const customerName = `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || customer?.company_name || 'Prado Customer';
+  const totalAmount = Number(invoiceRow.total_amount || 0);
+  const taxAmount = Number(invoiceRow.tax_amount || 0);
+  const baseAmount = Math.max(0, Number((totalAmount - taxAmount).toFixed(2)));
+
+  if (organizationId) {
+    const queueResult = await enqueueXeroCompletedJobInvoice({
+      organizationId,
+      customerName,
+      customerEmail: customer?.email || null,
+      jobType: `Invoice ${invoiceRow.id}`,
+      invoiceId: invoiceRow.id,
+      dueDate: invoiceRow.due_date,
+      baseAmount,
+      taxAmount,
+    });
+
+    if (!queueResult.success) {
+      console.error('Xero queue warning from Stripe invoice webhook:', queueResult.error);
+    }
+
+    syncInvoiceToQBO({
+      organizationId,
+      customerName,
+      customerEmail: customer?.email || null,
+      jobType: `Invoice ${invoiceRow.id}`,
+      dueDate: invoiceRow.due_date,
+      baseAmount,
+      taxAmount,
+    }).catch((err) => console.error('QBO sync warning from Stripe invoice webhook:', err));
+
+    try {
+      const { data: org } = await supabaseAdmin
+        .from('organizations')
+        .select('name, owner_id')
+        .eq('id', organizationId)
+        .maybeSingle();
+
+      const ownerId = org?.owner_id;
+      if (ownerId) {
+        const { data: ownerUserData } = await supabaseAdmin.auth.admin.getUserById(ownerId);
+        const ownerEmail = ownerUserData?.user?.email;
+
+        if (ownerEmail) {
+          await resend.emails.send({
+            from: 'Prado Alerts <notifications@indevasa.com>',
+            to: ownerEmail,
+            subject: `Invoice Paid: ${customerName}`,
+            html: `
+              <h2>Invoice payment received</h2>
+              <p><strong>Organization:</strong> ${org?.name || 'Prado Workspace'}</p>
+              <p><strong>Invoice ID:</strong> ${invoiceRow.id}</p>
+              <p><strong>Customer:</strong> ${customerName}</p>
+              <p><strong>Total Paid:</strong> $${totalAmount.toFixed(2)} USD</p>
+              <p><strong>Paid At:</strong> ${paidAt}</p>
+            `,
+          });
+        }
+      }
+    } catch (notifyErr) {
+      console.error('Invoice paid, but subscriber notification failed:', notifyErr);
+    }
+  }
+
+  return NextResponse.json({ received: true, invoicePaid: invoiceRow.id }, { status: 200 });
+}
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -34,9 +144,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
+  if (event.type === 'checkout.session.async_payment_failed') {
+    const failedSession = event.data.object as Stripe.Checkout.Session;
+    const invoiceId = getInvoiceIdFromSession(failedSession);
+
+    if (invoiceId) {
+      await supabaseAdmin
+        .from('invoices')
+        .update({ stripe_payment_status: 'failed' })
+        .eq('id', invoiceId);
+    }
+
+    return NextResponse.json({ received: true }, { status: 200 });
+  }
+
   // Handle successful sign-up & checkouts
-  if (event.type === 'checkout.session.completed') {
+  if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
     const session = event.data.object as Stripe.Checkout.Session;
+
+    const isInvoiceCheckout =
+      session.metadata?.source === 'prado_invoice' ||
+      Boolean(session.metadata?.invoiceId) ||
+      Boolean(session.metadata?.invoice_id);
+
+    if (isInvoiceCheckout) {
+      if (event.type === 'checkout.session.completed' && session.payment_status !== 'paid') {
+        return NextResponse.json({ received: true, pending: true }, { status: 200 });
+      }
+
+      return handleInvoiceCheckoutPaid(session);
+    }
 
     try {
       // FIXED: Pull target organization identifier from client_reference_id matching your checkout links

@@ -15,6 +15,7 @@ interface InvoiceRow {
   tax_amount: number;
   total_amount: number;
   status: 'paid' | 'unpaid';
+  stripe_payment_url?: string | null;
   customers?: {
     first_name?: string | null;
     last_name?: string | null;
@@ -229,6 +230,9 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                   </button>
                 </th>
                 <th className="px-4 py-3 text-right">
+                  <span>{isEs ? 'Pago' : 'Payment'}</span>
+                </th>
+                <th className="px-4 py-3 text-right">
                   <button type="button" onClick={() => handleSort('status')} className="inline-flex items-center gap-1 justify-end">
                     <span>{translations.dashboard.paymentStatus}</span>
                     {renderSortIndicator('status')}
@@ -251,6 +255,22 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                     </td>
                     <td className="px-4 py-3 text-gray-500 font-mono">${inv.tax_amount}</td>
                     <td className="px-4 py-3 text-right font-bold text-slate-800">${Number(inv.total_amount || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right">
+                      {inv.status !== 'paid' && inv.stripe_payment_url ? (
+                        <a
+                          href={inv.stripe_payment_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-sky-700 transition hover:bg-sky-100"
+                        >
+                          {isEs ? 'Cobrar' : 'Pay Link'}
+                        </a>
+                      ) : (
+                        <span className="text-[10px] uppercase tracking-wider text-slate-300">
+                          {isEs ? 'N/A' : 'N/A'}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       {inv.status === 'paid' ? (
                         <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">
