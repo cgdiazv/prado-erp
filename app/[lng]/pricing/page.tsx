@@ -128,6 +128,7 @@ export default function PricingPage() {
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature4}</li>
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature5}</li>
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature6}</li>
+                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature7}</li>
               </ul>
             </div>
             <button onClick={() => handlePlanSelection('growth')} className="w-full text-center text-xs font-bold bg-white hover:bg-slate-100 text-slate-950 py-3 rounded-xl transition shadow-lg shadow-emerald-500/5 cursor-pointer">
@@ -150,8 +151,8 @@ export default function PricingPage() {
                 <span className="text-slate-500 text-xs font-semibold ml-2">{translations.pricing.monthly}</span>
               </div>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-4 border-t border-slate-800/60">
+                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> Unlimited Linked User Roles</li>
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> QuickBooks &amp; Xero Integration</li>
-                <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature7}</li>
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature8}</li>
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature9}</li>
               </ul>
