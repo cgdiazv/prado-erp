@@ -11,9 +11,6 @@ import {
   sendEstimateByEmail,
 } from '@/app/actions';
 import { useRouter, useParams } from 'next/navigation';
-import DashboardNavbar from '@/components/DashboardNavbar';
-import DashboardSidebar from '@/components/DashboardSidebar';
-
 
 interface Customer {
   id: string;
@@ -64,7 +61,14 @@ interface ServiceLine {
 type SortColumn = 'customer' | 'proposal' | 'date' | 'amount' | 'status' | 'actions';
 type SortDirection = 'asc' | 'desc';
 
-export default function EstimatesPage() {
+interface EstimatesContentProps {
+  subscriptionStatus: string;
+  organizationLogoUrl: string;
+  userInitials: string;
+  initialData: any;
+}
+
+export default function EstimatesContent({ subscriptionStatus, organizationLogoUrl, userInitials, initialData }: EstimatesContentProps) {
   const router = useRouter();
   const params = useParams<{ lng?: string }>();
   const locale = params?.lng ?? 'en';
@@ -212,14 +216,11 @@ export default function EstimatesPage() {
         approveConvertError: 'Quote approved, but job creation failed:',
         approveConvertSuccess: 'Quote approved and job scheduled successfully!',
       };
-  const [estimates, setEstimates] = useState<Estimate[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [estimates, setEstimates] = useState<Estimate[]>(initialData.estimates || []);
+  const [customers, setCustomers] = useState<Customer[]>(initialData.customers || []);
   const [properties, setProperties] = useState<Property[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [trucks, setTrucks] = useState<Truck[]>([]);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<string | undefined>(undefined);
-  const [userInitials, setUserInitials] = useState('C');
-  const [organizationLogoUrl, setOrganizationLogoUrl] = useState('');
+  const [services, setServices] = useState<Service[]>(initialData.services || []);
+  const [trucks, setTrucks] = useState<Truck[]>(initialData.trucks || []);
   
   // States de UI
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -238,44 +239,6 @@ export default function EstimatesPage() {
   // State for sending email
   const [sendingEstimateId, setSendingEstimateId] = useState<string | null>(null);
   const [approvingEstimateId, setApprovingEstimateId] = useState<string | null>(null);
-
-  // Cargar datos iniciales desde Supabase
-  useEffect(() => {
-    async function fetchData() {
-      const result = await getEstimatesDashboardData();
-
-      if (!result?.error) {
-        setEstimates((result.estimates || []) as any);
-        setCustomers((result.customers || []) as any);
-        const loadedServices = (result.services || []) as Service[];
-        setServices(loadedServices);
-        setTrucks((result.trucks || []) as any);
-        setSubscriptionStatus(result.subscriptionStatus || 'trial');
-        setUserInitials(result.organizationName ? result.organizationName.charAt(0).toUpperCase() : 'C');
-        setOrganizationLogoUrl(result.organizationLogoUrl || '');
-        setServiceLines((prev) => {
-          if (loadedServices.length === 0) return prev;
-          if (prev.length === 1 && !prev[0].serviceId && !prev[0].price) {
-            return [
-              {
-                id: 1,
-                serviceId: loadedServices[0].id,
-                price: Number(loadedServices[0].base_price || 0).toFixed(2),
-              },
-            ];
-          }
-          return prev;
-        });
-      } else {
-        setEstimates([]);
-        setCustomers([]);
-        setServices([]);
-        setTrucks([]);
-        setOrganizationLogoUrl('');
-      }
-    }
-    fetchData();
-  }, []);
 
   // Cargar propiedades del cliente seleccionado en el formulario
   useEffect(() => {
@@ -580,275 +543,270 @@ export default function EstimatesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-      <DashboardNavbar userInitials={userInitials} organizationLogoUrl={organizationLogoUrl} />
-      <div className="flex flex-1 relative">
-        <DashboardSidebar subscriptionStatus={resolvedSubscriptionStatus} locale={locale} />
-        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-          <div className="max-w-5xl ml-0 space-y-8 text-left">
+    <div className="max-w-5xl ml-0 space-y-8 text-left">
 
-            {/* Cabecera */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.pageTitle}</h1>
-                <p className="text-xs text-slate-500 mt-1">{t.pageSubtitle}</p>
-              </div>
-              <button
-                onClick={openCreateModal}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm"
-              >
-                {t.newEstimate}
-              </button>
-            </div>
+      {/* Cabecera */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.pageTitle}</h1>
+          <p className="text-xs text-slate-500 mt-1">{t.pageSubtitle}</p>
+        </div>
+        <button
+          onClick={openCreateModal}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm"
+        >
+          {t.newEstimate}
+        </button>
+      </div>
 
-            {/* Tarjetas de Resumen Rapido */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{t.totalDraft}</span>
-                <p className="text-xl font-extrabold text-slate-900 mt-1">
-                  ${estimates.filter(e => e.status === 'draft').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
-                </p>
-              </div>
-              <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600">{t.totalSent}</span>
-                <p className="text-xl font-extrabold text-slate-900 mt-1">
-                  ${estimates.filter(e => e.status === 'sent').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
-                </p>
-              </div>
-              <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600">{t.totalApproved}</span>
-                <p className="text-xl font-extrabold text-slate-900 mt-1">
-                  ${estimates.filter(e => e.status === 'approved').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
-                </p>
-              </div>
-            </div>
+      {/* Tarjetas de Resumen Rapido */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{t.totalDraft}</span>
+          <p className="text-xl font-extrabold text-slate-900 mt-1">
+            ${estimates.filter(e => e.status === 'draft').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
+          </p>
+        </div>
+        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600">{t.totalSent}</span>
+          <p className="text-xl font-extrabold text-slate-900 mt-1">
+            ${estimates.filter(e => e.status === 'sent').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
+          </p>
+        </div>
+        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600">{t.totalApproved}</span>
+          <p className="text-xl font-extrabold text-slate-900 mt-1">
+            ${estimates.filter(e => e.status === 'approved').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
+          </p>
+        </div>
+      </div>
 
-            {/* Barra de Filtros + Paginacion */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-              <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-                {['all', 'draft', 'sent', 'approved', 'declined'].map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setStatusFilter(filter)}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
-                      statusFilter === filter
-                        ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {filter === 'all' ? t.filterAll : filter === 'draft' ? t.filterDraft : filter === 'sent' ? t.filterSent : filter === 'approved' ? t.filterApproved : t.filterDeclined}
-                  </button>
-                ))}
-              </div>
+      {/* Barra de Filtros + Paginacion */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+          {['all', 'draft', 'sent', 'approved', 'declined'].map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setStatusFilter(filter)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
+                statusFilter === filter
+                  ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {filter === 'all' ? t.filterAll : filter === 'draft' ? t.filterDraft : filter === 'sent' ? t.filterSent : filter === 'approved' ? t.filterApproved : t.filterDeclined}
+            </button>
+          ))}
+        </div>
 
-              <div className="flex items-center gap-2 sm:ml-auto">
-                <label htmlFor="estimate-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
-                  {t.rowsPerPage}
-                </label>
-                <select
-                  id="estimate-page-size"
-                  value={pageSize}
-                  onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="text-xs bg-white border border-gray-300 rounded-md px-2 py-1.5 text-slate-700"
-                >
-                  {[25, 50, 100].map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
+        <div className="flex items-center gap-2 sm:ml-auto">
+          <label htmlFor="estimate-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+            {t.rowsPerPage}
+          </label>
+          <select
+            id="estimate-page-size"
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+            className="text-xs bg-white border border-gray-300 rounded-md px-2 py-1.5 text-slate-700"
+          >
+            {[25, 50, 100].map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
 
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {t.prevPage}
+          </button>
+
+          <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+            {t.pageLabel} {currentPage} / {totalPages}
+          </span>
+
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={currentPage >= totalPages}
+            className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {t.nextPage}
+          </button>
+        </div>
+      </div>
+
+      {/* Tabla de Resultados */}
+      <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-xs">
+        <table className="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr className="border-b border-gray-200 bg-slate-50 text-slate-500 font-bold">
+              <th className="p-4 w-52">
                 <button
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={() => handleSort('customer')}
+                  className="inline-flex items-center gap-1"
                 >
-                  {t.prevPage}
+                  <span>{t.thCustomer}</span>
+                  <span className="inline-flex flex-col leading-none text-[8px]">
+                    <span className={sortColumn === 'customer' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                    <span className={sortColumn === 'customer' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                  </span>
                 </button>
-
-                <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">
-                  {t.pageLabel} {currentPage} / {totalPages}
-                </span>
-
+              </th>
+              <th className="p-4">
                 <button
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage >= totalPages}
-                  className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={() => handleSort('proposal')}
+                  className="inline-flex items-center gap-1"
                 >
-                  {t.nextPage}
+                  <span>{t.thProposal}</span>
+                  <span className="inline-flex flex-col leading-none text-[8px]">
+                    <span className={sortColumn === 'proposal' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                    <span className={sortColumn === 'proposal' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                  </span>
                 </button>
-              </div>
-            </div>
-
-            {/* Tabla de Resultados */}
-            <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-xs">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-slate-50 text-slate-500 font-bold">
-                    <th className="p-4 w-52">
+              </th>
+              <th className="p-4">
+                <button
+                  type="button"
+                  onClick={() => handleSort('date')}
+                  className="inline-flex items-center gap-1"
+                >
+                  <span>{t.thDate}</span>
+                  <span className="inline-flex flex-col leading-none text-[8px]">
+                    <span className={sortColumn === 'date' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                    <span className={sortColumn === 'date' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                  </span>
+                </button>
+              </th>
+              <th className="p-4">
+                <button
+                  type="button"
+                  onClick={() => handleSort('amount')}
+                  className="inline-flex items-center gap-1"
+                >
+                  <span>{t.thAmount}</span>
+                  <span className="inline-flex flex-col leading-none text-[8px]">
+                    <span className={sortColumn === 'amount' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                    <span className={sortColumn === 'amount' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                  </span>
+                </button>
+              </th>
+              <th className="p-4">
+                <button
+                  type="button"
+                  onClick={() => handleSort('status')}
+                  className="inline-flex items-center gap-1"
+                >
+                  <span>{t.thStatus}</span>
+                  <span className="inline-flex flex-col leading-none text-[8px]">
+                    <span className={sortColumn === 'status' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                    <span className={sortColumn === 'status' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                  </span>
+                </button>
+              </th>
+              <th className="p-4 text-right w-64">
+                <button
+                  type="button"
+                  onClick={() => handleSort('actions')}
+                  className="inline-flex items-center gap-1 justify-end"
+                >
+                  <span>{t.thActions}</span>
+                  <span className="inline-flex flex-col leading-none text-[8px]">
+                    <span className={sortColumn === 'actions' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                    <span className={sortColumn === 'actions' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                  </span>
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+          {filteredEstimates.length === 0 ? (
+            <tr>
+              <td colSpan={6} className="p-8 text-center text-slate-500 font-medium">{t.noRecords}</td>
+            </tr>
+          ) : (
+            paginatedEstimates.map((estimate) => (
+              <tr key={estimate.id} className="hover:bg-slate-50 transition">
+                <td className="p-4">
+                  <span className="font-bold text-slate-900">
+                    {estimate.customers.company_name || `${estimate.customers.first_name} ${estimate.customers.last_name}`}
+                  </span>
+                  <span className="block text-[10px] text-slate-500 mt-0.5">
+                    {estimate.properties?.street_address || t.noProperty}
+                  </span>
+                </td>
+                <td className="p-4 w-52">
+                  <span className="font-semibold text-slate-800">{estimate.title}</span>
+                  {estimate.description && (
+                    <span className="block text-[10px] text-slate-500 truncate max-w-xs mt-0.5">{estimate.description}</span>
+                  )}
+                </td>
+                <td className="p-4 text-slate-700 whitespace-nowrap">
+                  {new Date(estimate.created_at).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
+                </td>
+                <td className="p-4 font-bold text-slate-800">${estimate.estimated_amount.toFixed(2)}</td>
+                <td className="p-4">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                    estimate.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                    estimate.status === 'sent' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                    estimate.status === 'declined' ? 'bg-red-100 text-red-700 border border-red-200' :
+                    'bg-slate-100 text-slate-600 border border-slate-200'
+                  }`}>
+                    {estimate.status === 'draft' ? t.filterDraft : estimate.status === 'sent' ? t.filterSent : estimate.status === 'approved' ? t.filterApproved : t.filterDeclined}
+                  </span>
+                </td>
+                <td className="p-4 text-right space-x-2 w-64">
+                  {estimate.status === 'draft' && (
+                    <>
                       <button
-                        type="button"
-                        onClick={() => handleSort('customer')}
-                        className="inline-flex items-center gap-1"
+                        onClick={() => handleEditEstimate(estimate)}
+                        className="text-[10px] font-bold text-slate-700 hover:text-slate-800 hover:bg-slate-50 border border-slate-200 px-2 py-1 rounded transition cursor-pointer"
                       >
-                        <span>{t.thCustomer}</span>
-                        <span className="inline-flex flex-col leading-none text-[8px]">
-                          <span className={sortColumn === 'customer' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
-                          <span className={sortColumn === 'customer' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
-                        </span>
+                        {t.actionEdit}
                       </button>
-                    </th>
-                    <th className="p-4">
                       <button
-                        type="button"
-                        onClick={() => handleSort('proposal')}
-                        className="inline-flex items-center gap-1"
+                        onClick={() => handleSendEstimate(estimate.id)}
+                        disabled={sendingEstimateId === estimate.id}
+                        className="text-[10px] font-bold text-amber-700 hover:text-amber-800 hover:bg-amber-50 border border-amber-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                       >
-                        <span>{t.thProposal}</span>
-                        <span className="inline-flex flex-col leading-none text-[8px]">
-                          <span className={sortColumn === 'proposal' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
-                          <span className={sortColumn === 'proposal' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
-                        </span>
+                        {sendingEstimateId === estimate.id ? t.sendingEmail : t.actionMarkSent}
                       </button>
-                    </th>
-                    <th className="p-4">
+                    </>
+                  )}
+                  {estimate.status === 'sent' && (
+                    <>
                       <button
-                        type="button"
-                        onClick={() => handleSort('date')}
-                        className="inline-flex items-center gap-1"
+                        onClick={() => handleStatusChange(estimate.id, 'approved')}
+                        disabled={approvingEstimateId === estimate.id}
+                        className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                       >
-                        <span>{t.thDate}</span>
-                        <span className="inline-flex flex-col leading-none text-[8px]">
-                          <span className={sortColumn === 'date' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
-                          <span className={sortColumn === 'date' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
-                        </span>
+                        {approvingEstimateId === estimate.id ? t.approveProcessing : t.actionApproveSchedule}
                       </button>
-                    </th>
-                    <th className="p-4">
                       <button
-                        type="button"
-                        onClick={() => handleSort('amount')}
-                        className="inline-flex items-center gap-1"
+                        onClick={() => handleStatusChange(estimate.id, 'declined')}
+                        className="text-[10px] font-bold text-red-700 hover:text-red-800 hover:bg-red-50 border border-red-200 px-2 py-1 rounded transition cursor-pointer"
                       >
-                        <span>{t.thAmount}</span>
-                        <span className="inline-flex flex-col leading-none text-[8px]">
-                          <span className={sortColumn === 'amount' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
-                          <span className={sortColumn === 'amount' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
-                        </span>
+                        {t.actionDecline}
                       </button>
-                    </th>
-                    <th className="p-4">
-                      <button
-                        type="button"
-                        onClick={() => handleSort('status')}
-                        className="inline-flex items-center gap-1"
-                      >
-                        <span>{t.thStatus}</span>
-                        <span className="inline-flex flex-col leading-none text-[8px]">
-                          <span className={sortColumn === 'status' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
-                          <span className={sortColumn === 'status' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
-                        </span>
-                      </button>
-                    </th>
-                    <th className="p-4 text-right w-64">
-                      <button
-                        type="button"
-                        onClick={() => handleSort('actions')}
-                        className="inline-flex items-center gap-1 justify-end"
-                      >
-                        <span>{t.thActions}</span>
-                        <span className="inline-flex flex-col leading-none text-[8px]">
-                          <span className={sortColumn === 'actions' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
-                          <span className={sortColumn === 'actions' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
-                        </span>
-                      </button>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-            {filteredEstimates.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="p-8 text-center text-slate-500 font-medium">{t.noRecords}</td>
+                    </>
+                  )}
+                  {estimate.status === 'approved' && (
+                    <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">{t.convertedToJob}</span>
+                  )}
+                  {estimate.status === 'declined' && (
+                    <span className="text-[10px] text-red-500 font-bold">{t.declined}</span>
+                  )}
+                </td>
               </tr>
-            ) : (
-              paginatedEstimates.map((estimate) => (
-                <tr key={estimate.id} className="hover:bg-slate-50 transition">
-                  <td className="p-4">
-                    <span className="font-bold text-slate-900">
-                      {estimate.customers.company_name || `${estimate.customers.first_name} ${estimate.customers.last_name}`}
-                    </span>
-                    <span className="block text-[10px] text-slate-500 mt-0.5">
-                      {estimate.properties?.street_address || t.noProperty}
-                    </span>
-                  </td>
-                  <td className="p-4 w-52">
-                    <span className="font-semibold text-slate-800">{estimate.title}</span>
-                    {estimate.description && (
-                      <span className="block text-[10px] text-slate-500 truncate max-w-xs mt-0.5">{estimate.description}</span>
-                    )}
-                  </td>
-                  <td className="p-4 text-slate-700 whitespace-nowrap">
-                    {new Date(estimate.created_at).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
-                  </td>
-                  <td className="p-4 font-bold text-slate-800">${estimate.estimated_amount.toFixed(2)}</td>
-                  <td className="p-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
-                      estimate.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
-                      estimate.status === 'sent' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                      estimate.status === 'declined' ? 'bg-red-100 text-red-700 border border-red-200' :
-                      'bg-slate-100 text-slate-600 border border-slate-200'
-                    }`}>
-                      {estimate.status === 'draft' ? t.filterDraft : estimate.status === 'sent' ? t.filterSent : estimate.status === 'approved' ? t.filterApproved : t.filterDeclined}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right space-x-2 w-64">
-                    {estimate.status === 'draft' && (
-                      <>
-                        <button
-                          onClick={() => handleEditEstimate(estimate)}
-                          className="text-[10px] font-bold text-slate-700 hover:text-slate-800 hover:bg-slate-50 border border-slate-200 px-2 py-1 rounded transition cursor-pointer"
-                        >
-                          {t.actionEdit}
-                        </button>
-                        <button
-                          onClick={() => handleSendEstimate(estimate.id)}
-                          disabled={sendingEstimateId === estimate.id}
-                          className="text-[10px] font-bold text-amber-700 hover:text-amber-800 hover:bg-amber-50 border border-amber-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                        >
-                          {sendingEstimateId === estimate.id ? t.sendingEmail : t.actionMarkSent}
-                        </button>
-                      </>
-                    )}
-                    {estimate.status === 'sent' && (
-                      <>
-                        <button
-                          onClick={() => handleStatusChange(estimate.id, 'approved')}
-                          disabled={approvingEstimateId === estimate.id}
-                          className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                        >
-                          {approvingEstimateId === estimate.id ? t.approveProcessing : t.actionApproveSchedule}
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(estimate.id, 'declined')}
-                          className="text-[10px] font-bold text-red-700 hover:text-red-800 hover:bg-red-50 border border-red-200 px-2 py-1 rounded transition cursor-pointer"
-                        >
-                          {t.actionDecline}
-                        </button>
-                      </>
-                    )}
-                    {estimate.status === 'approved' && (
-                      <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">{t.convertedToJob}</span>
-                    )}
-                    {estimate.status === 'declined' && (
-                      <span className="text-[10px] text-red-500 font-bold">{t.declined}</span>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-                </tbody>
-              </table>
-            </div>
+            ))
+          )}
+          </tbody>
+        </table>
+      </div>
 
       {/* MODAL 1: CREAR ESTIMACION */}
       {isCreateOpen && (
@@ -996,9 +954,6 @@ export default function EstimatesPage() {
         </div>
       )}
 
-          </div>
-        </main>
-      </div>
     </div>
   );
 }

@@ -375,10 +375,8 @@ export default async function DashboardHome({
                 {operationsPanel}
                 <Metrics totalRevenue={totalRevenue} totalExpenses={totalExpenses} netProfit={netProfit} locale={locale} />
                 <PerformanceChart
-                  totalRevenue={totalRevenue}
-                  totalExpenses={totalExpenses}
-                  netProfit={netProfit}
-                  trendData={trendData}
+                  invoices={invoices}
+                  expenses={expenses}
                   locale={locale}
                 />
               </>
@@ -386,10 +384,8 @@ export default async function DashboardHome({
               <>
                 <Metrics totalRevenue={totalRevenue} totalExpenses={totalExpenses} netProfit={netProfit} locale={locale} />
                 <PerformanceChart
-                  totalRevenue={totalRevenue}
-                  totalExpenses={totalExpenses}
-                  netProfit={netProfit}
-                  trendData={trendData}
+                  invoices={invoices}
+                  expenses={expenses}
                   locale={locale}
                 />
                 {operationsPanel}
