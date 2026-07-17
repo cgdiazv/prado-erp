@@ -252,6 +252,9 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                   </button>
                 </th>
                 <th className="px-4 py-3">
+                  <span>{isEs ? 'Camión' : 'Truck'}</span>
+                </th>
+                <th className="px-4 py-3">
                   <button type="button" onClick={() => handleSort('cost')} className="inline-flex items-center gap-1">
                     <span>{translations.dashboard.cost}</span>
                     {renderSortIndicator('cost')}
@@ -273,6 +276,11 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                   </td>
                   <td className="px-4 py-3 text-gray-500">{job.properties?.street_address || '—'}</td>
                   <td className="px-4 py-3 text-gray-500">{job.job_type}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {job.truck_id
+                      ? (trucks.find((t) => t.id === job.truck_id)?.name ?? (isEs ? 'Sin asignar' : 'Unassigned'))
+                      : (isEs ? 'Sin asignar' : 'Unassigned')}
+                  </td>
                   <td className="px-4 py-3 font-bold text-slate-800">${Number(job.cost_amount || 0).toFixed(2)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">

@@ -8,7 +8,7 @@ export default async function MarketingHomePage() {
   const supabase = await createClient();
   const industryCards = [
     {
-      name: 'Landscaping',
+      name: 'Lawn Care',
       image:
         'https://images.unsplash.com/photo-1558904541-efa843a96f01?auto=format&fit=crop&w=1400&q=80',
     },

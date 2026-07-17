@@ -531,8 +531,11 @@ export default function RouteEngine({
           }}
         >
           <DispatchMap
-            stops={routeJobs
-              .filter(hasCoordinates)
+            stops={[
+              ...routeTrucks.flatMap((truck) => routeState.truckRoutes[truck.id] || []),
+            ]
+              .map((id) => jobMap.get(id))
+              .filter((job): job is Job => !!job && hasCoordinates(job))
               .map((job) => ({
                 id: job.id,
                 street_address: job.properties?.street_address || '',
