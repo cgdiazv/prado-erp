@@ -167,11 +167,14 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
                 <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
                   {translations.home.featureFinancialsDescription}
                 </p>
-                <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-cyan-700/60 bg-cyan-950/30 px-3 py-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Xero</span>
-                  <span className="text-[10px] text-cyan-200">
+                <div className="mt-5 flex flex-col items-center gap-2">
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <span className="inline-flex items-center rounded-full border border-green-700/60 bg-green-950/30 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-green-300">QuickBooks</span>
+                    <span className="inline-flex items-center rounded-full border border-cyan-700/60 bg-cyan-950/30 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300">Xero</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">
                     {isEs ? 'Conecta y sincroniza facturas automaticamente.' : 'Connect and sync invoices automatically.'}
-                  </span>
+                  </p>
                 </div>
               </div>
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import DeleteJobButton from '@/components/DeleteJobButton';
 import { completeJob, updateJobScheduleDetails } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
+import { downloadICS } from '@/lib/icsExport';
 
 type FilterType = 'all' | 'scheduled' | 'completed' | 'archived';
 type SortColumn = 'date' | 'address' | 'type' | 'cost' | 'action';
@@ -295,6 +296,23 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => downloadICS({
+                              id: job.id,
+                              scheduled_date: (job.scheduled_date || '').slice(0, 10),
+                              job_type: job.job_type,
+                              cost_amount: job.cost_amount,
+                              street_address: job.properties?.street_address,
+                              truck_name: job.truck_id ? (trucks.find((t) => t.id === job.truck_id)?.name ?? null) : null,
+                            })}
+                            title={isEs ? 'Exportar al calendario' : 'Export to calendar'}
+                            className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 rounded-lg transition duration-200 border border-blue-200 shadow-xs"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                             </svg>
                           </button>
                           <form

@@ -155,6 +155,13 @@ export default async function MarketingHomePage() {
                 <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
                   Log expenses directly from the field and issue invoices seamlessly. Prado compiles your financial metrics in real-time so you always know your exact net profit margin.
                 </p>
+                <div className="mt-5 flex flex-col items-center gap-2">
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <span className="inline-flex items-center rounded-full border border-green-700/60 bg-green-950/30 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-green-300">QuickBooks</span>
+                    <span className="inline-flex items-center rounded-full border border-cyan-700/60 bg-cyan-950/30 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300">Xero</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Connect and sync invoices automatically.</p>
+                </div>
               </div>
 
               {/* Feature 3: CRM */}

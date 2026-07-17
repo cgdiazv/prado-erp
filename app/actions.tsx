@@ -8,7 +8,10 @@ import { render } from '@react-email/render';
 import EstimateEmail from '@/emails/estimate-email';
 import InvoiceEmail from '@/emails/invoice-email';
 import InviteMemberEmail from '@/emails/invite-member-email';
+import JobScheduledEmail from '@/emails/job-scheduled-email';
+import JobCompletedEmail from '@/emails/job-completed-email';
 import { enqueueXeroCompletedJobInvoice, enqueueXeroExpenseBill } from '@/app/actions/xeroActions';
+import { syncInvoiceToQBO } from '@/app/actions/qboActions';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
@@ -42,6 +45,67 @@ export async function createJob(formData: FormData) {
 
   if (error) {
     return { error: error.message };
+  }
+
+  // Send job scheduled confirmation email to the customer
+  try {
+    const supabase2 = await createClient();
+    const { data: { user } } = await supabase2.auth.getUser();
+
+    const { data: org } = await supabase2
+      .from('organizations')
+      .select('id, name, slogan, logo_url')
+      .eq('owner_id', user?.id)
+      .single();
+
+    const { data: property } = await supabase2
+      .from('properties')
+      .select('street_address, customer_id, customers(first_name, last_name, email, company_name)')
+      .eq('id', propertyId)
+      .single();
+
+    const customerMeta = (property as any)?.customers;
+    const customerEmail = customerMeta?.email;
+
+    if (customerEmail && org) {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+      const organizationName = org.name?.trim() || 'Prado ERP';
+      const customerDisplayName =
+        `${customerMeta.first_name || ''} ${customerMeta.last_name || ''}`.trim() ||
+        customerMeta.company_name ||
+        'Valued Customer';
+
+      let truckName: string | null = null;
+      if (truckId) {
+        const { data: truck } = await supabase2.from('trucks').select('name').eq('id', truckId).single();
+        truckName = truck?.name ?? null;
+      }
+
+      const emailHtml = await render(
+        JobScheduledEmail({
+          customerName: customerDisplayName,
+          jobType,
+          scheduledDate,
+          address: property?.street_address ?? null,
+          costAmount,
+          truckName,
+          organizationName,
+          organizationSlogan: org.slogan?.trim() || 'Field Service Software',
+          organizationLogoUrl: org.logo_url?.trim() || '',
+        })
+      );
+
+      await resend.emails.send({
+        from: `${organizationName} <${fromEmailAddress}>`,
+        to: customerEmail,
+        replyTo: user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined,
+        subject: `Service Scheduled: ${jobType} on ${scheduledDate}`,
+        html: emailHtml,
+      });
+    }
+  } catch (emailErr) {
+    console.error('⚠️ Job created but scheduled email failed to send:', emailErr);
   }
 
   revalidatePath('/');
@@ -235,6 +299,17 @@ export async function completeJob(jobId: string) {
     if (!queueResult.success) {
       console.error('Xero queue warning (invoice kept in Prado):', queueResult.error);
     }
+
+    // QBO sync (fire-and-forget, non-blocking)
+    syncInvoiceToQBO({
+      organizationId: org.id,
+      customerName: customerDisplayName,
+      customerEmail: customerMeta?.email || null,
+      jobType: job.job_type,
+      dueDate: todayStr,
+      baseAmount: Number(cost || 0),
+      taxAmount: Number(estimatedTax || 0),
+    }).catch((err) => console.error('QBO sync warning (invoice kept in Prado):', err));
   }
 
   // 4. EMAIL AUTOMATION ENGINE: Dispatches invoice instantly via Resend if email is verified
@@ -265,6 +340,29 @@ export async function completeJob(jobId: string) {
         replyTo: replyToAddress,
         subject: `Invoice for Completed Service - ${job.job_type}`,
         html: invoiceHtml,
+      });
+
+      const address = (job.properties as any)?.street_address ?? null;
+      const completedHtml = await render(
+        JobCompletedEmail({
+          customerName: customerDisplayName,
+          jobType: job.job_type,
+          completedDate: todayStr,
+          address,
+          baseAmount: cost,
+          taxAmount: estimatedTax,
+          totalAmount: total,
+          organizationName,
+          organizationSlogan,
+          organizationLogoUrl,
+        })
+      );
+      await resend.emails.send({
+        from: fromAddress,
+        to: customerMeta.email,
+        replyTo: replyToAddress,
+        subject: `Service Completed: ${job.job_type}`,
+        html: completedHtml,
       });
     } catch (emailErr) {
       console.error('⚠️ Invoice recorded in database, but Resend pipe failed to deliver message:', emailErr);

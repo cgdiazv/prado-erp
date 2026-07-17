@@ -11,6 +11,7 @@ import TeamsPanel from '../TeamsPanel';
 import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
 import XeroConnectionCard from '../XeroConnectionCard';
+import QBOConnectionCard from '../QBOConnectionCard';
 import { updateDispatchSettings } from '../actions';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
@@ -273,9 +274,14 @@ export default async function SettingsSectionPage({
             )}
 
             {section === 'integrations' && canAccessXeroSettings && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                <XeroConnectionCard organizationId={org.id} />
-              </div>
+              <>
+                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                  <QBOConnectionCard organizationId={org.id} />
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                  <XeroConnectionCard organizationId={org.id} />
+                </div>
+              </>
             )}
 
             {section === 'dispatch-settings' && !isIndividualAccount && (
