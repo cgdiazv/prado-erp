@@ -50,6 +50,10 @@ export default async function SettingsSectionPage({
   const translations = getTranslations(locale);
   const sectionParam = resolvedParams.section ?? '';
 
+  if (sectionParam === 'payments') {
+    redirect(`/${locale}/dashboard/settings/integrations`);
+  }
+
   if (!isSectionId(sectionParam)) {
     redirect(`/${locale}/dashboard/settings/profile-settings`);
   }
@@ -75,10 +79,6 @@ export default async function SettingsSectionPage({
   const isIndividualAccount = org.subscription_status === 'individual';
   const canAccessStripeSettings = org.subscription_status === 'trial' || org.subscription_status === 'growth' || org.subscription_status === 'enterprise';
   const canAccessXeroSettings = org.subscription_status === 'trial' || org.subscription_status === 'enterprise';
-
-  if (sectionParam === 'payments') {
-    redirect(`/${locale}/dashboard/settings/integrations`);
-  }
 
   if (section === 'team-settings' && isIndividualAccount) {
     redirect(`/${locale}/dashboard/settings/profile-settings`);
