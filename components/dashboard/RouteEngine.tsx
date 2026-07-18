@@ -242,6 +242,7 @@ export default function RouteEngine({
 }: RouteEngineProps) {
   const router = useRouter();
   const translations = getTranslations(locale);
+  const removeLabel = locale.toLowerCase().startsWith('es') ? 'Quitar' : 'Remove';
   const routeJobs = useMemo(
     () => (jobs || []).filter((job) => job.status === 'scheduled' || job.status === 'dispatched'),
     [jobs]
@@ -502,22 +503,20 @@ export default function RouteEngine({
           draggingJob?.jobId === job.id ? 'opacity-50 scale-[0.99]' : 'hover:border-slate-300 hover:shadow-md'
         } ${isSyncing ? 'ring-2 ring-slate-200' : ''}`}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
-                {translations.dashboard.routeReorderHint}
-              </span>
-            </div>
-            <h4 className="mt-2 text-sm font-semibold text-slate-900">{job.job_type}</h4>
-            <p className="text-xs text-slate-500 mt-1">{job.properties?.street_address || '—'}</p>
-            {customerLabel && (
-              <p className="text-[11px] text-slate-400 mt-1">{translations.dashboard.routeCustomer}: {customerLabel}</p>
-            )}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+              {translations.dashboard.routeReorderHint}
+            </span>
+            <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+              {translations.dashboard.stop}
+            </span>
           </div>
-          <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-            {translations.dashboard.stop}
-          </span>
+          <h4 className="text-sm font-semibold text-slate-900 break-words">{job.job_type}</h4>
+          <p className="text-xs text-slate-500 break-words">{job.properties?.street_address || '—'}</p>
+          {customerLabel && (
+            <p className="text-[11px] text-slate-400 break-words">{translations.dashboard.routeCustomer}: {customerLabel}</p>
+          )}
         </div>
       </div>
     );
@@ -723,26 +722,24 @@ export default function RouteEngine({
                             draggingJob?.jobId === job.id ? 'opacity-50 scale-[0.99]' : 'hover:border-slate-300 hover:shadow-md'
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
-                                  {translations.dashboard.stop} {index + 1}
-                                </span>
-                              </div>
-                              <p className="mt-2 text-sm font-semibold text-slate-900">{job.job_type}</p>
-                              <p className="text-xs text-slate-500 mt-1">{job.properties?.street_address || '—'}</p>
+                          <div className="w-full space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                                {translations.dashboard.stop} {index + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  moveJob(job.id, { truckId: null });
+                                  void persistAssignment(job.id, null);
+                                }}
+                                className="text-[10px] font-semibold uppercase tracking-wider rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-slate-600 hover:bg-white"
+                              >
+                                {removeLabel}
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                moveJob(job.id, { truckId: null });
-                                void persistAssignment(job.id, null);
-                              }}
-                              className="text-[10px] font-semibold uppercase tracking-wider rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-slate-600 hover:bg-white"
-                            >
-                              {translations.dashboard.unassignedFleetAsset}
-                            </button>
+                            <p className="text-sm font-semibold text-slate-900 break-words">{job.job_type}</p>
+                            <p className="text-xs text-slate-500 break-words">{job.properties?.street_address || '—'}</p>
                           </div>
                         </div>
                       );
