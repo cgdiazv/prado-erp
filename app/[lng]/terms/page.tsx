@@ -60,6 +60,20 @@ export default async function TermsAndConditionsPage({
               {translations.terms.section4Body}
             </p>
           </section>
+
+          <section id="payment-processing-fees" className="space-y-3 scroll-mt-24">
+            <h2 className="text-lg font-bold text-white tracking-tight">{translations.terms.paymentFeesTitle}</h2>
+            <p>
+              {translations.terms.paymentFeesIntro}
+            </p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>{translations.terms.paymentFeesItem1}</li>
+              <li>{translations.terms.paymentFeesItem2}</li>
+              <li>{translations.terms.paymentFeesItem3}</li>
+              <li>{translations.terms.paymentFeesItem4}</li>
+              <li>{translations.terms.paymentFeesItem5}</li>
+            </ul>
+          </section>
         </article>
       </main>
 

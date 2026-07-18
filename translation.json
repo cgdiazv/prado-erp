@@ -141,7 +141,14 @@
       "section3Title": "3. Automated Billing & Bookkeeping Responsibility",
       "section3Body": "Prado may generate invoices, provide online payment links, and automate parts of bookkeeping workflows. Organizations remain solely responsible for pricing, taxes, invoice accuracy, legal billing compliance, accounting review, reconciliation, and final financial reporting. Stripe processing fees apply according to Stripe's terms; Prado does not guarantee uninterrupted payment processing.",
       "section4Title": "4. Limitations of Liability",
-      "section4Body": "To the maximum extent permitted by law, Prado Systems Inc. is not liable for indirect, incidental, or consequential damages arising from use of the platform, payment processing interruptions, integration sync failures, or administrative actions taken by organization users. You are responsible for reviewing critical financial and operational data before acting on it."
+      "section4Body": "To the maximum extent permitted by law, Prado Systems Inc. is not liable for indirect, incidental, or consequential damages arising from use of the platform, payment processing interruptions, integration sync failures, or administrative actions taken by organization users. You are responsible for reviewing critical financial and operational data before acting on it.",
+      "paymentFeesTitle": "5. Stripe Payment Processing Fees",
+      "paymentFeesIntro": "When you enable online payments through Stripe Connect, Stripe processing fees apply to successful card transactions.",
+      "paymentFeesItem1": "Domestic online cards: 2.9% + $0.30 per successful transaction. Applies to Visa, Mastercard, American Express, Discover, and digital wallets (Apple Pay / Google Pay).",
+      "paymentFeesItem2": "International cards: an additional +1.5% applies, for a total of 4.4% + $0.30.",
+      "paymentFeesItem3": "Currency conversion: if the charge requires currency conversion, an additional +1% applies.",
+      "paymentFeesItem4": "Manually entered cards (MOTO): an additional +0.5% applies on top of the base processing rate.",
+      "paymentFeesItem5": "In-person cards (Stripe Terminal): 2.7% + $0.05 per transaction."
     },
     "support": {
       "badge": "Help Center Directory",
@@ -520,7 +527,14 @@
       "section3Title": "3. Responsabilidad de facturación automatizada y contabilidad",
       "section3Body": "Prado puede generar facturas, proporcionar enlaces de pago en línea y automatizar partes del flujo contable. Las organizaciones mantienen responsabilidad total sobre precios, impuestos, exactitud de facturas, cumplimiento legal de facturación, revisión contable, conciliación y reportes financieros finales. Las tarifas de procesamiento de Stripe aplican según los términos de Stripe; Prado no garantiza procesamiento de pagos ininterrumpido.",
       "section4Title": "4. Limitaciones de responsabilidad",
-      "section4Body": "En la máxima medida permitida por la ley, Prado Systems Inc. no será responsable por daños indirectos, incidentales o consecuentes derivados del uso de la plataforma, interrupciones en el procesamiento de pagos, fallas de sincronización de integraciones o acciones administrativas realizadas por usuarios de la organización. Eres responsable de revisar datos financieros y operativos críticos antes de actuar sobre ellos."
+      "section4Body": "En la máxima medida permitida por la ley, Prado Systems Inc. no será responsable por daños indirectos, incidentales o consecuentes derivados del uso de la plataforma, interrupciones en el procesamiento de pagos, fallas de sincronización de integraciones o acciones administrativas realizadas por usuarios de la organización. Eres responsable de revisar datos financieros y operativos críticos antes de actuar sobre ellos.",
+      "paymentFeesTitle": "5. Tarifas de procesamiento de pagos con Stripe",
+      "paymentFeesIntro": "Cuando habilitas pagos en línea mediante Stripe Connect, aplican tarifas de procesamiento de Stripe a las transacciones exitosas con tarjeta.",
+      "paymentFeesItem1": "Tarjetas online nacionales: 2.9% + $0.30 por cada transacción exitosa. Aplica para Visa, Mastercard, American Express, Discover y billeteras digitales (Apple Pay / Google Pay).",
+      "paymentFeesItem2": "Tarjetas internacionales: se añade un +1.5%, dando un total de 4.4% + $0.30.",
+      "paymentFeesItem3": "Conversión de divisa: si el cobro requiere cambiar de moneda, se aplica un +1% adicional.",
+      "paymentFeesItem4": "Tarjetas ingresadas manualmente (MOTO): se añade un +0.5% al procesamiento base.",
+      "paymentFeesItem5": "Tarjetas en persona (Stripe Terminal): 2.7% + $0.05 por transacción."
     },
     "support": {
       "badge": "Directorio del centro de ayuda",

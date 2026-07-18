@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { getTranslations } from '@/lib/translations';
 import {
   createStripeConnectAccountLink,
   disconnectStripeAccount,
@@ -23,6 +24,7 @@ export default function StripeConnectSettings({
 }: StripeConnectSettingsProps) {
   const searchParams = useSearchParams();
   const isEs = useMemo(() => locale.toLowerCase().startsWith('es'), [locale]);
+  const translations = useMemo(() => getTranslations(locale), [locale]);
 
   const [accountId, setAccountId] = useState<string | null>(initialStripeAccountId);
   const [chargesEnabled, setChargesEnabled] = useState(initialChargesEnabled);
@@ -30,6 +32,7 @@ export default function StripeConnectSettings({
   const [requirementsDue, setRequirementsDue] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const toFriendlyRequirement = (requirementKey: string) => {
@@ -117,6 +120,19 @@ export default function StripeConnectSettings({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stripeState]);
 
+  useEffect(() => {
+    if (!showTermsModal) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showTermsModal]);
+
   const refreshStatus = () => {
     startTransition(async () => {
       setError(null);
@@ -187,6 +203,16 @@ export default function StripeConnectSettings({
           {isEs
             ? 'Conecta tu cuenta Stripe Express para habilitar pagos de facturas en fases siguientes.'
             : 'Connect your Stripe Express account to enable invoice payments in upcoming phases.'}
+        </p>
+        <p className="mt-2 text-xs text-slate-500 max-w-2xl">
+          {isEs ? 'Aplican tarifas de Stripe. ' : 'Stripe fees apply. '}
+          <button
+            type="button"
+            onClick={() => setShowTermsModal(true)}
+            className="font-semibold text-emerald-600 hover:text-emerald-700"
+          >
+            {isEs ? 'Ver terminos' : 'See Terms'}
+          </button>
         </p>
       </div>
 
@@ -274,6 +300,75 @@ export default function StripeConnectSettings({
           </button>
         ) : null}
       </div>
+
+      {showTermsModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain">
+          <div className="w-full max-w-3xl rounded-2xl border border-slate-200 bg-white shadow-xl max-h-[85vh] overflow-hidden flex flex-col">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+              <div>
+                <h4 className="text-lg font-bold text-slate-900">{translations.terms.title}</h4>
+                <p className="mt-1 text-xs text-slate-500">{translations.terms.updated}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="text-2xl leading-none text-slate-400 hover:text-slate-700"
+                aria-label={isEs ? 'Cerrar terminos' : 'Close terms'}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5">
+              <article className="space-y-6 text-sm text-slate-600 leading-relaxed">
+                <p>{translations.terms.intro}</p>
+
+                <section className="space-y-2">
+                  <h5 className="text-base font-bold text-slate-900">{translations.terms.section1Title}</h5>
+                  <p>{translations.terms.section1Body}</p>
+                </section>
+
+                <section className="space-y-2">
+                  <h5 className="text-base font-bold text-slate-900">{translations.terms.section2Title}</h5>
+                  <p>{translations.terms.section2Body}</p>
+                </section>
+
+                <section className="space-y-2">
+                  <h5 className="text-base font-bold text-slate-900">{translations.terms.section3Title}</h5>
+                  <p>{translations.terms.section3Body}</p>
+                </section>
+
+                <section className="space-y-2">
+                  <h5 className="text-base font-bold text-slate-900">{translations.terms.section4Title}</h5>
+                  <p>{translations.terms.section4Body}</p>
+                </section>
+
+                <section className="space-y-2">
+                  <h5 className="text-base font-bold text-slate-900">{translations.terms.paymentFeesTitle}</h5>
+                  <p>{translations.terms.paymentFeesIntro}</p>
+                  <ul className="list-disc pl-5 space-y-2">
+                    <li>{translations.terms.paymentFeesItem1}</li>
+                    <li>{translations.terms.paymentFeesItem2}</li>
+                    <li>{translations.terms.paymentFeesItem3}</li>
+                    <li>{translations.terms.paymentFeesItem4}</li>
+                    <li>{translations.terms.paymentFeesItem5}</li>
+                  </ul>
+                </section>
+              </article>
+            </div>
+
+            <div className="border-t border-slate-200 px-6 py-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+              >
+                {isEs ? 'Cerrar' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
