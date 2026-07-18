@@ -26,7 +26,7 @@ export default function LogExpenseModal({ locale = 'en', jobs = [] }: LogExpense
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-sm"
+        className="cursor-pointer bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-sm"
       >
         + {translations.dashboard.logExpense}
       </button>
@@ -38,7 +38,7 @@ export default function LogExpenseModal({ locale = 'en', jobs = [] }: LogExpense
               <h3 className="text-lg font-semibold text-gray-800">{translations.dashboard.logExpense}</h3>
               <button
                 onClick={handleClose}
-                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                className="cursor-pointer text-gray-500 hover:text-gray-700 text-2xl leading-none"
               >
                 ×
               </button>
@@ -108,14 +108,14 @@ export default function LogExpenseModal({ locale = 'en', jobs = [] }: LogExpense
                 <div className="flex gap-2 pt-2">
                   <button
                     type="submit"
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold py-2 rounded-lg transition shadow-sm"
+                    className="cursor-pointer flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold py-2 rounded-lg transition shadow-sm"
                   >
                     {translations.dashboard.saveExpenseEntry}
                   </button>
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-2 rounded-lg transition shadow-sm font-semibold"
+                    className="cursor-pointer flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-2 rounded-lg transition shadow-sm font-semibold"
                   >
                     Cancel
                   </button>

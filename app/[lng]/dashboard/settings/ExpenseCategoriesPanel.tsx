@@ -129,7 +129,7 @@ export default function ExpenseCategoriesPanel({ locale = 'en' }: ExpenseCategor
                 <button
                   type="button"
                   onClick={toggleCreateSection}
-                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                  className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                 >
                   {editingCreate ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
                 </button>
@@ -137,7 +137,7 @@ export default function ExpenseCategoriesPanel({ locale = 'en' }: ExpenseCategor
                   <button
                     type="submit"
                     form="categories-create-form"
-                    className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                    className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                   >
                     {isEs ? 'Agregar nuevo' : 'Add New'}
                   </button>
@@ -172,7 +172,7 @@ export default function ExpenseCategoriesPanel({ locale = 'en' }: ExpenseCategor
                 <button
                   type="button"
                   onClick={toggleManageSection}
-                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                  className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                 >
                   {editingManage ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
                 </button>

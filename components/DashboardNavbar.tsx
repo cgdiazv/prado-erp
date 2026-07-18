@@ -92,7 +92,7 @@ export default function DashboardNavbar({ userInitials = "C", organizationLogoUr
             <button
               type="button"
               onClick={() => setShowNotifications((current) => !current)}
-              className="relative h-8 w-8 rounded-full border border-gray-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+              className="relative h-8 w-8 cursor-pointer rounded-full border border-gray-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
               aria-label={isEs ? 'Abrir notificaciones' : 'Open notifications'}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="mx-auto h-4 w-4">

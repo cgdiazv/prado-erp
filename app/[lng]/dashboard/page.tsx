@@ -350,7 +350,7 @@ export default async function DashboardHome({
               <p className="text-xs text-slate-500 font-medium">{translations.dashboard.metricsSubtitle}</p>
             </div>
 
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <DashboardViewToggle
                 activeView={activeView}
                 operationsLabel={t.modeOperations}
@@ -358,17 +358,17 @@ export default async function DashboardHome({
               />
 
               <div className="flex flex-wrap gap-2 sm:justify-end sm:ml-auto">
-                <Link href={`/${locale}/dashboard/estimates`} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                <Link href={`/${locale}/dashboard/estimates`} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
                   {t.actionManageEstimates}
                 </Link>
-                <Link href={`/${locale}/dashboard/schedule`} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                <Link href={`/${locale}/dashboard/schedule`} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
                   {t.actionScheduleJob}
                 </Link>
-                <Link href={`/${locale}/dashboard/invoices-ledger`} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                <Link href={`/${locale}/dashboard/invoices-ledger`} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
                   {t.actionManageInvoices}
                 </Link>
                 {!isIndividualAccount && (
-                  <Link href={`/${locale}/dashboard/ledger`} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                  <Link href={`/${locale}/dashboard/ledger`} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
                     {t.actionTrackExpenses}
                   </Link>
                 )}

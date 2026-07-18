@@ -602,7 +602,7 @@ export default function EstimatesPage() {
               </div>
               <button
                 onClick={openCreateModal}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm"
+                className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm"
               >
                 {t.newEstimate}
               </button>
@@ -861,7 +861,17 @@ export default function EstimatesPage() {
       {isCreateOpen && (
         <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white border border-gray-200 w-full max-w-3xl rounded-2xl overflow-hidden shadow-xl p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">{editingEstimateId ? t.modalEditTitle : t.modalCreateTitle}</h2>
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900">{editingEstimateId ? t.modalEditTitle : t.modalCreateTitle}</h2>
+              <button
+                type="button"
+                onClick={closeEstimateModal}
+                className="cursor-pointer text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
             
             <form onSubmit={handleSaveEstimate} className="space-y-4 text-xs">
               <div className="space-y-1">

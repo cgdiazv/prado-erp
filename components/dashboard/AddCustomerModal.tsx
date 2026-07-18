@@ -54,7 +54,7 @@ export default function AddCustomerModal({ organizationId, locale = 'en' }: AddC
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-sm"
+        className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-sm"
       >
         + {translations.dashboard.addNewCustomer}
       </button>
@@ -66,7 +66,7 @@ export default function AddCustomerModal({ organizationId, locale = 'en' }: AddC
               <h3 className="text-lg font-semibold text-gray-800">{translations.dashboard.addNewCustomer}</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                className="cursor-pointer text-gray-500 hover:text-gray-700 text-2xl leading-none"
               >
                 ×
               </button>
@@ -128,14 +128,14 @@ export default function AddCustomerModal({ organizationId, locale = 'en' }: AddC
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white text-xs py-2 rounded-lg transition shadow-sm font-semibold"
+                    className="cursor-pointer flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white text-xs py-2 rounded-lg transition shadow-sm font-semibold"
                   >
                     {isSubmitting ? 'Creating...' : translations.dashboard.registerClientProfile}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-2 rounded-lg transition shadow-sm font-semibold"
+                    className="cursor-pointer flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-2 rounded-lg transition shadow-sm font-semibold"
                   >
                     Cancel
                   </button>

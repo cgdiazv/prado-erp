@@ -15,7 +15,7 @@ export default function Header({ orgName }: { orgName: string }) {
         await serverSupabase.auth.signOut();
         redirect('/login');
       }}>
-        <button type="submit" className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition shadow-sm">
+        <button type="submit" className="cursor-pointer text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition shadow-sm">
           Sign Out
         </button>
       </form>

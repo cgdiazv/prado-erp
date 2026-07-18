@@ -153,7 +153,7 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
                 <button
                   type="button"
                   onClick={toggleCreateSection}
-                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                  className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                 >
                   {editingCreate ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
                 </button>
@@ -162,7 +162,7 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
                     type="submit"
                     form="services-create-form"
                     disabled={loading}
-                    className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400"
+                    className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400"
                   >
                     {loading ? (isEs ? 'Guardando...' : 'Saving...') : (isEs ? 'Agregar nuevo' : 'Add New')}
                   </button>
@@ -271,7 +271,7 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
                 <button
                   type="button"
                   onClick={toggleManageSection}
-                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                  className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                 >
                   {editingManage ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
                 </button>

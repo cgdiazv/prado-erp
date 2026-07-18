@@ -85,7 +85,7 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
                       setSuccessMsg(null);
                       setEditingCreate((current) => !current);
                     }}
-                    className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                    className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                   >
                     {editingCreate ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
                   </button>
@@ -93,7 +93,7 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
                     <button
                       type="submit"
                       disabled={loading}
-                      className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400"
+                      className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400"
                     >
                       {loading ? (isEs ? 'Vinculando...' : 'Linking...') : (isEs ? 'Vincular' : 'Link')}
                     </button>
@@ -169,7 +169,7 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
                     onClick={() => {
                       setEditingSaved((current) => !current);
                     }}
-                    className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                    className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                   >
                     {editingSaved ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
                   </button>

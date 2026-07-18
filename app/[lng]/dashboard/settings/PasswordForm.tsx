@@ -57,7 +57,7 @@ export default function PasswordForm({ locale = 'en' }: PasswordFormProps) {
                 <button
                   type="button"
                   onClick={() => setEditingPassword((current) => !current)}
-                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                  className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                 >
                   {editingPassword ? (locale.toLowerCase().startsWith('es') ? 'Cerrar' : 'Close') : (locale.toLowerCase().startsWith('es') ? 'Editar' : 'Edit')}
                 </button>
@@ -65,7 +65,7 @@ export default function PasswordForm({ locale = 'en' }: PasswordFormProps) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400"
+                    className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400"
                   >
                     {loading ? (locale.toLowerCase().startsWith('es') ? 'Actualizando...' : 'Updating...') : (locale.toLowerCase().startsWith('es') ? 'Actualizar' : 'Update')}
                   </button>

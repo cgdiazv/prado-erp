@@ -50,11 +50,11 @@ export default function DashboardViewToggle({
   };
 
   return (
-    <div className="mt-4 inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1 w-fit">
+    <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-0.5 w-fit">
       <button
         type="button"
         onClick={() => handleSelect('operations')}
-        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+        className={`cursor-pointer px-3 py-1 rounded-md text-xs font-semibold transition ${
           activeView === 'operations' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
         }`}
       >
@@ -63,7 +63,7 @@ export default function DashboardViewToggle({
       <button
         type="button"
         onClick={() => handleSelect('financials')}
-        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+        className={`cursor-pointer px-3 py-1 rounded-md text-xs font-semibold transition ${
           activeView === 'financials' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
         }`}
       >

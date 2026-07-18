@@ -98,7 +98,7 @@ export default function CustomerDetailsForm({
                       setSuccessMsg(null);
                       setEditing((current) => !current);
                     }}
-                    className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                    className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                   >
                     {editing ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
                   </button>
@@ -106,7 +106,7 @@ export default function CustomerDetailsForm({
                     <button
                       type="submit"
                       disabled={loading}
-                      className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400"
+                      className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400"
                     >
                       {loading ? (isEs ? 'Actualizando...' : 'Updating...') : (isEs ? 'Actualizar' : 'Update')}
                     </button>

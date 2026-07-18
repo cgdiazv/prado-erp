@@ -73,11 +73,11 @@ export default function WorkspaceIdentityForm({
 
     return (
       <div className="flex items-center gap-3">
-        <button type="button" onClick={() => toggleField(field)} className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+        <button type="button" onClick={() => toggleField(field)} className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700">
           {isEditing ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
         </button>
         {isEditing ? (
-          <button type="submit" disabled={loading} className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400">
+          <button type="submit" disabled={loading} className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400">
             {loading ? (isEs ? 'Guardando...' : 'Saving...') : (isEs ? 'Actualizar' : 'Update')}
           </button>
         ) : null}
