@@ -7,10 +7,17 @@ import { getTranslations } from '@/lib/translations';
 
 interface LogExpenseModalProps {
   locale?: string;
+  jobs?: Array<{
+    id: string;
+    job_type: string;
+    scheduled_date?: string | null;
+    properties?: { street_address?: string | null } | null;
+  }>;
 }
 
-export default function LogExpenseModal({ locale = 'en' }: LogExpenseModalProps) {
+export default function LogExpenseModal({ locale = 'en', jobs = [] }: LogExpenseModalProps) {
   const translations = getTranslations(locale);
+  const isEs = locale.toLowerCase().startsWith('es');
   const [isOpen, setIsOpen] = useState(false);
 
   const handleClose = () => setIsOpen(false);
@@ -51,6 +58,27 @@ export default function LogExpenseModal({ locale = 'en' }: LogExpenseModalProps)
                   required
                   className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700"
                 />
+                <select
+                  name="jobId"
+                  className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none text-gray-700"
+                  defaultValue=""
+                >
+                  <option value="">{isEs ? 'Sin job asignado (opcional)' : 'No job assigned (optional)'}</option>
+                  {jobs.map((job) => {
+                    const dateLabel = job.scheduled_date
+                      ? new Date(job.scheduled_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')
+                      : isEs
+                        ? 'Sin fecha'
+                        : 'No date';
+                    const address = job.properties?.street_address?.trim() || (isEs ? 'Sin direccion' : 'No address');
+
+                    return (
+                      <option key={job.id} value={job.id}>
+                        {`${job.job_type} | ${dateLabel} | ${address}`}
+                      </option>
+                    );
+                  })}
+                </select>
                 <ExpenseCategorySelect
                   name="category"
                   className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none text-gray-700"

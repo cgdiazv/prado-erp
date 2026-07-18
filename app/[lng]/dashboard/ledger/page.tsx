@@ -38,11 +38,37 @@ if (org.subscription_status === 'individual') {
     redirect('/dashboard/billing?expired=true');
   }
 
-  const { data: expenses } = await supabase
-    .from('expenses')
-    .select('*')
-    .eq('organization_id', org.id)
-    .order('expense_date', { ascending: false });
+  const { data: customers } = await supabase
+    .from('customers')
+    .select('id')
+    .eq('organization_id', org.id);
+
+  const customerIds = (customers || []).map((customer) => customer.id);
+
+  const { data: properties } = customerIds.length > 0
+    ? await supabase
+        .from('properties')
+        .select('id')
+        .in('customer_id', customerIds)
+    : { data: [] };
+
+  const propertyIds = (properties || []).map((property) => property.id);
+
+  const [{ data: expenses }, { data: jobs }] = await Promise.all([
+    supabase
+      .from('expenses')
+      .select('*, jobs(id, job_type, scheduled_date)')
+      .eq('organization_id', org.id)
+      .order('expense_date', { ascending: false }),
+    propertyIds.length > 0
+      ? supabase
+          .from('jobs')
+          .select('id, job_type, scheduled_date, status, properties(street_address)')
+          .in('property_id', propertyIds)
+          .neq('status', 'archived')
+          .order('scheduled_date', { ascending: false })
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
 
   const initial = org.name ? org.name.charAt(0) : "C";
 
@@ -62,7 +88,7 @@ if (org.subscription_status === 'individual') {
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.expenseLedger}</h1>
                 <p className="text-xs text-slate-400 mt-1">{translations.dashboard.expenseLedgerDescription}</p>
               </div>
-              <LogExpenseModal locale={locale} />
+              <LogExpenseModal locale={locale} jobs={jobs || []} />
             </div>
             
             {/* 2. Expense Ledger - full width with modal trigger in header */}

@@ -149,6 +149,7 @@ export default async function PrintReportsPage({
         thCustomer: 'Cliente',
         thAmount: 'Monto',
         thStatus: 'Estado',
+        thJob: 'Trabajo',
         totalExpenses: 'Total de gastos',
         thCategory: 'Categoria',
         thVendor: 'Proveedor',
@@ -202,6 +203,7 @@ export default async function PrintReportsPage({
         thCustomer: 'Customer',
         thAmount: 'Amount',
         thStatus: 'Status',
+        thJob: 'Job',
         totalExpenses: 'Total expenses',
         thCategory: 'Category',
         thVendor: 'Vendor',
@@ -325,7 +327,7 @@ export default async function PrintReportsPage({
   if (selectedReport === 'expenses') {
     const { data: expenses } = await supabase
       .from('expenses')
-      .select('expense_date, category, vendor, amount')
+      .select('expense_date, category, vendor, amount, jobs(job_type)')
       .eq('organization_id', org.id)
       .gte('expense_date', rangeStartDate)
       .lte('expense_date', rangeEndDate)
@@ -336,10 +338,11 @@ export default async function PrintReportsPage({
       { label: t.totalExpenses, value: formatCurrency(totalExpenses) },
       { label: t.records, value: String(expenses?.length || 0) },
     ];
-    reportHeaders = [t.thDate, t.thCategory, t.thVendor, t.thAmount];
+    reportHeaders = [t.thDate, t.thCategory, t.thJob, t.thVendor, t.thAmount];
     reportRows = (expenses || []).map((exp) => [
       formatDateShort(exp.expense_date, locale),
       String(exp.category || '-'),
+      String(exp.jobs?.job_type || (isEs ? 'Sin asignar' : 'Unassigned')),
       String(exp.vendor || '-'),
       formatCurrency(Number(exp.amount || 0)),
     ]);

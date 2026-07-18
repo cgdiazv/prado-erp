@@ -737,6 +737,8 @@ export async function createExpense(formData: FormData) {
   const amount = parseFloat(formData.get('amount') as string || '0');
   const vendor = formData.get('vendor') as string;
   const description = formData.get('description') as string;
+  const jobIdRaw = formData.get('jobId');
+  const jobId = typeof jobIdRaw === 'string' && jobIdRaw.trim().length > 0 ? jobIdRaw.trim() : null;
 
   if (!expenseDate || !category || amount <= 0) {
     return { error: 'Missing or invalid expense parameters' };
@@ -755,6 +757,38 @@ export async function createExpense(formData: FormData) {
 
   if (!org) return { error: 'No organizational profile found.' };
 
+  if (jobId) {
+    const { data: job, error: jobError } = await supabase
+      .from('jobs')
+      .select('id, property_id')
+      .eq('id', jobId)
+      .single();
+
+    if (jobError || !job) {
+      return { error: 'Selected job is invalid.' };
+    }
+
+    const { data: property, error: propertyError } = await supabase
+      .from('properties')
+      .select('customer_id')
+      .eq('id', job.property_id)
+      .single();
+
+    if (propertyError || !property) {
+      return { error: 'Selected job is invalid.' };
+    }
+
+    const { data: customer, error: customerError } = await supabase
+      .from('customers')
+      .select('organization_id')
+      .eq('id', property.customer_id)
+      .single();
+
+    if (customerError || !customer || customer.organization_id !== org.id) {
+      return { error: 'Selected job does not belong to your organization.' };
+    }
+  }
+
   const { data: expenseRecord, error } = await supabase
     .from('expenses')
     .insert([
@@ -764,6 +798,7 @@ export async function createExpense(formData: FormData) {
         amount,
         vendor,
         description,
+        job_id: jobId,
         organization_id: org.id
       }
     ])

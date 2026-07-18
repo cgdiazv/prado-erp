@@ -60,7 +60,7 @@ function fitText(text: string, maxLen = 120) {
 function getColumnWeights(reportType: ReportType, columnCount: number): number[] {
   const preset: Record<ReportType, number[]> = {
     revenue: [1.2, 2.4, 1.1, 1],
-    expenses: [1.2, 1.7, 2.1, 1],
+    expenses: [1.2, 1.5, 1.8, 2.1, 1],
     jobs: [1.2, 2.1, 2, 1, 1],
     customers: [2.1, 2.6, 1.1, 1.1],
     estimates: [1.2, 2.7, 1.1, 1],
@@ -214,7 +214,7 @@ export async function GET(request: Request) {
     if (selectedReport === 'expenses') {
       const { data: expenses } = await supabase
         .from('expenses')
-        .select('expense_date, category, vendor, amount')
+        .select('expense_date, category, vendor, amount, jobs(job_type)')
         .eq('organization_id', org.id)
         .gte('expense_date', rangeStartDate)
         .lte('expense_date', rangeEndDate)
@@ -225,10 +225,14 @@ export async function GET(request: Request) {
         { label: 'Total', value: formatCurrency(totalExpenses) },
         { label: 'Records', value: String(expenses?.length || 0) },
       ];
-      headers = ['Date', 'Category', 'Vendor', 'Amount'];
+      const thJob = lng.startsWith('es') ? 'Trabajo' : 'Job';
+      const unassignedLabel = lng.startsWith('es') ? 'Sin asignar' : 'Unassigned';
+
+      headers = ['Date', 'Category', thJob, 'Vendor', 'Amount'];
       rows = (expenses || []).map((exp: any) => [
         formatDateShort(exp.expense_date, lng),
         String(exp.category || '-'),
+        String(exp.jobs?.job_type || unassignedLabel),
         String(exp.vendor || '-'),
         formatCurrency(Number(exp.amount || 0)),
       ]);

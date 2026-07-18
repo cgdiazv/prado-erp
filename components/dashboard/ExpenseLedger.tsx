@@ -10,6 +10,11 @@ interface Expense {
   vendor?: string | null;
   description?: string | null;
   amount: number;
+  jobs?: {
+    id: string;
+    job_type: string;
+    scheduled_date?: string | null;
+  } | null;
 }
 
 interface ExpenseLedgerProps {
@@ -17,7 +22,7 @@ interface ExpenseLedgerProps {
   locale?: string;
 }
 
-type SortColumn = 'date' | 'category' | 'vendor' | 'description' | 'amount';
+type SortColumn = 'date' | 'category' | 'job' | 'vendor' | 'description' | 'amount';
 type SortDirection = 'asc' | 'desc';
 
 export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedgerProps) {
@@ -33,6 +38,7 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
   const sortedExpenses = useMemo(() => {
     const getDate = (exp: Expense) => new Date(exp.expense_date || 0).getTime();
     const getCategory = (exp: Expense) => (exp.category || '').toLowerCase();
+    const getJob = (exp: Expense) => (exp.jobs?.job_type || '').toLowerCase();
     const getVendor = (exp: Expense) => (exp.vendor || '').toLowerCase();
     const getDescription = (exp: Expense) => (exp.description || '').toLowerCase();
     const getAmount = (exp: Expense) => Number(exp.amount || 0);
@@ -44,6 +50,8 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
         result = getDate(a) - getDate(b);
       } else if (sortColumn === 'category') {
         result = getCategory(a).localeCompare(getCategory(b));
+      } else if (sortColumn === 'job') {
+        result = getJob(a).localeCompare(getJob(b));
       } else if (sortColumn === 'vendor') {
         result = getVendor(a).localeCompare(getVendor(b));
       } else if (sortColumn === 'description') {
@@ -153,6 +161,12 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
                   </button>
                 </th>
                 <th className="px-4 py-3">
+                  <button type="button" onClick={() => handleSort('job')} className="inline-flex items-center gap-1">
+                    <span>{isEs ? 'Trabajo' : 'Job'}</span>
+                    {renderSortIndicator('job')}
+                  </button>
+                </th>
+                <th className="px-4 py-3">
                   <button type="button" onClick={() => handleSort('description')} className="inline-flex items-center gap-1">
                     <span>{translations.dashboard.description}</span>
                     {renderSortIndicator('description')}
@@ -174,6 +188,7 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
                   </td>
                   <td className="px-4 py-3"><span className="bg-red-50 text-red-700 border border-red-100 px-2 py-0.5 rounded text-xs font-medium">{exp.category}</span></td>
                   <td className="px-4 py-3 text-gray-600 text-xs">{exp.vendor || '—'}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">{exp.jobs?.job_type || (isEs ? 'Sin asignar' : 'Unassigned')}</td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{exp.description || '—'}</td>
                   <td className="px-4 py-3 text-right text-red-600 font-mono font-semibold">-${exp.amount}</td>
                 </tr>
