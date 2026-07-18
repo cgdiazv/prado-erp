@@ -48,6 +48,7 @@ async function selectFirstOwnedOrganization(supabase: any, userId: string, selec
     .from('organizations')
     .select(select)
     .eq('owner_id', userId)
+    .order('created_at', { ascending: false })
     .limit(1);
 
   const row = Array.isArray(data) ? data[0] || null : null;
@@ -59,6 +60,7 @@ async function selectFirstMembership(supabase: any, userId: string, select: stri
     .from('organization_users')
     .select(select)
     .eq('user_id', userId)
+    .order('created_at', { ascending: false })
     .limit(1);
 
   const row = Array.isArray(data) ? data[0] || null : null;
