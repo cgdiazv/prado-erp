@@ -228,6 +228,14 @@ export default function ScheduleJobForm({ properties, customers, services, truck
                     : 'This service is non-recurring by default.'}
               </p>
             )}
+
+            {effectiveIsRecurring ? (
+              <p className="text-[11px] text-slate-500">
+                {isEs
+                  ? 'El siguiente trabajo se crea automaticamente al completar el trabajo actual.'
+                  : 'The next job is created automatically when the current job is completed.'}
+              </p>
+            ) : null}
           </div>
         ) : null}
 

@@ -247,6 +247,12 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
                       />
                       {isEs ? 'Auto cobro despues del primer pago en linea' : 'Auto-charge after first online payment'}
                     </label>
+
+                    <p className="text-[11px] text-slate-500">
+                      {isEs
+                        ? 'El siguiente trabajo se crea automaticamente al completar el trabajo actual.'
+                        : 'The next job is created automatically when the current job is completed.'}
+                    </p>
                   </>
                 ) : null}
               </div>
