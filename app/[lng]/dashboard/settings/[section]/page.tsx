@@ -135,14 +135,22 @@ export default async function SettingsSectionPage({
     href: `/${locale}/dashboard/settings/manage-subscription`,
   });
 
-  let services: Array<{ id: string; name: string; description: string | null; base_price: number | null }> = [];
+  let services: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    base_price: number | null;
+    is_recurring_default: boolean | null;
+    recurrence_interval_days: number | null;
+    auto_charge_default: boolean | null;
+  }> = [];
   let trucks: Array<{ id: string; name: string; plate_number: string | null; is_active: boolean; status: string | null }> = [];
 
   if (section === 'operations-settings') {
     const [{ data: serviceRows }, { data: truckRows }] = await Promise.all([
       supabase
         .from('services')
-        .select('id, name, description, base_price')
+        .select('id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
         .eq('organization_id', org.id)
         .not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`)
         .order('name', { ascending: true }),

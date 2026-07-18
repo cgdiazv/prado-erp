@@ -36,7 +36,12 @@ export default async function SchedulePage({
   // Fetch customer, service, and active truck records for the schedule form
   const [customersResponse, servicesResponse, trucksResponse] = await Promise.all([
     supabase.from('customers').select('id, first_name, last_name, company_name').eq('organization_id', org.id),
-    supabase.from('services').select('id, name, base_price').eq('organization_id', org.id).not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`).order('name', { ascending: true }),
+    supabase
+      .from('services')
+      .select('id, name, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
+      .eq('organization_id', org.id)
+      .not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`)
+      .order('name', { ascending: true }),
     supabase.from('trucks').select('id, name, plate_number, is_active, status').eq('organization_id', org.id).eq('is_active', true).order('name', { ascending: true })
   ]);
 

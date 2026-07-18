@@ -61,9 +61,20 @@ function buildJobCalendarUrl({
   return `${baseUrl}/api/calendar/job?${params.toString()}`;
 }
 
+function addDaysToIsoDate(isoDate: string, days: number): string | null {
+  if (!isoDate || !Number.isFinite(days) || days <= 0) return null;
+
+  const base = new Date(`${isoDate}T00:00:00Z`);
+  if (Number.isNaN(base.getTime())) return null;
+
+  base.setUTCDate(base.getUTCDate() + Math.floor(days));
+  return base.toISOString().slice(0, 10);
+}
+
 async function createInvoiceCheckoutSession({
   invoiceId,
   organizationId,
+  customerId,
   stripeAccountId,
   customerEmail,
   customerName,
@@ -71,9 +82,11 @@ async function createInvoiceCheckoutSession({
   baseAmount,
   taxAmount,
   totalAmount,
+  enableAutopayIfPossible,
 }: {
   invoiceId: string;
   organizationId: string;
+  customerId: string;
   stripeAccountId: string;
   customerEmail: string;
   customerName: string;
@@ -81,6 +94,7 @@ async function createInvoiceCheckoutSession({
   baseAmount: number;
   taxAmount: number;
   totalAmount: number;
+  enableAutopayIfPossible: boolean;
 }) {
   if (!process.env.STRIPE_SECRET_KEY) {
     return null;
@@ -109,18 +123,23 @@ async function createInvoiceCheckoutSession({
         platform: 'prado',
         invoiceId,
         organizationId,
+        customerId,
         customerName,
         source: 'prado_invoice',
+        enableAutopayIfPossible: enableAutopayIfPossible ? 'true' : 'false',
       },
       payment_intent_data: {
         transfer_data: {
           destination: stripeAccountId,
         },
+        setup_future_usage: enableAutopayIfPossible ? 'off_session' : undefined,
         metadata: {
           platform: 'prado',
           invoiceId,
           organizationId,
+          customerId,
           source: 'prado_invoice',
+          enableAutopayIfPossible: enableAutopayIfPossible ? 'true' : 'false',
         },
       },
       line_items: [
@@ -164,27 +183,72 @@ async function createInvoiceCheckoutSession({
 export async function createJob(formData: FormData) {
   const propertyId = formData.get('propertyId') as string;
   const scheduledDate = formData.get('scheduledDate') as string;
-  const jobType = formData.get('jobType') as string;
-  const costAmount = parseFloat(formData.get('costAmount') as string || '0');
+  const serviceId = (formData.get('serviceId') as string) || null;
+  const jobTypeInput = (formData.get('jobType') as string) || '';
+  const costAmountInput = parseFloat(formData.get('costAmount') as string || '0');
   const notes = formData.get('notes') as string;
   const truckId = formData.get('truckId') as string || null;
+  const formRecurring = (formData.get('isRecurring') as string) === 'true';
+  const formRecurrenceIntervalDays = Number.parseInt((formData.get('recurrenceIntervalDays') as string) || '0', 10);
+  const formAutoChargeEnabled = (formData.get('autoChargeEnabled') as string) === 'true';
 
-  if (!propertyId || !scheduledDate || !jobType) {
+  const supabase = await createClient();
+
+  let resolvedJobType = jobTypeInput;
+  let resolvedCostAmount = Number.isFinite(costAmountInput) ? costAmountInput : 0;
+  let resolvedIsRecurring = formRecurring;
+  let resolvedRecurrenceIntervalDays = Number.isFinite(formRecurrenceIntervalDays) && formRecurrenceIntervalDays > 0 ? formRecurrenceIntervalDays : null;
+  let resolvedAutoChargeEnabled = formAutoChargeEnabled;
+
+  if (serviceId) {
+    const { data: service } = await supabase
+      .from('services')
+      .select('id, name, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
+      .eq('id', serviceId)
+      .maybeSingle();
+
+    if (service) {
+      resolvedJobType = service.name || resolvedJobType;
+
+      if (!Number.isFinite(costAmountInput) || costAmountInput <= 0) {
+        resolvedCostAmount = Number(service.base_price || 0);
+      }
+
+      resolvedIsRecurring = Boolean(service.is_recurring_default);
+      resolvedRecurrenceIntervalDays = resolvedIsRecurring && Number(service.recurrence_interval_days || 0) > 0
+        ? Number(service.recurrence_interval_days)
+        : null;
+      resolvedAutoChargeEnabled = resolvedIsRecurring ? Boolean(service.auto_charge_default) : false;
+    }
+  }
+
+  if (!propertyId || !scheduledDate || !resolvedJobType) {
     return { error: 'Missing required fields' };
   }
 
-  const supabase = await createClient();
+  if (!Number.isFinite(resolvedCostAmount) || resolvedCostAmount < 0) {
+    return { error: 'Invalid cost amount.' };
+  }
+
+  if (resolvedIsRecurring && (!resolvedRecurrenceIntervalDays || resolvedRecurrenceIntervalDays < 1)) {
+    return { error: 'Recurring jobs require a valid recurrence interval.' };
+  }
+
   const { data: insertedJobs, error } = await supabase
     .from('jobs')
     .insert([
       {
         property_id: propertyId,
         scheduled_date: scheduledDate,
-        job_type: jobType,
-        cost_amount: costAmount,
+        job_type: resolvedJobType,
+        cost_amount: resolvedCostAmount,
         notes: notes,
         status: 'scheduled',
-        truck_id: truckId ? truckId : null 
+        truck_id: truckId ? truckId : null,
+        service_id: serviceId,
+        is_recurring: resolvedIsRecurring,
+        recurrence_interval_days: resolvedRecurrenceIntervalDays,
+        auto_charge_enabled: resolvedAutoChargeEnabled,
       }
     ])
     .select('id')
@@ -235,20 +299,20 @@ export async function createJob(formData: FormData) {
         ? buildJobCalendarUrl({
             id: jobId,
             scheduledDate,
-            jobType,
+            jobType: resolvedJobType,
             address: property?.street_address ?? null,
             truckName,
-            costAmount,
+            costAmount: resolvedCostAmount,
           })
         : null;
 
       const emailHtml = await render(
         JobScheduledEmail({
           customerName: customerDisplayName,
-          jobType,
+          jobType: resolvedJobType,
           scheduledDate,
           address: property?.street_address ?? null,
-          costAmount,
+          costAmount: resolvedCostAmount,
           truckName,
           calendarUrl,
           organizationName,
@@ -261,7 +325,7 @@ export async function createJob(formData: FormData) {
         from: `${organizationName} <${fromEmailAddress}>`,
         to: customerEmail,
         replyTo: user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined,
-        subject: `Service Scheduled: ${jobType} on ${scheduledDate}`,
+        subject: `Service Scheduled: ${resolvedJobType} on ${scheduledDate}`,
         html: emailHtml,
       });
     }
@@ -396,7 +460,7 @@ export async function completeJob(jobId: string) {
   // 1. Fetch job details AND include nested customer profile information for email delivery
   const { data: job, error: fetchError } = await supabase
     .from('jobs')
-    .select('*, properties(customer_id, customers(first_name, last_name, email, company_name))')
+    .select('*, properties(customer_id, street_address, customers(id, first_name, last_name, email, company_name, autopay_enabled, stripe_payment_customer_id, stripe_default_payment_method_id))')
     .eq('id', jobId)
     .single();
 
@@ -411,6 +475,41 @@ export async function completeJob(jobId: string) {
     .eq('id', jobId);
 
   if (updateError) return { error: updateError.message };
+
+  const recurrenceIntervalDays = Number(job.recurrence_interval_days || 0);
+  if (Boolean(job.is_recurring) && recurrenceIntervalDays > 0) {
+    const nextScheduledDate = addDaysToIsoDate(job.scheduled_date, recurrenceIntervalDays);
+
+    if (nextScheduledDate) {
+      const { data: existingNextJob } = await supabase
+        .from('jobs')
+        .select('id')
+        .eq('recurring_source_job_id', job.id)
+        .eq('scheduled_date', nextScheduledDate)
+        .maybeSingle();
+
+      if (!existingNextJob) {
+        await supabase
+          .from('jobs')
+          .insert([
+            {
+              property_id: job.property_id,
+              scheduled_date: nextScheduledDate,
+              job_type: job.job_type,
+              cost_amount: Number(job.cost_amount || 0),
+              notes: job.notes || null,
+              status: 'scheduled',
+              truck_id: null,
+              service_id: job.service_id || null,
+              is_recurring: true,
+              recurrence_interval_days: recurrenceIntervalDays,
+              auto_charge_enabled: Boolean(job.auto_charge_enabled),
+              recurring_source_job_id: job.id,
+            },
+          ]);
+      }
+    }
+  }
 
   // 3. Bookkeeping Automation: Auto-generate the customer invoice
   const cost = job.cost_amount;
@@ -446,6 +545,7 @@ export async function completeJob(jobId: string) {
 
   let paymentUrl: string | null = null;
   let stripeCheckoutSessionId: string | null = null;
+  let invoiceWasAutoCharged = false;
 
   if (
     org?.id &&
@@ -456,26 +556,71 @@ export async function completeJob(jobId: string) {
     customerMeta?.email
   ) {
     try {
-      const paymentSession = await createInvoiceCheckoutSession({
-        invoiceId: invoiceRecord.id,
-        organizationId: org.id,
-        stripeAccountId: org.stripe_account_id,
-        customerEmail: customerMeta.email,
-        customerName: customerDisplayName,
-        serviceName: job.job_type,
-        baseAmount: Number(cost || 0),
-        taxAmount: Number(estimatedTax || 0),
-        totalAmount: Number(total || 0),
-      });
+      if (
+        Boolean(job.auto_charge_enabled) &&
+        Boolean(customerMeta?.autopay_enabled) &&
+        customerMeta?.stripe_payment_customer_id &&
+        customerMeta?.stripe_default_payment_method_id &&
+        Number(total || 0) > 0
+      ) {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(Number(total || 0) * 100),
+          currency: 'usd',
+          customer: customerMeta.stripe_payment_customer_id,
+          payment_method: customerMeta.stripe_default_payment_method_id,
+          off_session: true,
+          confirm: true,
+          description: `Prado invoice ${invoiceRecord.id} - ${job.job_type}`,
+          transfer_data: {
+            destination: org.stripe_account_id,
+          },
+          metadata: {
+            platform: 'prado',
+            source: 'prado_invoice_autopay',
+            invoiceId: invoiceRecord.id,
+            organizationId: org.id,
+            customerId,
+          },
+        });
 
-      paymentUrl = paymentSession?.paymentUrl || null;
-      stripeCheckoutSessionId = paymentSession?.sessionId || null;
+        if (paymentIntent.status === 'succeeded') {
+          invoiceWasAutoCharged = true;
+          await supabase
+            .from('invoices')
+            .update({
+              status: 'paid',
+              stripe_payment_status: 'paid',
+              paid_at: new Date().toISOString(),
+            })
+            .eq('id', invoiceRecord.id);
+        }
+      }
+
+      if (!invoiceWasAutoCharged) {
+        const paymentSession = await createInvoiceCheckoutSession({
+          invoiceId: invoiceRecord.id,
+          organizationId: org.id,
+          customerId,
+          stripeAccountId: org.stripe_account_id,
+          customerEmail: customerMeta.email,
+          customerName: customerDisplayName,
+          serviceName: job.job_type,
+          baseAmount: Number(cost || 0),
+          taxAmount: Number(estimatedTax || 0),
+          totalAmount: Number(total || 0),
+          enableAutopayIfPossible: Boolean(job.auto_charge_enabled),
+        });
+
+        paymentUrl = paymentSession?.paymentUrl || null;
+        stripeCheckoutSessionId = paymentSession?.sessionId || null;
+      }
     } catch (paymentErr) {
       console.error('⚠️ Invoice created, but Stripe payment link generation failed:', paymentErr);
     }
   }
 
-  if (paymentUrl || stripeCheckoutSessionId) {
+  if (!invoiceWasAutoCharged && (paymentUrl || stripeCheckoutSessionId)) {
     const { error: paymentUpdateError } = await supabase
       .from('invoices')
       .update({

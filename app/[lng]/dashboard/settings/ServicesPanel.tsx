@@ -9,6 +9,9 @@ type Service = {
   name: string;
   description: string | null;
   base_price: number | null;
+  is_recurring_default: boolean | null;
+  recurrence_interval_days: number | null;
+  auto_charge_default: boolean | null;
 };
 
 interface ServicesPanelProps {
@@ -26,6 +29,9 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
   const [draftName, setDraftName] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
   const [draftBasePrice, setDraftBasePrice] = useState('0.00');
+  const [draftIsRecurring, setDraftIsRecurring] = useState(false);
+  const [draftRecurrenceIntervalDays, setDraftRecurrenceIntervalDays] = useState('30');
+  const [draftAutoChargeDefault, setDraftAutoChargeDefault] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const selectedService = services.find((service) => service.id === selectedServiceId) || null;
@@ -61,6 +67,9 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
       name: normalizedValue,
       description: draftDescription.trim(),
       basePrice: parsedBasePrice,
+      isRecurringDefault: draftIsRecurring,
+      recurrenceIntervalDays: draftIsRecurring ? Number.parseInt(draftRecurrenceIntervalDays || '0', 10) : null,
+      autoChargeDefault: draftIsRecurring ? draftAutoChargeDefault : false,
     });
 
     setLoading(false);
@@ -76,6 +85,9 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
       setDraftName('');
       setDraftDescription('');
       setDraftBasePrice('0.00');
+      setDraftIsRecurring(false);
+      setDraftRecurrenceIntervalDays('30');
+      setDraftAutoChargeDefault(false);
       setStatusMessage(`Added "${normalizedValue}".`);
     }
   };
@@ -198,6 +210,46 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
                   className="w-full rounded-lg border border-gray-300 p-2.5 text-sm outline-none resize-y"
                 />
               </div>
+
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={draftIsRecurring}
+                    onChange={(event) => setDraftIsRecurring(event.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-emerald-600"
+                  />
+                  {isEs ? 'Servicio recurrente por defecto' : 'Recurring service by default'}
+                </label>
+
+                {draftIsRecurring ? (
+                  <>
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {isEs ? 'Frecuencia (dias)' : 'Frequency (days)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={draftRecurrenceIntervalDays}
+                        onChange={(event) => setDraftRecurrenceIntervalDays(event.target.value)}
+                        className="w-full rounded-lg border border-gray-300 p-2.5 text-sm outline-none"
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={draftAutoChargeDefault}
+                        onChange={(event) => setDraftAutoChargeDefault(event.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-emerald-600"
+                      />
+                      {isEs ? 'Intentar auto cobro despues del primer pago en linea' : 'Try auto-charge after first online payment'}
+                    </label>
+                  </>
+                ) : null}
+              </div>
             </form>
           </div>
 
@@ -264,6 +316,14 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
                   <p className="text-xs text-slate-500">
                     {selectedService.description || (isEs ? 'Sin descripcion.' : 'No description.')}
                   </p>
+                  {selectedService.is_recurring_default ? (
+                    <p className="text-xs text-slate-500">
+                      {isEs ? 'Recurrente cada' : 'Recurring every'} {selectedService.recurrence_interval_days || 0} {isEs ? 'dias' : 'days'}
+                      {selectedService.auto_charge_default ? ` • ${isEs ? 'Auto cobro activado por defecto' : 'Auto-charge default enabled'}` : ''}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-500">{isEs ? 'Servicio no recurrente por defecto.' : 'Non-recurring by default.'}</p>
+                  )}
                 </div>
               ) : null}
             </div>

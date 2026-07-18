@@ -3,12 +3,13 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
-import DeleteSiteButton from '@/components/DeleteSiteButton';
-import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
-import { updateCustomer, deleteCustomer, createProperty, markInvoiceAsPaid } from '../../../../actions';
+import CustomerDetailsForm from '@/components/dashboard/CustomerDetailsForm';
+import CustomerInvoicesTable from '@/components/dashboard/CustomerInvoicesTable';
+import CustomerJobLogTable from '@/components/dashboard/CustomerJobLogTable';
+import ServiceSitesSection from '@/components/dashboard/ServiceSitesSection';
+import { deleteCustomer } from '../../../../actions';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
-import { US_STATES } from '@/lib/usStates';
 
 interface CustomerPageProps {
   params: Promise<{ id: string; lng?: string }> | { id: string; lng?: string };
@@ -72,7 +73,6 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
   }
 
   const initial = org.name ? org.name.charAt(0) : "C";
-  const withoutOptional = (label: string) => label.replace(/\s*\((?:optional|opcional)\)\s*/gi, '').trim();
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
@@ -122,6 +122,11 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                   <p className="text-xs text-slate-400 font-semibold mt-1 uppercase tracking-wider">
                     {customer.company_name || translations.dashboard.individualResidentialAccount}
                   </p>
+                  {customer.autopay_enabled ? (
+                    <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                      {isEs ? 'Auto cobro activo' : 'Auto Pay Active'}
+                    </div>
+                  ) : null}
                 </div>
                 
                 <div className="text-xs text-slate-600 space-y-1.5 md:text-right border-t md:border-t-0 pt-4 md:pt-0 border-gray-100 min-w-[200px]">
@@ -136,294 +141,27 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
             <div className="space-y-8">
               
               {/* HORIZONTAL PROFILE MANAGEMENT WORKSPACE FORM */}
-              <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs">
-                <div className="mb-4">
-                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-0.5">{translations.dashboard.editClientDetails}</h2>
-                  <p className="text-[11px] text-slate-400 font-medium">{translations.dashboard.editClientDescription}</p>
-                </div>
-                
-                <form action={async (formData: FormData) => {
-                  'use server';
-                  await updateCustomer(customerId, formData);
-                }} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{translations.dashboard.firstName}</label>
-                      <input 
-                        type="text" 
-                        name="firstName" 
-                        defaultValue={customer.first_name} 
-                        required 
-                        className="w-full rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium transition" 
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{translations.dashboard.lastName}</label>
-                      <input 
-                        type="text" 
-                        name="lastName" 
-                        defaultValue={customer.last_name} 
-                        required 
-                        className="w-full rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium transition" 
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{withoutOptional(translations.dashboard.companyOptional)}</label>
-                      <input 
-                        type="text" 
-                        name="companyName" 
-                        defaultValue={customer.company_name || ''} 
-                        className="w-full rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium transition" 
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{translations.dashboard.emailAddress}</label>
-                      <input 
-                        type="email" 
-                        name="email" 
-                        defaultValue={customer.email || ''} 
-                        className="w-full rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium transition" 
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{withoutOptional(translations.dashboard.phoneNumber)}</label>
-                      <input 
-                        type="text" 
-                        name="phone" 
-                        defaultValue={customer.phone || ''} 
-                        className="w-full rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium transition" 
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{translations.dashboard.billingAddress}</label>
-                      <input 
-                        type="text" 
-                        name="billingAddress" 
-                        defaultValue={customer.billing_address || ''} 
-                        className="w-full rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium transition" 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-start">
-                    <button 
-                      type="submit" 
-                      className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 px-6 rounded-lg transition shadow-xs cursor-pointer"
-                    >
-                      {translations.dashboard.saveProfileAdjustments}
-                    </button>
-                  </div>
-                </form>
-              </section>
+              <CustomerDetailsForm
+                customerId={customerId}
+                locale={locale}
+                initialFirstName={customer.first_name}
+                initialLastName={customer.last_name}
+                initialCompanyName={customer.company_name || ''}
+                initialEmail={customer.email || ''}
+                initialPhone={customer.phone || ''}
+                initialBillingAddress={customer.billing_address || ''}
+              />
 
               {/* Service Sites Container Section (MOVED UP ABOVE THE COLUMNS SPLIT) */}
-            <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs space-y-4">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-0.5">{translations.dashboard.serviceSites}</h2>
-                <p className="text-[11px] text-slate-400 font-medium">{translations.dashboard.linkDispatchVectors}</p>
-              </div>
-
-              <form action={async (formData: FormData) => {
-                'use server';
-                await createProperty(customerId, formData);
-              }} className="p-4 bg-slate-50 rounded-lg border border-gray-200 space-y-3">
-                <p className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">{translations.dashboard.addNewLocation}</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                  <AddressAutocompleteInput
-                    name="streetAddress"
-                    placeholder={translations.dashboard.streetAddress}
-                    required
-                    className="md:col-span-2 rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium"
-                  />
-                  <input 
-                    type="text" 
-                    name="city" 
-                    placeholder={translations.dashboard.city} 
-                    required 
-                    className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <select
-                      name="state"
-                      required
-                      defaultValue=""
-                      className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium"
-                    >
-                      <option value="">{isEs ? 'Selecciona estado' : 'Select state'}</option>
-                      {US_STATES.map((state) => (
-                        <option key={state.code} value={state.name}>
-                          {state.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input 
-                      type="text" 
-                      name="zipCode" 
-                      placeholder={translations.dashboard.zip} 
-                      required 
-                      className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 items-center">
-                  <input 
-                    type="text" 
-                    name="serviceNotes" 
-                    placeholder={translations.dashboard.gateCodesLabel} 
-                    className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium" 
-                  />
-                  <button 
-                    type="submit" 
-                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold px-4 py-2 rounded-md transition shadow-xs whitespace-nowrap cursor-pointer"
-                  >
-                    {translations.dashboard.linkServiceSite}
-                  </button>
-                </div>
-              </form>
-
-              {properties && properties.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-                  {properties.map((prop) => (
-                    <div key={prop.id} className="p-3 bg-slate-50 rounded-lg border border-gray-200/60 text-xs relative group">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <DeleteSiteButton propertyId={prop.id} customerId={customerId} />
-                      </div>
-                      <p className="font-semibold text-slate-800 pr-6">{prop.street_address}</p>
-                      <p className="text-slate-400 mt-0.5">{prop.city}, {prop.state} {prop.zip_code}</p>
-                      {prop.service_notes && (
-                        <div className="mt-2 text-[11px] bg-amber-50/60 text-amber-900 p-2 rounded border border-amber-200/60 font-medium">
-                          <strong>Notes:</strong> {prop.service_notes}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-400 text-xs italic pt-2 text-center">{translations.dashboard.noPropertiesRegistered}</p>
-              )}
-            </section>
+            <ServiceSitesSection customerId={customerId} locale={locale} properties={properties || []} />
 
               {/* Job History Manifest Timeline Log */}
-              <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs">
-                <div className="mb-4 border-b border-gray-100 pb-3">
-                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{translations.dashboard.operationalJobLog}</h2>
-                </div>
-                {customerJobs.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-gray-200 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                          <th className="pb-2">{translations.dashboard.date}</th>
-                          <th className="pb-2">{translations.dashboard.location}</th>
-                          <th className="pb-2">{translations.dashboard.type}</th>
-                          <th className="pb-2 text-right">{translations.dashboard.cost}</th>
-                          <th className="pb-2 text-right">{translations.dashboard.status}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-slate-600">
-                        {customerJobs.map((job) => (
-                          <tr key={job.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="py-3 font-semibold text-slate-800">{job.scheduled_date}</td>
-                            <td className="py-3 max-w-[180px] truncate text-slate-400">{job.properties?.street_address}</td>
-                            <td className="py-3">
-                              <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
-                                {job.job_type}
-                              </span>
-                            </td>
-                            <td className="py-3 text-right font-mono font-semibold text-slate-700">${job.cost_amount}</td>
-                            <td className="py-3 text-right">
-                              <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wide ${
-                                job.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                              }`}>
-                                {job.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="text-gray-400 text-xs italic text-center py-4">{translations.dashboard.noJobsLogged}</p>
-                )}
-              </section>
+              <div className="space-y-3">
+                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{translations.dashboard.operationalJobLog}</h2>
+                <CustomerJobLogTable jobs={customerJobs} locale={locale} />
+              </div>
 
-              {/* Individual Client Financial Statements Ledger */}
-              <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs">
-                <div className="mb-4 border-b border-gray-100 pb-3">
-                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{translations.dashboard.invoicesAndLedger}</h2>
-                </div>
-                {invoices && invoices.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-gray-200 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                          <th className="pb-2">{translations.dashboard.dueDate}</th>
-                          <th className="pb-2">{translations.dashboard.taxCharge}</th>
-                          <th className="pb-2 text-right">{translations.dashboard.totalOwed}</th>
-                          <th className="pb-2 text-right">{isEs ? 'Pago' : 'Payment'}</th>
-                          <th className="pb-2 text-right">{translations.dashboard.paymentStatus}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-slate-600">
-                        {invoices.map((inv) => (
-                          <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="py-3 text-slate-800 font-semibold">{inv.due_date}</td>
-                            <td className="py-3 font-mono text-slate-400">${inv.tax_amount}</td>
-                            <td className="py-3 text-right font-mono font-bold text-slate-950">${inv.total_amount}</td>
-                            <td className="py-3 text-right">
-                              {inv.status !== 'paid' && inv.stripe_payment_url ? (
-                                <a
-                                  href={inv.stripe_payment_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-700 transition hover:bg-sky-100"
-                                >
-                                  {isEs ? 'Cobrar' : 'Pay Link'}
-                                </a>
-                              ) : (
-                                <span className="text-[10px] uppercase tracking-wide text-slate-300">N/A</span>
-                              )}
-                            </td>
-                            <td className="py-3 text-right">
-                              {inv.status === 'paid' ? (
-                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide">
-                                  {translations.dashboard.paid}
-                                </span>
-                              ) : (
-                                <form
-                                  action={async () => {
-                                    'use server';
-                                    await markInvoiceAsPaid(inv.id, customerId);
-                                  }}
-                                  className="inline-block"
-                                >
-                                  <button
-                                    type="submit"
-                                    title={translations.dashboard.markAsPaid}
-                                    className="px-2 py-0.5 bg-red-50 hover:bg-emerald-50 text-red-700 hover:text-emerald-700 border border-red-200/80 hover:border-emerald-200/80 rounded text-[10px] uppercase font-bold tracking-wide transition cursor-pointer"
-                                  >
-                                    {translations.dashboard.unpaid}
-                                  </button>
-                                </form>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="text-gray-400 text-xs italic text-center py-4">{translations.dashboard.noStatements}</p>
-                )}
-              </section>
+              <CustomerInvoicesTable invoices={invoices || []} customerId={customerId} locale={locale} />
 
             </div>
           </div>

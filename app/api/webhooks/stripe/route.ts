@@ -45,7 +45,7 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
 
   const { data: invoiceRow, error: invoiceError } = await supabaseAdmin
     .from('invoices')
-    .select('id, customer_id, due_date, total_amount, tax_amount, status, stripe_payment_status, customers(first_name, last_name, company_name, email, organization_id)')
+    .select('id, customer_id, due_date, total_amount, tax_amount, status, stripe_payment_status, customers(id, first_name, last_name, company_name, email, organization_id)')
     .eq('id', invoiceId)
     .maybeSingle();
 
@@ -81,6 +81,35 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
   const baseAmount = Math.max(0, Number((totalAmount - taxAmount).toFixed(2)));
 
   if (organizationId) {
+    const enableAutopayIfPossible = session.metadata?.enableAutopayIfPossible === 'true';
+
+    if (enableAutopayIfPossible && customer?.id) {
+      try {
+        const stripeCustomerId = typeof session.customer === 'string' ? session.customer : null;
+        const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : null;
+
+        let paymentMethodId: string | null = null;
+        if (paymentIntentId) {
+          const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+          paymentMethodId = typeof paymentIntent.payment_method === 'string' ? paymentIntent.payment_method : null;
+        }
+
+        if (stripeCustomerId && paymentMethodId) {
+          await supabaseAdmin
+            .from('customers')
+            .update({
+              autopay_enabled: true,
+              autopay_enabled_at: paidAt,
+              stripe_payment_customer_id: stripeCustomerId,
+              stripe_default_payment_method_id: paymentMethodId,
+            })
+            .eq('id', customer.id);
+        }
+      } catch (autopayCaptureError) {
+        console.error('Autopay capture warning from Stripe invoice webhook:', autopayCaptureError);
+      }
+    }
+
     const queueResult = await enqueueXeroCompletedJobInvoice({
       organizationId,
       customerName,

@@ -21,6 +21,9 @@ interface Service {
   id: string;
   name: string;
   base_price: number | null;
+  is_recurring_default?: boolean | null;
+  recurrence_interval_days?: number | null;
+  auto_charge_default?: boolean | null;
 }
 
 interface Truck {
@@ -42,9 +45,33 @@ interface ScheduleJobModalProps {
 
 export default function ScheduleJobModal({ properties, customers, services, trucks, isIndividualAccount = false, locale = 'en' }: ScheduleJobModalProps) {
   const translations = getTranslations(locale);
+  const isEs = locale.toLowerCase().startsWith('es');
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
+  const [selectedServiceId, setSelectedServiceId] = useState('');
+  const [costAmount, setCostAmount] = useState('');
+  const [useServiceDefaults, setUseServiceDefaults] = useState(true);
+  const [overrideIsRecurring, setOverrideIsRecurring] = useState(false);
+  const [overrideRecurrenceIntervalDays, setOverrideRecurrenceIntervalDays] = useState('30');
+  const [overrideAutoChargeEnabled, setOverrideAutoChargeEnabled] = useState(false);
+
+  const selectedService = useMemo(
+    () => services?.find((service) => service.id === selectedServiceId) || null,
+    [services, selectedServiceId]
+  );
+
+  const serviceDefaultIsRecurring = Boolean(selectedService?.is_recurring_default);
+  const serviceDefaultIntervalDays = selectedService?.recurrence_interval_days ? String(selectedService.recurrence_interval_days) : '30';
+  const serviceDefaultAutoCharge = Boolean(selectedService?.auto_charge_default);
+
+  const effectiveIsRecurring = useServiceDefaults ? serviceDefaultIsRecurring : overrideIsRecurring;
+  const effectiveRecurrenceIntervalDays = effectiveIsRecurring
+    ? (useServiceDefaults ? serviceDefaultIntervalDays : overrideRecurrenceIntervalDays)
+    : '';
+  const effectiveAutoChargeEnabled = effectiveIsRecurring
+    ? (useServiceDefaults ? serviceDefaultAutoCharge : overrideAutoChargeEnabled)
+    : false;
 
   const filteredProperties = useMemo(() => {
     if (!selectedCustomerId || !properties) return [];
@@ -60,6 +87,12 @@ export default function ScheduleJobModal({ properties, customers, services, truc
     setIsOpen(false);
     setSelectedCustomerId('');
     setSelectedPropertyId('');
+    setSelectedServiceId('');
+    setCostAmount('');
+    setUseServiceDefaults(true);
+    setOverrideIsRecurring(false);
+    setOverrideRecurrenceIntervalDays('30');
+    setOverrideAutoChargeEnabled(false);
   };
 
   return (
@@ -134,15 +167,95 @@ export default function ScheduleJobModal({ properties, customers, services, truc
                 />
 
                 <select
-                  name="jobType"
+                  name="serviceId"
                   required
+                  value={selectedServiceId}
+                  onChange={(event) => {
+                    const nextServiceId = event.target.value;
+                    setSelectedServiceId(nextServiceId);
+                    const nextService = services?.find((service) => service.id === nextServiceId) || null;
+                    setCostAmount(nextService?.base_price != null ? Number(nextService.base_price).toFixed(2) : '');
+                    setUseServiceDefaults(true);
+                    setOverrideIsRecurring(Boolean(nextService?.is_recurring_default));
+                    setOverrideRecurrenceIntervalDays(nextService?.recurrence_interval_days ? String(nextService.recurrence_interval_days) : '30');
+                    setOverrideAutoChargeEnabled(Boolean(nextService?.auto_charge_default));
+                  }}
                   className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none cursor-pointer text-gray-700"
                 >
                   <option value="">{translations.dashboard.selectService}</option>
                   {services?.map((service) => (
-                    <option key={service.id} value={service.name}>{service.name}</option>
+                    <option key={service.id} value={service.id}>{service.name}</option>
                   ))}
                 </select>
+
+                {selectedService ? (
+                  <div className="rounded-lg border border-gray-200 bg-slate-50 p-3 space-y-2">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={useServiceDefaults}
+                        onChange={(event) => setUseServiceDefaults(event.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-emerald-600"
+                      />
+                      {isEs ? 'Usar configuracion por defecto del servicio' : 'Use service default settings'}
+                    </label>
+
+                    {!useServiceDefaults ? (
+                      <>
+                        <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={overrideIsRecurring}
+                            onChange={(event) => setOverrideIsRecurring(event.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-emerald-600"
+                          />
+                          {isEs ? 'Trabajo recurrente' : 'Recurring job'}
+                        </label>
+
+                        {overrideIsRecurring ? (
+                          <>
+                            <div className="space-y-1">
+                              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                {isEs ? 'Frecuencia (dias)' : 'Frequency (days)'}
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                value={overrideRecurrenceIntervalDays}
+                                onChange={(event) => setOverrideRecurrenceIntervalDays(event.target.value)}
+                                className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700"
+                              />
+                            </div>
+
+                            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                              <input
+                                type="checkbox"
+                                checked={overrideAutoChargeEnabled}
+                                onChange={(event) => setOverrideAutoChargeEnabled(event.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-emerald-600"
+                              />
+                              {isEs ? 'Auto cobro despues del primer pago' : 'Auto-charge after first payment'}
+                            </label>
+                          </>
+                        ) : null}
+                      </>
+                    ) : (
+                      <p className="text-[11px] text-slate-500">
+                        {serviceDefaultIsRecurring
+                          ? `${isEs ? 'Este servicio se programara cada' : 'This service will recur every'} ${serviceDefaultIntervalDays} ${isEs ? 'dias' : 'days'}${serviceDefaultAutoCharge ? ` • ${isEs ? 'Auto cobro activado' : 'Auto-charge enabled'}` : ''}`
+                          : isEs
+                            ? 'Este servicio no es recurrente por defecto.'
+                            : 'This service is non-recurring by default.'}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+
+                <input type="hidden" name="jobType" value={selectedService?.name || ''} />
+                <input type="hidden" name="isRecurring" value={effectiveIsRecurring ? 'true' : 'false'} />
+                <input type="hidden" name="recurrenceIntervalDays" value={effectiveRecurrenceIntervalDays} />
+                <input type="hidden" name="autoChargeEnabled" value={effectiveAutoChargeEnabled ? 'true' : 'false'} />
 
                 {!isIndividualAccount && (
                   <select
@@ -162,6 +275,8 @@ export default function ScheduleJobModal({ properties, customers, services, truc
                   type="number"
                   step="0.01"
                   name="costAmount"
+                  value={costAmount}
+                  onChange={(event) => setCostAmount(event.target.value)}
                   placeholder={translations.dashboard.price}
                   required
                   className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700"

@@ -234,10 +234,16 @@ export async function createService({
   name,
   description,
   basePrice,
+  isRecurringDefault = false,
+  recurrenceIntervalDays,
+  autoChargeDefault = false,
 }: {
   name: string;
   description?: string;
   basePrice: number;
+  isRecurringDefault?: boolean;
+  recurrenceIntervalDays?: number | null;
+  autoChargeDefault?: boolean;
 }) {
   try {
     const normalizedName = name.trim().replace(/\s+/g, ' ');
@@ -249,6 +255,16 @@ export async function createService({
 
     if (!Number.isFinite(basePrice) || basePrice < 0) {
       return { error: 'Base price must be a valid non-negative number.' };
+    }
+
+    const normalizedRecurrenceInterval = isRecurringDefault
+      ? Number.isFinite(recurrenceIntervalDays) && Number(recurrenceIntervalDays) > 0
+        ? Math.floor(Number(recurrenceIntervalDays))
+        : null
+      : null;
+
+    if (isRecurringDefault && !normalizedRecurrenceInterval) {
+      return { error: 'Recurring services require a valid recurrence interval.' };
     }
 
     const supabase = await createClient();
@@ -286,10 +302,13 @@ export async function createService({
           name: normalizedName,
           description: normalizedDescription,
           base_price: basePrice,
+          is_recurring_default: isRecurringDefault,
+          recurrence_interval_days: normalizedRecurrenceInterval,
+          auto_charge_default: isRecurringDefault ? Boolean(autoChargeDefault) : false,
         })
         .eq('id', existingService.id)
         .eq('organization_id', org.id)
-        .select('id, name, description, base_price')
+        .select('id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
         .single();
 
       if (restoreError) return { error: restoreError.message };
@@ -306,9 +325,12 @@ export async function createService({
           name: normalizedName,
           description: normalizedDescription,
           base_price: basePrice,
+          is_recurring_default: isRecurringDefault,
+          recurrence_interval_days: normalizedRecurrenceInterval,
+          auto_charge_default: isRecurringDefault ? Boolean(autoChargeDefault) : false,
         }
       ])
-      .select('id, name, description, base_price')
+      .select('id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
       .single();
 
     if (error) return { error: error.message };
