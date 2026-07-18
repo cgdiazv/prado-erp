@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
 import { Resend } from 'resend';
 import { render } from '@react-email/render';
-import { createClient as createSupabaseJsClient } from '@supabase/supabase-js';
 import EstimateEmail from '@/emails/estimate-email';
 import InvoiceEmail from '@/emails/invoice-email';
 import InviteMemberEmail from '@/emails/invite-member-email';
@@ -14,6 +13,7 @@ import JobCompletedEmail from '@/emails/job-completed-email';
 import { enqueueXeroCompletedJobInvoice, enqueueXeroExpenseBill } from '@/app/actions/xeroActions';
 import { syncInvoiceToQBO } from '@/app/actions/qboActions';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
+import { findAuthUserIndexByEmail, findAuthUserIndexByUserIds, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 import Stripe from 'stripe';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
@@ -1881,7 +1881,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     let inviteToken: string | null = null;
-    const normalizedInviteEmail = payload.email.toLowerCase().trim();
+    const normalizedInviteEmail = normalizeAuthEmail(payload.email);
 
     if (!user) {
       return { success: false, error: 'Unauthorized.' };
@@ -1893,28 +1893,32 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
       return { success: false, error: limitCheck.message || 'Plan limit reached.' };
     }
 
-    // 2. Look up user by email in auth.users
+    // 2. Look up user by email via app-owned auth index, with one-time bootstrap fallback.
     const supabaseAdmin = createAdminClient();
-    const authSchemaAdmin = createSupabaseJsClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        db: { schema: 'auth' },
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
-
-    const { data: authUserRecord, error: authUserLookupError } = await authSchemaAdmin
-      .from('users')
-      .select('id, email')
-      .eq('email', normalizedInviteEmail)
-      .maybeSingle();
+    const { data: indexedAuthUser, error: authUserLookupError } = await findAuthUserIndexByEmail(supabaseAdmin, normalizedInviteEmail);
 
     if (authUserLookupError) {
       return { success: false, error: authUserLookupError.message };
+    }
+
+    let authUserRecord: { id: string; email: string } | null = indexedAuthUser
+      ? { id: indexedAuthUser.user_id, email: indexedAuthUser.email }
+      : null;
+
+    if (!authUserRecord) {
+      const { data: authUsersPage, error: bootstrapLookupError } = await supabaseAdmin.auth.admin.listUsers();
+      if (bootstrapLookupError) {
+        return { success: false, error: bootstrapLookupError.message };
+      }
+
+      const bootstrapUser = authUsersPage?.users?.find(
+        (candidate) => candidate.email?.toLowerCase().trim() === normalizedInviteEmail
+      ) || null;
+
+      if (bootstrapUser?.id && bootstrapUser.email) {
+        await upsertAuthUserIndex(supabaseAdmin, bootstrapUser);
+        authUserRecord = { id: bootstrapUser.id, email: bootstrapUser.email };
+      }
     }
 
     const hasExistingAuthUser = Boolean(authUserRecord?.id);
@@ -1952,7 +1956,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
     } else {
       // User doesn't have an account yet - create one in auth.users and create a pending invitation
       const tempPassword = `Prado!${randomUUID()}`;
-      const { error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+      const { data: createdUserResult, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
         email: normalizedInviteEmail,
         password: tempPassword,
         email_confirm: true,
@@ -1965,6 +1969,10 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
 
       if (createUserError) {
         return { success: false, error: createUserError.message };
+      }
+
+      if (createdUserResult.user) {
+        await upsertAuthUserIndex(supabaseAdmin, createdUserResult.user);
       }
 
       inviteToken = randomUUID();
@@ -2165,31 +2173,13 @@ export async function getTeamMembers(organizationId: string) {
 
     // Resolve auth.users and profile metadata for accepted members.
     const memberUserIds = (orgUsers || []).map((ou) => ou.user_id);
+    const supabaseAdmin = createAdminClient();
 
-    const authSchemaAdmin = createSupabaseJsClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        db: { schema: 'auth' },
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
-
-    const { data: authUsers, error: authUsersError } = memberUserIds.length > 0
-      ? await authSchemaAdmin
-          .from('users')
-          .select('id, email, last_sign_in_at')
-          .in('id', memberUserIds)
-      : { data: [] as any[], error: null as any };
+    const { data: authUsers, error: authUsersError } = await findAuthUserIndexByUserIds(supabaseAdmin, memberUserIds);
 
     if (authUsersError) {
       return { success: false, members: [], error: authUsersError.message };
     }
-
-    const supabaseAdmin = createAdminClient();
 
     const { data: userProfiles, error: userProfilesError } = memberUserIds.length > 0
       ? await supabaseAdmin
@@ -2202,7 +2192,7 @@ export async function getTeamMembers(organizationId: string) {
       return { success: false, members: [], error: userProfilesError.message };
     }
 
-    const authUserMap = new Map((authUsers || []).map((u: any) => [u.id, u]));
+    const authUserMap = new Map((authUsers || []).map((u: any) => [u.user_id, u]));
     const profileMap = new Map((userProfiles || []).map((p: any) => [p.user_id, p]));
 
     const acceptedMembers = orgUsers?.map((ou) => {

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { findAuthUserIndexByEmail, normalizeAuthEmail } from '@/lib/userAuthIndex';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -9,12 +10,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ available: true });
   }
 
-  // Initialize the admin client targeting the protected 'auth' schema explicitly
+  // Initialize the admin client for auth lookups via the supported Admin API.
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      db: { schema: 'auth' }, // ← Switches PostgREST focus to the internal auth schema
       auth: {
         autoRefreshToken: false,
         persistSession: false,
@@ -23,12 +23,7 @@ export async function GET(request: Request) {
   );
 
   try {
-    // Now you can cleanly query the internal 'users' table just like a normal table
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('email', email.toLowerCase().trim())
-      .maybeSingle();
+    const { data, error } = await findAuthUserIndexByEmail(supabaseAdmin, normalizeAuthEmail(email));
 
     if (error) {
       // Fallback gracefully to let registration proceed if the database check hits an issue

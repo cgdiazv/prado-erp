@@ -2,7 +2,7 @@
 
 import { createClient, createAdminClient } from '@/lib/supabaseServer'; 
 import { Resend } from 'resend';
-import { createClient as createSupabaseJsClient } from '@supabase/supabase-js';
+import { findAuthUserIndexByEmail, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string;
@@ -20,6 +20,11 @@ export async function login(formData: FormData) {
   // If email confirmation is turned on in Supabase, the user is created but data.session will be null.
   if (!data?.session) {
     return { error: 'Please check your email and confirm your account before logging in.' };
+  }
+
+  if (data.user) {
+    const supabaseAdmin = createAdminClient();
+    await upsertAuthUserIndex(supabaseAdmin, data.user);
   }
 
   // Return a clear indicator so the client knows login succeeded
@@ -59,6 +64,8 @@ export async function signup(formData: FormData) {
     }
 
     const userId = authData.user.id;
+
+    await upsertAuthUserIndex(supabaseAdmin, authData.user);
 
     // 2. Determine signup type: invite vs regular
     let ownerOrgId = inviteOrgId; // If invite signup, we'll use the inviting org
@@ -199,34 +206,45 @@ export async function acceptTeamInvitation(formData: FormData) {
       return { error: 'Invalid or expired invitation link.' };
     }
 
-    const authSchemaAdmin = createSupabaseJsClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        db: { schema: 'auth' },
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
-
-    const { data: existingUserRecord, error: existingUserLookupError } = await authSchemaAdmin
-      .from('users')
-      .select('id, email, raw_user_meta_data')
-      .eq('email', invite.email.toLowerCase().trim())
-      .maybeSingle();
+    const normalizedInviteEmail = normalizeAuthEmail(invite.email);
+    const { data: indexedUser, error: existingUserLookupError } = await findAuthUserIndexByEmail(supabaseAdmin, normalizedInviteEmail);
 
     if (existingUserLookupError) {
       return { error: existingUserLookupError.message };
     }
 
-    const existingUser = existingUserRecord || null;
+    let existingUser = indexedUser
+      ? {
+          id: indexedUser.user_id,
+          email: indexedUser.email,
+          user_metadata: indexedUser.user_metadata || {},
+        }
+      : null;
+
+    if (!existingUser) {
+      const { data: authUsersPage, error: bootstrapLookupError } = await supabaseAdmin.auth.admin.listUsers();
+      if (bootstrapLookupError) {
+        return { error: bootstrapLookupError.message };
+      }
+
+      const bootstrapUser = authUsersPage?.users?.find(
+        (candidate) => candidate.email?.toLowerCase().trim() === normalizedInviteEmail
+      ) || null;
+
+      if (bootstrapUser?.id && bootstrapUser.email) {
+        await upsertAuthUserIndex(supabaseAdmin, bootstrapUser);
+        existingUser = {
+          id: bootstrapUser.id,
+          email: bootstrapUser.email,
+          user_metadata: bootstrapUser.user_metadata || {},
+        };
+      }
+    }
 
     let authUserId = existingUser?.id || null;
 
     if (existingUser) {
-      const existingMetadata = (existingUser as any).raw_user_meta_data || {};
+      const existingMetadata = existingUser.user_metadata || {};
       const { error: updateUserError } = await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
         password,
         email_confirm: true,
@@ -247,6 +265,24 @@ export async function acceptTeamInvitation(formData: FormData) {
       if (updateUserError) {
         return { error: updateUserError.message };
       }
+
+      await upsertAuthUserIndex(supabaseAdmin, {
+        id: existingUser.id,
+        email: existingUser.email,
+        last_sign_in_at: null,
+        user_metadata: {
+          ...existingMetadata,
+          invited_pending: false,
+          needs_profile_completion:
+            typeof existingMetadata.needs_profile_completion === 'boolean'
+              ? existingMetadata.needs_profile_completion
+              : true,
+          profile_completed:
+            typeof existingMetadata.profile_completed === 'boolean'
+              ? existingMetadata.profile_completed
+              : false,
+        },
+      });
     } else {
       const { data: createdUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
         email: invite.email,
@@ -264,6 +300,7 @@ export async function acceptTeamInvitation(formData: FormData) {
       }
 
       authUserId = createdUser.user.id;
+      await upsertAuthUserIndex(supabaseAdmin, createdUser.user);
     }
 
     if (!authUserId) {
