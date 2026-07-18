@@ -89,7 +89,7 @@ export default async function ImportExportPage({
   const { organization: org } = await getUserOrganization(user.id);
 
   if (!org) {
-    redirect('/signup');
+    redirect(`/${locale}/auth/access-pending`);
   }
 
   const initial = org.name ? org.name.charAt(0) : 'C';

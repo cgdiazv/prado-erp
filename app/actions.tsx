@@ -1941,13 +1941,13 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
       // Insert the team member record
       const { error: insertError } = await supabase
         .from('organization_users')
-        .insert([
+        .upsert([
           {
             organization_id: payload.organizationId,
             user_id: authUser.id,
             role: payload.role,
           }
-        ]);
+        ], { onConflict: 'organization_id,user_id' });
 
       if (insertError) {
         console.error('Error adding team member:', insertError);

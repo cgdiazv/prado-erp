@@ -39,7 +39,7 @@ export default async function InvoicesLedgerPage({
 
   const { organization: org } = await getUserOrganization(user.id);
 
-  if (!org) redirect('/signup');
+  if (!org) redirect(`/${locale}/auth/access-pending`);
 
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
   if (trial.isExpired) {

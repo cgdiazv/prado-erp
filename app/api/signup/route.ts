@@ -1,9 +1,11 @@
 import { createClient, createAdminClient } from '@/lib/supabaseServer';
 import { NextResponse } from 'next/server';
+import { normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 
 export async function POST(request: Request) {
   try {
     const { email, password, companyName } = await request.json();
+    const normalizedEmail = normalizeAuthEmail(email || '');
 
     if (!email || !password || !companyName) {
       return NextResponse.json({ error: 'All fields are required.' }, { status: 400 });
@@ -23,6 +25,7 @@ export async function POST(request: Request) {
     }
 
     const userId = authData.user.id;
+    await upsertAuthUserIndex(supabaseAdmin, authData.user);
 
     // 2. Create their own organization
     const { data: orgData, error: orgError } = await supabase
@@ -39,7 +42,7 @@ export async function POST(request: Request) {
     const { data: pendingInvites } = await supabase
       .from('organization_invitations')
       .select('organization_id, role')
-      .eq('email', email)
+      .eq('email', normalizedEmail)
       .is('accepted_at', null);
 
     if (pendingInvites && pendingInvites.length > 0) {
@@ -50,15 +53,15 @@ export async function POST(request: Request) {
         role: invite.role,
       }));
 
-      await supabase
+      await supabaseAdmin
         .from('organization_users')
-        .insert(orgUserInserts);
+        .upsert(orgUserInserts, { onConflict: 'organization_id,user_id' });
 
       // Mark invitations as accepted
       await supabase
         .from('organization_invitations')
         .update({ accepted_at: new Date().toISOString() })
-        .eq('email', email)
+        .eq('email', normalizedEmail)
         .is('accepted_at', null);
     }
 

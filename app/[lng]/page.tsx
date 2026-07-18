@@ -53,7 +53,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
     if (org) {
       redirect('/dashboard');
     } else {
-      redirect('/signup');
+      redirect(`/${lng}/auth/access-pending`);
     }
   }
 

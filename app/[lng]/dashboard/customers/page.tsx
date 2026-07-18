@@ -22,7 +22,7 @@ export default async function CustomersPage({
   if (!user) redirect('/login');
 
   const { organization: org } = await getUserOrganization(user.id);
-  if (!org) redirect('/signup');
+  if (!org) redirect(`/${locale}/auth/access-pending`);
 
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);

@@ -48,7 +48,7 @@ export default async function MarketingHomePage() {
     if (org) {
       redirect('/dashboard');
     } else {
-      redirect('/signup');
+      redirect('/en/auth/access-pending');
     }
   }
 

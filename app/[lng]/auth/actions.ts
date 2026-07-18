@@ -34,6 +34,7 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
   try {
     const email = formData.get('email') as string;
+    const normalizedEmail = normalizeAuthEmail(email);
     const password = formData.get('password') as string;
     const companyName = formData.get('companyName') as string;
     const intendedPlan = formData.get('intendedPlan') as string; // 'trial' | 'individual' | 'growth' | 'enterprise'
@@ -104,7 +105,7 @@ export async function signup(formData: FormData) {
     const { data: pendingInvites } = await supabase
       .from('organization_invitations')
       .select('organization_id, role')
-      .eq('email', email)
+      .eq('email', normalizedEmail)
       .is('accepted_at', null);
 
     if (pendingInvites && pendingInvites.length > 0) {
@@ -117,13 +118,13 @@ export async function signup(formData: FormData) {
 
       await supabaseAdmin
         .from('organization_users')
-        .insert(orgUserInserts);
+        .upsert(orgUserInserts, { onConflict: 'organization_id,user_id' });
 
       // Mark invitations as accepted
       await supabase
         .from('organization_invitations')
         .update({ accepted_at: new Date().toISOString() })
-        .eq('email', email)
+        .eq('email', normalizedEmail)
         .is('accepted_at', null);
       
       console.log(`User ${email} added to ${pendingInvites.length} organization(s)`);
@@ -307,27 +308,21 @@ export async function acceptTeamInvitation(formData: FormData) {
       return { error: 'Failed to resolve authentication user.' };
     }
 
-    const { data: existingMembership } = await supabaseAdmin
+    const { error: membershipError } = await supabaseAdmin
       .from('organization_users')
-      .select('id')
-      .eq('organization_id', invite.organization_id)
-      .eq('user_id', authUserId)
-      .maybeSingle();
-
-    if (!existingMembership) {
-      const { error: membershipError } = await supabaseAdmin
-        .from('organization_users')
-        .insert([
+      .upsert(
+        [
           {
             organization_id: invite.organization_id,
             user_id: authUserId,
             role: invite.role,
           },
-        ]);
+        ],
+        { onConflict: 'organization_id,user_id' }
+      );
 
-      if (membershipError) {
-        return { error: membershipError.message };
-      }
+    if (membershipError) {
+      return { error: membershipError.message };
     }
 
     const { error: acceptError } = await supabaseAdmin
@@ -339,6 +334,14 @@ export async function acceptTeamInvitation(formData: FormData) {
     if (acceptError) {
       return { error: acceptError.message };
     }
+
+    // Keep invitation state unambiguous after acceptance retries.
+    await supabaseAdmin
+      .from('organization_invitations')
+      .update({ accepted_at: new Date().toISOString() })
+      .eq('organization_id', invite.organization_id)
+      .eq('email', normalizedInviteEmail)
+      .is('accepted_at', null);
 
     return { success: true, email: invite.email };
   } catch (err: unknown) {

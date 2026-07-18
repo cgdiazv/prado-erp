@@ -26,7 +26,7 @@ export default async function DashboardProfileSettingsPage({
 
   const { organization: org } = await getUserOrganization(user.id);
   if (!org) {
-    redirect('/signup');
+    redirect(`/${locale}/auth/access-pending`);
   }
 
   const { data: profile } = await supabase

@@ -110,7 +110,7 @@ export default async function DashboardHome({
   
   const { organization: org } = await getUserOrganization(user.id);
 
-  if (!org) redirect('/signup');
+  if (!org) redirect(`/${locale}/auth/access-pending`);
   const isIndividualAccount = org.subscription_status === 'individual';
 
   // Verify trial lifecycle

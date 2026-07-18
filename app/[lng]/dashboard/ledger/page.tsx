@@ -23,7 +23,7 @@ export default async function LedgerPage({
   if (!user) redirect('/login');
 
   const { organization: org } = await getUserOrganization(user.id);
-  if (!org) redirect('/signup');
+  if (!org) redirect(`/${locale}/auth/access-pending`);
 
   // 1. SECURITY TIER GUARD: Allow 'enterprise' and active 'trial' profiles, block 'individual'
 if (org.subscription_status === 'individual') {

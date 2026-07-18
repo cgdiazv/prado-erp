@@ -43,37 +43,47 @@ function normalizeOrganizationRow(row: any): UserOrganization {
   } as UserOrganization;
 }
 
+async function selectFirstOwnedOrganization(supabase: any, userId: string, select: string) {
+  const { data, error } = await supabase
+    .from('organizations')
+    .select(select)
+    .eq('owner_id', userId)
+    .limit(1);
+
+  const row = Array.isArray(data) ? data[0] || null : null;
+  return { row, error };
+}
+
+async function selectFirstMembership(supabase: any, userId: string, select: string) {
+  const { data, error } = await supabase
+    .from('organization_users')
+    .select(select)
+    .eq('user_id', userId)
+    .limit(1);
+
+  const row = Array.isArray(data) ? data[0] || null : null;
+  return { row, error };
+}
+
 export async function getUserOrganization(userId: string): Promise<UserOrganizationResult> {
   const supabase = await createClient();
 
-  const withStripeOwned = await supabase
-    .from('organizations')
-    .select(ORG_SELECT_WITH_STRIPE)
-    .eq('owner_id', userId)
-    .maybeSingle();
+  const withStripeOwned = await selectFirstOwnedOrganization(supabase, userId, ORG_SELECT_WITH_STRIPE);
 
-  let ownedOrg: any = withStripeOwned.data;
+  let ownedOrg: any = withStripeOwned.row;
   let ownedOrgError: any = withStripeOwned.error;
 
   if (ownedOrgError) {
-    const withMaxOwned = await supabase
-      .from('organizations')
-      .select(ORG_SELECT_WITH_MAX)
-      .eq('owner_id', userId)
-      .maybeSingle();
+    const withMaxOwned = await selectFirstOwnedOrganization(supabase, userId, ORG_SELECT_WITH_MAX);
 
-    ownedOrg = withMaxOwned.data;
+    ownedOrg = withMaxOwned.row;
     ownedOrgError = withMaxOwned.error;
   }
 
   if (ownedOrgError) {
-    const fallbackOwned = await supabase
-      .from('organizations')
-      .select(ORG_SELECT_LEGACY)
-      .eq('owner_id', userId)
-      .maybeSingle();
+    const fallbackOwned = await selectFirstOwnedOrganization(supabase, userId, ORG_SELECT_LEGACY);
 
-    ownedOrg = fallbackOwned.data;
+    ownedOrg = fallbackOwned.row;
     ownedOrgError = fallbackOwned.error;
   }
 
@@ -81,38 +91,39 @@ export async function getUserOrganization(userId: string): Promise<UserOrganizat
     return { organization: normalizeOrganizationRow(ownedOrg), role: 'owner' };
   }
 
-  const withStripeMembership = await supabase
-    .from('organization_users')
-    .select(`role, organizations(${ORG_SELECT_WITH_STRIPE})`)
-    .eq('user_id', userId)
-    .maybeSingle();
+  const withStripeMembership = await selectFirstMembership(
+    supabase,
+    userId,
+    `role, organizations(${ORG_SELECT_WITH_STRIPE})`
+  );
 
-  let membership: any = withStripeMembership.data;
+  let membership: any = withStripeMembership.row;
   let membershipError: any = withStripeMembership.error;
 
   if (membershipError) {
-    const withMaxMembership = await supabase
-      .from('organization_users')
-      .select(`role, organizations(${ORG_SELECT_WITH_MAX})`)
-      .eq('user_id', userId)
-      .maybeSingle();
+    const withMaxMembership = await selectFirstMembership(
+      supabase,
+      userId,
+      `role, organizations(${ORG_SELECT_WITH_MAX})`
+    );
 
-    membership = withMaxMembership.data;
+    membership = withMaxMembership.row;
     membershipError = withMaxMembership.error;
   }
 
   if (membershipError) {
-    const fallbackMembership = await supabase
-      .from('organization_users')
-      .select(`role, organizations(${ORG_SELECT_LEGACY})`)
-      .eq('user_id', userId)
-      .maybeSingle();
+    const fallbackMembership = await selectFirstMembership(
+      supabase,
+      userId,
+      `role, organizations(${ORG_SELECT_LEGACY})`
+    );
 
-    membership = fallbackMembership.data;
+    membership = fallbackMembership.row;
     membershipError = fallbackMembership.error;
   }
 
-  const organization = (membership as any)?.organizations || null;
+  const rawOrganization = (membership as any)?.organizations || null;
+  const organization = Array.isArray(rawOrganization) ? rawOrganization[0] || null : rawOrganization;
   const role = (membership as any)?.role || null;
 
   return { organization: organization ? normalizeOrganizationRow(organization) : null, role };
