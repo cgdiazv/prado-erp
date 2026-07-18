@@ -45,6 +45,12 @@ export async function signup(formData: FormData) {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          needs_profile_completion: true,
+          profile_completed: false,
+        },
+      },
     });
 
     if (authError || !authData.user) {
@@ -207,7 +213,7 @@ export async function acceptTeamInvitation(formData: FormData) {
 
     const { data: existingUserRecord, error: existingUserLookupError } = await authSchemaAdmin
       .from('users')
-      .select('id, email')
+      .select('id, email, raw_user_meta_data')
       .eq('email', invite.email.toLowerCase().trim())
       .maybeSingle();
 
@@ -220,9 +226,22 @@ export async function acceptTeamInvitation(formData: FormData) {
     let authUserId = existingUser?.id || null;
 
     if (existingUser) {
+      const existingMetadata = (existingUser as any).raw_user_meta_data || {};
       const { error: updateUserError } = await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
         password,
         email_confirm: true,
+        user_metadata: {
+          ...existingMetadata,
+          invited_pending: false,
+          needs_profile_completion:
+            typeof existingMetadata.needs_profile_completion === 'boolean'
+              ? existingMetadata.needs_profile_completion
+              : true,
+          profile_completed:
+            typeof existingMetadata.profile_completed === 'boolean'
+              ? existingMetadata.profile_completed
+              : false,
+        },
       });
 
       if (updateUserError) {
@@ -233,6 +252,11 @@ export async function acceptTeamInvitation(formData: FormData) {
         email: invite.email,
         password,
         email_confirm: true,
+        user_metadata: {
+          invited_pending: false,
+          needs_profile_completion: true,
+          profile_completed: false,
+        },
       });
 
       if (createUserError || !createdUser.user) {

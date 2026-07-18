@@ -156,7 +156,7 @@ export default function ProfileSettingsForm({
                 type="text"
                 value={phone}
                 onChange={(event) => setPhone(event.target.value)}
-                placeholder={isEs ? 'Telefono (opcional)' : 'Phone (optional)'}
+                placeholder={isEs ? 'Telefono' : 'Phone'}
                 className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
               />
             </div>

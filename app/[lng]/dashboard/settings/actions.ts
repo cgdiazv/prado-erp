@@ -273,6 +273,18 @@ export async function upsertUserProfile(formData: FormData) {
     return { error: error.message };
   }
 
+  const { error: authUpdateError } = await supabase.auth.updateUser({
+    data: {
+      needs_profile_completion: false,
+      profile_completed: true,
+      invited_pending: false,
+    },
+  });
+
+  if (authUpdateError) {
+    return { error: authUpdateError.message };
+  }
+
   revalidatePath('/dashboard');
   revalidatePath(`/${locale}/dashboard`);
   revalidatePath('/dashboard/profile-settings');

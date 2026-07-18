@@ -100,17 +100,11 @@ export default async function DashboardHome({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('first_name, last_name')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  const needsProfileCompletion =
+    user.user_metadata?.needs_profile_completion === true &&
+    user.user_metadata?.profile_completed !== true;
 
-  const hasCompletedProfile = Boolean(
-    profile?.first_name?.trim() && profile?.last_name?.trim()
-  );
-
-  if (!hasCompletedProfile) {
+  if (needsProfileCompletion) {
     redirect(`/${locale}/dashboard/profile-settings`);
   }
   

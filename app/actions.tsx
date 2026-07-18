@@ -1956,7 +1956,11 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
         email: normalizedInviteEmail,
         password: tempPassword,
         email_confirm: true,
-        user_metadata: { invited_pending: true },
+        user_metadata: {
+          invited_pending: true,
+          needs_profile_completion: true,
+          profile_completed: false,
+        },
       });
 
       if (createUserError) {
