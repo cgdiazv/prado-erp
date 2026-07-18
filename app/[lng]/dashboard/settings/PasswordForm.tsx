@@ -39,16 +39,16 @@ export default function PasswordForm({ locale = 'en' }: PasswordFormProps) {
   }
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
-      <div>
+    <div className="pt-6 md:pt-8 space-y-6">
+      <div className="px-6 md:px-8">
         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{translations.dashboard.securityCredentials}</h3>
         <p className="text-xs text-slate-400">{translations.dashboard.securityCredentialsDescription}</p>
       </div>
 
       <form onSubmit={handlePasswordSubmit} className="space-y-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 overflow-hidden">
+        <div className="border-y border-slate-200">
           <div className="divide-y divide-slate-200">
-            <div className="px-5 py-4 flex items-start justify-between gap-4">
+            <div className="px-6 md:px-8 py-4 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.newPassword}</p>
                 <p className="mt-1 text-sm font-medium text-slate-400 italic">••••••••</p>
@@ -73,7 +73,7 @@ export default function PasswordForm({ locale = 'en' }: PasswordFormProps) {
               </div>
             </div>
 
-            <div className={editingPassword ? 'px-5 py-4 space-y-4' : 'hidden'}>
+            <div className={editingPassword ? 'px-6 md:px-8 py-4 space-y-4' : 'hidden'}>
               {errorMsg && (
                 <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg font-medium">
                   {errorMsg}

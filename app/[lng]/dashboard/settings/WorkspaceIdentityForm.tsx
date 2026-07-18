@@ -143,27 +143,27 @@ export default function WorkspaceIdentityForm({
   }
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
-      <div>
+    <div className="pt-6 md:pt-8 space-y-6">
+      <div className="px-6 md:px-8">
         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{translations.dashboard.workspaceIdentity}</h3>
         <p className="text-xs text-slate-400">{translations.dashboard.workspaceIdentityDescription}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {errorMsg && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg font-medium">
+          <div className="mx-6 md:mx-8 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg font-medium">
             {errorMsg}
           </div>
         )}
         {successMsg && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs rounded-lg font-medium">
+          <div className="mx-6 md:mx-8 p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs rounded-lg font-medium">
             {successMsg}
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 overflow-hidden">
+        <div className="border-y border-slate-200">
           <div className="divide-y divide-slate-200">
-            <div className="px-5 py-4">
+            <div className="px-6 md:px-8 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.companyName}</p>
@@ -172,7 +172,7 @@ export default function WorkspaceIdentityForm({
               </div>
             </div>
 
-            <div className="px-5 py-4">
+            <div className="px-6 md:px-8 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.systemAccountEmail}</p>
@@ -181,7 +181,7 @@ export default function WorkspaceIdentityForm({
               </div>
             </div>
 
-            <div className="px-5 py-4">
+            <div className="px-6 md:px-8 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Slogan / Short Description</p>
@@ -203,7 +203,7 @@ export default function WorkspaceIdentityForm({
               </div>
             </div>
 
-            <div className="px-5 py-4">
+            <div className="px-6 md:px-8 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.organizationLogo}</p>
@@ -250,7 +250,7 @@ export default function WorkspaceIdentityForm({
               </div>
             </div>
 
-            <div className="px-5 py-4">
+            <div className="px-6 md:px-8 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.phone}</p>
@@ -271,7 +271,7 @@ export default function WorkspaceIdentityForm({
               </div>
             </div>
 
-            <div className="px-5 py-4">
+            <div className="px-6 md:px-8 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.streetAddress}</p>
@@ -290,7 +290,7 @@ export default function WorkspaceIdentityForm({
               </div>
             </div>
 
-            <div className="px-5 py-4">
+            <div className="px-6 md:px-8 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.city}</p>
@@ -311,7 +311,7 @@ export default function WorkspaceIdentityForm({
               </div>
             </div>
 
-            <div className="px-5 py-4">
+            <div className="px-6 md:px-8 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.state}</p>
@@ -339,7 +339,7 @@ export default function WorkspaceIdentityForm({
               </div>
             </div>
 
-            <div className="px-5 py-4">
+            <div className="px-6 md:px-8 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.zip}</p>
@@ -361,7 +361,6 @@ export default function WorkspaceIdentityForm({
             </div>
           </div>
         </div>
-
       </form>
     </div>
   );
