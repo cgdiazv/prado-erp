@@ -294,6 +294,52 @@ export default async function DashboardHome({
     },
   ];
 
+  const operationsQuickActions = (
+    <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+      <Link
+        href={`/${locale}/dashboard/estimates`}
+        className="cursor-pointer rounded-lg border border-gray-200 bg-white h-20 p-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 flex flex-col items-center justify-center gap-2 text-center sm:h-auto sm:flex-row sm:justify-center sm:px-3 sm:py-1.5"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-7 w-7 text-emerald-700 sm:h-5 sm:w-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12h6m-6 3h3.75M3 16.5V7.5A2.25 2.25 0 015.25 5.25h5.379a1.125 1.125 0 01.795.33l5.121 5.121a1.125 1.125 0 01.33.795V16.5A2.25 2.25 0 0114.625 18.75h-9.375A2.25 2.25 0 013 16.5z" />
+        </svg>
+        <span>{t.actionManageEstimates}</span>
+      </Link>
+
+      <Link
+        href={`/${locale}/dashboard/schedule`}
+        className="cursor-pointer rounded-lg border border-gray-200 bg-white h-20 p-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 flex flex-col items-center justify-center gap-2 text-center sm:h-auto sm:flex-row sm:justify-center sm:px-3 sm:py-1.5"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-7 w-7 text-emerald-700 sm:h-5 sm:w-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+        </svg>
+        <span>{t.actionScheduleJob}</span>
+      </Link>
+
+      <Link
+        href={`/${locale}/dashboard/invoices-ledger`}
+        className="cursor-pointer rounded-lg border border-gray-200 bg-white h-20 p-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 flex flex-col items-center justify-center gap-2 text-center sm:h-auto sm:flex-row sm:justify-center sm:px-3 sm:py-1.5"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-7 w-7 text-emerald-700 sm:h-5 sm:w-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M7.5 4.5h9A1.5 1.5 0 0118 6v12a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 016 18V6a1.5 1.5 0 011.5-1.5z" />
+        </svg>
+        <span>{t.actionManageInvoices}</span>
+      </Link>
+
+      {!isIndividualAccount && (
+        <Link
+          href={`/${locale}/dashboard/ledger`}
+          className="cursor-pointer rounded-lg border border-gray-200 bg-white h-20 p-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 flex flex-col items-center justify-center gap-2 text-center sm:h-auto sm:flex-row sm:justify-center sm:px-3 sm:py-1.5"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-7 w-7 text-emerald-700 sm:h-5 sm:w-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{t.actionTrackExpenses}</span>
+        </Link>
+      )}
+    </div>
+  );
+
   const operationsPanel = (
     <section className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       <div className="lg:col-span-5 bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
@@ -350,29 +396,13 @@ export default async function DashboardHome({
               <p className="text-xs text-slate-500 font-medium">{translations.dashboard.metricsSubtitle}</p>
             </div>
 
-            <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-0 sm:mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <DashboardViewToggle
                 activeView={activeView}
                 operationsLabel={t.modeOperations}
                 financialsLabel={t.modeFinancials}
               />
-
-              <div className="flex flex-wrap gap-2 sm:justify-end sm:ml-auto">
-                <Link href={`/${locale}/dashboard/estimates`} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-                  {t.actionManageEstimates}
-                </Link>
-                <Link href={`/${locale}/dashboard/schedule`} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-                  {t.actionScheduleJob}
-                </Link>
-                <Link href={`/${locale}/dashboard/invoices-ledger`} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-                  {t.actionManageInvoices}
-                </Link>
-                {!isIndividualAccount && (
-                  <Link href={`/${locale}/dashboard/ledger`} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-                    {t.actionTrackExpenses}
-                  </Link>
-                )}
-              </div>
+              {operationsQuickActions}
             </div>
 
             {activeView === 'operations' ? (

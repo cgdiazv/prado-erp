@@ -106,7 +106,7 @@ export default function DashboardNavbar({ userInitials = "C", organizationLogoUr
             </button>
 
             {showNotifications ? (
-              <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-gray-200 bg-white shadow-xl">
+              <div className="fixed left-1/2 top-16 z-50 w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 rounded-xl border border-gray-200 bg-white shadow-xl md:absolute md:right-0 md:left-auto md:top-10 md:w-80 md:max-w-none md:translate-x-0">
                 <div className="border-b border-gray-200 px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                     {isEs ? 'Notificaciones' : 'Notifications'}

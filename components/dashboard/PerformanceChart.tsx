@@ -159,13 +159,26 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
           <p className="text-xs text-slate-400 font-medium">{translations.dashboard.financialBreakdownDesc}</p>
         </div>
         
-        {/* Period Filter Buttons */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        {/* Mobile dropdown */}
+        <select
+          value={periodFilter}
+          onChange={(event) => setPeriodFilter(event.target.value as PeriodFilter)}
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 sm:hidden"
+        >
+          {(['7d', '30d', '90d', 'all'] as const).map((period) => (
+            <option key={period} value={period}>
+              {periodLabels[period]}
+            </option>
+          ))}
+        </select>
+
+        {/* Desktop filter buttons */}
+        <div className="hidden gap-1 bg-gray-100 p-1 rounded-lg sm:flex sm:w-fit">
           {(['7d', '30d', '90d', 'all'] as const).map((period) => (
             <button
               key={period}
               onClick={() => setPeriodFilter(period)}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition duration-150 cursor-pointer whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition duration-150 cursor-pointer text-center whitespace-nowrap ${
                 periodFilter === period
                   ? 'bg-white text-slate-900 shadow-xs border border-gray-200'
                   : 'text-slate-500 hover:text-slate-700'
