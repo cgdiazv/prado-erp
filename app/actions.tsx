@@ -1901,8 +1901,12 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
       return { success: false, error: authUserLookupError.message };
     }
 
-    let authUserRecord: { id: string; email: string } | null = indexedAuthUser
-      ? { id: indexedAuthUser.user_id, email: indexedAuthUser.email }
+    let authUserRecord: { id: string; email: string; invitedPending: boolean } | null = indexedAuthUser
+      ? {
+          id: indexedAuthUser.user_id,
+          email: indexedAuthUser.email,
+          invitedPending: Boolean((indexedAuthUser as any)?.user_metadata?.invited_pending),
+        }
       : null;
 
     if (!authUserRecord) {
@@ -1917,14 +1921,19 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
 
       if (bootstrapUser?.id && bootstrapUser.email) {
         await upsertAuthUserIndex(supabaseAdmin, bootstrapUser);
-        authUserRecord = { id: bootstrapUser.id, email: bootstrapUser.email };
+        authUserRecord = {
+          id: bootstrapUser.id,
+          email: bootstrapUser.email,
+          invitedPending: Boolean(bootstrapUser.user_metadata?.invited_pending),
+        };
       }
     }
 
     const hasExistingAuthUser = Boolean(authUserRecord?.id);
     const authUser = authUserRecord;
+    const requiresPasswordSetupFlow = !authUser || Boolean(authUser.invitedPending);
 
-    if (hasExistingAuthUser && authUser) {
+    if (hasExistingAuthUser && authUser && !requiresPasswordSetupFlow) {
       // User already has an account - add them directly to organization_users
       // Check if they're already a member
       const { data: existingOrgUser } = await supabaseAdmin
@@ -1954,39 +1963,60 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
         return { success: false, error: insertError.message };
       }
     } else {
-      // User doesn't have an account yet - create one in auth.users and create a pending invitation
-      const tempPassword = `Prado!${randomUUID()}`;
-      const { data: createdUserResult, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
-        email: normalizedInviteEmail,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: {
-          invited_pending: true,
-          needs_profile_completion: true,
-          profile_completed: false,
-        },
-      });
+      // User needs password setup flow. If no auth user exists yet, create pending auth user first.
+      if (!authUser) {
+        const tempPassword = `Prado!${randomUUID()}`;
+        const { data: createdUserResult, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+          email: normalizedInviteEmail,
+          password: tempPassword,
+          email_confirm: true,
+          user_metadata: {
+            invited_pending: true,
+            needs_profile_completion: true,
+            profile_completed: false,
+          },
+        });
 
-      if (createUserError) {
-        return { success: false, error: createUserError.message };
-      }
+        if (createUserError) {
+          return { success: false, error: createUserError.message };
+        }
 
-      if (createdUserResult.user) {
-        await upsertAuthUserIndex(supabaseAdmin, createdUserResult.user);
+        if (createdUserResult.user) {
+          await upsertAuthUserIndex(supabaseAdmin, createdUserResult.user);
+        }
       }
 
       inviteToken = randomUUID();
-      const { error: inviteError } = await supabaseAdmin
+      const { data: existingPendingInvite } = await supabaseAdmin
         .from('organization_invitations')
-        .insert([
-          {
-            organization_id: payload.organizationId,
-            email: normalizedInviteEmail,
-            role: payload.role,
-            invited_by_user_id: user.id,
-            invite_token: inviteToken,
-          }
-        ]);
+        .select('id')
+        .eq('organization_id', payload.organizationId)
+        .eq('email', normalizedInviteEmail)
+        .is('accepted_at', null)
+        .maybeSingle();
+
+      const inviteMutation = existingPendingInvite
+        ? await supabaseAdmin
+            .from('organization_invitations')
+            .update({
+              role: payload.role,
+              invited_by_user_id: user.id,
+              invite_token: inviteToken,
+            })
+            .eq('id', existingPendingInvite.id)
+        : await supabaseAdmin
+            .from('organization_invitations')
+            .insert([
+              {
+                organization_id: payload.organizationId,
+                email: normalizedInviteEmail,
+                role: payload.role,
+                invited_by_user_id: user.id,
+                invite_token: inviteToken,
+              }
+            ]);
+
+      const inviteError = inviteMutation.error;
 
       if (inviteError) {
         console.error('Error creating invitation:', inviteError);
@@ -2010,9 +2040,9 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
 
       const inviterName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'Your Team';
 
-      const inviteLink = authUser 
-        ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://pradojob.com'}/en/dashboard`
-        : `${process.env.NEXT_PUBLIC_APP_URL || 'https://pradojob.com'}/en/auth/accept-invite?token=${encodeURIComponent(inviteToken || '')}`;
+      const inviteLink = requiresPasswordSetupFlow
+        ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://pradojob.com'}/en/auth/accept-invite?token=${encodeURIComponent(inviteToken || '')}`
+        : `${process.env.NEXT_PUBLIC_APP_URL || 'https://pradojob.com'}/en/dashboard`;
 
       const emailHtml = await render(
         <InviteMemberEmail
@@ -2032,9 +2062,9 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
         throw new Error('Failed to render email HTML');
       }
 
-      const subject = authUser 
-        ? `${inviterName} added you to ${org?.name || 'Prado ERP'}`
-        : `You're invited to join ${org?.name || 'Prado ERP'}`;
+      const subject = requiresPasswordSetupFlow
+        ? `You're invited to join ${org?.name || 'Prado ERP'}`
+        : `${inviterName} added you to ${org?.name || 'Prado ERP'}`;
 
       if (!process.env.RESEND_API_KEY) {
         console.warn('RESEND_API_KEY not set - email not sent');
