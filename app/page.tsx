@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import Footer from '@/components/Footer';
 import PublicNavbar from '@/components/PublicNavbar';
+import { getUserOrganization } from '@/lib/organization';
 
 export default async function MarketingHomePage() {
   const supabase = await createClient();
@@ -42,11 +43,7 @@ export default async function MarketingHomePage() {
   // 1. If already authenticated, fetch organization context to auto-route them in
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
+    const { organization: org } = await getUserOrganization(user.id);
 
     if (org) {
       redirect('/dashboard');

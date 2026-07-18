@@ -254,6 +254,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
   };
 
   const acceptedMembers = members.filter((member) => member.status !== 'pending');
+  const pendingInvites = members.filter((member) => member.status === 'pending');
 
   const formatLastLogin = (value?: string | null) => {
     if (!value) return isEs ? 'Nunca' : 'Never';
@@ -428,6 +429,68 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
                           className="px-2 py-1 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded transition disabled:opacity-50"
                         >
                           {deletingEmail === member.email ? (isEs ? 'Eliminando...' : 'Removing...') : (isEs ? 'Eliminar' : 'Remove')}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          {isEs ? 'Invitaciones Pendientes' : 'Pending Invitations'} ({pendingInvites.length})
+        </p>
+
+        {isLoadingMembers ? (
+          <p className="text-xs text-slate-500">{isEs ? 'Cargando invitaciones...' : 'Loading invitations...'}</p>
+        ) : (
+          <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-xs">
+            <table className="w-full min-w-[760px] text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Correo' : 'Email Address'}</th>
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Permiso' : 'Permission Type'}</th>
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Invitado el' : 'Invited At'}</th>
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Estado' : 'Status'}</th>
+                  <th className="text-right py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Accion' : 'Action'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingInvites.length === 0 ? (
+                  <tr className="border-t border-gray-100">
+                    <td colSpan={5} className="py-6 px-3 text-sm text-slate-500 text-center">
+                      {isEs ? 'No hay invitaciones pendientes.' : 'No pending invitations.'}
+                    </td>
+                  </tr>
+                ) : (
+                  pendingInvites.map((invite) => (
+                    <tr key={invite.email} className="border-t border-gray-100 hover:bg-slate-50/60">
+                      <td className="py-2.5 px-3 text-sm text-gray-800">{invite.email}</td>
+                      <td className="py-2.5 px-3 text-sm text-gray-800">
+                        <span className={`text-xs font-bold px-2 py-1 rounded border whitespace-nowrap ${getRoleBadgeColor(invite.role)}`}>
+                          {getRoleLabel(invite.role)}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-sm text-gray-800">
+                        {new Date(invite.invited_at).toLocaleString(isEs ? 'es-ES' : 'en-US')}
+                      </td>
+                      <td className="py-2.5 px-3 text-sm text-gray-800">
+                        <span className="text-xs font-bold px-2 py-1 rounded border border-amber-200 bg-amber-50 text-amber-700 whitespace-nowrap">
+                          {isEs ? 'Pendiente' : 'Pending'}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <button
+                          onClick={() => handleRemoveMember(invite.email)}
+                          disabled={deletingEmail === invite.email}
+                          className="px-2 py-1 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded transition disabled:opacity-50"
+                        >
+                          {deletingEmail === invite.email ? (isEs ? 'Eliminando...' : 'Removing...') : (isEs ? 'Cancelar' : 'Cancel')}
                         </button>
                       </td>
                     </tr>

@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import PublicNavbar from '@/components/PublicNavbar';
 import ScreenshotCarousel from '@/components/ScreenshotCarousel';
 import { getTranslations } from '@/lib/translations';
+import { getUserOrganization } from '@/lib/organization';
 
 export default async function MarketingHomePage({ params }: { params: Promise<{ lng: string }> }) {
   const { lng } = await params;
@@ -47,11 +48,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
   // 1. If already authenticated, fetch organization context to auto-route them in
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
+    const { organization: org } = await getUserOrganization(user.id);
 
     if (org) {
       redirect('/dashboard');

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import BillingModal from '@/components/BillingModal';
 import { DashboardNotificationProvider } from '@/components/dashboard/DashboardNotificationContext';
+import { getUserOrganization } from '@/lib/organization';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -17,11 +18,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   }
 
   // 2. Resolve the matching organization profile metrics
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, subscription_status')
-    .eq('owner_id', user.id)
-    .single();
+  const { organization: org } = await getUserOrganization(user.id);
 
   const { data: profile } = await supabase
     .from('user_profiles')
