@@ -69,7 +69,7 @@ export async function createStripeConnectAccountLink(locale = 'en'): Promise<{ u
 
   const { data: org, error: orgError } = await supabase
     .from('organizations')
-    .select('id, stripe_account_id')
+    .select('id, stripe_account_id, stripe_soft_disconnected')
     .eq('owner_id', user.id)
     .single();
 
@@ -96,6 +96,7 @@ export async function createStripeConnectAccountLink(locale = 'en'): Promise<{ u
         .from('organizations')
         .update({
           stripe_account_id: accountId,
+          stripe_soft_disconnected: false,
           stripe_account_charges_enabled: Boolean(account.charges_enabled),
           stripe_account_payouts_enabled: Boolean(account.payouts_enabled),
         })
@@ -103,6 +104,17 @@ export async function createStripeConnectAccountLink(locale = 'en'): Promise<{ u
 
       if (saveError) {
         return { error: saveError.message };
+      }
+    }
+
+    if (org.stripe_soft_disconnected) {
+      const { error: reconnectError } = await supabase
+        .from('organizations')
+        .update({ stripe_soft_disconnected: false })
+        .eq('id', org.id);
+
+      if (reconnectError) {
+        return { error: reconnectError.message };
       }
     }
 
@@ -153,7 +165,7 @@ export async function getStripeAccountStatus(locale = 'en'): Promise<StripeStatu
 
   const { data: org, error: orgError } = await supabase
     .from('organizations')
-    .select('id, stripe_account_id')
+    .select('id, stripe_account_id, stripe_soft_disconnected')
     .eq('owner_id', user.id)
     .single();
 
@@ -172,6 +184,19 @@ export async function getStripeAccountStatus(locale = 'en'): Promise<StripeStatu
     return {
       connected: false,
       accountId: null,
+      chargesEnabled: false,
+      payoutsEnabled: false,
+      requirementsDue: [],
+    };
+  }
+
+  if (org.stripe_soft_disconnected) {
+    const normalizedLocale = (locale || 'en').toLowerCase().startsWith('es') ? 'es' : 'en';
+    revalidatePaymentPaths(normalizedLocale);
+
+    return {
+      connected: true,
+      accountId: org.stripe_account_id,
       chargesEnabled: false,
       payoutsEnabled: false,
       requirementsDue: [],
@@ -238,7 +263,7 @@ export async function disconnectStripeAccount(locale = 'en'): Promise<{ success?
   const { error } = await supabase
     .from('organizations')
     .update({
-      stripe_account_id: null,
+      stripe_soft_disconnected: true,
       stripe_account_charges_enabled: false,
       stripe_account_payouts_enabled: false,
     })

@@ -18,6 +18,19 @@ const supabaseAdmin = createClient(
 );
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function getOrganizationIdFromSession(session: Stripe.Checkout.Session) {
+  return session.client_reference_id || session.metadata?.organizationId || null;
+}
+
+function isPradoInvoiceSession(session: Stripe.Checkout.Session) {
+  return (
+    session.metadata?.source === 'prado_invoice' ||
+    Boolean(session.metadata?.invoiceId) ||
+    Boolean(session.metadata?.invoice_id)
+  );
+}
 
 function getInvoiceIdFromSession(session: Stripe.Checkout.Session) {
   const metadataInvoiceId = session.metadata?.invoiceId || session.metadata?.invoice_id;
@@ -146,6 +159,10 @@ export async function POST(request: Request) {
 
   if (event.type === 'checkout.session.async_payment_failed') {
     const failedSession = event.data.object as Stripe.Checkout.Session;
+    if (!isPradoInvoiceSession(failedSession)) {
+      return NextResponse.json({ received: true, ignored: true }, { status: 200 });
+    }
+
     const invoiceId = getInvoiceIdFromSession(failedSession);
 
     if (invoiceId) {
@@ -162,10 +179,7 @@ export async function POST(request: Request) {
   if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    const isInvoiceCheckout =
-      session.metadata?.source === 'prado_invoice' ||
-      Boolean(session.metadata?.invoiceId) ||
-      Boolean(session.metadata?.invoice_id);
+    const isInvoiceCheckout = isPradoInvoiceSession(session);
 
     if (isInvoiceCheckout) {
       if (event.type === 'checkout.session.completed' && session.payment_status !== 'paid') {
@@ -176,13 +190,25 @@ export async function POST(request: Request) {
     }
 
     try {
-      // FIXED: Pull target organization identifier from client_reference_id matching your checkout links
-      const organizationId = session.client_reference_id || session.metadata?.organizationId;
+      // Only process subscription-style events that map to a real Prado organization.
+      // This prevents unrelated Stripe projects from triggering Prado emails/branding.
+      const organizationId = getOrganizationIdFromSession(session);
 
-      if (!organizationId) {
-        console.error('⚠️ Webhook received session without a valid organization tracker identifier.');
-        return NextResponse.json({ error: 'Missing organization reference ID context' }, { status: 400 });
+      if (!organizationId || !UUID_V4_PATTERN.test(organizationId)) {
+        return NextResponse.json({ received: true, ignored: true, reason: 'non-prado-session' }, { status: 200 });
       }
+
+      const { data: orgContext, error: orgContextError } = await supabaseAdmin
+        .from('organizations')
+        .select('id, name')
+        .eq('id', organizationId)
+        .maybeSingle();
+
+      if (orgContextError || !orgContext) {
+        return NextResponse.json({ received: true, ignored: true, reason: 'organization-not-found' }, { status: 200 });
+      }
+
+      const isExplicitPradoSession = session.metadata?.platform === 'prado' || session.metadata?.source === 'prado_subscription';
 
       let productNames = 'Prado Operating Plan';
       try {
@@ -204,12 +230,17 @@ export async function POST(request: Request) {
       }
 
       // 4. Update Database: Activate the organization's subscription status in Supabase
-      const { error: dbError } = await supabaseAdmin
+      const { data: updatedOrg, error: dbError } = await supabaseAdmin
         .from('organizations')
         .update({ subscription_status: assignedStatus }) // Upgrades to 'individual', 'growth', or 'enterprise'
-        .eq('id', organizationId);
+        .eq('id', organizationId)
+        .select('id')
+        .maybeSingle();
 
       if (dbError) throw dbError;
+      if (!updatedOrg) {
+        return NextResponse.json({ received: true, ignored: true, reason: 'organization-update-skipped' }, { status: 200 });
+      }
       console.log(`Supabase Synced: ✅ Organization ${organizationId} successfully upgraded to (${assignedStatus}) status.`);
 
       // Send Custom Branding Receipt HTML Email via Resend
@@ -218,7 +249,7 @@ export async function POST(request: Request) {
       const netSales = (session.amount_total || 0) / 100;
       let orderNumber = session.id.replace('cs_live_', 'CH_');
 
-      if (customerEmail) {
+      if (customerEmail && isExplicitPradoSession) {
         await resend.emails.send({
           from: 'Prado <billing@pradosa.com>',
           to: customerEmail,

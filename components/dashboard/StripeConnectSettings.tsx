@@ -164,11 +164,14 @@ export default function StripeConnectSettings({
         return;
       }
 
-      setAccountId(null);
       setChargesEnabled(false);
       setPayoutsEnabled(false);
       setRequirementsDue([]);
-      setNotice(isEs ? 'Stripe desconectado.' : 'Stripe disconnected.');
+      setNotice(
+        isEs
+          ? 'Pagos con Stripe desactivados. Puedes reconectar la misma cuenta cuando quieras.'
+          : 'Stripe payments disabled. You can reconnect the same account anytime.'
+      );
     });
   };
 

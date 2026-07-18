@@ -106,6 +106,7 @@ async function createInvoiceCheckoutSession({
       success_url: `${baseUrl}/en/payment/success?invoice=${encodeURIComponent(invoiceId)}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/en/payment/cancel?invoice=${encodeURIComponent(invoiceId)}`,
       metadata: {
+        platform: 'prado',
         invoiceId,
         organizationId,
         customerName,
@@ -116,6 +117,7 @@ async function createInvoiceCheckoutSession({
           destination: stripeAccountId,
         },
         metadata: {
+          platform: 'prado',
           invoiceId,
           organizationId,
           source: 'prado_invoice',

@@ -43,7 +43,8 @@ export async function POST(request: Request) {
         stripe_account_charges_enabled: Boolean(account.charges_enabled),
         stripe_account_payouts_enabled: Boolean(account.payouts_enabled),
       })
-      .eq('stripe_account_id', account.id);
+      .eq('stripe_account_id', account.id)
+      .eq('stripe_soft_disconnected', false);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
