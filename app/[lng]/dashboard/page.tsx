@@ -100,14 +100,6 @@ export default async function DashboardHome({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const needsProfileCompletion =
-    user.user_metadata?.needs_profile_completion === true &&
-    user.user_metadata?.profile_completed !== true;
-
-  if (needsProfileCompletion) {
-    redirect(`/${locale}/dashboard/profile-settings`);
-  }
-  
   const { organization: org } = await getUserOrganization(user.id);
 
   if (!org) redirect(`/${locale}/auth/access-pending`);

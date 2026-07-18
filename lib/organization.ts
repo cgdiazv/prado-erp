@@ -24,9 +24,14 @@ export type UserOrganizationResult = {
   role: string | null;
 };
 
-const ORG_SELECT_WITH_STRIPE = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, max_jobs_per_truck, auto_optimize_drive_routes';
-const ORG_SELECT_WITH_MAX = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, max_jobs_per_truck, auto_optimize_drive_routes';
-const ORG_SELECT_LEGACY = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code';
+const ORG_SELECT_WITH_STRIPE = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, max_jobs_per_truck, auto_optimize_drive_routes, created_at';
+const ORG_SELECT_WITH_MAX = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, max_jobs_per_truck, auto_optimize_drive_routes, created_at';
+const ORG_SELECT_LEGACY = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, created_at';
+
+type OrganizationCandidate = {
+  organization: any;
+  role: string;
+};
 
 function normalizeOrganizationRow(row: any): UserOrganization {
   return {
@@ -43,90 +48,104 @@ function normalizeOrganizationRow(row: any): UserOrganization {
   } as UserOrganization;
 }
 
-async function selectFirstOwnedOrganization(supabase: any, userId: string, select: string) {
-  const { data, error } = await supabase
-    .from('organizations')
-    .select(select)
-    .eq('owner_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1);
+async function collectCandidatesForSelect(supabase: any, userId: string, select: string) {
+  const [ownedResult, membershipResult] = await Promise.all([
+    supabase
+      .from('organizations')
+      .select(select)
+      .eq('owner_id', userId),
+    supabase
+      .from('organization_users')
+      .select(`role, organizations(${select})`)
+      .eq('user_id', userId),
+  ]);
 
-  const row = Array.isArray(data) ? data[0] || null : null;
-  return { row, error };
+  if (ownedResult.error || membershipResult.error) {
+    return { candidates: [] as OrganizationCandidate[], error: ownedResult.error || membershipResult.error };
+  }
+
+  const candidates: OrganizationCandidate[] = [];
+
+  for (const row of ownedResult.data || []) {
+    if (!row?.id) continue;
+    candidates.push({ organization: row, role: 'owner' });
+  }
+
+  for (const membership of membershipResult.data || []) {
+    const rawOrg = (membership as any)?.organizations;
+    const org = Array.isArray(rawOrg) ? rawOrg[0] : rawOrg;
+    if (!org?.id) continue;
+    candidates.push({ organization: org, role: (membership as any)?.role || 'member' });
+  }
+
+  const dedupedByOrg = new Map<string, OrganizationCandidate>();
+  for (const candidate of candidates) {
+    const orgId = candidate.organization.id;
+    const existing = dedupedByOrg.get(orgId);
+    if (!existing) {
+      dedupedByOrg.set(orgId, candidate);
+      continue;
+    }
+
+    if (existing.role !== 'owner' && candidate.role === 'owner') {
+      dedupedByOrg.set(orgId, candidate);
+    }
+  }
+
+  return { candidates: Array.from(dedupedByOrg.values()), error: null };
 }
 
-async function selectFirstMembership(supabase: any, userId: string, select: string) {
-  const { data, error } = await supabase
-    .from('organization_users')
-    .select(select)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1);
+async function scoreOrganizationActivity(supabase: any, organizationId: string) {
+  const [customers, services, estimates, expenses, trucks] = await Promise.all([
+    supabase.from('customers').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+    supabase.from('services').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+    supabase.from('estimates').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+    supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+    supabase.from('trucks').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+  ]);
 
-  const row = Array.isArray(data) ? data[0] || null : null;
-  return { row, error };
+  return [customers, services, estimates, expenses, trucks]
+    .map((result) => Number(result.count || 0))
+    .reduce((total, current) => total + current, 0);
 }
 
 export async function getUserOrganization(userId: string): Promise<UserOrganizationResult> {
   const supabase = createAdminClient();
 
-  const withStripeOwned = await selectFirstOwnedOrganization(supabase, userId, ORG_SELECT_WITH_STRIPE);
+  let candidates: OrganizationCandidate[] = [];
 
-  let ownedOrg: any = withStripeOwned.row;
-  let ownedOrgError: any = withStripeOwned.error;
-
-  if (ownedOrgError) {
-    const withMaxOwned = await selectFirstOwnedOrganization(supabase, userId, ORG_SELECT_WITH_MAX);
-
-    ownedOrg = withMaxOwned.row;
-    ownedOrgError = withMaxOwned.error;
+  for (const select of [ORG_SELECT_WITH_STRIPE, ORG_SELECT_WITH_MAX, ORG_SELECT_LEGACY]) {
+    const result = await collectCandidatesForSelect(supabase, userId, select);
+    if (!result.error) {
+      candidates = result.candidates;
+      break;
+    }
   }
 
-  if (ownedOrgError) {
-    const fallbackOwned = await selectFirstOwnedOrganization(supabase, userId, ORG_SELECT_LEGACY);
-
-    ownedOrg = fallbackOwned.row;
-    ownedOrgError = fallbackOwned.error;
+  if (candidates.length === 0) {
+    return { organization: null, role: null };
   }
 
-  if (ownedOrg) {
-    return { organization: normalizeOrganizationRow(ownedOrg), role: 'owner' };
-  }
-
-  const withStripeMembership = await selectFirstMembership(
-    supabase,
-    userId,
-    `role, organizations(${ORG_SELECT_WITH_STRIPE})`
+  const scoredCandidates = await Promise.all(
+    candidates.map(async (candidate) => {
+      const score = await scoreOrganizationActivity(supabase, candidate.organization.id);
+      return { ...candidate, score };
+    })
   );
 
-  let membership: any = withStripeMembership.row;
-  let membershipError: any = withStripeMembership.error;
+  scoredCandidates.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (a.role === 'owner' && b.role !== 'owner') return -1;
+    if (b.role === 'owner' && a.role !== 'owner') return 1;
 
-  if (membershipError) {
-    const withMaxMembership = await selectFirstMembership(
-      supabase,
-      userId,
-      `role, organizations(${ORG_SELECT_WITH_MAX})`
-    );
+    const aCreated = a.organization?.created_at ? Date.parse(a.organization.created_at) : Number.MAX_SAFE_INTEGER;
+    const bCreated = b.organization?.created_at ? Date.parse(b.organization.created_at) : Number.MAX_SAFE_INTEGER;
+    return aCreated - bCreated;
+  });
 
-    membership = withMaxMembership.row;
-    membershipError = withMaxMembership.error;
-  }
-
-  if (membershipError) {
-    const fallbackMembership = await selectFirstMembership(
-      supabase,
-      userId,
-      `role, organizations(${ORG_SELECT_LEGACY})`
-    );
-
-    membership = fallbackMembership.row;
-    membershipError = fallbackMembership.error;
-  }
-
-  const rawOrganization = (membership as any)?.organizations || null;
-  const organization = Array.isArray(rawOrganization) ? rawOrganization[0] || null : rawOrganization;
-  const role = (membership as any)?.role || null;
-
-  return { organization: organization ? normalizeOrganizationRow(organization) : null, role };
+  const winner = scoredCandidates[0];
+  return {
+    organization: winner?.organization ? normalizeOrganizationRow(winner.organization) : null,
+    role: winner?.role || null,
+  };
 }
