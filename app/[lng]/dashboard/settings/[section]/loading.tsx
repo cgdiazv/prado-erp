@@ -13,7 +13,7 @@ export default function SettingsSectionLoading() {
       <DashboardNavbar userInitials="C" organizationLogoUrl="" />
 
       <div className="flex flex-1 relative">
-        <DashboardSidebar subscriptionStatus={undefined} locale={locale} />
+        <DashboardSidebar subscriptionStatus={undefined} locale={locale} canViewImportExport={false} />
 
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           <div className="max-w-5xl ml-0 space-y-6 animate-pulse">

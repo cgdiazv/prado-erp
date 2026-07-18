@@ -22,8 +22,9 @@ export default async function RoutingPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { organization: org } = await getUserOrganization(user.id);
+  const { organization: org, role } = await getUserOrganization(user.id);
   if (!org) redirect(`/${locale}/auth/access-pending`);
+  const canViewImportExport = role === 'owner' || role === 'admin';
 
   // 1. SECURITY TIER GUARD: Allow 'enterprise' and active 'trial' profiles, block 'individual'
   if (org.subscription_status === 'individual') {
@@ -122,7 +123,11 @@ export default async function RoutingPage({
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
       <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
       <div className="flex flex-1 relative">
-        <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />
+        <DashboardSidebar
+          subscriptionStatus={org.subscription_status}
+          locale={locale}
+          canViewImportExport={canViewImportExport}
+        />
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           <div className="max-w-5xl ml-0 space-y-6 text-left">
             <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">

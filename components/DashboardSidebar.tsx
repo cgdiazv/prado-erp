@@ -9,9 +9,10 @@ import { getTranslations } from '@/lib/translations';
 interface DashboardSidebarProps {
   subscriptionStatus?: string | null; // 'trial' | 'individual' | 'growth' | 'enterprise'
   locale?: string;
+  canViewImportExport?: boolean;
 }
 
-export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: DashboardSidebarProps) {
+export default function DashboardSidebar({ subscriptionStatus, locale = 'en', canViewImportExport = false }: DashboardSidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -160,12 +161,14 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en' }: 
               {translations.dashboard.systemSettings}
             </Link>
 
-            <Link href={localizedHref('/dashboard/import-export')} onClick={closeSidebar} className={linkStyle('/dashboard/import-export')}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3m-4.5 6L12 4.5 16.5 9" />
-              </svg>
-              {translations.dashboard.importExport}
-            </Link>
+            {canViewImportExport ? (
+              <Link href={localizedHref('/dashboard/import-export')} onClick={closeSidebar} className={linkStyle('/dashboard/import-export')}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3m-4.5 6L12 4.5 16.5 9" />
+                </svg>
+                {translations.dashboard.importExport}
+              </Link>
+            ) : null}
 
             <Link href={localizedHref('/dashboard/print-reports')} onClick={closeSidebar} className={linkStyle('/dashboard/print-reports')}>
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">

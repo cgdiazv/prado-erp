@@ -12,6 +12,7 @@ export default async function EstimatesLoader({ locale }: EstimatesLoaderProps) 
   const initialData = await getEstimatesDashboardData();
 
   const subscriptionStatus = initialData?.subscriptionStatus || 'trial';
+  const canViewImportExport = initialData?.canViewImportExport === true;
   const organizationLogoUrl = initialData?.organizationLogoUrl || '';
   const organizationName = initialData?.organizationName || '';
   const userInitials = organizationName ? organizationName.charAt(0).toUpperCase() : 'C';
@@ -20,7 +21,11 @@ export default async function EstimatesLoader({ locale }: EstimatesLoaderProps) 
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
       <DashboardNavbar userInitials={userInitials} organizationLogoUrl={organizationLogoUrl} />
       <div className="flex flex-1 relative">
-        <DashboardSidebar subscriptionStatus={subscriptionStatus} locale={locale} />
+        <DashboardSidebar
+          subscriptionStatus={subscriptionStatus}
+          locale={locale}
+          canViewImportExport={canViewImportExport}
+        />
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           <EstimatesContent
             subscriptionStatus={subscriptionStatus}

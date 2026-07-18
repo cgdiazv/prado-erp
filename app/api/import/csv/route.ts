@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
+import { getUserOrganization } from '@/lib/organization';
 
 type ImportEntity = 'customers' | 'jobs' | 'expenses' | 'estimates';
 
@@ -126,14 +127,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
-
+    const { organization: org, role } = await getUserOrganization(user.id);
     if (!org) {
       return NextResponse.json({ error: 'Organization not found.' }, { status: 404 });
+    }
+
+    const normalizedRole = (role || '').toLowerCase();
+    if (normalizedRole !== 'owner' && normalizedRole !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const rowErrors: Array<{ row: number; reason: string }> = [];

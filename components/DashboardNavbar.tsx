@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams, usePathname, useParams } from 'next/navigation';
-import { createClient as createBrowserSupabaseClient } from '@/lib/supabaseClient';
 import { useDashboardNotifications } from '@/components/dashboard/DashboardNotificationContext';
 
 interface DashboardNavbarProps {
@@ -18,12 +17,9 @@ export default function DashboardNavbar({ userInitials = "C", organizationLogoUr
   const params = useParams();
   const activeLocale = typeof params.lng === 'string' && params.lng.length > 0 ? params.lng : 'en';
   const isEs = activeLocale.toLowerCase().startsWith('es');
-  const supabase = createBrowserSupabaseClient();
-  const { hasIncompleteProfile: initialHasIncompleteProfile } = useDashboardNotifications();
+  const { hasIncompleteProfile } = useDashboardNotifications();
   const [logoLoadFailed, setLogoLoadFailed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [hasIncompleteProfile, setHasIncompleteProfile] = useState(initialHasIncompleteProfile);
-  const [notificationReady, setNotificationReady] = useState(true);
   const notificationRef = useRef<HTMLDivElement | null>(null);
   const hasLogo = organizationLogoUrl.trim().length > 0 && !logoLoadFailed;
   
@@ -42,65 +38,6 @@ export default function DashboardNavbar({ userInitials = "C", organizationLogoUr
   };
 
   useEffect(() => {
-    setHasIncompleteProfile(initialHasIncompleteProfile);
-    setNotificationReady(true);
-  }, [initialHasIncompleteProfile]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const syncProfileNotification = async () => {
-      const { data: authData } = await supabase.auth.getUser();
-      const authUser = authData.user;
-
-      if (!authUser) {
-        if (!isMounted) return;
-        setHasIncompleteProfile(false);
-        setNotificationReady(true);
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('first_name, last_name, phone')
-        .eq('user_id', authUser.id)
-        .maybeSingle();
-
-      if (!isMounted) return;
-
-      const missingRequiredProfileField =
-        !profile?.first_name?.trim() ||
-        !profile?.last_name?.trim() ||
-        !profile?.phone?.trim();
-      const metadataRequiresCompletion =
-        authUser.user_metadata?.needs_profile_completion === true &&
-        authUser.user_metadata?.profile_completed !== true;
-
-      setHasIncompleteProfile(metadataRequiresCompletion || missingRequiredProfileField);
-      setNotificationReady(true);
-    };
-
-    syncProfileNotification();
-
-    const authSubscription = supabase.auth.onAuthStateChange(() => {
-      syncProfileNotification();
-    });
-
-    const profileChannel = supabase
-      .channel('dashboard-navbar-profile-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_profiles',
-        },
-        () => {
-          syncProfileNotification();
-        }
-      )
-      .subscribe();
-
     const handleDocumentClick = (event: MouseEvent) => {
       if (!notificationRef.current) return;
       if (notificationRef.current.contains(event.target as Node)) return;
@@ -110,12 +47,9 @@ export default function DashboardNavbar({ userInitials = "C", organizationLogoUr
     document.addEventListener('mousedown', handleDocumentClick);
 
     return () => {
-      isMounted = false;
-      authSubscription.data.subscription.unsubscribe();
       document.removeEventListener('mousedown', handleDocumentClick);
-      supabase.removeChannel(profileChannel);
     };
-  }, [supabase]);
+  }, []);
 
   const notifications = useMemo(() => {
     if (!hasIncompleteProfile) return [];
@@ -133,7 +67,7 @@ export default function DashboardNavbar({ userInitials = "C", organizationLogoUr
     ];
   }, [activeLocale, hasIncompleteProfile, isEs]);
 
-  const unreadCount = notificationReady ? notifications.length : 0;
+  const unreadCount = notifications.length;
 
   return (
     <nav className="w-full border-b border-gray-200 bg-white sticky top-0 z-50 px-6 py-3 select-none">

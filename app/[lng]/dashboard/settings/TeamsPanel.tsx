@@ -54,6 +54,8 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
   const [error, setError] = useState('');
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
+  const [isResolvingRole, setIsResolvingRole] = useState(true);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
   const [showRolesReference, setShowRolesReference] = useState(false);
   const supabase = createBrowserSupabaseClient();
@@ -73,8 +75,60 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
     }
   };
 
-  // Load team members on mount
+  const canViewTeamTables = currentUserRole === 'owner' || currentUserRole === 'admin';
+
   useEffect(() => {
+    const resolveCurrentUserRole = async () => {
+      setIsResolvingRole(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setCurrentUserRole(null);
+        setIsResolvingRole(false);
+        return;
+      }
+
+      const { data: membership } = await supabase
+        .from('organization_users')
+        .select('role')
+        .eq('organization_id', organizationId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (membership?.role) {
+        setCurrentUserRole(membership.role);
+        setIsResolvingRole(false);
+        return;
+      }
+
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('owner_id')
+        .eq('id', organizationId)
+        .maybeSingle();
+
+      setCurrentUserRole(orgData?.owner_id === user.id ? 'owner' : null);
+      setIsResolvingRole(false);
+    };
+
+    resolveCurrentUserRole();
+  }, [organizationId, supabase]);
+
+  // Load team members for owner/manager on mount and subscribe to live updates.
+  useEffect(() => {
+    if (isResolvingRole) {
+      return;
+    }
+
+    if (!canViewTeamTables) {
+      setIsLoadingMembers(false);
+      setMembers([]);
+      return;
+    }
+
     loadMembers(true);
 
     const channel = supabase
@@ -126,7 +180,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
       window.removeEventListener('focus', handleWindowFocus);
       supabase.removeChannel(channel);
     };
-  }, [organizationId]);
+  }, [organizationId, canViewTeamTables, isResolvingRole]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,73 +378,77 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
         </div>
 
         {/* Invite Form */}
-        <div className="border-t border-gray-200 pt-6">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-            {isEs ? 'Invitar Miembro' : 'Invite Member'}
-          </p>
-
-          {(subscriptionStatus === 'growth' || subscriptionStatus === 'enterprise') && (
-            <p className="text-xs text-slate-500 mb-3">
-              {subscriptionStatus === 'growth'
-                ? (isEs ? 'Plan Growth: puedes agregar hasta 5 miembros.' : 'Growth tier: you can add up to 5 members.')
-                : (isEs ? 'Plan Enterprise: miembros ilimitados.' : 'Enterprise tier: unlimited members.')}
+        {canViewTeamTables ? (
+          <div className="border-t border-gray-200 pt-6">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+              {isEs ? 'Invitar Miembro' : 'Invite Member'}
             </p>
-          )}
 
-          <form onSubmit={handleInvite} className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="email"
-              placeholder={isEs ? 'correo@ejemplo.com' : 'email@example.com'}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="flex-1 rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-            />
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as 'member' | 'admin' | 'accountant' | 'viewer')}
-              className="rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-            >
-              <option value="member">{isEs ? 'Supervisor' : 'Supervisor'}</option>
-              <option value="admin">{isEs ? 'Gestor' : 'Manager'}</option>
-              <option value="accountant">{isEs ? 'Contador' : 'Accountant'}</option>
-              <option value="viewer">{isEs ? 'Invitado' : 'Guest'}</option>
-            </select>
-            <button
-              type="submit"
-              disabled={isLoading || !email}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white text-xs font-bold rounded-lg transition shadow-sm"
-            >
-              {isLoading ? (isEs ? 'Enviando...' : 'Sending...') : (isEs ? 'Invitar' : 'Invite')}
-            </button>
+            {(subscriptionStatus === 'growth' || subscriptionStatus === 'enterprise') && (
+              <p className="text-xs text-slate-500 mb-3">
+                {subscriptionStatus === 'growth'
+                  ? (isEs ? 'Plan Growth: puedes agregar hasta 5 miembros.' : 'Growth tier: you can add up to 5 members.')
+                  : (isEs ? 'Plan Enterprise: miembros ilimitados.' : 'Enterprise tier: unlimited members.')}
+              </p>
+            )}
+
+            <form onSubmit={handleInvite} className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="email"
+                placeholder={isEs ? 'correo@ejemplo.com' : 'email@example.com'}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="flex-1 rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as 'member' | 'admin' | 'accountant' | 'viewer')}
+                className="rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              >
+                <option value="member">{isEs ? 'Supervisor' : 'Supervisor'}</option>
+                <option value="admin">{isEs ? 'Gestor' : 'Manager'}</option>
+                <option value="accountant">{isEs ? 'Contador' : 'Accountant'}</option>
+                <option value="viewer">{isEs ? 'Invitado' : 'Guest'}</option>
+              </select>
+              <button
+                type="submit"
+                disabled={isLoading || !email}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white text-xs font-bold rounded-lg transition shadow-sm"
+              >
+                {isLoading ? (isEs ? 'Enviando...' : 'Sending...') : (isEs ? 'Invitar' : 'Invite')}
+              </button>
+            </div>
+
+            {/* Messages */}
+            {message && (
+              <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 p-2 rounded">
+                {message}
+              </div>
+            )}
+            {error && (
+              <div className="text-xs text-red-700 bg-red-50 border border-red-200 p-2 rounded">
+                {error}
+              </div>
+            )}
+            </form>
           </div>
-
-          {/* Messages */}
-          {message && (
-            <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 p-2 rounded">
-              {message}
-            </div>
-          )}
-          {error && (
-            <div className="text-xs text-red-700 bg-red-50 border border-red-200 p-2 rounded">
-              {error}
-            </div>
-          )}
-          </form>
-        </div>
+        ) : null}
       </div>
 
-      <div className="space-y-3">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-          {isEs ? 'Miembros Actuales' : 'Current Members'} ({acceptedMembers.length})
-        </p>
+      {canViewTeamTables ? (
+        <>
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              {isEs ? 'Miembros Actuales' : 'Current Members'} ({acceptedMembers.length})
+            </p>
 
-        {isLoadingMembers ? (
-          <p className="text-xs text-slate-500">{isEs ? 'Cargando miembros...' : 'Loading members...'}</p>
-        ) : (
-          <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-xs">
-            <table className="w-full min-w-[980px] text-sm">
+            {isLoadingMembers ? (
+              <p className="text-xs text-slate-500">{isEs ? 'Cargando miembros...' : 'Loading members...'}</p>
+            ) : (
+              <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-xs">
+                <table className="w-full min-w-[980px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Nombre' : 'Name'}</th>
@@ -435,22 +493,22 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
                   ))
                 )}
               </tbody>
-            </table>
+                </table>
+              </div>
+            )}
+
           </div>
-        )}
 
-      </div>
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              {isEs ? 'Invitaciones Pendientes' : 'Pending Invitations'} ({pendingInvites.length})
+            </p>
 
-      <div className="space-y-3">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-          {isEs ? 'Invitaciones Pendientes' : 'Pending Invitations'} ({pendingInvites.length})
-        </p>
-
-        {isLoadingMembers ? (
-          <p className="text-xs text-slate-500">{isEs ? 'Cargando invitaciones...' : 'Loading invitations...'}</p>
-        ) : (
-          <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-xs">
-            <table className="w-full min-w-[760px] text-sm">
+            {isLoadingMembers ? (
+              <p className="text-xs text-slate-500">{isEs ? 'Cargando invitaciones...' : 'Loading invitations...'}</p>
+            ) : (
+              <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-xs">
+                <table className="w-full min-w-[760px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Correo' : 'Email Address'}</th>
@@ -497,10 +555,18 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
                   ))
                 )}
               </tbody>
-            </table>
+                </table>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      ) : !isResolvingRole ? (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+          {isEs
+            ? 'Solo propietario y gestor pueden ver tablas de miembros e invitaciones pendientes.'
+            : 'Only owner and manager can view member and pending invitation tables.'}
+        </div>
+      ) : null}
 
     </div>
   );

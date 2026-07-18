@@ -22,8 +22,9 @@ export default async function LedgerPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { organization: org } = await getUserOrganization(user.id);
+  const { organization: org, role } = await getUserOrganization(user.id);
   if (!org) redirect(`/${locale}/auth/access-pending`);
+  const canViewImportExport = role === 'owner' || role === 'admin';
 
   // 1. SECURITY TIER GUARD: Allow 'enterprise' and active 'trial' profiles, block 'individual'
 if (org.subscription_status === 'individual') {
@@ -77,7 +78,11 @@ if (org.subscription_status === 'individual') {
       <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
       <div className="flex flex-1 relative">
         {/* UPDATED: Passing the explicit subscription status down to the sidebar component */}
-        <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />
+        <DashboardSidebar
+          subscriptionStatus={org.subscription_status}
+          locale={locale}
+          canViewImportExport={canViewImportExport}
+        />
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           {/* Main Grid Wrapper */}
           <div className="max-w-5xl ml-0 grid grid-cols-1 gap-8 text-left">

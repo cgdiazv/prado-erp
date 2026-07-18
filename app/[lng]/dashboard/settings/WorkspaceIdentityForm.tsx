@@ -17,6 +17,7 @@ interface WorkspaceIdentityFormProps {
   initialState?: string;
   initialZipCode?: string;
   locale?: string;
+  showOwnerFields?: boolean;
 }
 
 export default function WorkspaceIdentityForm({
@@ -30,6 +31,7 @@ export default function WorkspaceIdentityForm({
   initialState = '',
   initialZipCode = '',
   locale = 'en',
+  showOwnerFields = true,
 }: WorkspaceIdentityFormProps) {
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
@@ -181,184 +183,188 @@ export default function WorkspaceIdentityForm({
               </div>
             </div>
 
-            <div className="px-6 md:px-8 py-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Slogan / Short Description</p>
-                  <p className="mt-1 text-sm font-medium text-slate-700">{slogan.trim() || (isEs ? 'No slogan' : 'No slogan')}</p>
-                </div>
-                {renderFieldActions('slogan')}
-              </div>
-              <div className={editingField === 'slogan' ? 'mt-3' : 'hidden'}>
-                <input
-                  type="text"
-                  name="slogan"
-                  value={slogan}
-                  onChange={(event) => setSlogan(event.target.value)}
-                  placeholder="Ex: Premium Field Service Solutions"
-                  maxLength={160}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                />
-                <p className="mt-1 text-[11px] text-slate-400">{isEs ? 'Se muestra en correos de estimaciones y facturas.' : 'Shown in estimate and invoice emails.'}</p>
-              </div>
-            </div>
-
-            <div className="px-6 md:px-8 py-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.organizationLogo}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-700">{logoPreviewUrl ? (isEs ? 'Logo cargado' : 'Logo uploaded') : (isEs ? 'Sin logo' : 'No logo uploaded')}</p>
-                </div>
-                {renderFieldActions('logo')}
-              </div>
-              <input
-                id={logoInputId}
-                type="file"
-                name="logoFile"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                ref={logoInputRef}
-                className={editingField === 'logo' ? 'hidden' : 'hidden'}
-                onChange={handleLogoFileChange}
-              />
-              <div className={editingField === 'logo' ? 'mt-3 space-y-3' : 'hidden'}>
-                <div className="flex items-center gap-3 rounded-lg border border-gray-300 bg-white p-2">
-                  <label
-                    htmlFor={logoInputId}
-                    className="inline-flex cursor-pointer rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
-                  >
-                    {translations.dashboard.chooseFile}
-                  </label>
-                  <span className="text-xs text-gray-600 truncate">{logoFileName || translations.dashboard.noFileChosen}</span>
-                </div>
-                <p className="text-[11px] text-slate-400">{isEs ? 'Acepta: PNG, JPG, WEBP, SVG. Tamano maximo: 3MB.' : 'Accepted: PNG, JPG, WEBP, SVG. Max size: 3MB.'}</p>
-                {logoPreviewUrl ? (
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={logoPreviewUrl}
-                      alt="Organization logo preview"
-                      className="h-14 w-14 rounded-lg border border-gray-200 bg-white object-contain p-1"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleRemoveLogo}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition"
-                    >
-                      {isEs ? 'Eliminar logo' : 'Remove Logo'}
-                    </button>
+            {showOwnerFields ? (
+              <>
+                <div className="px-6 md:px-8 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Slogan / Short Description</p>
+                      <p className="mt-1 text-sm font-medium text-slate-700">{slogan.trim() || (isEs ? 'No slogan' : 'No slogan')}</p>
+                    </div>
+                    {renderFieldActions('slogan')}
                   </div>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="px-6 md:px-8 py-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.phone}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-700">{phone.trim() || (isEs ? 'Sin teléfono' : 'No phone')}</p>
+                  <div className={editingField === 'slogan' ? 'mt-3' : 'hidden'}>
+                    <input
+                      type="text"
+                      name="slogan"
+                      value={slogan}
+                      onChange={(event) => setSlogan(event.target.value)}
+                      placeholder="Ex: Premium Field Service Solutions"
+                      maxLength={160}
+                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                    />
+                    <p className="mt-1 text-[11px] text-slate-400">{isEs ? 'Se muestra en correos de estimaciones y facturas.' : 'Shown in estimate and invoice emails.'}</p>
+                  </div>
                 </div>
-                {renderFieldActions('phone')}
-              </div>
-              <div className={editingField === 'phone' ? 'mt-3' : 'hidden'}>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  placeholder={translations.dashboard.workspacePhonePlaceholder}
-                  maxLength={50}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                />
-              </div>
-            </div>
 
-            <div className="px-6 md:px-8 py-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.streetAddress}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-700">{streetAddress.trim() || (isEs ? 'Sin dirección' : 'No street address')}</p>
+                <div className="px-6 md:px-8 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.organizationLogo}</p>
+                      <p className="mt-1 text-sm font-medium text-slate-700">{logoPreviewUrl ? (isEs ? 'Logo cargado' : 'Logo uploaded') : (isEs ? 'Sin logo' : 'No logo uploaded')}</p>
+                    </div>
+                    {renderFieldActions('logo')}
+                  </div>
+                  <input
+                    id={logoInputId}
+                    type="file"
+                    name="logoFile"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    ref={logoInputRef}
+                    className={editingField === 'logo' ? 'hidden' : 'hidden'}
+                    onChange={handleLogoFileChange}
+                  />
+                  <div className={editingField === 'logo' ? 'mt-3 space-y-3' : 'hidden'}>
+                    <div className="flex items-center gap-3 rounded-lg border border-gray-300 bg-white p-2">
+                      <label
+                        htmlFor={logoInputId}
+                        className="inline-flex cursor-pointer rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
+                      >
+                        {translations.dashboard.chooseFile}
+                      </label>
+                      <span className="text-xs text-gray-600 truncate">{logoFileName || translations.dashboard.noFileChosen}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">{isEs ? 'Acepta: PNG, JPG, WEBP, SVG. Tamano maximo: 3MB.' : 'Accepted: PNG, JPG, WEBP, SVG. Max size: 3MB.'}</p>
+                    {logoPreviewUrl ? (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={logoPreviewUrl}
+                          alt="Organization logo preview"
+                          className="h-14 w-14 rounded-lg border border-gray-200 bg-white object-contain p-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveLogo}
+                          className="text-xs font-semibold px-3 py-1.5 rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition"
+                        >
+                          {isEs ? 'Eliminar logo' : 'Remove Logo'}
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-                {renderFieldActions('streetAddress')}
-              </div>
-              <div className={editingField === 'streetAddress' ? 'mt-3' : 'hidden'}>
-                <AddressAutocompleteInput
-                  name="streetAddress"
-                  value={streetAddress}
-                  onChange={(event) => setStreetAddress(event.target.value)}
-                  placeholder={translations.dashboard.workspaceAddressPlaceholder}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                />
-              </div>
-            </div>
 
-            <div className="px-6 md:px-8 py-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.city}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-700">{city.trim() || (isEs ? 'Sin ciudad' : 'No city')}</p>
+                <div className="px-6 md:px-8 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.phone}</p>
+                      <p className="mt-1 text-sm font-medium text-slate-700">{phone.trim() || (isEs ? 'Sin teléfono' : 'No phone')}</p>
+                    </div>
+                    {renderFieldActions('phone')}
+                  </div>
+                  <div className={editingField === 'phone' ? 'mt-3' : 'hidden'}>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      placeholder={translations.dashboard.workspacePhonePlaceholder}
+                      maxLength={50}
+                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                    />
+                  </div>
                 </div>
-                {renderFieldActions('city')}
-              </div>
-              <div className={editingField === 'city' ? 'mt-3' : 'hidden'}>
-                <input
-                  type="text"
-                  name="city"
-                  value={city}
-                  onChange={(event) => setCity(event.target.value)}
-                  placeholder={translations.dashboard.city}
-                  maxLength={120}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                />
-              </div>
-            </div>
 
-            <div className="px-6 md:px-8 py-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.state}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-700">{(stateValue || stateDefaultValue).trim() || (isEs ? 'Sin estado' : 'No state')}</p>
+                <div className="px-6 md:px-8 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.streetAddress}</p>
+                      <p className="mt-1 text-sm font-medium text-slate-700">{streetAddress.trim() || (isEs ? 'Sin dirección' : 'No street address')}</p>
+                    </div>
+                    {renderFieldActions('streetAddress')}
+                  </div>
+                  <div className={editingField === 'streetAddress' ? 'mt-3' : 'hidden'}>
+                    <AddressAutocompleteInput
+                      name="streetAddress"
+                      value={streetAddress}
+                      onChange={(event) => setStreetAddress(event.target.value)}
+                      placeholder={translations.dashboard.workspaceAddressPlaceholder}
+                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                    />
+                  </div>
                 </div>
-                {renderFieldActions('state')}
-              </div>
-              <div className={editingField === 'state' ? 'mt-3' : 'hidden'}>
-                <select
-                  name="state"
-                  value={stateValue}
-                  onChange={(event) => setStateValue(event.target.value)}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                >
-                  <option value="">{isEs ? 'Selecciona estado' : 'Select state'}</option>
-                  {initialState.trim() && !normalizedState && (
-                    <option value={initialState.trim()}>{initialState.trim()}</option>
-                  )}
-                  {US_STATES.map((state) => (
-                    <option key={state.code} value={state.name}>
-                      {state.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
 
-            <div className="px-6 md:px-8 py-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.zip}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-700">{zipCode.trim() || (isEs ? 'Sin ZIP' : 'No ZIP')}</p>
+                <div className="px-6 md:px-8 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.city}</p>
+                      <p className="mt-1 text-sm font-medium text-slate-700">{city.trim() || (isEs ? 'Sin ciudad' : 'No city')}</p>
+                    </div>
+                    {renderFieldActions('city')}
+                  </div>
+                  <div className={editingField === 'city' ? 'mt-3' : 'hidden'}>
+                    <input
+                      type="text"
+                      name="city"
+                      value={city}
+                      onChange={(event) => setCity(event.target.value)}
+                      placeholder={translations.dashboard.city}
+                      maxLength={120}
+                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                    />
+                  </div>
                 </div>
-                {renderFieldActions('zipCode')}
-              </div>
-              <div className={editingField === 'zipCode' ? 'mt-3' : 'hidden'}>
-                <input
-                  type="text"
-                  name="zipCode"
-                  value={zipCode}
-                  onChange={(event) => setZipCode(event.target.value)}
-                  placeholder={translations.dashboard.zip}
-                  maxLength={20}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                />
-              </div>
-            </div>
+
+                <div className="px-6 md:px-8 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.state}</p>
+                      <p className="mt-1 text-sm font-medium text-slate-700">{(stateValue || stateDefaultValue).trim() || (isEs ? 'Sin estado' : 'No state')}</p>
+                    </div>
+                    {renderFieldActions('state')}
+                  </div>
+                  <div className={editingField === 'state' ? 'mt-3' : 'hidden'}>
+                    <select
+                      name="state"
+                      value={stateValue}
+                      onChange={(event) => setStateValue(event.target.value)}
+                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                    >
+                      <option value="">{isEs ? 'Selecciona estado' : 'Select state'}</option>
+                      {initialState.trim() && !normalizedState && (
+                        <option value={initialState.trim()}>{initialState.trim()}</option>
+                      )}
+                      {US_STATES.map((state) => (
+                        <option key={state.code} value={state.name}>
+                          {state.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="px-6 md:px-8 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.zip}</p>
+                      <p className="mt-1 text-sm font-medium text-slate-700">{zipCode.trim() || (isEs ? 'Sin ZIP' : 'No ZIP')}</p>
+                    </div>
+                    {renderFieldActions('zipCode')}
+                  </div>
+                  <div className={editingField === 'zipCode' ? 'mt-3' : 'hidden'}>
+                    <input
+                      type="text"
+                      name="zipCode"
+                      value={zipCode}
+                      onChange={(event) => setZipCode(event.target.value)}
+                      placeholder={translations.dashboard.zip}
+                      maxLength={20}
+                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       </form>

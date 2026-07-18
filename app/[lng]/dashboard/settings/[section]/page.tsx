@@ -68,7 +68,7 @@ export default async function SettingsSectionPage({
     redirect('/login');
   }
 
-  const { organization: org } = await getUserOrganization(user.id);
+  const { organization: org, role } = await getUserOrganization(user.id);
 
   if (!org) {
     redirect(`/${locale}/auth/access-pending`);
@@ -78,6 +78,11 @@ export default async function SettingsSectionPage({
   const isIndividualAccount = org.subscription_status === 'individual';
   const canAccessStripeSettings = org.subscription_status === 'trial' || org.subscription_status === 'growth' || org.subscription_status === 'enterprise';
   const canAccessXeroSettings = org.subscription_status === 'trial' || org.subscription_status === 'enterprise';
+  const normalizedRole = (role || '').toLowerCase();
+  const isOwnerRole = normalizedRole === 'owner';
+  const canViewImportExport = normalizedRole === 'owner' || normalizedRole === 'admin';
+  const canManageIntegrations = canAccessStripeSettings && (normalizedRole === 'owner' || normalizedRole === 'admin');
+  const canManageSubscription = isOwnerRole;
 
   if (section === 'team-settings' && isIndividualAccount) {
     redirect(`/${locale}/dashboard/settings/profile-settings`);
@@ -87,7 +92,11 @@ export default async function SettingsSectionPage({
     redirect(`/${locale}/dashboard/settings/profile-settings`);
   }
 
-  if (section === 'integrations' && !canAccessStripeSettings) {
+  if (section === 'integrations' && !canManageIntegrations) {
+    redirect(`/${locale}/dashboard/settings/profile-settings`);
+  }
+
+  if (section === 'manage-subscription' && !canManageSubscription) {
     redirect(`/${locale}/dashboard/settings/profile-settings`);
   }
 
@@ -112,7 +121,7 @@ export default async function SettingsSectionPage({
     });
   }
 
-  if (canAccessStripeSettings) {
+  if (canManageIntegrations) {
     sectionLinks.push({
       id: 'integrations',
       label: locale.toLowerCase().startsWith('es') ? 'Integraciones' : 'Integrations',
@@ -128,11 +137,13 @@ export default async function SettingsSectionPage({
     });
   }
 
-  sectionLinks.push({
-    id: 'manage-subscription',
-    label: locale.toLowerCase().startsWith('es') ? 'Administrar suscripcion' : 'Manage Subscription',
-    href: `/${locale}/dashboard/settings/manage-subscription`,
-  });
+  if (canManageSubscription) {
+    sectionLinks.push({
+      id: 'manage-subscription',
+      label: locale.toLowerCase().startsWith('es') ? 'Administrar suscripcion' : 'Manage Subscription',
+      href: `/${locale}/dashboard/settings/manage-subscription`,
+    });
+  }
 
   let services: Array<{
     id: string;
@@ -195,7 +206,11 @@ export default async function SettingsSectionPage({
       <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
 
       <div className="flex flex-1 relative">
-        <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />
+        <DashboardSidebar
+          subscriptionStatus={org.subscription_status}
+          locale={locale}
+          canViewImportExport={canViewImportExport}
+        />
 
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           <div className="max-w-5xl ml-0 space-y-8 text-left">
@@ -241,6 +256,7 @@ export default async function SettingsSectionPage({
                     initialState={normalizedState}
                     initialZipCode={normalizedZipCode}
                     locale={locale}
+                    showOwnerFields={isOwnerRole}
                   />
                 </div>
               </>
@@ -274,7 +290,7 @@ export default async function SettingsSectionPage({
               />
             )}
 
-            {section === 'integrations' && canAccessStripeSettings && (
+            {section === 'integrations' && canManageIntegrations && (
               <>
                 <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                   <StripeConnectSettings
@@ -362,7 +378,7 @@ export default async function SettingsSectionPage({
               </div>
             )}
 
-            {section === 'manage-subscription' && (
+            {section === 'manage-subscription' && canManageSubscription && (
               <>
                 <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                   <SubscriptionCancellationCard currentSubscriptionStatus={org.subscription_status} locale={locale} />

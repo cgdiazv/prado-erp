@@ -13,6 +13,7 @@ import JobCompletedEmail from '@/emails/job-completed-email';
 import { enqueueXeroCompletedJobInvoice, enqueueXeroExpenseBill } from '@/app/actions/xeroActions';
 import { syncInvoiceToQBO } from '@/app/actions/qboActions';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
+import { getUserOrganization } from '@/lib/organization';
 import { findAuthUserIndexByEmail, findAuthUserIndexByUserIds, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 import Stripe from 'stripe';
 
@@ -1483,15 +1484,13 @@ export async function getEstimatesDashboardData() {
       return { error: 'Unauthorized', estimates: [], customers: [], services: [], trucks: [] };
     }
 
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .select('id, name, logo_url, subscription_status')
-      .eq('owner_id', user.id)
-      .single();
-
-    if (orgError || !org) {
-      return { error: orgError?.message || 'Organization not found.', estimates: [], customers: [], services: [], trucks: [] };
+    const { organization: org, role } = await getUserOrganization(user.id);
+    if (!org) {
+      return { error: 'Organization not found.', estimates: [], customers: [], services: [], trucks: [] };
     }
+
+    const normalizedRole = (role || '').toLowerCase();
+    const canViewImportExport = normalizedRole === 'owner' || normalizedRole === 'admin';
 
     const { data: estimatesData, error: estimatesError } = await supabase
       .from('estimates')
@@ -1540,6 +1539,7 @@ export async function getEstimatesDashboardData() {
       organizationName: org.name || '',
       organizationLogoUrl: org.logo_url || '',
       subscriptionStatus: org.subscription_status || 'trial',
+      canViewImportExport,
       estimates: estimatesData || [],
       customers: customersData || [],
       services: servicesData || [],
@@ -2168,15 +2168,25 @@ export async function getTeamMembers(organizationId: string) {
       return { success: false, members: [], error: 'Unauthorized.' };
     }
 
-    // Verify user is the owner
+    // Verify user is owner or manager (admin)
     const { data: orgData } = await supabaseAdmin
       .from('organizations')
       .select('owner_id')
       .eq('id', organizationId)
       .maybeSingle();
 
-    if (orgData?.owner_id !== user.id) {
-      return { success: false, members: [], error: 'Only organization owner can view members.' };
+    const isOwner = orgData?.owner_id === user.id;
+    if (!isOwner) {
+      const { data: membership } = await supabaseAdmin
+        .from('organization_users')
+        .select('role')
+        .eq('organization_id', organizationId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if ((membership as any)?.role !== 'admin') {
+        return { success: false, members: [], error: 'Only organization owner or manager can view members.' };
+      }
     }
 
     // Get accepted team members from organization_users

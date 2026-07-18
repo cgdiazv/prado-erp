@@ -218,6 +218,7 @@ export default function EstimatesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | undefined>(undefined);
+  const [canViewImportExport, setCanViewImportExport] = useState(false);
   const [userInitials, setUserInitials] = useState('C');
   const [organizationLogoUrl, setOrganizationLogoUrl] = useState('');
   
@@ -251,6 +252,7 @@ export default function EstimatesPage() {
         setServices(loadedServices);
         setTrucks((result.trucks || []) as any);
         setSubscriptionStatus(result.subscriptionStatus || 'trial');
+        setCanViewImportExport(result.canViewImportExport === true);
         setUserInitials(result.organizationName ? result.organizationName.charAt(0).toUpperCase() : 'C');
         setOrganizationLogoUrl(result.organizationLogoUrl || '');
         setServiceLines((prev) => {
@@ -271,6 +273,7 @@ export default function EstimatesPage() {
         setCustomers([]);
         setServices([]);
         setTrucks([]);
+        setCanViewImportExport(false);
         setOrganizationLogoUrl('');
       }
     }
@@ -583,7 +586,11 @@ export default function EstimatesPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
       <DashboardNavbar userInitials={userInitials} organizationLogoUrl={organizationLogoUrl} />
       <div className="flex flex-1 relative">
-        <DashboardSidebar subscriptionStatus={resolvedSubscriptionStatus} locale={locale} />
+        <DashboardSidebar
+          subscriptionStatus={resolvedSubscriptionStatus}
+          locale={locale}
+          canViewImportExport={canViewImportExport}
+        />
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           <div className="max-w-5xl ml-0 space-y-8 text-left">
 

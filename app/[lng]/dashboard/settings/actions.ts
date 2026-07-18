@@ -87,7 +87,7 @@ export async function updateWorkspaceIdentity(formData: FormData) {
   }
 
   if (!org) {
-    return { error: 'Workspace not found.' };
+    return { error: 'Only the workspace owner can update workspace identity.' };
   }
 
   let nextLogoUrl = org.logo_url || null;

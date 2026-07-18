@@ -100,9 +100,10 @@ export default async function DashboardHome({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { organization: org } = await getUserOrganization(user.id);
+  const { organization: org, role } = await getUserOrganization(user.id);
 
   if (!org) redirect(`/${locale}/auth/access-pending`);
+  const canViewImportExport = role === 'owner' || role === 'admin';
   const isIndividualAccount = org.subscription_status === 'individual';
 
   // Verify trial lifecycle
@@ -329,7 +330,11 @@ export default async function DashboardHome({
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
       <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
       <div className="flex flex-1 relative">
-        <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />
+        <DashboardSidebar
+          subscriptionStatus={org.subscription_status}
+          locale={locale}
+          canViewImportExport={canViewImportExport}
+        />
         
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           <div className="max-w-5xl ml-0 space-y-8 text-left">

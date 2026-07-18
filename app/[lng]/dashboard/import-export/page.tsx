@@ -86,10 +86,17 @@ export default async function ImportExportPage({
     redirect('/login');
   }
 
-  const { organization: org } = await getUserOrganization(user.id);
+  const { organization: org, role } = await getUserOrganization(user.id);
 
   if (!org) {
     redirect(`/${locale}/auth/access-pending`);
+  }
+
+  const normalizedRole = (role || '').toLowerCase();
+  const canManageImportExport = normalizedRole === 'owner' || normalizedRole === 'admin';
+
+  if (!canManageImportExport) {
+    redirect(`/${locale}/dashboard`);
   }
 
   const initial = org.name ? org.name.charAt(0) : 'C';
@@ -99,7 +106,11 @@ export default async function ImportExportPage({
       <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
 
       <div className="flex flex-1 relative">
-        <DashboardSidebar subscriptionStatus={org.subscription_status} locale={locale} />
+        <DashboardSidebar
+          subscriptionStatus={org.subscription_status}
+          locale={locale}
+          canViewImportExport={canManageImportExport}
+        />
 
         <main className="flex-1 p-6 md:p-12 overflow-y-auto">
           <div className="max-w-5xl ml-0 grid grid-cols-1 gap-8 text-left">
