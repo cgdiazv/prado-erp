@@ -245,7 +245,7 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
                         onChange={(event) => setDraftAutoChargeDefault(event.target.checked)}
                         className="h-4 w-4 rounded border-gray-300 text-emerald-600"
                       />
-                      {isEs ? 'Intentar auto cobro despues del primer pago en linea' : 'Try auto-charge after first online payment'}
+                      {isEs ? 'Auto cobro despues del primer pago en linea' : 'Auto-charge after first online payment'}
                     </label>
                   </>
                 ) : null}
