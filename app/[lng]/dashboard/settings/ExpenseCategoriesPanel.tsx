@@ -18,6 +18,8 @@ export default function ExpenseCategoriesPanel({ locale = 'en' }: ExpenseCategor
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
   const [categories, setCategories] = useState<string[]>(DEFAULT_EXPENSE_CATEGORIES);
+  const [editingCreate, setEditingCreate] = useState(false);
+  const [editingManage, setEditingManage] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [draftCategory, setDraftCategory] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
@@ -80,6 +82,21 @@ export default function ExpenseCategoriesPanel({ locale = 'en' }: ExpenseCategor
     setStatusMessage(isEs ? `Categoria archivada: "${categoryToArchive}".` : `Archived "${categoryToArchive}".`);
   };
 
+  const toggleCreateSection = () => {
+    setStatusMessage('');
+    setEditingCreate((current) => !current);
+  };
+
+  const toggleManageSection = () => {
+    setStatusMessage('');
+    setEditingManage((current) => !current);
+  };
+
+  const handleArchiveSelectedCategory = () => {
+    if (!selectedCategory) return;
+    handleArchiveCategory(selectedCategory);
+  };
+
   useEffect(() => {
     if (!selectedCategory && categories.length > 0) {
       setSelectedCategory(categories[0]);
@@ -92,73 +109,117 @@ export default function ExpenseCategoriesPanel({ locale = 'en' }: ExpenseCategor
   }, [categories, selectedCategory]);
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
-      <div>
+    <div className="pt-6 md:pt-8 space-y-6">
+      <div className="px-6 md:px-8">
         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{translations.dashboard.expenseCategoriesSection}</h3>
         <p className="text-xs text-slate-400">{translations.dashboard.expenseCategoriesDescription}</p>
       </div>
 
-      <form onSubmit={handleAddCategory} className="space-y-3">
-        <div className="space-y-1">
-          <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {isEs ? 'Nombre de categoria' : 'Category name'}
-          </label>
-          <input
-            type="text"
-            value={draftCategory}
-            onChange={(event) => setDraftCategory(event.target.value)}
-            placeholder={translations.dashboard.addNewCategory}
-            className="w-full rounded-lg border border-gray-300 p-2.5 text-sm outline-none"
-          />
-        </div>
-        <button
-          type="submit"
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-        >
-          {translations.dashboard.addCategory}
-        </button>
-      </form>
+      {statusMessage ? <p className="px-6 md:px-8 text-xs text-slate-500">{statusMessage}</p> : null}
 
-      {statusMessage ? <p className="text-xs text-slate-500">{statusMessage}</p> : null}
-
-      <div className="space-y-3 rounded-xl border border-gray-200 bg-slate-50 p-4">
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
-          <div className="flex-1 space-y-1">
-            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {isEs ? 'Categorias guardadas' : 'Saved categories'}
-            </label>
-            <select
-              value={selectedCategory}
-              onChange={(event) => setSelectedCategory(event.target.value)}
-              disabled={categories.length === 0}
-              className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-slate-900 outline-none disabled:bg-gray-100 disabled:text-gray-400"
-            >
-              {categories.length === 0 ? (
-                <option value="">{isEs ? 'No hay categorias guardadas' : 'No saved categories'}</option>
-              ) : (
-                categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))
-              )}
-            </select>
+      <div className="border-y border-slate-200">
+        <div className="divide-y divide-slate-200">
+          <div className="px-6 md:px-8 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{isEs ? 'Agregar categoria' : 'Add category'}</p>
+                <p className="mt-1 text-sm font-medium text-slate-700">{isEs ? 'Crea categorias para clasificar gastos.' : 'Create categories to classify expenses.'}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={toggleCreateSection}
+                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                >
+                  {editingCreate ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
+                </button>
+                {editingCreate ? (
+                  <button
+                    type="submit"
+                    form="categories-create-form"
+                    className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                  >
+                    {isEs ? 'Agregar nuevo' : 'Add New'}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <form id="categories-create-form" onSubmit={handleAddCategory} className={editingCreate ? 'mt-3 space-y-3' : 'hidden'}>
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {isEs ? 'Nombre de categoria' : 'Category name'}
+                </label>
+                <input
+                  type="text"
+                  value={draftCategory}
+                  onChange={(event) => setDraftCategory(event.target.value)}
+                  placeholder={translations.dashboard.addNewCategory}
+                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm outline-none"
+                />
+              </div>
+            </form>
           </div>
-          <button
-            type="button"
-            onClick={() => selectedCategory && handleArchiveCategory(selectedCategory)}
-            className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
-            disabled={!selectedCategory}
-          >
-            {isEs ? 'Archivar categoria' : 'Archive category'}
-          </button>
-        </div>
 
-        {selectedCategory ? (
-          <p className="text-sm text-slate-700">
-            <span className="font-semibold text-slate-900">{selectedCategory}</span>
-          </p>
-        ) : null}
+          <div className="px-6 md:px-8 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{isEs ? 'Categorias guardadas' : 'Saved categories'}</p>
+                <p className="mt-1 text-sm font-medium text-slate-700">
+                  {selectedCategory || (isEs ? 'No hay categorias guardadas' : 'No saved categories')}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={toggleManageSection}
+                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                >
+                  {editingManage ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
+                </button>
+                {editingManage ? (
+                  <button
+                    type="button"
+                    onClick={handleArchiveSelectedCategory}
+                    className="text-sm font-semibold text-red-600 hover:text-red-700 disabled:text-red-300"
+                    disabled={!selectedCategory}
+                  >
+                    {isEs ? 'Archivar' : 'Archive'}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            <div className={editingManage ? 'mt-3 space-y-3' : 'hidden'}>
+              <div className="flex-1 space-y-1">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {isEs ? 'Categorias guardadas' : 'Saved categories'}
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={(event) => setSelectedCategory(event.target.value)}
+                  disabled={categories.length === 0}
+                  className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-slate-900 outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                >
+                  {categories.length === 0 ? (
+                    <option value="">{isEs ? 'No hay categorias guardadas' : 'No saved categories'}</option>
+                  ) : (
+                    categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              {selectedCategory ? (
+                <p className="text-sm text-slate-700">
+                  <span className="font-semibold text-slate-900">{selectedCategory}</span>
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
