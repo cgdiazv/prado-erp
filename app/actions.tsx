@@ -1927,19 +1927,19 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
     if (hasExistingAuthUser && authUser) {
       // User already has an account - add them directly to organization_users
       // Check if they're already a member
-      const { data: existingOrgUser } = await supabase
+      const { data: existingOrgUser } = await supabaseAdmin
         .from('organization_users')
         .select('id')
         .eq('organization_id', payload.organizationId)
         .eq('user_id', authUser.id)
-        .single();
+        .maybeSingle();
 
       if (existingOrgUser) {
         return { success: false, error: 'This user is already a member of this organization.' };
       }
 
       // Insert the team member record
-      const { error: insertError } = await supabase
+      const { error: insertError } = await supabaseAdmin
         .from('organization_users')
         .upsert([
           {
@@ -1976,7 +1976,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
       }
 
       inviteToken = randomUUID();
-      const { error: inviteError } = await supabase
+      const { error: inviteError } = await supabaseAdmin
         .from('organization_invitations')
         .insert([
           {
@@ -2075,6 +2075,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
 export async function removeTeamMember(organizationId: string, email: string) {
   try {
     const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -2082,30 +2083,29 @@ export async function removeTeamMember(organizationId: string, email: string) {
     }
 
     // Verify user is the owner of the organization
-    const { data: orgData } = await supabase
+    const { data: orgData } = await supabaseAdmin
       .from('organizations')
       .select('owner_id')
       .eq('id', organizationId)
-      .single();
+      .maybeSingle();
 
     if (orgData?.owner_id !== user.id) {
       return { success: false, error: 'Only organization owner can remove members.' };
     }
 
     // First, try to remove from organization_invitations (pending invites)
-    const { error: inviteDeleteError } = await supabase
+    const { error: inviteDeleteError } = await supabaseAdmin
       .from('organization_invitations')
       .delete()
       .eq('organization_id', organizationId)
       .eq('email', email);
 
     // Second, try to remove from organization_users (accepted members)
-    const supabaseAdmin = createAdminClient();
     const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
     const targetUser = authUsers?.users?.find(u => u.email === email);
 
     if (targetUser) {
-      const { error: memberDeleteError } = await supabase
+      const { error: memberDeleteError } = await supabaseAdmin
         .from('organization_users')
         .delete()
         .eq('organization_id', organizationId)
@@ -2131,6 +2131,7 @@ export async function removeTeamMember(organizationId: string, email: string) {
 export async function getTeamMembers(organizationId: string) {
   try {
     const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -2138,18 +2139,18 @@ export async function getTeamMembers(organizationId: string) {
     }
 
     // Verify user is the owner
-    const { data: orgData } = await supabase
+    const { data: orgData } = await supabaseAdmin
       .from('organizations')
       .select('owner_id')
       .eq('id', organizationId)
-      .single();
+      .maybeSingle();
 
     if (orgData?.owner_id !== user.id) {
       return { success: false, members: [], error: 'Only organization owner can view members.' };
     }
 
     // Get accepted team members from organization_users
-    const { data: orgUsers, error: usersError } = await supabase
+    const { data: orgUsers, error: usersError } = await supabaseAdmin
       .from('organization_users')
       .select('user_id, role, created_at')
       .eq('organization_id', organizationId)
@@ -2160,7 +2161,7 @@ export async function getTeamMembers(organizationId: string) {
     }
 
     // Get pending invitations
-    const { data: pendingInvites, error: invitesError } = await supabase
+    const { data: pendingInvites, error: invitesError } = await supabaseAdmin
       .from('organization_invitations')
       .select('email, role, created_at')
       .eq('organization_id', organizationId)
