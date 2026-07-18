@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseServer';
 
 export type UserOrganization = {
   id: string;
@@ -66,7 +66,7 @@ async function selectFirstMembership(supabase: any, userId: string, select: stri
 }
 
 export async function getUserOrganization(userId: string): Promise<UserOrganizationResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const withStripeOwned = await selectFirstOwnedOrganization(supabase, userId, ORG_SELECT_WITH_STRIPE);
 

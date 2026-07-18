@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabaseServer';
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+async function handleSignOut(request: Request) {
   const supabase = await createClient();
 
   // 1. Terminate the user session securely on Supabase auth service
@@ -12,7 +12,18 @@ export async function POST(request: Request) {
 
   // 2. Clear out auth tokens and force redirect cleanly to root login path
   const requestUrl = new URL(request.url);
-  return NextResponse.redirect(`${requestUrl.origin}/login`, {
+  const [, lng] = requestUrl.pathname.split('/');
+  const safeLng = lng || 'en';
+
+  return NextResponse.redirect(`${requestUrl.origin}/${safeLng}/login`, {
     status: 303, // See Other status forces a clean GET request on redirect
   });
+}
+
+export async function GET(request: Request) {
+  return handleSignOut(request);
+}
+
+export async function POST(request: Request) {
+  return handleSignOut(request);
 }

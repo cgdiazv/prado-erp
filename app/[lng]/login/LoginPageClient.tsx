@@ -45,7 +45,7 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
       }
 
       if (result?.success) {
-        router.push('/dashboard');
+        router.push(`/${locale}/dashboard`);
         router.refresh();
       }
     } catch {
@@ -94,7 +94,7 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-xs font-semibold text-gray-500 uppercase">{translations.login.passwordLabel}</label>
                 <Link
-                  href="/login/forgot-password"
+                  href={`/${locale}/login/forgot-password`}
                   className="text-[11px] font-semibold text-emerald-600 hover:underline outline-none"
                 >
                   {translations.login.forgotPassword}
@@ -141,7 +141,7 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
           </form>
 
           <div className="mt-6 text-center text-xs text-gray-400 border-t border-gray-100 pt-4">
-            {translations.login.registerPrompt} <Link href="/signup" className="text-emerald-600 hover:underline font-semibold">{translations.login.registerLink}</Link>
+            {translations.login.registerPrompt} <Link href={`/${locale}/signup`} className="text-emerald-600 hover:underline font-semibold">{translations.login.registerLink}</Link>
           </div>
         </div>
       </main>
