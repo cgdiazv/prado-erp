@@ -4,6 +4,7 @@ import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { getUserOrganization } from '@/lib/organization';
 import ProfileSettingsForm from './ProfileSettingsForm';
+import PasswordForm from '../settings/PasswordForm';
 
 export default async function DashboardProfileSettingsPage({
   params,
@@ -64,6 +65,10 @@ export default async function DashboardProfileSettingsPage({
                 initialLastName={profile?.last_name || ''}
                 initialPhone={profile?.phone || ''}
               />
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+              <PasswordForm locale={locale} />
             </div>
           </div>
         </main>

@@ -336,7 +336,7 @@
       "workspaceIdentitySaving": "Saving...",
       "workspaceIdentityUpdatedSuccess": "Workspace identity updated successfully.",
       "securityCredentials": "Security Credentials",
-      "securityCredentialsDescription": "Update the authorization credentials connected to your workspace access token",
+      "securityCredentialsDescription": "Update the credentials connected to your workspace access",
       "passwordUpdatedSuccess": "Your security password has been updated successfully.",
       "newPassword": "New Password",
       "confirmNewPassword": "Confirm New Password",
