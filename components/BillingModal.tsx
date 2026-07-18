@@ -29,9 +29,9 @@ export default function BillingModal({ userEmail = '', orgId = '' }: BillingModa
 
   // Build secure URLs with parameters pre-mapped
   const queryParams = `prefilled_email=${encodeURIComponent(userEmail)}&client_reference_id=${orgId}`;
-  const individualUrl = `https://pay.indevasa.com/b/00wdR85i76E4dXg2Yl4Ni04?${queryParams}`;
-  const growthUrl = `https://pay.indevasa.com/b/9B614m39Z7I84mG6ax4Ni06?${queryParams}`;
-  const enterpriseUrl = `https://pay.indevasa.com/b/eVq4gy5i73rS5qKdCZ4Ni05?${queryParams}`;
+  const individualUrl = `https://pay.delvalletradings.com/b/00wdR85i76E4dXg2Yl4Ni04?${queryParams}`;
+  const growthUrl = `https://pay.delvalletradings.com/b/9B614m39Z7I84mG6ax4Ni06?${queryParams}`;
+  const enterpriseUrl = `https://pay.delvalletradings.com/b/eVq4gy5i73rS5qKdCZ4Ni05?${queryParams}`;
 
   const handleClose = () => {
     // If the trial isn't explicitly expired, let them dismiss it safely

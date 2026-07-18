@@ -150,15 +150,15 @@ export async function signup(formData: FormData) {
     const queryParams = `prefilled_email=${encodeURIComponent(email)}&client_reference_id=${ownerOrgId}`;
 
     if (intendedPlan === 'individual') {
-      return { stripeUrl: `https://pay.indevasa.com/b/00wdR85i76E4dXg2Yl4Ni04?${queryParams}` };
+      return { stripeUrl: `https://pay.delvalletradings.com/b/00wdR85i76E4dXg2Yl4Ni04?${queryParams}` };
     }
 
     if (intendedPlan === 'growth') {
-      return { stripeUrl: `https://pay.indevasa.com/b/9B614m39Z7I84mG6ax4Ni06?${queryParams}` };
+      return { stripeUrl: `https://pay.delvalletradings.com/b/9B614m39Z7I84mG6ax4Ni06?${queryParams}` };
     }
 
     if (intendedPlan === 'enterprise') {
-      return { stripeUrl: `https://pay.indevasa.com/b/eVq4gy5i73rS5qKdCZ4Ni05?${queryParams}` };
+      return { stripeUrl: `https://pay.delvalletradings.com/b/eVq4gy5i73rS5qKdCZ4Ni05?${queryParams}` };
     }
 
     // Fallback: Default standard free trial flow routing
