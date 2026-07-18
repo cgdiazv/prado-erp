@@ -7,6 +7,7 @@ type JobScheduledEmailProps = {
   address?: string | null;
   costAmount: number;
   truckName?: string | null;
+  calendarUrl?: string | null;
   organizationName?: string;
   organizationSlogan?: string;
   organizationLogoUrl?: string;
@@ -19,6 +20,7 @@ export default function JobScheduledEmail({
   address,
   costAmount,
   truckName,
+  calendarUrl,
   organizationName = 'Prado Systems',
   organizationSlogan = 'Field Service Software',
   organizationLogoUrl = '',
@@ -117,6 +119,29 @@ export default function JobScheduledEmail({
             </tbody>
           </table>
         </div>
+
+        {calendarUrl ? (
+          <div style={{ marginBottom: 16 }}>
+            <a
+              href={calendarUrl}
+              style={{
+                display: 'inline-block',
+                background: '#0f766e',
+                color: '#ffffff',
+                textDecoration: 'none',
+                fontWeight: 700,
+                fontSize: 13,
+                padding: '12px 18px',
+                borderRadius: 8,
+              }}
+            >
+              Add to Calendar
+            </a>
+            <p style={{ margin: '8px 0 0 0', fontSize: 11, color: '#64748b', lineHeight: '16px' }}>
+              Use this calendar file to create the scheduled service event in Apple Calendar, Google Calendar, or Outlook.
+            </p>
+          </div>
+        ) : null}
 
         {/* Footer note */}
         <div style={{ marginTop: 40, borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>

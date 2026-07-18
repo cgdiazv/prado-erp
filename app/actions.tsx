@@ -27,6 +27,40 @@ function getAppBaseUrl() {
   return 'https://pradojob.com';
 }
 
+function buildJobCalendarUrl({
+  id,
+  scheduledDate,
+  jobType,
+  address,
+  truckName,
+  costAmount,
+}: {
+  id: string;
+  scheduledDate: string;
+  jobType: string;
+  address?: string | null;
+  truckName?: string | null;
+  costAmount: number;
+}) {
+  const baseUrl = getAppBaseUrl();
+  const params = new URLSearchParams({
+    id,
+    scheduledDate,
+    jobType,
+    costAmount: String(costAmount),
+  });
+
+  if (address) {
+    params.set('address', address);
+  }
+
+  if (truckName) {
+    params.set('truckName', truckName);
+  }
+
+  return `${baseUrl}/api/calendar/job?${params.toString()}`;
+}
+
 async function createInvoiceCheckoutSession({
   invoiceId,
   organizationId,
@@ -138,7 +172,7 @@ export async function createJob(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: insertedJobs, error } = await supabase
     .from('jobs')
     .insert([
       {
@@ -150,11 +184,15 @@ export async function createJob(formData: FormData) {
         status: 'scheduled',
         truck_id: truckId ? truckId : null 
       }
-    ]);
+    ])
+    .select('id')
+    .single();
 
   if (error) {
     return { error: error.message };
   }
+
+  const jobId = insertedJobs?.id;
 
   // Send job scheduled confirmation email to the customer
   try {
@@ -191,6 +229,17 @@ export async function createJob(formData: FormData) {
         truckName = truck?.name ?? null;
       }
 
+      const calendarUrl = jobId
+        ? buildJobCalendarUrl({
+            id: jobId,
+            scheduledDate,
+            jobType,
+            address: property?.street_address ?? null,
+            truckName,
+            costAmount,
+          })
+        : null;
+
       const emailHtml = await render(
         JobScheduledEmail({
           customerName: customerDisplayName,
@@ -199,6 +248,7 @@ export async function createJob(formData: FormData) {
           address: property?.street_address ?? null,
           costAmount,
           truckName,
+          calendarUrl,
           organizationName,
           organizationSlogan: org.slogan?.trim() || 'Field Service Software',
           organizationLogoUrl: org.logo_url?.trim() || '',

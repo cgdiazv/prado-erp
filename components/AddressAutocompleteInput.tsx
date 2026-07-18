@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 interface AddressAutocompleteInputProps {
   name: string;
   defaultValue?: string;
+  value?: string;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   required?: boolean;
   className?: string;
@@ -20,12 +22,14 @@ const AUTOCOMPLETE_ENDPOINT = 'https://places.googleapis.com/v1/places:autocompl
 export default function AddressAutocompleteInput({
   name,
   defaultValue = '',
+  value: controlledValue,
+  onChange,
   placeholder,
   required = false,
   className,
 }: AddressAutocompleteInputProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
-  const [value, setValue] = useState(defaultValue);
+  const [inputValue, setInputValue] = useState(defaultValue);
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -47,7 +51,7 @@ export default function AddressAutocompleteInput({
   );
 
   useEffect(() => {
-    setValue(defaultValue);
+    setInputValue(defaultValue);
   }, [defaultValue]);
 
   useEffect(() => {
@@ -64,7 +68,7 @@ export default function AddressAutocompleteInput({
   useEffect(() => {
     if (!apiKey) return;
 
-    const query = value.trim();
+    const query = (controlledValue ?? inputValue).trim();
     if (query.length < 3) {
       setSuggestions([]);
       return;
@@ -118,7 +122,7 @@ export default function AddressAutocompleteInput({
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [apiKey, value]);
+  }, [apiKey, controlledValue, inputValue]);
 
   if (!apiKey) {
     return fallbackInput;
@@ -129,12 +133,13 @@ export default function AddressAutocompleteInput({
       <input
         type="text"
         name={name}
-        value={value}
+        value={controlledValue ?? inputValue}
         placeholder={placeholder}
         required={required}
         autoComplete="street-address"
         onChange={(event) => {
-          setValue(event.target.value);
+          setInputValue(event.target.value);
+          onChange?.(event);
           setIsOpen(true);
         }}
         onFocus={() => {
@@ -151,7 +156,7 @@ export default function AddressAutocompleteInput({
                 <button
                   type="button"
                   onClick={() => {
-                    setValue(suggestion.text);
+                    setInputValue(suggestion.text);
                     setIsOpen(false);
                   }}
                   className="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-100"
