@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
 import { Resend } from 'resend';
 import { render } from '@react-email/render';
+import { createClient as createSupabaseJsClient } from '@supabase/supabase-js';
 import EstimateEmail from '@/emails/estimate-email';
 import InvoiceEmail from '@/emails/invoice-email';
 import InviteMemberEmail from '@/emails/invite-member-email';
@@ -1880,6 +1881,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     let inviteToken: string | null = null;
+    const normalizedInviteEmail = payload.email.toLowerCase().trim();
 
     if (!user) {
       return { success: false, error: 'Unauthorized.' };
@@ -1891,12 +1893,34 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
       return { success: false, error: limitCheck.message || 'Plan limit reached.' };
     }
 
-    // 2. Look up user by email via admin API
+    // 2. Look up user by email in auth.users
     const supabaseAdmin = createAdminClient();
-    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const authUser = authUsers?.users?.find(u => u.email === payload.email);
+    const authSchemaAdmin = createSupabaseJsClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        db: { schema: 'auth' },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
 
-    if (authUser) {
+    const { data: authUserRecord, error: authUserLookupError } = await authSchemaAdmin
+      .from('users')
+      .select('id, email')
+      .eq('email', normalizedInviteEmail)
+      .maybeSingle();
+
+    if (authUserLookupError) {
+      return { success: false, error: authUserLookupError.message };
+    }
+
+    const hasExistingAuthUser = Boolean(authUserRecord?.id);
+    const authUser = authUserRecord;
+
+    if (hasExistingAuthUser && authUser) {
       // User already has an account - add them directly to organization_users
       // Check if they're already a member
       const { data: existingOrgUser } = await supabase
@@ -1926,14 +1950,26 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
         return { success: false, error: insertError.message };
       }
     } else {
-      // User doesn't have an account yet - create a pending invitation
+      // User doesn't have an account yet - create one in auth.users and create a pending invitation
+      const tempPassword = `Prado!${randomUUID()}`;
+      const { error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+        email: normalizedInviteEmail,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: { invited_pending: true },
+      });
+
+      if (createUserError) {
+        return { success: false, error: createUserError.message };
+      }
+
       inviteToken = randomUUID();
       const { error: inviteError } = await supabase
         .from('organization_invitations')
         .insert([
           {
             organization_id: payload.organizationId,
-            email: payload.email,
+            email: normalizedInviteEmail,
             role: payload.role,
             invited_by_user_id: user.id,
             invite_token: inviteToken,
@@ -1968,7 +2004,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
 
       const emailHtml = await render(
         <InviteMemberEmail
-          inviteeEmail={payload.email}
+          inviteeEmail={normalizedInviteEmail}
           inviterName={inviterName}
           organizationName={org?.name || 'Prado ERP'}
           organizationSlogan={org?.slogan || 'Field Service Software'}
@@ -1990,13 +2026,13 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
 
       if (!process.env.RESEND_API_KEY) {
         console.warn('RESEND_API_KEY not set - email not sent');
-        console.log('Email would be sent to:', payload.email, 'Subject:', subject);
+        console.log('Email would be sent to:', normalizedInviteEmail, 'Subject:', subject);
       } else {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
         const response = await resend.emails.send({
           from: `${org?.name || 'Prado ERP'} <${fromEmailAddress}>`,
-          to: payload.email,
+          to: normalizedInviteEmail,
           subject,
           html: htmlString,
         });
@@ -2007,7 +2043,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
             name: response.error.name,
           });
         } else {
-          console.log('Email sent successfully to', payload.email, 'ID:', response.data?.id);
+          console.log('Email sent successfully to', normalizedInviteEmail, 'ID:', response.data?.id);
         }
       }
     } catch (emailError: unknown) {
@@ -2123,14 +2159,56 @@ export async function getTeamMembers(organizationId: string) {
       return { success: false, members: [], error: invitesError.message };
     }
 
-    // Look up emails from auth.users for accepted members
-    const supabaseAdmin = createAdminClient();
-    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+    // Resolve auth.users and profile metadata for accepted members.
+    const memberUserIds = (orgUsers || []).map((ou) => ou.user_id);
 
-    const acceptedMembers = orgUsers?.map(ou => {
-      const authUser = authUsers?.users?.find(u => u.id === ou.user_id);
+    const authSchemaAdmin = createSupabaseJsClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        db: { schema: 'auth' },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+
+    const { data: authUsers, error: authUsersError } = memberUserIds.length > 0
+      ? await authSchemaAdmin
+          .from('users')
+          .select('id, email, last_sign_in_at')
+          .in('id', memberUserIds)
+      : { data: [] as any[], error: null as any };
+
+    if (authUsersError) {
+      return { success: false, members: [], error: authUsersError.message };
+    }
+
+    const { data: userProfiles, error: userProfilesError } = memberUserIds.length > 0
+      ? await supabase
+          .from('user_profiles')
+          .select('user_id, first_name, last_name, phone')
+          .in('user_id', memberUserIds)
+      : { data: [] as any[], error: null as any };
+
+    if (userProfilesError) {
+      return { success: false, members: [], error: userProfilesError.message };
+    }
+
+    const authUserMap = new Map((authUsers || []).map((u: any) => [u.id, u]));
+    const profileMap = new Map((userProfiles || []).map((p: any) => [p.user_id, p]));
+
+    const acceptedMembers = orgUsers?.map((ou) => {
+      const authUser = authUserMap.get(ou.user_id);
+      const profile = profileMap.get(ou.user_id);
+
       return {
         email: authUser?.email || 'unknown@example.com',
+        first_name: profile?.first_name || '',
+        last_name: profile?.last_name || '',
+        phone: profile?.phone || null,
+        last_login_at: authUser?.last_sign_in_at || null,
         role: ou.role,
         invited_at: ou.created_at,
         status: 'accepted' as const,
@@ -2140,6 +2218,10 @@ export async function getTeamMembers(organizationId: string) {
     // Map pending invitations
     const pendingMembers = pendingInvites?.map(pi => ({
       email: pi.email,
+      first_name: '',
+      last_name: '',
+      phone: null,
+      last_login_at: null,
       role: pi.role,
       invited_at: pi.created_at,
       status: 'pending' as const,

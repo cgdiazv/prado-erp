@@ -3,9 +3,14 @@
 import { useState, useEffect } from 'react';
 import { inviteTeamMember, removeTeamMember, getTeamMembers } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
+import { createClient as createBrowserSupabaseClient } from '@/lib/supabaseClient';
 
 interface TeamMember {
   email: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string | null;
+  last_login_at?: string | null;
   role: 'member' | 'admin' | 'owner' | 'accountant' | 'viewer';
   invited_at: string;
   status?: 'accepted' | 'pending';
@@ -14,6 +19,7 @@ interface TeamMember {
 interface TeamsPanelProps {
   organizationId: string;
   locale?: string;
+  subscriptionStatus?: string | null;
 }
 
 const USER_ROLES = [
@@ -39,7 +45,7 @@ const USER_ROLES = [
   }
 ];
 
-export default function TeamsPanel({ organizationId, locale = 'en' }: TeamsPanelProps) {
+export default function TeamsPanel({ organizationId, locale = 'en', subscriptionStatus = null }: TeamsPanelProps) {
   const isEs = locale.toLowerCase().startsWith('es');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'member' | 'admin' | 'accountant' | 'viewer'>('member');
@@ -49,18 +55,77 @@ export default function TeamsPanel({ organizationId, locale = 'en' }: TeamsPanel
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
+  const [showRolesReference, setShowRolesReference] = useState(false);
+  const supabase = createBrowserSupabaseClient();
+
+  const loadMembers = async (showLoading = false) => {
+    if (showLoading) {
+      setIsLoadingMembers(true);
+    }
+
+    const result = await getTeamMembers(organizationId);
+    if (result.success) {
+      setMembers(result.members);
+    }
+
+    if (showLoading) {
+      setIsLoadingMembers(false);
+    }
+  };
 
   // Load team members on mount
   useEffect(() => {
-    const loadMembers = async () => {
-      setIsLoadingMembers(true);
-      const result = await getTeamMembers(organizationId);
-      if (result.success) {
-        setMembers(result.members);
-      }
-      setIsLoadingMembers(false);
+    loadMembers(true);
+
+    const channel = supabase
+      .channel(`team-members-${organizationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'organization_users',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        () => {
+          loadMembers();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'organization_invitations',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        () => {
+          loadMembers();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_profiles',
+        },
+        () => {
+          loadMembers();
+        }
+      )
+      .subscribe();
+
+    const handleWindowFocus = () => {
+      loadMembers();
     };
-    loadMembers();
+
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+      supabase.removeChannel(channel);
+    };
   }, [organizationId]);
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -82,10 +147,7 @@ export default function TeamsPanel({ organizationId, locale = 'en' }: TeamsPanel
         setRole('member');
         
         // Reload members list
-        const membersResult = await getTeamMembers(organizationId);
-        if (membersResult.success) {
-          setMembers(membersResult.members);
-        }
+        await loadMembers();
       } else {
         setError(result.error || 'Failed to send invitation.');
       }
@@ -101,7 +163,7 @@ export default function TeamsPanel({ organizationId, locale = 'en' }: TeamsPanel
     try {
       const result = await removeTeamMember(organizationId, memberEmail);
       if (result.success) {
-        setMembers(members.filter(m => m.email !== memberEmail));
+        await loadMembers();
         setMessage(`${memberEmail} removed from the team.`);
         setTimeout(() => setMessage(''), 3000);
       } else {
@@ -191,105 +253,90 @@ export default function TeamsPanel({ organizationId, locale = 'en' }: TeamsPanel
     }
   };
 
-  return (
-    <div className="p-6 md:p-8 space-y-6">
-      {/* Header */}
-      <div>
-        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">
-          {isEs ? 'Equipo' : 'Team'}
-        </h3>
-        <p className="text-xs text-slate-400">
-          {isEs
-            ? 'Invita miembros del equipo y gestiona sus permisos y roles.'
-            : 'Invite team members and manage their permissions and roles.'}
-        </p>
-      </div>
+  const acceptedMembers = members.filter((member) => member.status !== 'pending');
 
-      {/* Current Members List */}
-      {!isLoadingMembers && members.length > 0 && (
-        <div className="border-b border-gray-200 pb-6">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-            {isEs ? 'Miembros Actuales' : 'Current Members'} ({members.length})
+  const formatLastLogin = (value?: string | null) => {
+    if (!value) return isEs ? 'Nunca' : 'Never';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return isEs ? 'Nunca' : 'Never';
+    return parsed.toLocaleString(isEs ? 'es-ES' : 'en-US');
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-xs p-6 md:p-8 space-y-6">
+        {/* Header */}
+        <div>
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">
+            {isEs ? 'Equipo' : 'Team'}
+          </h3>
+          <p className="text-xs text-slate-400">
+            {isEs
+              ? 'Invita miembros del equipo y gestiona sus permisos y roles.'
+              : 'Invite team members and manage their permissions and roles.'}
           </p>
-          <div className="space-y-2">
-            {members.map((member) => (
+        </div>
+
+        {/* User Roles Reference */}
+        <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            {isEs ? 'Roles Disponibles' : 'Available Roles'}
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowRolesReference((prev) => !prev)}
+            className="text-xs font-semibold text-emerald-700 hover:text-emerald-600"
+          >
+            {showRolesReference ? (isEs ? 'Ocultar' : 'Hide') : (isEs ? 'Mostrar' : 'Show')}
+          </button>
+        </div>
+        {showRolesReference && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {USER_ROLES.map((userRole) => (
               <div
-                key={member.email}
-                className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-gray-200 hover:bg-slate-100 transition"
+                key={userRole.id}
+                className="border border-gray-200 rounded-lg p-3 bg-slate-50 hover:bg-slate-100 transition"
               >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">{member.email}</p>
-                    <p className="text-xs text-slate-500">
-                      {isEs ? 'Invitado el' : 'Invited'} {new Date(member.invited_at).toLocaleDateString()}
-                    </p>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">{getRoleLabel(userRole.id)}</h4>
+                    <p className="text-xs text-slate-500 mt-1">{getRoleDescription(userRole.id)}</p>
                   </div>
-                  <span
-                    className={`text-xs font-bold px-2 py-1 rounded border whitespace-nowrap ${getRoleBadgeColor(
-                      member.role
-                    )}`}
-                  >
-                    {getRoleLabel(member.role)}
-                  </span>
-                  {member.status === 'pending' && (
-                    <span className="text-xs font-bold px-2 py-1 rounded border border-amber-200 bg-amber-50 text-amber-700 whitespace-nowrap">
-                      {isEs ? 'Pendiente' : 'Pending'}
+                  {userRole.id === 'owner' && (
+                    <span className="text-[10px] uppercase font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
+                      {isEs ? 'Predeterminado' : 'Default'}
                     </span>
                   )}
                 </div>
-                <button
-                  onClick={() => handleRemoveMember(member.email)}
-                  disabled={deletingEmail === member.email}
-                  className="ml-2 px-2 py-1 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded transition disabled:opacity-50"
-                >
-                  {deletingEmail === member.email ? (isEs ? 'Eliminando...' : 'Removing...') : (isEs ? 'Eliminar' : 'Remove')}
-                </button>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {userRole.permissions.map((perm) => (
+                    <span key={perm} className="text-[10px] bg-white text-slate-600 border border-gray-200 px-1.5 py-0.5 rounded">
+                      {getPermissionLabel(perm)}
+                    </span>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
+        )}
         </div>
-      )}
 
-      {/* User Roles Reference */}
-      <div className="space-y-3">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-          {isEs ? 'Roles Disponibles' : 'Available Roles'}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {USER_ROLES.map((userRole) => (
-            <div
-              key={userRole.id}
-              className="border border-gray-200 rounded-lg p-3 bg-slate-50 hover:bg-slate-100 transition"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">{getRoleLabel(userRole.id)}</h4>
-                  <p className="text-xs text-slate-500 mt-1">{getRoleDescription(userRole.id)}</p>
-                </div>
-                {userRole.id === 'owner' && (
-                  <span className="text-[10px] uppercase font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
-                    {isEs ? 'Predeterminado' : 'Default'}
-                  </span>
-                )}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {userRole.permissions.map((perm) => (
-                  <span key={perm} className="text-[10px] bg-white text-slate-600 border border-gray-200 px-1.5 py-0.5 rounded">
-                    {getPermissionLabel(perm)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+        {/* Invite Form */}
+        <div className="border-t border-gray-200 pt-6">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+            {isEs ? 'Invitar Miembro' : 'Invite Member'}
+          </p>
 
-      {/* Invite Form */}
-      <div className="border-t border-gray-200 pt-6">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-          {isEs ? 'Invitar Miembro' : 'Invite Member'}
-        </p>
-        <form onSubmit={handleInvite} className="space-y-3">
+          {(subscriptionStatus === 'growth' || subscriptionStatus === 'enterprise') && (
+            <p className="text-xs text-slate-500 mb-3">
+              {subscriptionStatus === 'growth'
+                ? (isEs ? 'Plan Growth: puedes agregar hasta 5 miembros.' : 'Growth tier: you can add up to 5 members.')
+                : (isEs ? 'Plan Enterprise: miembros ilimitados.' : 'Enterprise tier: unlimited members.')}
+            </p>
+          )}
+
+          <form onSubmit={handleInvite} className="space-y-3">
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="email"
@@ -329,22 +376,69 @@ export default function TeamsPanel({ organizationId, locale = 'en' }: TeamsPanel
               {error}
             </div>
           )}
-        </form>
-      </div>
-
-      {/* Info Banner */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-        <div className="flex items-start gap-2">
-          <svg className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-          </svg>
-          <p className="text-xs text-slate-600">
-            {isEs
-              ? 'Los miembros invitados recibirán un correo con un enlace para aceptar la invitación y acceder a su equipo.'
-              : 'Invited members will receive an email with a link to accept the invitation and access your team.'}
-          </p>
+          </form>
         </div>
       </div>
+
+      <div className="space-y-3">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          {isEs ? 'Miembros Actuales' : 'Current Members'} ({acceptedMembers.length})
+        </p>
+
+        {isLoadingMembers ? (
+          <p className="text-xs text-slate-500">{isEs ? 'Cargando miembros...' : 'Loading members...'}</p>
+        ) : (
+          <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-xs">
+            <table className="w-full min-w-[980px] text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Nombre' : 'Name'}</th>
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Apellido' : 'Last Name'}</th>
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Correo' : 'Email Address'}</th>
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Telefono' : 'Phone Number'}</th>
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Permiso' : 'Permission Type'}</th>
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Ultimo acceso' : 'Last Login'}</th>
+                  <th className="text-right py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Accion' : 'Action'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {acceptedMembers.length === 0 ? (
+                  <tr className="border-t border-gray-100">
+                    <td colSpan={7} className="py-6 px-3 text-sm text-slate-500 text-center">
+                      {isEs ? 'No hay miembros activos todavia.' : 'No active members yet.'}
+                    </td>
+                  </tr>
+                ) : (
+                  acceptedMembers.map((member) => (
+                    <tr key={member.email} className="border-t border-gray-100 hover:bg-slate-50/60">
+                      <td className="py-2.5 px-3 text-sm text-gray-800">{member.first_name?.trim() || '—'}</td>
+                      <td className="py-2.5 px-3 text-sm text-gray-800">{member.last_name?.trim() || '—'}</td>
+                      <td className="py-2.5 px-3 text-sm text-gray-800">{member.email}</td>
+                      <td className="py-2.5 px-3 text-sm text-gray-800">{member.phone?.trim() || '—'}</td>
+                      <td className="py-2.5 px-3 text-sm text-gray-800">
+                        <span className={`text-xs font-bold px-2 py-1 rounded border whitespace-nowrap ${getRoleBadgeColor(member.role)}`}>
+                          {getRoleLabel(member.role)}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-sm text-gray-800">{formatLastLogin(member.last_login_at)}</td>
+                      <td className="py-2.5 px-3 text-right">
+                        <button
+                          onClick={() => handleRemoveMember(member.email)}
+                          disabled={deletingEmail === member.email}
+                          className="px-2 py-1 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded transition disabled:opacity-50"
+                        >
+                          {deletingEmail === member.email ? (isEs ? 'Eliminando...' : 'Removing...') : (isEs ? 'Eliminar' : 'Remove')}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }

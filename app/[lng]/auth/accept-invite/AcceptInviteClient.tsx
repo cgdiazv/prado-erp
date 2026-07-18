@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { acceptTeamInvitation } from '../actions';
+import { acceptTeamInvitation, login } from '../actions';
 import { getTranslations } from '@/lib/translations';
 
 interface AcceptInviteClientProps {
@@ -51,7 +51,19 @@ export default function AcceptInviteClient({ locale, token, email, organizationN
       return;
     }
 
-    router.push(`/${locale}/login?invited=true`);
+    const loginFormData = new FormData();
+    loginFormData.set('email', email);
+    loginFormData.set('password', password);
+
+    const loginResult = await login(loginFormData);
+
+    if (loginResult?.error) {
+      setErrorMessage('Invitation accepted, but automatic sign-in failed. Please log in manually.');
+      setLoading(false);
+      return;
+    }
+
+    router.push(`/${locale}/dashboard`);
     router.refresh();
   }
 

@@ -95,7 +95,7 @@ export default async function SettingsSectionPage({
   const sectionLinks: SectionLink[] = [
     {
       id: 'profile-settings',
-      label: locale.toLowerCase().startsWith('es') ? 'Configuracion de perfil' : 'Profile Settings',
+      label: locale.toLowerCase().startsWith('es') ? 'Configuracion de cuenta' : 'Account Settings',
       href: `/${locale}/dashboard/settings/profile-settings`,
     },
     {
@@ -205,16 +205,6 @@ export default async function SettingsSectionPage({
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.accountWorkspaceSettings}</h1>
                 <p className="text-xs text-slate-500 font-medium">{translations.dashboard.accountWorkspaceSettingsDescription}</p>
               </div>
-
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-gray-200 transition shadow-sm self-start sm:self-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                </svg>
-                {translations.dashboard.backToDashboard}
-              </Link>
             </div>
 
             <nav className="-mt-3 overflow-x-auto pb-1">
@@ -282,9 +272,11 @@ export default async function SettingsSectionPage({
             )}
 
             {section === 'team-settings' && !isIndividualAccount && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                <TeamsPanel organizationId={org.id} locale={locale} />
-              </div>
+              <TeamsPanel
+                organizationId={org.id}
+                locale={locale}
+                subscriptionStatus={org.subscription_status || null}
+              />
             )}
 
             {section === 'integrations' && canAccessStripeSettings && (

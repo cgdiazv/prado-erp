@@ -230,6 +230,59 @@ export async function updateDispatchSettings(formData: FormData): Promise<void> 
   revalidatePath(`/${locale}/dashboard/routing`);
 }
 
+export async function upsertUserProfile(formData: FormData) {
+  const firstName = (formData.get('firstName') as string | null)?.trim() || '';
+  const lastName = (formData.get('lastName') as string | null)?.trim() || '';
+  const phone = (formData.get('phone') as string | null)?.trim() || '';
+  const locale = (formData.get('locale') as string | null)?.trim() || 'en';
+
+  if (!firstName || !lastName) {
+    return { error: 'First name and last name are required.' };
+  }
+
+  if (firstName.length > 80 || lastName.length > 80) {
+    return { error: 'Name fields must be 80 characters or fewer.' };
+  }
+
+  if (phone.length > 50) {
+    return { error: 'Phone must be 50 characters or fewer.' };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be signed in to update profile settings.' };
+  }
+
+  const { error } = await supabase
+    .from('user_profiles')
+    .upsert(
+      [
+        {
+          user_id: user.id,
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone || null,
+        },
+      ],
+      { onConflict: 'user_id' }
+    );
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/dashboard');
+  revalidatePath(`/${locale}/dashboard`);
+  revalidatePath('/dashboard/profile-settings');
+  revalidatePath(`/${locale}/dashboard/profile-settings`);
+  revalidatePath('/dashboard/settings/team-settings');
+  revalidatePath(`/${locale}/dashboard/settings/team-settings`);
+
+  return { success: true };
+}
+
 export async function createService({
   name,
   description,

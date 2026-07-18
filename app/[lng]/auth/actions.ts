@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from '@/lib/supabaseServer'; 
 import { Resend } from 'resend';
+import { createClient as createSupabaseJsClient } from '@supabase/supabase-js';
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string;
@@ -192,8 +193,29 @@ export async function acceptTeamInvitation(formData: FormData) {
       return { error: 'Invalid or expired invitation link.' };
     }
 
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find((user) => user.email === invite.email) || null;
+    const authSchemaAdmin = createSupabaseJsClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        db: { schema: 'auth' },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+
+    const { data: existingUserRecord, error: existingUserLookupError } = await authSchemaAdmin
+      .from('users')
+      .select('id, email')
+      .eq('email', invite.email.toLowerCase().trim())
+      .maybeSingle();
+
+    if (existingUserLookupError) {
+      return { error: existingUserLookupError.message };
+    }
+
+    const existingUser = existingUserRecord || null;
 
     let authUserId = existingUser?.id || null;
 
