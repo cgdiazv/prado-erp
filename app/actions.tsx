@@ -2189,8 +2189,10 @@ export async function getTeamMembers(organizationId: string) {
       return { success: false, members: [], error: authUsersError.message };
     }
 
+    const supabaseAdmin = createAdminClient();
+
     const { data: userProfiles, error: userProfilesError } = memberUserIds.length > 0
-      ? await supabase
+      ? await supabaseAdmin
           .from('user_profiles')
           .select('user_id, first_name, last_name, phone')
           .in('user_id', memberUserIds)
