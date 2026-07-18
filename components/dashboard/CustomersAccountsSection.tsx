@@ -110,8 +110,8 @@ export default function CustomersAccountsSection({
 
   const labels = {
     filterAll: isEs ? 'Todos' : 'All',
-    filterUnpaid: isEs ? 'Con saldo pendiente' : 'With Unpaid Balance',
-    filterPaid: isEs ? 'Con saldo pagado' : 'With Paid Balance',
+    filterUnpaid: isEs ? 'Saldo pendiente' : 'Unpaid Balance',
+    filterPaid: isEs ? 'Saldo pagado' : 'Paid Balance',
     paidBalance: isEs ? 'Saldo pagado' : 'Paid Balance',
     noRecords: isEs ? 'No se encontraron clientes para este filtro.' : 'No customers matched this filter.',
     noCustomers: isEs ? 'No hay clientes registrados.' : translations.dashboard.noCustomers,
@@ -205,8 +205,8 @@ export default function CustomersAccountsSection({
       </div>
 
       {customerList.length > 0 ? (
-        <div className="rounded-xl border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
+        <div className="rounded-xl border border-gray-200 overflow-x-auto">
+          <table className="min-w-[720px] sm:min-w-full divide-y divide-gray-200 text-left text-sm">
             <thead className="bg-slate-50">
               <tr>
                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 tracking-wider">
