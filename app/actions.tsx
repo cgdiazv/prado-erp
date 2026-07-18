@@ -2174,7 +2174,6 @@ export async function getTeamMembers(organizationId: string) {
 
     // Resolve auth.users and profile metadata for accepted members.
     const memberUserIds = (orgUsers || []).map((ou) => ou.user_id);
-    const supabaseAdmin = createAdminClient();
 
     const { data: authUsers, error: authUsersError } = await findAuthUserIndexByUserIds(supabaseAdmin, memberUserIds);
 
