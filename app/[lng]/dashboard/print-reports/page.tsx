@@ -339,13 +339,17 @@ export default async function PrintReportsPage({
       { label: t.records, value: String(expenses?.length || 0) },
     ];
     reportHeaders = [t.thDate, t.thCategory, t.thJob, t.thVendor, t.thAmount];
-    reportRows = (expenses || []).map((exp) => [
-      formatDateShort(exp.expense_date, locale),
-      String(exp.category || '-'),
-      String(exp.jobs?.job_type || (isEs ? 'Sin asignar' : 'Unassigned')),
-      String(exp.vendor || '-'),
-      formatCurrency(Number(exp.amount || 0)),
-    ]);
+    reportRows = (expenses || []).map((exp) => {
+      const jobRecord = Array.isArray(exp.jobs) ? exp.jobs[0] : exp.jobs;
+
+      return [
+        formatDateShort(exp.expense_date, locale),
+        String(exp.category || '-'),
+        String(jobRecord?.job_type || (isEs ? 'Sin asignar' : 'Unassigned')),
+        String(exp.vendor || '-'),
+        formatCurrency(Number(exp.amount || 0)),
+      ];
+    });
   }
 
   if (selectedReport === 'jobs' || selectedReport === 'schedule') {
