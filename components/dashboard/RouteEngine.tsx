@@ -334,6 +334,43 @@ export default function RouteEngine({
     setMapDropActive(false);
   };
 
+  const handleTouchDrop = async (clientX: number, clientY: number) => {
+    if (!draggingJob) return;
+
+    const dropElement = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+    const dropZone = dropElement?.closest('[data-route-dropzone]') as HTMLElement | null;
+    const dropTarget = dropZone?.dataset.routeDropzone;
+
+    if (!dropTarget) {
+      handleDragEnd();
+      return;
+    }
+
+    if (dropTarget === 'map') {
+      await handleDropToMap();
+      return;
+    }
+
+    const [zoneType, zoneId, beforeJobId] = dropTarget.split(':');
+
+    if (zoneType === 'unassigned') {
+      await handleDropToUnassigned(zoneId || undefined);
+      return;
+    }
+
+    if (zoneType === 'truck' && zoneId) {
+      await handleDropToTruck(zoneId, beforeJobId || undefined);
+      return;
+    }
+
+    handleDragEnd();
+  };
+
+  const canStartTouchDrag = (target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) return true;
+    return !target.closest('button, a, input, select, textarea, label');
+  };
+
   const chooseTruckForJob = (job: Job) => {
     if (routeTrucks.length === 0) return null;
 
@@ -438,9 +475,20 @@ export default function RouteEngine({
     return (
       <div
         key={job.id}
+        data-route-dropzone={`unassigned:${job.id}`}
         draggable
         onDragStart={() => handleDragStart(job.id, sourceTruckId)}
         onDragEnd={handleDragEnd}
+        onTouchStart={(event) => {
+          if (!canStartTouchDrag(event.target)) return;
+          handleDragStart(job.id, sourceTruckId);
+        }}
+        onTouchEnd={(event) => {
+          if (!draggingJob) return;
+          const touch = event.changedTouches[0];
+          if (!touch) return;
+          void handleTouchDrop(touch.clientX, touch.clientY);
+        }}
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
           event.preventDefault();
@@ -519,6 +567,7 @@ export default function RouteEngine({
 
         <div
           className="relative"
+          data-route-dropzone="map"
           onDragOver={(event) => {
             event.preventDefault();
             setMapDropActive(true);
@@ -574,6 +623,7 @@ export default function RouteEngine({
           </div>
 
           <div
+            data-route-dropzone="unassigned"
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => {
               event.preventDefault();
@@ -608,6 +658,7 @@ export default function RouteEngine({
             return (
               <div
                 key={truck.id}
+                data-route-dropzone={`truck:${truck.id}`}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={(event) => {
                   event.preventDefault();
@@ -649,9 +700,20 @@ export default function RouteEngine({
                       return (
                         <div
                           key={job.id}
+                          data-route-dropzone={`truck:${truck.id}:${job.id}`}
                           draggable
                           onDragStart={() => handleDragStart(job.id, truck.id)}
                           onDragEnd={handleDragEnd}
+                          onTouchStart={(event) => {
+                            if (!canStartTouchDrag(event.target)) return;
+                            handleDragStart(job.id, truck.id);
+                          }}
+                          onTouchEnd={(event) => {
+                            if (!draggingJob) return;
+                            const touch = event.changedTouches[0];
+                            if (!touch) return;
+                            void handleTouchDrop(touch.clientX, touch.clientY);
+                          }}
                           onDragOver={(event) => event.preventDefault()}
                           onDrop={(event) => {
                             event.preventDefault();
