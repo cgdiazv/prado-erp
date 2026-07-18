@@ -20,6 +20,7 @@ interface TeamsPanelProps {
   organizationId: string;
   locale?: string;
   subscriptionStatus?: string | null;
+  currentUserRole?: string | null;
 }
 
 const USER_ROLES = [
@@ -45,7 +46,7 @@ const USER_ROLES = [
   }
 ];
 
-export default function TeamsPanel({ organizationId, locale = 'en', subscriptionStatus = null }: TeamsPanelProps) {
+export default function TeamsPanel({ organizationId, locale = 'en', subscriptionStatus = null, currentUserRole = null }: TeamsPanelProps) {
   const isEs = locale.toLowerCase().startsWith('es');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'member' | 'admin' | 'accountant' | 'viewer'>('member');
@@ -54,8 +55,9 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
   const [error, setError] = useState('');
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
-  const [isResolvingRole, setIsResolvingRole] = useState(true);
-  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const normalizedInitialRole = currentUserRole ? String(currentUserRole).toLowerCase() : null;
+  const [isResolvingRole, setIsResolvingRole] = useState(!normalizedInitialRole);
+  const [resolvedUserRole, setResolvedUserRole] = useState<string | null>(normalizedInitialRole);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
   const [showRolesReference, setShowRolesReference] = useState(false);
   const supabase = createBrowserSupabaseClient();
@@ -75,9 +77,19 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
     }
   };
 
-  const canViewTeamTables = currentUserRole === 'owner' || currentUserRole === 'admin';
+  const normalizedCurrentUserRole = (resolvedUserRole || '').toLowerCase();
+  const canViewTeamTables =
+    normalizedCurrentUserRole === 'owner' ||
+    normalizedCurrentUserRole === 'admin' ||
+    normalizedCurrentUserRole === 'manager';
 
   useEffect(() => {
+    if (normalizedInitialRole) {
+      setResolvedUserRole(normalizedInitialRole);
+      setIsResolvingRole(false);
+      return;
+    }
+
     const resolveCurrentUserRole = async () => {
       setIsResolvingRole(true);
 
@@ -86,7 +98,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
       } = await supabase.auth.getUser();
 
       if (!user) {
-        setCurrentUserRole(null);
+        setResolvedUserRole(null);
         setIsResolvingRole(false);
         return;
       }
@@ -99,7 +111,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
         .maybeSingle();
 
       if (membership?.role) {
-        setCurrentUserRole(membership.role);
+        setResolvedUserRole(String(membership.role).toLowerCase());
         setIsResolvingRole(false);
         return;
       }
@@ -110,12 +122,12 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
         .eq('id', organizationId)
         .maybeSingle();
 
-      setCurrentUserRole(orgData?.owner_id === user.id ? 'owner' : null);
+      setResolvedUserRole(orgData?.owner_id === user.id ? 'owner' : null);
       setIsResolvingRole(false);
     };
 
     resolveCurrentUserRole();
-  }, [organizationId, supabase]);
+  }, [organizationId, normalizedInitialRole, supabase]);
 
   // Load team members for owner/manager on mount and subscribe to live updates.
   useEffect(() => {

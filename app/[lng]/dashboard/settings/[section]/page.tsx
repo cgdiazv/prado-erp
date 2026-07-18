@@ -287,6 +287,7 @@ export default async function SettingsSectionPage({
                 organizationId={org.id}
                 locale={locale}
                 subscriptionStatus={org.subscription_status || null}
+                currentUserRole={normalizedRole || null}
               />
             )}
 
