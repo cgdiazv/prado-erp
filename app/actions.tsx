@@ -1799,6 +1799,7 @@ interface CanAddMemberResponse {
 export async function verifyPlanLimitBeforeAddingMember(organizationId: string): Promise<CanAddMemberResponse> {
   try {
     const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -1806,11 +1807,11 @@ export async function verifyPlanLimitBeforeAddingMember(organizationId: string):
     }
 
     // 1. Query the organization's subscription plan
-    const { data: orgData, error: orgError } = await supabase
+    const { data: orgData, error: orgError } = await supabaseAdmin
       .from('organizations')
       .select('subscription_status, owner_id')
       .eq('id', organizationId)
-      .single();
+      .maybeSingle();
 
     if (orgError || !orgData) {
       return { allowed: false, currentCount: 0, message: 'Unable to verify organization plan.' };
@@ -1829,7 +1830,6 @@ export async function verifyPlanLimitBeforeAddingMember(organizationId: string):
     }
 
     // 2. Count active members - use admin client to bypass RLS
-    const supabaseAdmin = createAdminClient();
     const { data: members, error: countError } = await supabaseAdmin
       .from('organization_users')
       .select('id', { count: 'exact' })
