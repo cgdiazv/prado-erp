@@ -25,6 +25,20 @@ export default function OnboardingTour({ locale = 'en' }: OnboardingTourProps) {
     }
   }, []);
 
+  useEffect(() => {
+    const handleRestartTour = () => {
+      localStorage.removeItem('prado_onboarding_completed');
+      setRunTour(false);
+      window.setTimeout(() => setRunTour(true), 60);
+    };
+
+    window.addEventListener('prado:restart-tour', handleRestartTour);
+
+    return () => {
+      window.removeEventListener('prado:restart-tour', handleRestartTour);
+    };
+  }, []);
+
   const steps: Step[] = [
     {
       target: 'body',

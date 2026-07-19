@@ -172,8 +172,9 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs w-full min-w-0">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="w-full min-w-0">
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs w-full min-w-0">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-0.5">{translations.dashboard.financialBreakdown}</h3>
           <p className="text-xs text-slate-400 font-medium">{translations.dashboard.financialBreakdownDesc}</p>
@@ -210,8 +211,8 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
           <div className="rounded-lg bg-white border border-slate-200 px-3 py-2 flex items-center justify-between text-xs font-semibold">
             <span className="text-slate-500">{translations.dashboard.revenue}</span>
             <span className="text-emerald-600 font-mono">${totalRevenue.toFixed(2)}</span>
@@ -228,25 +229,37 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
           </div>
         </div>
 
-        <svg viewBox="0 0 100 42" className="w-full h-56" aria-label="Revenue, expenses, and net income trend chart" role="img">
-          <polyline points="0,20 100,20" fill="none" stroke="rgb(203 213 225)" strokeWidth="0.35" strokeDasharray="2 2" />
-          <polyline points={revenueLine} fill="none" stroke="rgb(16 185 129)" strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
-          <polyline points={expensesLine} fill="none" stroke="rgb(244 63 94)" strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
-          <polyline points={netLine} fill="none" stroke={netProfit >= 0 ? 'rgb(37 99 235)' : 'rgb(234 88 12)'} strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+          <svg viewBox="0 0 100 42" className="w-full h-56" aria-label="Revenue, expenses, and net income trend chart" role="img">
+            <polyline points="0,20 100,20" fill="none" stroke="rgb(203 213 225)" strokeWidth="0.35" strokeDasharray="2 2" />
+            <polyline points={revenueLine} fill="none" stroke="rgb(16 185 129)" strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
+            <polyline points={expensesLine} fill="none" stroke="rgb(244 63 94)" strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
+            <polyline points={netLine} fill="none" stroke={netProfit >= 0 ? 'rgb(37 99 235)' : 'rgb(234 88 12)'} strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
 
-        <div className="mt-3 relative h-4 text-[10px] font-semibold text-slate-500">
-          {axisTicks.map((tick) => (
-            <span
-              key={tick.key}
-              className="absolute -translate-x-1/2"
-              style={{ left: `${tick.position}%` }}
-            >
-              {tick.label}
-            </span>
-          ))}
+          <div className="mt-3 relative h-4 text-[10px] font-semibold text-slate-500">
+            {axisTicks.map((tick) => (
+              <span
+                key={tick.key}
+                className="absolute -translate-x-1/2"
+                style={{ left: `${tick.position}%` }}
+              >
+                {tick.label}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.removeItem('prado_onboarding_completed');
+          window.dispatchEvent(new CustomEvent('prado:restart-tour'));
+        }}
+        className="mt-2 text-[10px] font-medium text-slate-50 transition hover:opacity-80 focus:opacity-80"
+      >
+        {isEs ? 'Reiniciar recorrido' : 'Restart tour'}
+      </button>
     </div>
   );
 }
