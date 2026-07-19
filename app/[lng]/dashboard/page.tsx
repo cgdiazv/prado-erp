@@ -5,6 +5,7 @@ import DashboardViewToggle from '@/components/dashboard/DashboardViewToggle';
 import Metrics from '@/components/dashboard/Metrics';
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import TrialBanner from '@/components/TrialBanner';
+import OnboardingTour from '@/components/OnboardingTour';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
@@ -290,7 +291,7 @@ export default async function DashboardHome({
   ];
 
   const operationsQuickActions = (
-    <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+    <div className="tour-quick-actions grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
       <Link
         href={`/${locale}/dashboard/estimates`}
         className="cursor-pointer rounded-lg border border-gray-200 bg-white h-20 p-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 flex flex-col items-center justify-center gap-2 text-center sm:h-auto sm:flex-row sm:justify-center sm:px-3 sm:py-1.5"
@@ -370,6 +371,7 @@ export default async function DashboardHome({
   return (
     <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
       <div className="max-w-5xl ml-0 space-y-8 text-left">
+        <OnboardingTour locale={locale} />
         
         {/* Conditional Trial Alert Banner Asset */}
         {org.subscription_status === 'trial' && org.trial_starts_at && (

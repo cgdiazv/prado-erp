@@ -234,7 +234,7 @@ export default function CustomersAccountsSection({
       </div>
 
       {customerList.length > 0 ? (
-        <div className="rounded-xl border border-gray-200 overflow-x-auto">
+        <div className="tour-ledger rounded-xl border border-gray-200 overflow-x-auto">
           <table className="min-w-[720px] sm:min-w-full divide-y divide-gray-200 text-left text-sm">
             <thead className="bg-slate-50">
               <tr>

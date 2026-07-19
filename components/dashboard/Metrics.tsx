@@ -11,7 +11,7 @@ export default function Metrics({ totalRevenue, totalExpenses, netProfit, locale
   const translations = getTranslations(locale);
   
   return (
-    <section className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-6 mb-2 sm:mb-5 md:mb-8 sm:overflow-x-visible">
+    <section className="tour-metrics flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-6 mb-2 sm:mb-5 md:mb-8 sm:overflow-x-visible">
       <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white p-2.5 sm:p-5 rounded-xl shadow-sm border border-gray-200">
         <span className="text-[10px] sm:text-xs uppercase font-medium text-gray-400 block mb-1">{translations.dashboard.totalInvoicedRevenue}</span>
         <span className="text-lg sm:text-2xl font-bold text-emerald-600 font-mono">${totalRevenue.toFixed(2)}</span>

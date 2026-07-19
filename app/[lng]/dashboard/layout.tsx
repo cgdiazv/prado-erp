@@ -44,11 +44,13 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
       <DashboardNavbar userInitials={initial} />
       <div className="flex flex-1 relative">
-        <DashboardSidebar
-          subscriptionStatus={org.subscription_status ?? undefined}
-          locale={locale}
-          canViewImportExport={canViewImportExport}
-        />
+        <div className="tour-sidebar">
+          <DashboardSidebar
+            subscriptionStatus={org.subscription_status ?? undefined}
+            locale={locale}
+            canViewImportExport={canViewImportExport}
+          />
+        </div>
         <InactivityLockScreen locale={locale} isRemembered={isRemembered}>
           {children}
         </InactivityLockScreen>
