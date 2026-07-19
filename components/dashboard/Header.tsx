@@ -1,6 +1,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabaseServer';
+import { clearRememberToken } from '@/lib/rememberMe';
 
 export default function Header({ orgName }: { orgName: string }) {
   return (
@@ -13,6 +14,7 @@ export default function Header({ orgName }: { orgName: string }) {
         'use server';
         const serverSupabase = await createClient();
         await serverSupabase.auth.signOut();
+        await clearRememberToken();
         redirect('/login');
       }}>
         <button type="submit" className="cursor-pointer text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition shadow-sm">

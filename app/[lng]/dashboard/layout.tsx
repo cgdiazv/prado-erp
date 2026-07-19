@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { getUserOrganization } from '@/lib/organization';
+import { REMEMBER_ME_COOKIE_NAME, tryRestoreRememberedSession } from '@/lib/rememberMe';
+import InactivityLockScreen from '@/components/dashboard/InactivityLockScreen';
+import { cookies } from 'next/headers';
 
 export default async function DashboardLayout({
   children,
@@ -14,6 +17,8 @@ export default async function DashboardLayout({
   const resolvedParams = await params;
   const locale = resolvedParams.lng ?? 'en';
   const supabase = await createClient();
+
+  await tryRestoreRememberedSession(supabase);
 
   const {
     data: { user },
@@ -29,6 +34,8 @@ export default async function DashboardLayout({
 
   const canViewImportExport = role === 'owner' || role === 'admin';
   const initial = org.name ? org.name.charAt(0).toUpperCase() : 'U';
+  const cookieStore = await cookies();
+  const isRemembered = cookieStore.has(REMEMBER_ME_COOKIE_NAME);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
@@ -39,7 +46,9 @@ export default async function DashboardLayout({
           locale={locale}
           canViewImportExport={canViewImportExport}
         />
-        {children}
+        <InactivityLockScreen locale={locale} isRemembered={isRemembered}>
+          {children}
+        </InactivityLockScreen>
       </div>
     </div>
   );

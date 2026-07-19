@@ -6,12 +6,14 @@ import PublicNavbar from '@/components/PublicNavbar';
 import ScreenshotCarousel from '@/components/ScreenshotCarousel';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
+import { tryRestoreRememberedSession } from '@/lib/rememberMe';
 
 export default async function MarketingHomePage({ params }: { params: Promise<{ lng: string }> }) {
   const { lng } = await params;
   const isEs = lng.toLowerCase().startsWith('es');
   const translations = getTranslations(lng);
   const supabase = await createClient();
+  await tryRestoreRememberedSession(supabase);
   const industryCards = [
     {
       name: translations.home.industryLandscaping,

@@ -131,6 +131,16 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
               </div>
             </div>
 
+            <label className="flex items-center gap-2 text-sm text-gray-600 select-none">
+              <input
+                type="checkbox"
+                name="rememberMe"
+                disabled={loading}
+                className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 disabled:cursor-not-allowed"
+              />
+              <span>{translations.login.rememberMeLabel}</span>
+            </label>
+
             <button
               type="submit"
               disabled={loading}

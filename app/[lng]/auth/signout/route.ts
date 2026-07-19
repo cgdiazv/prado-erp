@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabaseServer';
 import { NextResponse } from 'next/server';
+import { clearRememberToken } from '@/lib/rememberMe';
 
 async function handleSignOut(request: Request) {
   const supabase = await createClient();
@@ -9,6 +10,8 @@ async function handleSignOut(request: Request) {
   if (user) {
     await supabase.auth.signOut();
   }
+
+  await clearRememberToken();
 
   // 2. Clear out auth tokens and force redirect cleanly to root login path
   const requestUrl = new URL(request.url);

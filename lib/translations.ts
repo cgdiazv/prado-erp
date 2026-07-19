@@ -107,6 +107,7 @@ type TranslationBundle = {
     successMessage: string;
     emailLabel: string;
     passwordLabel: string;
+    rememberMeLabel: string;
     forgotPassword: string;
     loadingButton: string;
     submitButton: string;

@@ -399,7 +399,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
             {(subscriptionStatus === 'growth' || subscriptionStatus === 'enterprise') && (
               <p className="text-xs text-slate-500 mb-3">
                 {subscriptionStatus === 'growth'
-                  ? (isEs ? 'Plan Growth: puedes agregar hasta 5 miembros.' : 'Growth tier: you can add up to 5 members.')
+                  ? (isEs ? 'Plan Growth: hasta 5 usuarios en total (incluye al propietario).' : 'Growth tier: up to 5 total users (including the owner).')
                   : (isEs ? 'Plan Enterprise: miembros ilimitados.' : 'Enterprise tier: unlimited members.')}
               </p>
             )}

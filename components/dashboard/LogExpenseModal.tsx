@@ -7,6 +7,7 @@ import { getTranslations } from '@/lib/translations';
 
 interface LogExpenseModalProps {
   locale?: string;
+  triggerLabel?: string;
   jobs?: Array<{
     id: string;
     job_type: string;
@@ -15,7 +16,7 @@ interface LogExpenseModalProps {
   }>;
 }
 
-export default function LogExpenseModal({ locale = 'en', jobs = [] }: LogExpenseModalProps) {
+export default function LogExpenseModal({ locale = 'en', triggerLabel, jobs = [] }: LogExpenseModalProps) {
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
   const [isOpen, setIsOpen] = useState(false);
@@ -28,7 +29,7 @@ export default function LogExpenseModal({ locale = 'en', jobs = [] }: LogExpense
         onClick={() => setIsOpen(true)}
         className="cursor-pointer bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-sm"
       >
-        + {translations.dashboard.logExpense}
+        {triggerLabel ?? `+ ${translations.dashboard.logExpense}`}
       </button>
 
       {isOpen && (

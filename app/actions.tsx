@@ -1829,41 +1829,61 @@ export async function verifyPlanLimitBeforeAddingMember(organizationId: string):
       return { allowed: true, currentCount: 0 };
     }
 
-    // 2. Count active members - use admin client to bypass RLS
-    const { data: members, error: countError } = await supabaseAdmin
+    // 2. Collect accepted members and pending invites to enforce true seat limits.
+    const { data: members, error: membersError } = await supabaseAdmin
       .from('organization_users')
-      .select('id', { count: 'exact' })
+      .select('user_id')
       .eq('organization_id', organizationId);
 
-    if (countError) {
+    if (membersError) {
       console.error('Detailed error counting organization members:', {
-        message: countError.message,
-        code: countError.code,
-        details: countError.details,
+        message: membersError.message,
+        code: membersError.code,
+        details: membersError.details,
       });
-      return { allowed: false, currentCount: 0, message: `Error verifying current members: ${countError.message}` };
+      return { allowed: false, currentCount: 0, message: `Error verifying current members: ${membersError.message}` };
     }
 
-    const activeMembers = members?.length || 0;
+    const { data: pendingInvites, error: invitesError } = await supabaseAdmin
+      .from('organization_invitations')
+      .select('email')
+      .eq('organization_id', organizationId)
+      .is('accepted_at', null);
+
+    if (invitesError) {
+      console.error('Detailed error counting pending invites:', {
+        message: invitesError.message,
+        code: invitesError.code,
+        details: invitesError.details,
+      });
+      return { allowed: false, currentCount: 0, message: `Error verifying pending invitations: ${invitesError.message}` };
+    }
+
+    const acceptedUserIds = new Set((members || []).map((member) => member.user_id).filter(Boolean));
+    const ownerAlreadyCounted = acceptedUserIds.has(orgData.owner_id);
+    const ownerSeat = ownerAlreadyCounted ? 0 : 1;
+    const acceptedSeats = acceptedUserIds.size;
+    const pendingSeats = pendingInvites?.length || 0;
+    const seatsUsed = ownerSeat + acceptedSeats + pendingSeats;
 
     // 3. Validate based on Prado business rules
-    if (currentPlan === 'individual' && activeMembers >= 1) {
+    if (currentPlan === 'individual' && seatsUsed >= 1) {
       return { 
         allowed: false, 
-        currentCount: activeMembers, 
+        currentCount: seatsUsed,
         message: 'Individual plan ($29) allows only 1 user. Upgrade to Growth plan ($59) to add team members.' 
       };
     }
 
-    if (currentPlan === 'growth' && activeMembers >= 5) {
+    if (currentPlan === 'growth' && seatsUsed >= 5) {
       return { 
         allowed: false, 
-        currentCount: activeMembers, 
-        message: 'Growth plan ($59) maximum limit of 5 users reached. Upgrade to Enterprise ($99) for unlimited access.' 
+        currentCount: seatsUsed,
+        message: 'Growth plan ($59) maximum limit of 5 total users (owner plus team) reached. Upgrade to Enterprise ($99) for unlimited access.' 
       };
     }
 
-    return { allowed: true, currentCount: activeMembers };
+    return { allowed: true, currentCount: seatsUsed };
   } catch (error: unknown) {
     console.error('Failed to verify plan limits:', error);
     return { allowed: false, currentCount: 0, message: 'Failed to verify plan limits.' };

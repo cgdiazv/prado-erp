@@ -650,8 +650,8 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
             </div>
 
             {/* Tabla de Resultados */}
-            <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-xs">
-              <table className="w-full text-left text-xs border-collapse">
+            <div className="border border-gray-200 bg-white rounded-xl overflow-x-auto shadow-xs">
+              <table className="min-w-[900px] sm:min-w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-gray-200 bg-slate-50 text-slate-500 font-bold">
                     <th className="p-4">

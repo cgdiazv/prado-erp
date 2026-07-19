@@ -3,10 +3,12 @@
 import { createClient, createAdminClient } from '@/lib/supabaseServer'; 
 import { Resend } from 'resend';
 import { findAuthUserIndexByEmail, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
+import { issueRememberToken } from '@/lib/rememberMe';
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const remember = formData.get('rememberMe') === 'on';
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -25,6 +27,19 @@ export async function login(formData: FormData) {
   if (data.user) {
     const supabaseAdmin = createAdminClient();
     await upsertAuthUserIndex(supabaseAdmin, data.user);
+
+    if (data.session?.access_token && data.session?.refresh_token) {
+      try {
+        await issueRememberToken({
+          userId: data.user.id,
+          accessToken: data.session.access_token,
+          refreshToken: data.session.refresh_token,
+          remember,
+        });
+      } catch (rememberError) {
+        console.error('Remember-me token persistence failed:', rememberError);
+      }
+    }
   }
 
   // Return a clear indicator so the client knows login succeeded
