@@ -37,6 +37,42 @@ function getInvoiceIdFromSession(session: Stripe.Checkout.Session) {
   return metadataInvoiceId || session.client_reference_id || null;
 }
 
+function getTierWelcomeDetails(tier: string) {
+  if (tier === 'growth') {
+    return {
+      label: 'Growth',
+      features: [
+        'Everything in Individual',
+        'Up to 5 total users (owner plus team)',
+        'Route optimization and operational scale workflows',
+        'Expanded visibility for team coordination',
+      ],
+    };
+  }
+
+  if (tier === 'enterprise') {
+    return {
+      label: 'Enterprise',
+      features: [
+        'Unlimited linked user roles',
+        'QuickBooks and Xero integrations',
+        'Advanced operations support and scale readiness',
+        'Priority-level platform enablement for large teams',
+      ],
+    };
+  }
+
+  return {
+    label: 'Individual',
+    features: [
+      'Core dispatch and daily field operations',
+      'Estimate and invoice workflow essentials',
+      'Customer and job record management',
+      'Single-user operating environment',
+    ],
+  };
+}
+
 async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
   const invoiceId = getInvoiceIdFromSession(session);
   if (!invoiceId) {
@@ -277,17 +313,29 @@ export async function POST(request: Request) {
       const customerEmail = session.customer_details?.email;
       const netSales = (session.amount_total || 0) / 100;
       let orderNumber = session.id.replace('cs_live_', 'CH_');
+      const dashboardUrl = `${(process.env.NEXT_PUBLIC_APP_URL || 'https://pradojob.com').replace(/\/$/, '')}/en/dashboard`;
+      const tierWelcomeDetails = getTierWelcomeDetails(assignedStatus);
+      const tierFeaturesHtml = tierWelcomeDetails.features
+        .map((feature) => `<li style="margin: 0 0 8px 0;">${feature}</li>`)
+        .join('');
 
       if (customerEmail && isExplicitPradoSession) {
         await resend.emails.send({
           from: 'Prado <billing@pradosa.com>',
           to: customerEmail,
-          subject: `Your Prado Receipt Summary`,
+          subject: `Welcome to Prado - ${tierWelcomeDetails.label} Plan Activated`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff; text-align: left; color: #1e293b;">
-              <h2 style="color: #10b981; text-align: center;">Welcome to Prado Operations</h2>
+              <h2 style="color: #10b981; text-align: center;">Welcome to Prado</h2>
               <p>Hi ${customerName},</p>
-              <p>Your workspace is unlocked and active. We have successfully processed your monthly subscription setup parameters:</p>
+              <p>Your workspace is unlocked and active. Your <strong>${tierWelcomeDetails.label}</strong> plan is now live.</p>
+
+              <div style="margin: 18px 0; padding: 14px; border: 1px solid #d1fae5; border-radius: 8px; background: #f0fdf4;">
+                <p style="margin: 0 0 10px 0; font-weight: 700; color: #065f46;">Features included in your plan:</p>
+                <ul style="margin: 0; padding-left: 18px; color: #0f172a;">
+                  ${tierFeaturesHtml}
+                </ul>
+              </div>
               
               <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
                 <tr style="background-color: #F9FAFB;">
@@ -295,8 +343,8 @@ export async function POST(request: Request) {
                   <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">#${orderNumber.slice(0, 15)}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Activated Profile</td>
-                  <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">${productNames}</td>
+                  <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Activated Plan</td>
+                  <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">${tierWelcomeDetails.label}</td>
                 </tr>
                 <tr style="background-color: #F9FAFB;">
                   <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Monthly Total</td>
@@ -305,7 +353,7 @@ export async function POST(request: Request) {
               </table>
 
               <p style="font-size: 13px; color: #6B7280; text-align: center; margin-top: 30px;">
-                Log into your dashboard menu to start calculating dispatch paths. For invoicing help, reply to this email.
+                Log into your <a href="${dashboardUrl}" style="color: #10b981; text-decoration: underline; font-weight: 600;">dashboard</a> to start dispatching faster and managing your operations. Need help? Reply to this email.
               </p>
             </div>
           `,
