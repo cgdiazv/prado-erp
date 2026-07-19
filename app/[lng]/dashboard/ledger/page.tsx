@@ -75,7 +75,7 @@ if (org.subscription_status === 'individual') {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-      <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
+      <DashboardNavbar userInitials={initial} />
       <div className="flex flex-1 relative">
         {/* UPDATED: Passing the explicit subscription status down to the sidebar component */}
         <DashboardSidebar

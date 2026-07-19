@@ -374,7 +374,7 @@ export default async function DashboardHome({
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      <DashboardNavbar userInitials={initial} organizationLogoUrl={org.logo_url || ''} />
+      <DashboardNavbar userInitials={initial} />
       <div className="flex flex-1 relative">
         <DashboardSidebar
           subscriptionStatus={org.subscription_status}

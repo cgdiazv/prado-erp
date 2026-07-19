@@ -10,7 +10,7 @@ export default function SettingsSectionLoading() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      <DashboardNavbar userInitials="C" organizationLogoUrl="" />
+      <DashboardNavbar userInitials="C" />
 
       <div className="flex flex-1 relative">
         <DashboardSidebar subscriptionStatus={undefined} locale={locale} canViewImportExport={false} />

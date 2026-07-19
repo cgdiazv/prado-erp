@@ -584,7 +584,7 @@ export default function EstimatesPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-      <DashboardNavbar userInitials={userInitials} organizationLogoUrl={organizationLogoUrl} />
+      <DashboardNavbar userInitials={userInitials} />
       <div className="flex flex-1 relative">
         <DashboardSidebar
           subscriptionStatus={resolvedSubscriptionStatus}
