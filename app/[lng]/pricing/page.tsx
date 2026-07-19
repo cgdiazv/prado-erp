@@ -102,8 +102,11 @@ export default function PricingPage() {
                 <li className="flex items-center gap-2 text-slate-400"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature3}</li>
               </ul>
             </div>
-            <button onClick={() => handlePlanSelection('individual')} className="w-full text-center text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-100 py-3 rounded-xl transition border border-slate-700 cursor-pointer">
-              {translations.pricing.buyIndividual}
+            <button onClick={() => handlePlanSelection('individual')} className="w-full text-center bg-slate-900 hover:bg-slate-800 text-slate-100 py-2 rounded-xl transition border border-slate-700 cursor-pointer">
+              <span className="font-bold text-sm">Start your free trial</span>
+              <span className="block text-xs text-slate-400">
+                No credit card required
+              </span>
             </button>
           </div>
 
@@ -131,8 +134,11 @@ export default function PricingPage() {
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature7}</li>
               </ul>
             </div>
-            <button onClick={() => handlePlanSelection('growth')} className="w-full text-center text-xs font-bold bg-white hover:bg-slate-100 text-slate-950 py-3 rounded-xl transition shadow-lg shadow-emerald-500/5 cursor-pointer">
-              {translations.pricing.buyGrowth}
+            <button onClick={() => handlePlanSelection('growth')} className="w-full text-center bg-white hover:bg-slate-100 text-slate-950 py-2 rounded-xl transition shadow-lg shadow-emerald-500/5 cursor-pointer">
+              <span className="font-bold text-sm">Start your free trial</span>
+              <span className="block text-xs text-slate-500">
+                No credit card required
+              </span>
             </button>
           </div>
 
@@ -157,8 +163,11 @@ export default function PricingPage() {
                 <li className="flex items-center gap-2 text-slate-300"><span className="text-emerald-400 font-bold">✓</span> {translations.pricing.feature9}</li>
               </ul>
             </div>
-            <button onClick={() => handlePlanSelection('enterprise')} className="w-full text-center text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-100 py-3 rounded-xl transition border border-slate-700 cursor-pointer">
-              {translations.pricing.buyEnterprise}
+            <button onClick={() => handlePlanSelection('enterprise')} className="w-full text-center bg-slate-900 hover:bg-slate-800 text-slate-100 py-2 rounded-xl transition border border-slate-700 cursor-pointer">
+              <span className="font-bold text-sm">Start your free trial</span>
+              <span className="block text-xs text-slate-400">
+                No credit card required
+              </span>
             </button>
           </div>
 
