@@ -232,7 +232,7 @@ export default function CustomersAccountsSection({
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 tracking-wider">
                   <button type="button" onClick={() => handleSort('email')} className="inline-flex items-center gap-1">
-                    <span>{translations.dashboard.customerEmail}</span>
+                    <span>Email</span>
                     {renderSortIndicator('email')}
                   </button>
                 </th>

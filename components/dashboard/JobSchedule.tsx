@@ -149,26 +149,26 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+      <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-5">
+        <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
           <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600">
             {isEs ? 'Jobs Agendados' : 'Scheduled Jobs'}
           </span>
-          <p className="text-xl font-extrabold text-slate-900 mt-1">{scheduledJobsCount}</p>
+          <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">{scheduledJobsCount}</p>
         </div>
 
-        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+        <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
           <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600">
             {isEs ? 'Jobs Completados' : 'Completed Jobs'}
           </span>
-          <p className="text-xl font-extrabold text-slate-900 mt-1">{completedJobsCount}</p>
+          <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">{completedJobsCount}</p>
         </div>
 
-        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
+        <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
           <span className="text-[10px] uppercase font-bold tracking-wider text-red-600">
             {isEs ? 'Sin Camion Asignado' : 'Unassigned Truck Jobs'}
           </span>
-          <p className="text-xl font-extrabold text-slate-900 mt-1">{unassignedJobsCount}</p>
+          <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">{unassignedJobsCount}</p>
         </div>
       </div>
 
