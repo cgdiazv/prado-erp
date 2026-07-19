@@ -16,7 +16,7 @@ export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarP
   const params = useParams();
   const activeLocale = typeof params.lng === 'string' && params.lng.length > 0 ? params.lng : 'en';
   const isEs = activeLocale.toLowerCase().startsWith('es');
-  const { hasIncompleteProfile } = useDashboardNotifications();
+  const { hasIncompleteProfile, hasIncompleteOrgProfile } = useDashboardNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement | null>(null);
   
@@ -49,20 +49,34 @@ export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarP
   }, []);
 
   const notifications = useMemo(() => {
-    if (!hasIncompleteProfile) return [];
+    const notificationsList = [];
 
-    return [
-      {
+    if (hasIncompleteProfile) {
+      notificationsList.push({
         id: 'profile-incomplete',
         title: isEs ? 'Completa tu perfil' : 'Complete your profile',
         body: isEs
           ? 'Agrega tu nombre, apellido y telefono para terminar la configuracion de tu cuenta.'
           : 'Add your first name, last name, and phone number to finish setting up your account.',
-        href: `/${activeLocale}/dashboard/profile-settings`,
+        href: `/${activeLocale}/dashboard/settings/profile-settings`,
         cta: isEs ? 'Abrir perfil' : 'Open profile',
-      },
-    ];
-  }, [activeLocale, hasIncompleteProfile, isEs]);
+      });
+    }
+
+    if (hasIncompleteOrgProfile) {
+      notificationsList.push({
+        id: 'org-profile-incomplete',
+        title: isEs ? 'Completa el perfil de la empresa' : 'Complete company profile',
+        body: isEs
+          ? 'Agrega telefono, direccion, ciudad, estado y codigo postal de tu empresa.'
+          : 'Add phone, address, city, state, and zip code for your company.',
+        href: `/${activeLocale}/dashboard/settings/profile-settings`,
+        cta: isEs ? 'Ir a configuracion' : 'Go to settings',
+      });
+    }
+
+    return notificationsList;
+  }, [activeLocale, hasIncompleteProfile, hasIncompleteOrgProfile, isEs]);
 
   const unreadCount = notifications.length;
 

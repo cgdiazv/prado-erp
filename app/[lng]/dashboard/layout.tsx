@@ -35,10 +35,19 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     user.user_metadata?.profile_completed !== true;
   const hasIncompleteProfile = metadataRequiresCompletion || missingRequiredProfileField;
 
+  // Check organization profile completion
+  const missingRequiredOrgField =
+    !org?.phone?.trim() ||
+    !org?.street_address?.trim() ||
+    !org?.city?.trim() ||
+    !org?.state?.trim() ||
+    !org?.zip_code?.trim();
+  const hasIncompleteOrgProfile = missingRequiredOrgField;
+
   // 3. ALWAYS return a valid React Element tree structure
   return (
     <div className="relative min-h-screen bg-slate-50">
-      <DashboardNotificationProvider hasIncompleteProfile={hasIncompleteProfile}>
+      <DashboardNotificationProvider hasIncompleteProfile={hasIncompleteProfile} hasIncompleteOrgProfile={hasIncompleteOrgProfile}>
         {/* This renders your actual page content inside the dashboard path layout slots */}
         {children}
       </DashboardNotificationProvider>
