@@ -5,6 +5,7 @@ import CustomerDetailsForm from '@/components/dashboard/CustomerDetailsForm';
 import CustomerInvoicesTable from '@/components/dashboard/CustomerInvoicesTable';
 import CustomerJobLogTable from '@/components/dashboard/CustomerJobLogTable';
 import ServiceSitesSection from '@/components/dashboard/ServiceSitesSection';
+import CustomerEmailModal from '@/components/dashboard/CustomerEmailModal';
 import { deleteCustomer } from '../../../../actions';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
@@ -113,7 +114,21 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                 </div>
                 
                 <div className="text-xs text-slate-600 space-y-1.5 md:text-right border-t md:border-t-0 pt-4 md:pt-0 border-gray-100 min-w-[200px]">
-                  <div><strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide block md:inline md:mr-1">{translations.dashboard.email}:</strong> {customer.email || '—'}</div>
+                  <div>
+                    <strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide block md:inline md:mr-1">{translations.dashboard.email}:</strong>
+                    {customer.email ? (
+                      <CustomerEmailModal
+                        locale={locale}
+                        customerId={customer.id}
+                        customerEmail={customer.email}
+                        customerName={`${customer.first_name} ${customer.last_name}`.trim()}
+                        context="customer_profile"
+                        className="text-emerald-600 hover:text-emerald-700 hover:underline"
+                      />
+                    ) : (
+                      '—'
+                    )}
+                  </div>
                   <div><strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide block md:inline md:mr-1">{translations.dashboard.phone}:</strong> {customer.phone || '—'}</div>
                   <div><strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide block md:inline md:mr-1">{translations.dashboard.billingAddressLabel}:</strong> {customer.billing_address || '—'}</div>
                 </div>

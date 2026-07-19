@@ -2127,6 +2127,7 @@ export async function removeTeamMember(organizationId: string, email: string) {
     const supabase = await createClient();
     const supabaseAdmin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
+    const normalizedEmail = normalizeAuthEmail(email);
 
     if (!user) {
       return { success: false, error: 'Unauthorized.' };
@@ -2144,39 +2145,160 @@ export async function removeTeamMember(organizationId: string, email: string) {
     }
 
     const { data: ownerAccount } = await supabaseAdmin.auth.admin.getUserById(orgData.owner_id);
-    if (ownerAccount?.user?.email && ownerAccount.user.email.toLowerCase() === email.toLowerCase()) {
+    if (ownerAccount?.user?.email && normalizeAuthEmail(ownerAccount.user.email) === normalizedEmail) {
       return { success: false, error: 'Owners cannot remove themselves. Use Delete Account instead.' };
     }
 
-    // First, try to remove from organization_invitations (pending invites)
-    const { error: inviteDeleteError } = await supabaseAdmin
+    // First, remove org invitations matching this email.
+    const { data: deletedInvites, error: inviteDeleteError } = await supabaseAdmin
       .from('organization_invitations')
       .delete()
       .eq('organization_id', organizationId)
-      .eq('email', email);
+      .eq('email', normalizedEmail)
+      .select('id');
 
-    // Second, try to remove from organization_users (accepted members)
-    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const targetUser = authUsers?.users?.find(u => u.email === email);
-
-    if (targetUser?.id && targetUser.id === orgData.owner_id) {
-      return { success: false, error: 'Owners cannot remove themselves. Use Delete Account instead.' };
+    if (inviteDeleteError) {
+      return { success: false, error: inviteDeleteError.message };
     }
 
-    if (targetUser) {
-      const { error: memberDeleteError } = await supabaseAdmin
-        .from('organization_users')
-        .delete()
-        .eq('organization_id', organizationId)
-        .eq('user_id', targetUser.id);
+    // Second, remove accepted org membership by resolving the auth user id.
+    const { data: indexedAuthUser, error: indexedAuthUserError } = await findAuthUserIndexByEmail(
+      supabaseAdmin,
+      normalizedEmail
+    );
 
-      if (memberDeleteError && !inviteDeleteError) {
-        return { success: false, error: memberDeleteError.message };
+    if (indexedAuthUserError) {
+      return { success: false, error: indexedAuthUserError.message };
+    }
+
+    let targetUserId = indexedAuthUser?.user_id || null;
+
+    // Fallback: paginate auth users to recover user id when index is stale/missing.
+    if (!targetUserId) {
+      const perPage = 200;
+
+      for (let page = 1; page <= 20; page += 1) {
+        const { data: authUsersPage, error: listUsersError } = await supabaseAdmin.auth.admin.listUsers({
+          page,
+          perPage,
+        });
+
+        if (listUsersError) {
+          return { success: false, error: listUsersError.message };
+        }
+
+        const candidate = authUsersPage?.users?.find(
+          (authUser) => authUser.email && normalizeAuthEmail(authUser.email) === normalizedEmail
+        );
+
+        if (candidate?.id) {
+          targetUserId = candidate.id;
+          await upsertAuthUserIndex(supabaseAdmin, candidate);
+          break;
+        }
+
+        if (!authUsersPage?.users?.length || authUsersPage.users.length < perPage) {
+          break;
+        }
       }
     }
 
-    if (inviteDeleteError && !targetUser) {
-      return { success: false, error: inviteDeleteError.message };
+    if (targetUserId && targetUserId === orgData.owner_id) {
+      return { success: false, error: 'Owners cannot remove themselves. Use Delete Account instead.' };
+    }
+
+    let deletedMembers: Array<{ user_id: string }> = [];
+
+    if (targetUserId) {
+      const { data: deletedMemberRows, error: memberDeleteError } = await supabaseAdmin
+        .from('organization_users')
+        .delete()
+        .eq('organization_id', organizationId)
+        .eq('user_id', targetUserId)
+        .select('user_id');
+
+      if (memberDeleteError) {
+        return { success: false, error: memberDeleteError.message };
+      }
+
+      deletedMembers = deletedMemberRows || [];
+    }
+
+    // If this email belongs to an auth user, only hard-delete account data when the user is not tied to other orgs.
+    if (targetUserId) {
+      const { data: ownedOrganizations, error: ownedOrganizationsError } = await supabaseAdmin
+        .from('organizations')
+        .select('id')
+        .eq('owner_id', targetUserId)
+        .neq('id', organizationId)
+        .limit(1);
+
+      if (ownedOrganizationsError) {
+        return { success: false, error: ownedOrganizationsError.message };
+      }
+
+      if ((ownedOrganizations || []).length > 0) {
+        return {
+          success: false,
+          error: 'Cannot delete this user account because they own another organization.',
+        };
+      }
+
+      const { data: otherMemberships, error: otherMembershipsError } = await supabaseAdmin
+        .from('organization_users')
+        .select('organization_id')
+        .eq('user_id', targetUserId)
+        .neq('organization_id', organizationId)
+        .limit(1);
+
+      if (otherMembershipsError) {
+        return { success: false, error: otherMembershipsError.message };
+      }
+
+      if ((otherMemberships || []).length > 0) {
+        return {
+          success: false,
+          error: 'Cannot delete this user account because they are still a member of another organization.',
+        };
+      }
+
+      const { error: profileDeleteError } = await supabaseAdmin
+        .from('user_profiles')
+        .delete()
+        .eq('user_id', targetUserId);
+
+      if (profileDeleteError) {
+        return { success: false, error: profileDeleteError.message };
+      }
+
+      const { error: authIndexDeleteError } = await supabaseAdmin
+        .from('user_auth_index')
+        .delete()
+        .eq('user_id', targetUserId);
+
+      if (authIndexDeleteError) {
+        return { success: false, error: authIndexDeleteError.message };
+      }
+
+      // Clean up any remaining invitations across organizations for this email before removing auth user.
+      const { error: globalInviteDeleteError } = await supabaseAdmin
+        .from('organization_invitations')
+        .delete()
+        .eq('email', normalizedEmail);
+
+      if (globalInviteDeleteError) {
+        return { success: false, error: globalInviteDeleteError.message };
+      }
+
+      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
+
+      if (authDeleteError) {
+        return { success: false, error: authDeleteError.message };
+      }
+    }
+
+    if (!deletedMembers.length && !deletedInvites?.length) {
+      return { success: false, error: 'No matching member or invitation found for this email in your organization.' };
     }
 
     revalidatePath('/dashboard/settings');
@@ -2299,5 +2421,137 @@ export async function getTeamMembers(organizationId: string) {
   } catch (error: unknown) {
     console.error('Failed to fetch team members:', error);
     return { success: false, members: [], error: (error as Error)?.message || 'Failed to fetch team members.' };
+  }
+}
+
+export async function sendCustomerDirectEmail(payload: {
+  customerId: string;
+  subject: string;
+  message: string;
+  locale?: string;
+  context?: 'customers_table' | 'customer_profile';
+}) {
+  try {
+    const customerId = String(payload.customerId || '').trim();
+    const subject = String(payload.subject || '').trim();
+    const message = String(payload.message || '').trim();
+    const locale = String(payload.locale || 'en').trim() || 'en';
+    const context = payload.context || 'customers_table';
+
+    if (!customerId || !subject || !message) {
+      return { error: 'Customer, subject, and message are required.' };
+    }
+
+    const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { error: 'Unauthorized operational execution.' };
+    }
+
+    const { organization: org } = await getUserOrganization(user.id);
+    if (!org) {
+      return { error: 'No organizational profile found.' };
+    }
+
+    const { data: orgOwnerData } = await supabaseAdmin
+      .from('organizations')
+      .select('owner_id')
+      .eq('id', org.id)
+      .maybeSingle();
+
+    let organizationReplyToEmail: string | null = null;
+
+    if (orgOwnerData?.owner_id) {
+      const { data: ownerAuthIndex } = await supabaseAdmin
+        .from('user_auth_index')
+        .select('email')
+        .eq('user_id', orgOwnerData.owner_id)
+        .maybeSingle();
+
+      organizationReplyToEmail = ownerAuthIndex?.email || null;
+    }
+
+    const { data: customer, error: customerError } = await supabaseAdmin
+      .from('customers')
+      .select('id, first_name, last_name, email, organization_id')
+      .eq('id', customerId)
+      .eq('organization_id', org.id)
+      .maybeSingle();
+
+    if (customerError || !customer) {
+      return { error: customerError?.message || 'Customer not found.' };
+    }
+
+    if (!customer.email) {
+      return { error: 'Customer email not found.' };
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      return { error: 'Email delivery is not configured (missing RESEND_API_KEY).' };
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const organizationName = org.name || 'Prado';
+    const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+    const fromAddress = `${organizationName} <${fromEmailAddress}>`;
+    const replyToAddress =
+      organizationReplyToEmail || process.env.RESEND_REPLY_TO_EMAIL || user.email || undefined;
+    const customerName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Customer';
+
+    const escapedMessage = message
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;')
+      .replaceAll('\n', '<br />');
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #ffffff;">
+        <h2 style="margin-top: 0;">${subject}</h2>
+        <p>Hi ${customerName},</p>
+        <p style="white-space: normal; line-height: 1.5;">${escapedMessage}</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 18px 0;" />
+        <p style="font-size: 12px; color: #64748b; margin: 0;">Sent from ${organizationName} via Prado.</p>
+      </div>
+    `;
+
+    const sendResult = await resend.emails.send({
+      from: fromAddress,
+      to: customer.email,
+      subject,
+      html,
+      replyTo: replyToAddress,
+    });
+
+    if (sendResult.error) {
+      return { error: sendResult.error.message || 'Failed to send email.' };
+    }
+
+    await supabaseAdmin.from('customer_email_logs').insert([
+      {
+        organization_id: org.id,
+        customer_id: customer.id,
+        sent_by_user_id: user.id,
+        to_email: customer.email,
+        subject,
+        body_preview: message.slice(0, 280),
+        context,
+      },
+    ]);
+
+    revalidatePath('/dashboard/customers');
+    revalidatePath(`/${locale}/dashboard/customers`);
+    revalidatePath(`/dashboard/customers/${customer.id}`);
+    revalidatePath(`/${locale}/dashboard/customers/${customer.id}`);
+
+    return { success: true };
+  } catch (error: unknown) {
+    return { error: (error as Error)?.message || 'Failed to send customer email.' };
   }
 }

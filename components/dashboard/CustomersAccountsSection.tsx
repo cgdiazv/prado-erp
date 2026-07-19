@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { getTranslations } from '@/lib/translations';
+import CustomerEmailModal from '@/components/dashboard/CustomerEmailModal';
 
 interface Customer {
   id: string;
@@ -281,7 +282,20 @@ export default function CustomersAccountsSection({
                   <td className="px-4 py-3 font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
                     <Link href={`/dashboard/customers/${customer.id}`}>{customer.first_name} {customer.last_name}</Link>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{customer.email || '—'}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {customer.email ? (
+                      <CustomerEmailModal
+                        locale={locale}
+                        customerId={customer.id}
+                        customerEmail={customer.email}
+                        customerName={`${customer.first_name} ${customer.last_name}`.trim()}
+                        context="customers_table"
+                        className="text-emerald-600 hover:text-emerald-700 hover:underline"
+                      />
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-500">{formatPhoneDisplay(customer.phone)}</td>
                   <td className="px-4 py-3 font-bold text-slate-800">
                     {paidBalances[customer.id] > 0 ? `$${paidBalances[customer.id].toFixed(2)}` : '—'}
