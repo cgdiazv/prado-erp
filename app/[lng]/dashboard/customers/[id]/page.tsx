@@ -123,7 +123,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                         customerEmail={customer.email}
                         customerName={`${customer.first_name} ${customer.last_name}`.trim()}
                         context="customer_profile"
-                        className="text-emerald-600 hover:text-emerald-700 hover:underline"
+                        className="cursor-pointer text-emerald-600 hover:text-emerald-700 hover:underline"
                       />
                     ) : (
                       '—'

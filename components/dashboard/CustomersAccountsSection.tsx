@@ -290,7 +290,7 @@ export default function CustomersAccountsSection({
                         customerEmail={customer.email}
                         customerName={`${customer.first_name} ${customer.last_name}`.trim()}
                         context="customers_table"
-                        className="text-emerald-600 hover:text-emerald-700 hover:underline"
+                        className="cursor-pointer text-emerald-600 hover:text-emerald-700 hover:underline"
                       />
                     ) : (
                       '—'
