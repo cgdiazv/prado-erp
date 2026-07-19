@@ -323,7 +323,7 @@ export default async function DashboardHome({
 
       {!isIndividualAccount && (
         <Link
-          href={`/${locale}/dashboard/ledger`}
+          href={`/${locale}/dashboard/expense-ledger`}
           className="cursor-pointer rounded-lg border border-gray-200 bg-white h-20 p-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 flex flex-col items-center justify-center gap-2 text-center sm:h-auto sm:flex-row sm:justify-center sm:px-3 sm:py-1.5"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-7 w-7 text-emerald-700 sm:h-5 sm:w-5">
