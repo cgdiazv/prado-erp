@@ -1,8 +1,9 @@
 import { Suspense } from 'react';
 import LoginPageClient from './LoginPageClient';
 import { createClient } from '@/lib/supabaseServer';
-import { tryRestoreRememberedSession } from '@/lib/rememberMe';
+import { REMEMBER_ME_COOKIE_NAME } from '@/lib/rememberMe';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 
 export default async function LoginPage({
   params,
@@ -12,8 +13,8 @@ export default async function LoginPage({
   const resolvedParams = await params;
   const locale = resolvedParams.lng ?? 'en';
   const supabase = await createClient();
-
-  await tryRestoreRememberedSession(supabase);
+  const cookieStore = await cookies();
+  const hasRememberCookie = cookieStore.has(REMEMBER_ME_COOKIE_NAME);
 
   const {
     data: { user },
@@ -21,6 +22,10 @@ export default async function LoginPage({
 
   if (user) {
     redirect(`/${locale}/dashboard`);
+  }
+
+  if (hasRememberCookie) {
+    redirect(`/${locale}/auth/remember-restore?next=${encodeURIComponent(`/${locale}/dashboard`)}`);
   }
 
   return (

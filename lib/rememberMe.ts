@@ -32,6 +32,30 @@ function getRememberCookieOptions(maxAge: number) {
   };
 }
 
+function tryDeleteRememberCookie(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+  try {
+    cookieStore.delete(REMEMBER_ME_COOKIE_NAME);
+  } catch {
+    // Server Components cannot mutate cookies. Skip without failing the request.
+  }
+}
+
+function trySetRememberCookie(
+  cookieStore: Awaited<ReturnType<typeof cookies>>,
+  rawToken: string,
+  maxAgeSeconds: number
+) {
+  try {
+    cookieStore.set(
+      REMEMBER_ME_COOKIE_NAME,
+      rawToken,
+      getRememberCookieOptions(maxAgeSeconds)
+    );
+  } catch {
+    // Server Components cannot mutate cookies. Skip without failing the request.
+  }
+}
+
 async function revokeRememberTokenByRawValue(rawToken: string | undefined) {
   if (!rawToken) {
     return;
@@ -58,7 +82,7 @@ export async function issueRememberToken(params: {
   if (!params.remember) {
     const existingToken = cookieStore.get(REMEMBER_ME_COOKIE_NAME)?.value;
     await revokeRememberTokenByRawValue(existingToken);
-    cookieStore.delete(REMEMBER_ME_COOKIE_NAME);
+    tryDeleteRememberCookie(cookieStore);
     return;
   }
 
@@ -80,18 +104,14 @@ export async function issueRememberToken(params: {
     throw new Error(`Failed to store remember token: ${error.message}`);
   }
 
-  cookieStore.set(
-    REMEMBER_ME_COOKIE_NAME,
-    rawToken,
-    getRememberCookieOptions(REMEMBER_ME_MAX_AGE_SECONDS)
-  );
+  trySetRememberCookie(cookieStore, rawToken, REMEMBER_ME_MAX_AGE_SECONDS);
 }
 
 export async function clearRememberToken() {
   const cookieStore = await cookies();
   const existingToken = cookieStore.get(REMEMBER_ME_COOKIE_NAME)?.value;
   await revokeRememberTokenByRawValue(existingToken);
-  cookieStore.delete(REMEMBER_ME_COOKIE_NAME);
+  tryDeleteRememberCookie(cookieStore);
 }
 
 export async function revokeOtherRememberTokensForUser(userId: string) {
@@ -151,7 +171,7 @@ export async function tryRestoreRememberedSession(supabase: SupabaseClient) {
     .maybeSingle<RememberTokenRow>();
 
   if (rememberLookupError || !rememberToken) {
-    cookieStore.delete(REMEMBER_ME_COOKIE_NAME);
+    tryDeleteRememberCookie(cookieStore);
     return false;
   }
 
@@ -162,7 +182,7 @@ export async function tryRestoreRememberedSession(supabase: SupabaseClient) {
       .eq('token_hash', tokenHash)
       .is('revoked_at', null);
 
-    cookieStore.delete(REMEMBER_ME_COOKIE_NAME);
+    tryDeleteRememberCookie(cookieStore);
     return false;
   }
 
@@ -178,7 +198,7 @@ export async function tryRestoreRememberedSession(supabase: SupabaseClient) {
       .eq('token_hash', tokenHash)
       .is('revoked_at', null);
 
-    cookieStore.delete(REMEMBER_ME_COOKIE_NAME);
+    tryDeleteRememberCookie(cookieStore);
     return false;
   }
 
@@ -204,15 +224,11 @@ export async function tryRestoreRememberedSession(supabase: SupabaseClient) {
       .update({ revoked_at: nowIso })
       .eq('token_hash', tokenHash);
 
-    cookieStore.delete(REMEMBER_ME_COOKIE_NAME);
+    tryDeleteRememberCookie(cookieStore);
     return false;
   }
 
-  cookieStore.set(
-    REMEMBER_ME_COOKIE_NAME,
-    rotatedRawToken,
-    getRememberCookieOptions(REMEMBER_ME_MAX_AGE_SECONDS)
-  );
+  trySetRememberCookie(cookieStore, rotatedRawToken, REMEMBER_ME_MAX_AGE_SECONDS);
 
   return true;
 }

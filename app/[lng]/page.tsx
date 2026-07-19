@@ -6,14 +6,16 @@ import PublicNavbar from '@/components/PublicNavbar';
 import ScreenshotCarousel from '@/components/ScreenshotCarousel';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
-import { tryRestoreRememberedSession } from '@/lib/rememberMe';
+import { REMEMBER_ME_COOKIE_NAME } from '@/lib/rememberMe';
+import { cookies } from 'next/headers';
 
 export default async function MarketingHomePage({ params }: { params: Promise<{ lng: string }> }) {
   const { lng } = await params;
   const isEs = lng.toLowerCase().startsWith('es');
   const translations = getTranslations(lng);
   const supabase = await createClient();
-  await tryRestoreRememberedSession(supabase);
+  const cookieStore = await cookies();
+  const hasRememberCookie = cookieStore.has(REMEMBER_ME_COOKIE_NAME);
   const industryCards = [
     {
       name: translations.home.industryLandscaping,
@@ -57,6 +59,10 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
     } else {
       redirect(`/${lng}/auth/access-pending`);
     }
+  }
+
+  if (hasRememberCookie) {
+    redirect(`/${lng}/auth/remember-restore?next=${encodeURIComponent(`/${lng}/dashboard`)}`);
   }
 
   // 2. Render the public Supabase-style Marketing Front Page
