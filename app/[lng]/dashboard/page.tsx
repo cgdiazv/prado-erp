@@ -382,7 +382,7 @@ export default async function DashboardHome({
           canViewImportExport={canViewImportExport}
         />
         
-        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
           <div className="max-w-5xl ml-0 space-y-8 text-left">
             
             {/* Conditional Trial Alert Banner Asset */}
