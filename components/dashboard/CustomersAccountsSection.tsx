@@ -120,7 +120,8 @@ export default function CustomersAccountsSection({
   return (
     <>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        {/* Desktop filter buttons */}
+        <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
           <button
             onClick={() => {
               setBalanceFilter('all');
@@ -161,6 +162,20 @@ export default function CustomersAccountsSection({
             {labels.filterPaid}
           </button>
         </div>
+        
+        {/* Mobile filter dropdown */}
+        <select
+          value={balanceFilter}
+          onChange={(e) => {
+            setBalanceFilter(e.target.value as any);
+            resetToFirstPage();
+          }}
+          className="sm:hidden text-xs bg-white border border-gray-300 rounded-md px-3 py-1.5 text-slate-700 w-full"
+        >
+          <option value="all">{labels.filterAll}</option>
+          <option value="unpaid">{labels.filterUnpaid}</option>
+          <option value="paid">{labels.filterPaid}</option>
+        </select>
 
         <div className="flex items-center gap-2 sm:ml-auto">
           <label htmlFor="customers-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">

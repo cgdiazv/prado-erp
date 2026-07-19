@@ -56,7 +56,8 @@ export default function CustomerJobLogTable({ jobs, locale = 'en' }: CustomerJob
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        {/* Desktop filter buttons */}
+        <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
           {[
             { key: 'all' as const, label: translations.dashboard.filterAll },
             { key: 'scheduled' as const, label: scheduledLabel },
@@ -76,6 +77,23 @@ export default function CustomerJobLogTable({ jobs, locale = 'en' }: CustomerJob
             </button>
           ))}
         </div>
+        
+        {/* Mobile filter dropdown */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          className="sm:hidden text-xs bg-white border border-gray-300 rounded-md px-3 py-1.5 text-slate-700 w-full"
+        >
+          {[
+            { key: 'all' as const, label: translations.dashboard.filterAll },
+            { key: 'scheduled' as const, label: scheduledLabel },
+            { key: 'completed' as const, label: completedLabel },
+          ].map((filter) => (
+            <option key={filter.key} value={filter.key}>
+              {filter.label}
+            </option>
+          ))}
+        </select>
 
         <div className="flex items-center gap-2 sm:ml-auto">
           <label htmlFor="job-log-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">

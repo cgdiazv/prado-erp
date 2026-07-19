@@ -174,7 +174,8 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
 
       {/* Filter tabs + pagination */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        {/* Desktop filter buttons */}
+        <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
           {filters.map(({ key, label }) => (
             <button
               key={key}
@@ -189,6 +190,19 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
             </button>
           ))}
         </div>
+        
+        {/* Mobile filter dropdown */}
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as FilterType)}
+          className="sm:hidden text-xs bg-white border border-gray-300 rounded-md px-3 py-1.5 text-slate-700 w-full"
+        >
+          {filters.map(({ key, label }) => (
+            <option key={key} value={key}>
+              {label}
+            </option>
+          ))}
+        </select>
 
         <div className="flex items-center gap-2 sm:ml-auto">
           <label htmlFor="jobs-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">

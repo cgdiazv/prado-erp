@@ -583,7 +583,8 @@ export default function EstimatesContent({ subscriptionStatus, organizationLogoU
 
       {/* Barra de Filtros + Paginacion */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        {/* Desktop filter buttons */}
+        <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
           {['all', 'draft', 'sent', 'approved', 'declined'].map((filter) => (
             <button
               key={filter}
@@ -598,6 +599,19 @@ export default function EstimatesContent({ subscriptionStatus, organizationLogoU
             </button>
           ))}
         </div>
+        
+        {/* Mobile filter dropdown */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="sm:hidden text-xs bg-white border border-gray-300 rounded-md px-3 py-1.5 text-slate-700 w-full"
+        >
+          {['all', 'draft', 'sent', 'approved', 'declined'].map((filter) => (
+            <option key={filter} value={filter}>
+              {filter === 'all' ? t.filterAll : filter === 'draft' ? t.filterDraft : filter === 'sent' ? t.filterSent : filter === 'approved' ? t.filterApproved : t.filterDeclined}
+            </option>
+          ))}
+        </select>
 
         <div className="flex items-center gap-2 sm:ml-auto">
           <label htmlFor="estimate-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">

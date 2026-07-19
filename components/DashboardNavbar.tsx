@@ -7,10 +7,9 @@ import { useDashboardNotifications } from '@/components/dashboard/DashboardNotif
 
 interface DashboardNavbarProps {
   userInitials?: string; // e.g., "CD" for Carlos Diaz
-  organizationLogoUrl?: string;
 }
 
-export default function DashboardNavbar({ userInitials = "C", organizationLogoUrl = '' }: DashboardNavbarProps) {
+export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -18,10 +17,8 @@ export default function DashboardNavbar({ userInitials = "C", organizationLogoUr
   const activeLocale = typeof params.lng === 'string' && params.lng.length > 0 ? params.lng : 'en';
   const isEs = activeLocale.toLowerCase().startsWith('es');
   const { hasIncompleteProfile } = useDashboardNotifications();
-  const [logoLoadFailed, setLogoLoadFailed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement | null>(null);
-  const hasLogo = organizationLogoUrl.trim().length > 0 && !logoLoadFailed;
   
   // Verify state criteria from current URL search parameters
   const isSidebarOpen = searchParams.get('sidebar') === 'open';
@@ -137,28 +134,7 @@ export default function DashboardNavbar({ userInitials = "C", organizationLogoUr
             ) : null}
           </div>
 
-          <Link 
-            href="/dashboard/settings" 
-            className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold tracking-wider shadow-sm transition transform hover:scale-[1.03] active:scale-[0.97] outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${
-              hasLogo
-                ? 'overflow-hidden border border-gray-200 bg-white'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            }`}
-            title="Account Settings"
-          >
-            {hasLogo ? (
-              <img
-                src={organizationLogoUrl}
-                alt="Organization logo"
-                className="h-full w-full object-contain"
-                onError={() => setLogoLoadFailed(true)}
-              />
-            ) : (
-              userInitials.toUpperCase()
-            )}
-          </Link>
-
-          {/* Mobile Hamburger Toggle Trigger Menu Button placed directly next to initials */}
+          {/* Mobile Hamburger Toggle Trigger Menu Button */}
           <button
             onClick={toggleSidebar}
             className="md:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 focus:outline-none transition cursor-pointer"

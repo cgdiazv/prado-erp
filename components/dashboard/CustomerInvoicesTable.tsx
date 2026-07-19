@@ -70,7 +70,8 @@ export default function CustomerInvoicesTable({ invoices, customerId, locale = '
 
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+          {/* Desktop filter buttons */}
+          <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
             {[
               { key: 'all' as const, label: translations.dashboard.filterAll },
               { key: 'unpaid' as const, label: translations.dashboard.filterUnpaid },
@@ -90,6 +91,23 @@ export default function CustomerInvoicesTable({ invoices, customerId, locale = '
               </button>
             ))}
           </div>
+          
+          {/* Mobile filter dropdown */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            className="sm:hidden text-xs bg-white border border-gray-300 rounded-md px-3 py-1.5 text-slate-700 w-full"
+          >
+            {[
+              { key: 'all' as const, label: translations.dashboard.filterAll },
+              { key: 'unpaid' as const, label: translations.dashboard.filterUnpaid },
+              { key: 'paid' as const, label: translations.dashboard.filterPaid },
+            ].map((filter) => (
+              <option key={filter.key} value={filter.key}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
 
           <div className="flex items-center gap-2 sm:ml-auto">
             <label htmlFor="invoice-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
