@@ -560,7 +560,7 @@ export default function EstimatesContent({ subscriptionStatus, organizationLogoU
       </div>
 
       {/* Tarjetas de Resumen Rapido */}
-      <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible">
+      <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-5">
         <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{t.totalDraft}</span>
           <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">

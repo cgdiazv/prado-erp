@@ -120,7 +120,7 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
 
   return (
     <>
-      <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-5">
+      <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
         <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
           <span className="text-[10px] uppercase font-bold tracking-wider text-red-600">
             {isEs ? 'Total Pendiente' : 'Unpaid Total'}
@@ -144,7 +144,7 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
       </div>
 
       {/* Filter tabs + pagination */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-6 md:mb-3">
         {/* Desktop filter buttons */}
         <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
           {filters.map(({ key, label }) => (

@@ -119,7 +119,7 @@ export default function CustomersAccountsSection({
 
   return (
     <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-6 md:mb-2">
         {/* Desktop filter buttons */}
         <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
           <button

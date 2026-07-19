@@ -74,8 +74,8 @@ export default async function InvoicesLedgerPage({
           canViewImportExport={canViewImportExport}
         />
 
-        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-          <div className="max-w-5xl ml-0 grid grid-cols-1 gap-8 text-left">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+          <div className="max-w-5xl ml-0 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
             <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">
                 {translations.dashboard.invoicesAndLedger}
@@ -87,9 +87,7 @@ export default async function InvoicesLedgerPage({
               </p>
             </div>
 
-            <section>
-              <InvoicesLedgerTable invoices={(invoices as InvoiceRow[]) ?? []} locale={locale} />
-            </section>
+            <InvoicesLedgerTable invoices={(invoices as InvoiceRow[]) ?? []} locale={locale} />
           </div>
         </main>
       </div>

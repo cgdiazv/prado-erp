@@ -591,8 +591,8 @@ export default function EstimatesPage() {
           locale={locale}
           canViewImportExport={canViewImportExport}
         />
-        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-          <div className="max-w-5xl ml-0 space-y-8 text-left">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+          <div className="max-w-5xl ml-0 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
 
             {/* Cabecera */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
@@ -609,20 +609,20 @@ export default function EstimatesPage() {
             </div>
 
             {/* Tarjetas de Resumen Rapido */}
-            <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible">
-              <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-2 sm:mb-5 md:mb-2">
+              <div className="bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{t.totalDraft}</span>
                 <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">
                   ${estimates.filter(e => e.status === 'draft').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
                 </p>
               </div>
-              <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
+              <div className="bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600">{t.totalSent}</span>
                 <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">
                   ${estimates.filter(e => e.status === 'sent').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
                 </p>
               </div>
-              <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
+              <div className="bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600">{t.totalApproved}</span>
                 <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">
                   ${estimates.filter(e => e.status === 'approved').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
@@ -631,7 +631,7 @@ export default function EstimatesPage() {
             </div>
 
             {/* Barra de Filtros + Paginacion */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-6 md:mb-3">
               {/* Desktop filter buttons */}
               <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
                 {['all', 'draft', 'sent', 'approved', 'declined'].map((filter) => (

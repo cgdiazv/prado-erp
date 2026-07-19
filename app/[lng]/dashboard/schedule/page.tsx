@@ -71,8 +71,8 @@ export default async function SchedulePage({
           locale={locale}
           canViewImportExport={canViewImportExport}
         />
-        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-          <div className="max-w-5xl ml-0 grid grid-cols-1 gap-8 text-left">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+          <div className="max-w-5xl ml-0 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
             
             {/* Header Row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">

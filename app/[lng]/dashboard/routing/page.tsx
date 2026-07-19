@@ -128,8 +128,8 @@ export default async function RoutingPage({
           locale={locale}
           canViewImportExport={canViewImportExport}
         />
-        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-          <div className="max-w-5xl ml-0 space-y-6 text-left">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+          <div className="max-w-5xl ml-0 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
             <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.dispatchRoutingOptimization}</h1>
               <p className="text-xs text-slate-400 mt-1">{translations.dashboard.dispatchRoutingDescription}</p>

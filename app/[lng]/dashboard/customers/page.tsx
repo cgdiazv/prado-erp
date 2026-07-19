@@ -75,9 +75,9 @@ export default async function CustomersPage({
           locale={locale}
           canViewImportExport={canViewImportExport}
         />
-        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
           {/* Main Grid Wrapper */}
-          <div className="max-w-5xl ml-0 grid grid-cols-1 gap-8 text-left">
+          <div className="max-w-5xl ml-0 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
             
             {/* 1. Header Row - Spans completely across the entire width */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
@@ -88,7 +88,7 @@ export default async function CustomersPage({
               <AddCustomerModal organizationId={org.id} locale={locale} />
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible">
+            <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
               <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600">{isEs ? 'Total pendiente' : 'Total Unpaid'}</span>
                 <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">${totalUnpaid.toFixed(2)}</p>
