@@ -116,7 +116,7 @@
     },
     "privacy": {
       "title": "Privacy Policy",
-      "updated": "Last updated: July 17, 2026",
+      "updated": "Last updated: July 19, 2026",
       "intro": "At Prado, one of our core priorities is protecting the privacy and security of our users and their customers. This Privacy Policy explains what information we collect, how we use it, and how data is shared with payment and accounting providers when online payments and integrations are enabled.",
       "section1Title": "1. Information We Collect",
       "section1Body": "Prado processes data required to operate your workspace, including customer profiles, service addresses, scheduling and routing data, invoices, ledger records, and expense records. If Stripe online payments are enabled, Stripe may collect payment details directly from end customers. If Xero or QuickBooks Online (QBO) integrations are connected, accounting records and related metadata are transmitted to those services.",
@@ -125,9 +125,9 @@
       "section2Item1": "Scheduling jobs, optimizing routes, and maintaining service history and customer records.",
       "section2Item2": "Generating invoices and enabling online invoice payment links through Stripe Connect when configured by the organization.",
       "section2Item3": "Syncing accounting records and invoice data with Xero and/or QuickBooks Online (QBO) when integrations are authorized.",
-      "section2Item4": "Operating authentication, session security, and role-based access controls to protect workspace data.",
+      "section2Item4": "Operating authentication, session security, role-based access controls, and a strictly necessary remember-me cookie (when selected by the user) to protect workspace data and maintain sign-in continuity.",
       "section3Title": "3. Data Retention & Isolation",
-      "section3Body": "Workspace records are logically isolated by organization. Payment card data is handled by Stripe and is not stored by Prado. OAuth tokens and integration credentials required for Xero/QBO connectivity are stored securely and used only for authorized synchronization. Data is retained until removed by authorized users, account deletion workflows, or legal/compliance requirements.",
+      "section3Body": "Workspace records are logically isolated by organization. Payment card data is handled by Stripe and is not stored by Prado. OAuth tokens and integration credentials required for Xero/QBO connectivity are stored securely and used only for authorized synchronization. If \"Remember Me\" is enabled at login, Prado stores a secure, HTTP-only authentication cookie and a hashed remember token that may persist for up to 30 days, subject to expiration, token rotation, logout, password-security events, and explicit revocation controls. This remember-me mechanism is used for authentication continuity and security only, not for advertising tracking. Data is retained until removed by authorized users, account deletion workflows, or legal/compliance requirements.",
       "section4Title": "4. Contact Channels",
       "section4Body": "If you have questions about privacy, payment processing, Stripe Connect onboarding, or accounting integrations (Xero/QBO), please contact us through the Support Hub."
     },
@@ -503,7 +503,7 @@
     },
     "privacy": {
       "title": "Política de privacidad",
-      "updated": "Última actualización: 17 de julio de 2026",
+      "updated": "Última actualización: 19 de julio de 2026",
       "intro": "En Prado, una de nuestras prioridades principales es proteger la privacidad y seguridad de nuestros usuarios y de sus clientes. Esta Política de Privacidad explica qué información recopilamos, cómo la usamos y cómo se comparte con proveedores de pago y contabilidad cuando se habilitan pagos en línea e integraciones.",
       "section1Title": "1. Información que recopilamos",
       "section1Body": "Prado procesa los datos necesarios para operar tu espacio de trabajo, incluyendo perfiles de clientes, direcciones de servicio, programación y rutas, facturas, movimientos de libro contable y gastos. Si se habilitan pagos en línea con Stripe, Stripe puede recopilar directamente los datos de pago de los clientes finales. Si se conectan integraciones con Xero o QuickBooks Online (QBO), se transmiten registros contables y metadatos relacionados a esos servicios.",
@@ -512,9 +512,9 @@
       "section2Item1": "Programar trabajos, optimizar rutas y mantener historial de servicios y registros de clientes.",
       "section2Item2": "Generar facturas y habilitar enlaces de pago en línea mediante Stripe Connect cuando la organización lo configure.",
       "section2Item3": "Sincronizar registros contables y datos de facturas con Xero y/o QuickBooks Online (QBO) cuando las integraciones estén autorizadas.",
-      "section2Item4": "Operar autenticación, seguridad de sesión y controles de acceso por rol para proteger los datos del espacio de trabajo.",
+      "section2Item4": "Operar autenticación, seguridad de sesión, controles de acceso por rol y una cookie estrictamente necesaria de \"recordarme\" (cuando el usuario la selecciona) para proteger los datos del espacio de trabajo y mantener la continuidad de sesión.",
       "section3Title": "3. Retención y aislamiento de datos",
-      "section3Body": "Los registros del espacio de trabajo se aíslan lógicamente por organización. Los datos de tarjeta de pago los gestiona Stripe y Prado no los almacena. Los tokens OAuth y credenciales de integración necesarios para conectividad con Xero/QBO se almacenan de forma segura y se usan solo para sincronizaciones autorizadas. Los datos se conservan hasta que usuarios autorizados los eliminen, se ejecute el flujo de eliminación de cuenta o lo exijan obligaciones legales/compliance.",
+      "section3Body": "Los registros del espacio de trabajo se aíslan lógicamente por organización. Los datos de tarjeta de pago los gestiona Stripe y Prado no los almacena. Los tokens OAuth y credenciales de integración necesarios para conectividad con Xero/QBO se almacenan de forma segura y se usan solo para sincronizaciones autorizadas. Si habilitas \"Recordarme\" al iniciar sesión, Prado almacena una cookie de autenticación segura (HTTP-only) y un token de recordatorio con hash que puede persistir hasta 30 días, sujeto a vencimiento, rotación de token, cierre de sesión, eventos de seguridad de contraseña y controles explícitos de revocación. Este mecanismo de \"recordarme\" se utiliza solo para continuidad y seguridad de autenticación, no para seguimiento publicitario. Los datos se conservan hasta que usuarios autorizados los eliminen, se ejecute el flujo de eliminación de cuenta o lo exijan obligaciones legales/compliance.",
       "section4Title": "4. Canales de contacto",
       "section4Body": "Si tienes preguntas sobre privacidad, procesamiento de pagos, onboarding de Stripe Connect o integraciones contables (Xero/QBO), contáctanos a través del Hub de Soporte."
     },
