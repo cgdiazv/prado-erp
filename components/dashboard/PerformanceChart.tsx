@@ -135,14 +135,34 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
   const expensesLine = buildLine((entry) => entry.expenses);
   const netLine = buildLine((entry) => entry.netIncome);
 
-  // Determine which axis labels to show
-  const axisTicks = [0, 6, 12, 18, 24]
-    .filter((index) => index < trendData.length)
-    .map((index) => ({
+  // Spread X-axis ticks across the full data range to avoid label clustering on all-time views.
+  const axisTicks = useMemo(() => {
+    const lastIndex = Math.max(trendData.length - 1, 0);
+
+    if (lastIndex === 0) {
+      return [
+        {
+          key: 0,
+          label: trendData[0]?.dateLabel || '',
+          position: 0,
+        },
+      ];
+    }
+
+    const targetTickCount = periodFilter === 'all' ? 6 : 5;
+    const step = lastIndex / (targetTickCount - 1);
+    const tickIndexes = Array.from({ length: targetTickCount }, (_, idx) =>
+      Math.round(idx * step)
+    );
+
+    const uniqueSortedIndexes = Array.from(new Set([0, ...tickIndexes, lastIndex])).sort((a, b) => a - b);
+
+    return uniqueSortedIndexes.map((index) => ({
       key: index,
       label: trendData[index]?.dateLabel || '',
-      position: (index / Math.max(trendData.length - 1, 1)) * 100,
+      position: (index / lastIndex) * 100,
     }));
+  }, [trendData, periodFilter]);
 
   const periodLabels: Record<PeriodFilter, string> = {
     '7d': isEs ? 'Últimos 7 días' : 'Last 7 days',
@@ -152,7 +172,7 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs w-full">
+    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs w-full min-w-0">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-0.5">{translations.dashboard.financialBreakdown}</h3>
