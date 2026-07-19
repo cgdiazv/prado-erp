@@ -149,6 +149,12 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
                   </button>
                 </th>
                 <th className="px-4 py-3">
+                  <button type="button" onClick={() => handleSort('description')} className="inline-flex items-center gap-1">
+                    <span>{translations.dashboard.description}</span>
+                    {renderSortIndicator('description')}
+                  </button>
+                </th>
+                <th className="px-4 py-3">
                   <button type="button" onClick={() => handleSort('category')} className="inline-flex items-center gap-1">
                     <span>{translations.dashboard.category}</span>
                     {renderSortIndicator('category')}
@@ -166,12 +172,6 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
                     {renderSortIndicator('job')}
                   </button>
                 </th>
-                <th className="px-4 py-3">
-                  <button type="button" onClick={() => handleSort('description')} className="inline-flex items-center gap-1">
-                    <span>{translations.dashboard.description}</span>
-                    {renderSortIndicator('description')}
-                  </button>
-                </th>
                 <th className="px-4 py-3 text-right">
                   <button type="button" onClick={() => handleSort('amount')} className="inline-flex items-center gap-1 justify-end">
                     <span>{translations.dashboard.amount}</span>
@@ -186,10 +186,10 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
                   <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
                     {new Date(exp.expense_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                   </td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{exp.description || '—'}</td>
                   <td className="px-4 py-3"><span className="bg-red-50 text-red-700 border border-red-100 px-2 py-0.5 rounded text-xs font-medium">{exp.category}</span></td>
                   <td className="px-4 py-3 text-gray-600 text-xs">{exp.vendor || '—'}</td>
                   <td className="px-4 py-3 text-gray-600 text-xs">{exp.jobs?.job_type || (isEs ? 'Sin asignar' : 'Unassigned')}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{exp.description || '—'}</td>
                   <td className="px-4 py-3 text-right text-red-600 font-mono font-semibold">-${exp.amount}</td>
                 </tr>
               ))}

@@ -1,8 +1,6 @@
 import { createClient } from '@/lib/supabaseServer';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import DashboardNavbar from '@/components/DashboardNavbar';
-import DashboardSidebar from '@/components/DashboardSidebar';
 import CustomerDetailsForm from '@/components/dashboard/CustomerDetailsForm';
 import CustomerInvoicesTable from '@/components/dashboard/CustomerInvoicesTable';
 import CustomerJobLogTable from '@/components/dashboard/CustomerJobLogTable';
@@ -36,8 +34,6 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
     redirect(`/${locale}/auth/access-pending`);
   }
 
-  const canViewImportExport = role === 'owner' || role === 'admin';
-
   // 3. Fetch all components securely isolated to this customer's profile scope
   const [
     { data: customer },
@@ -57,41 +53,18 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
   const customerJobs = jobs?.filter((job) => job.properties && job.properties.customer_id === customerId) || [];
 
   if (!customer) {
-    const fallbackInitial = org.name ? org.name.charAt(0) : "C";
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-        <DashboardNavbar userInitials={fallbackInitial} />
-        <div className="flex flex-1 relative">
-        <DashboardSidebar
-          subscriptionStatus={org.subscription_status ?? undefined}
-          locale={locale}
-          canViewImportExport={canViewImportExport}
-        />
-        <main className="flex-1 p-12 text-left">
-            <h1 className="text-xl font-bold text-gray-800">{translations.dashboard.customerNotFound}</h1>
-            <Link href="/dashboard/customers" className="mt-4 inline-block text-sm text-emerald-600 hover:underline">
-              {translations.dashboard.returnToCustomers}
-            </Link>
-          </main>
-        </div>
-      </div>
+      <main className="flex-1 p-4 sm:p-6 md:p-8 text-left">
+        <h1 className="text-xl font-bold text-gray-800">{translations.dashboard.customerNotFound}</h1>
+        <Link href="/dashboard/customers" className="mt-4 inline-block text-sm text-emerald-600 hover:underline">
+          {translations.dashboard.returnToCustomers}
+        </Link>
+      </main>
     );
   }
 
-  const initial = org.name ? org.name.charAt(0) : "C";
-
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      <DashboardNavbar userInitials={initial} />
-      
-      <div className="flex flex-1 relative">
-        <DashboardSidebar
-          subscriptionStatus={org.subscription_status ?? undefined}
-          locale={locale}
-          canViewImportExport={canViewImportExport}
-        />
-
-        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
+    <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
           <div className="max-w-5xl ml-0 space-y-8 text-left">
             
             {/* Navigation Breadcrumb Bar & Actions Layout */}
@@ -175,8 +148,6 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
 
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+    </main>
   );
 }

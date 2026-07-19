@@ -1,7 +1,5 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
-import DashboardNavbar from '@/components/DashboardNavbar';
-import DashboardSidebar from '@/components/DashboardSidebar';
 import JobSchedule from '@/components/dashboard/JobSchedule';
 import ScheduleJobModal from '@/components/dashboard/ScheduleJobModal';
 import { checkTrialExpiry } from '@/lib/trialCheck';
@@ -26,7 +24,6 @@ export default async function SchedulePage({
 
   const { organization: org, role } = await getUserOrganization(user.id);
   if (!org) redirect(`/${locale}/auth/access-pending`);
-  const canViewImportExport = role === 'owner' || role === 'admin';
 
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
@@ -60,18 +57,8 @@ export default async function SchedulePage({
     ? (await supabase.from('jobs').select('*, properties(street_address, latitude, longitude, customer_id)').in('property_id', propertyIds).order('scheduled_date', { ascending: true })).data
     : [];
 
-  const initial = org.name ? org.name.charAt(0) : "C";
-
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-      <DashboardNavbar userInitials={initial} />
-      <div className="flex flex-1 relative">
-        <DashboardSidebar
-          subscriptionStatus={org.subscription_status}
-          locale={locale}
-          canViewImportExport={canViewImportExport}
-        />
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+    <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
           <div className="max-w-5xl ml-0 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
             
             {/* Header Row */}
@@ -98,8 +85,6 @@ export default async function SchedulePage({
             />
 
           </div>
-        </main>
-      </div>
-    </div>
+    </main>
   );
 }

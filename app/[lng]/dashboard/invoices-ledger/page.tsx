@@ -1,7 +1,5 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
-import DashboardNavbar from '@/components/DashboardNavbar';
-import DashboardSidebar from '@/components/DashboardSidebar';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import InvoicesLedgerTable from '@/components/dashboard/InvoicesLedgerTable';
@@ -40,7 +38,6 @@ export default async function InvoicesLedgerPage({
   const { organization: org, role } = await getUserOrganization(user.id);
 
   if (!org) redirect(`/${locale}/auth/access-pending`);
-  const canViewImportExport = role === 'owner' || role === 'admin';
 
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
   if (trial.isExpired) {
@@ -62,19 +59,8 @@ export default async function InvoicesLedgerPage({
         .order('created_at', { ascending: false })
     : { data: [] as InvoiceRow[] };
 
-  const initial = org.name ? org.name.charAt(0) : 'C';
-
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-      <DashboardNavbar userInitials={initial} />
-      <div className="flex flex-1 relative">
-        <DashboardSidebar
-          subscriptionStatus={org.subscription_status}
-          locale={locale}
-          canViewImportExport={canViewImportExport}
-        />
-
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+    <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
           <div className="max-w-5xl ml-0 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
             <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">
@@ -89,8 +75,6 @@ export default async function InvoicesLedgerPage({
 
             <InvoicesLedgerTable invoices={(invoices as InvoiceRow[]) ?? []} locale={locale} />
           </div>
-        </main>
-      </div>
-    </div>
+    </main>
   );
 }

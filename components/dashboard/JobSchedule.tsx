@@ -21,6 +21,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
   const router = useRouter();
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
+  const dateLocale = isEs ? 'es-ES' : 'en-US';
   const jobsList = jobs || [];
   const [filter, setFilter] = useState<FilterType>('all');
   const [pageSize, setPageSize] = useState<number>(25);
@@ -146,6 +147,12 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
     { key: 'completed', label: translations.dashboard.completed },
     { key: 'archived', label: translations.dashboard.filterArchived },
   ];
+
+  const formatJobDate = (value: string | null | undefined) => {
+    if (!value) return '—';
+    const normalized = value.length === 10 ? `${value}T00:00:00` : value;
+    return new Date(normalized).toLocaleDateString(dateLocale);
+  };
 
   return (
     <>
@@ -287,7 +294,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
               {paginatedJobs.map((job) => (
                 <tr key={job.id} className="hover:bg-gray-50/50 transition duration-150">
                   <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
-                    {new Date(job.scheduled_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
+                    {formatJobDate(job.scheduled_date)}
                   </td>
                   <td className="px-4 py-3 text-gray-500">{job.properties?.street_address || '—'}</td>
                   <td className="px-4 py-3 text-gray-500">{job.job_type}</td>

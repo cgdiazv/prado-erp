@@ -1,7 +1,5 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
-import DashboardNavbar from '@/components/DashboardNavbar';
-import DashboardSidebar from '@/components/DashboardSidebar';
 import PrintPageButton from '@/components/dashboard/PrintPageButton';
 import PrintReportFilters from '@/components/dashboard/PrintReportFilters';
 import { getUserOrganization } from '@/lib/organization';
@@ -238,14 +236,11 @@ export default async function PrintReportsPage({
     redirect('/login');
   }
 
-  const { organization: org, role } = await getUserOrganization(user.id);
+  const { organization: org } = await getUserOrganization(user.id);
 
   if (!org) {
     redirect(`/${locale}/auth/access-pending`);
   }
-  const canViewImportExport = role === 'owner' || role === 'admin';
-
-  const initial = org.name ? org.name.charAt(0) : 'C';
 
   const reportLabels: Record<ReportType, string> = {
     revenue: t.reportRevenue,
@@ -498,109 +493,83 @@ export default async function PrintReportsPage({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 font-sans">
-      <DashboardNavbar userInitials={initial} />
+    <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+      <div className="max-w-5xl ml-0 grid grid-cols-1 gap-8 text-left">
+        <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t.title}</h1>
+          <p className="text-xs text-slate-400 mt-1">{t.subtitle}</p>
+        </div>
 
-      <div className="flex flex-1 relative">
-        <DashboardSidebar
-          subscriptionStatus={org.subscription_status}
-          locale={locale}
-          canViewImportExport={canViewImportExport}
-        />
-
-        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-          <div className="max-w-5xl ml-0 grid grid-cols-1 gap-8 text-left">
-            <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t.title}</h1>
-              <p className="text-xs text-slate-400 mt-1">{t.subtitle}</p>
-            </div>
-
-            <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs space-y-5">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{t.sectionTitle}</h2>
-                <p className="text-xs text-slate-400 mt-1">{t.sectionDescription}</p>
-              </div>
-
-              <PrintReportFilters
-                reportTypes={REPORT_TYPES}
-                periodTypes={PERIOD_TYPES}
-                reportLabels={reportLabels}
-                periodLabels={periodLabels}
-                selectedReport={selectedReport}
-                selectedPeriod={selectedPeriod}
-                customStartValue={customStartValue}
-                customEndValue={customEndValue}
-                sectionTitle={t.sectionTitle}
-                periodLabel={t.periodLabel}
-                periodCustomLabel={t.periodCustom}
-                startDateLabel={t.startDate}
-                endDateLabel={t.endDate}
-                selectRangeLabel={t.selectRange}
-                generateLabel={t.generate}
-              />
-            </section>
-
-            <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{reportLabels[selectedReport]}</h3>
-                <PrintPageButton label={t.print} href={pdfHref} />
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {reportSummary.map((metric) => (
-                  <div key={metric.label} className="border border-gray-200 rounded-lg p-3 bg-slate-50">
-                    <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{metric.label}</p>
-                    <p className="text-lg font-extrabold text-slate-900 mt-1">{metric.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {reportRows.length === 0 ? (
-                <p className="text-xs text-slate-500">{t.noData}</p>
-              ) : (
-                <div className="overflow-x-auto border border-gray-200 rounded-xl">
-                  <table className="w-full min-w-[720px] text-sm">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        {reportHeaders.map((header) => (
-                          <th key={header} className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reportRows.map((row, rowIndex) => (
-                        <tr key={`${row.join('-')}-${rowIndex}`} className="border-t border-gray-100 hover:bg-slate-50/60">
-                          {row.map((cell, cellIndex) => (
-                            <td key={`${rowIndex}-${cellIndex}`} className="py-2.5 px-3 text-sm text-gray-800">
-                              {cell}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
+        <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs space-y-5">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{t.sectionTitle}</h2>
+            <p className="text-xs text-slate-400 mt-1">{t.sectionDescription}</p>
           </div>
-        </main>
-      </div>
 
-      <style>{`
-        @media print {
-          .print-hidden {
-            display: none !important;
-          }
-          main {
-            padding: 0 !important;
-          }
-          aside {
-            display: none !important;
-          }
-        }
-      `}</style>
-    </div>
+          <PrintReportFilters
+            reportTypes={REPORT_TYPES}
+            periodTypes={PERIOD_TYPES}
+            reportLabels={reportLabels}
+            periodLabels={periodLabels}
+            selectedReport={selectedReport}
+            selectedPeriod={selectedPeriod}
+            customStartValue={customStartValue}
+            customEndValue={customEndValue}
+            sectionTitle={t.sectionTitle}
+            periodLabel={t.periodLabel}
+            periodCustomLabel={t.periodCustom}
+            startDateLabel={t.startDate}
+            endDateLabel={t.endDate}
+            selectRangeLabel={t.selectRange}
+            generateLabel={t.generate}
+          />
+        </section>
+
+        <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{reportLabels[selectedReport]}</h3>
+            <PrintPageButton label={t.print} href={pdfHref} />
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {reportSummary.map((metric) => (
+              <div key={metric.label} className="border border-gray-200 rounded-lg p-3 bg-slate-50">
+                <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{metric.label}</p>
+                <p className="text-lg font-extrabold text-slate-900 mt-1">{metric.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {reportRows.length === 0 ? (
+            <p className="text-xs text-slate-500">{t.noData}</p>
+          ) : (
+            <div className="overflow-x-auto border border-gray-200 rounded-xl">
+              <table className="w-full min-w-[720px] text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    {reportHeaders.map((header) => (
+                      <th key={header} className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportRows.map((row, rowIndex) => (
+                    <tr key={`${row.join('-')}-${rowIndex}`} className="border-t border-gray-100 hover:bg-slate-50/60">
+                      {row.map((cell, cellIndex) => (
+                        <td key={`${rowIndex}-${cellIndex}`} className="py-2.5 px-3 text-sm text-gray-800">
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }

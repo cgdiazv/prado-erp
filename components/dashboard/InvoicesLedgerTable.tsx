@@ -220,15 +220,15 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
             <thead className="bg-gray-50 text-xs font-medium text-gray-500">
               <tr>
                 <th className="px-4 py-3">
-                  <button type="button" onClick={() => handleSort('customer')} className="inline-flex items-center gap-1">
-                    <span>{translations.dashboard.customerCrm}</span>
-                    {renderSortIndicator('customer')}
-                  </button>
-                </th>
-                <th className="px-4 py-3">
                   <button type="button" onClick={() => handleSort('date')} className="inline-flex items-center gap-1">
                     <span>{translations.dashboard.dueDate}</span>
                     {renderSortIndicator('date')}
+                  </button>
+                </th>
+                <th className="px-4 py-3">
+                  <button type="button" onClick={() => handleSort('customer')} className="inline-flex items-center gap-1">
+                    <span>{translations.dashboard.customerCrm}</span>
+                    {renderSortIndicator('customer')}
                   </button>
                 </th>
                 <th className="px-4 py-3">
@@ -263,10 +263,10 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
 
                 return (
                   <tr key={inv.id} className="hover:bg-gray-50/50 transition duration-150">
-                    <td className="px-4 py-3 font-medium text-gray-700">{customerName}</td>
                     <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
                       {new Date(inv.due_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                     </td>
+                    <td className="px-4 py-3 font-medium text-gray-700">{customerName}</td>
                     <td className="px-4 py-3 text-gray-500 font-mono">${inv.tax_amount}</td>
                     <td className="px-4 py-3 text-right font-bold text-slate-800">${Number(inv.total_amount || 0).toFixed(2)}</td>
                     <td className="px-4 py-3 text-right">

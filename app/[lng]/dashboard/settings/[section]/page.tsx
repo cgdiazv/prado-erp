@@ -1,8 +1,6 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import DashboardNavbar from '@/components/DashboardNavbar';
-import DashboardSidebar from '@/components/DashboardSidebar';
 import ServicesPanel from '../ServicesPanel';
 import TrucksPanel from '../TrucksPanel';
 import ExpenseCategoriesPanel from '../ExpenseCategoriesPanel';
@@ -202,17 +200,7 @@ export default async function SettingsSectionPage({
   const normalizedZipCode = hasShiftedIdentityValues ? rawState : rawZip;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      <DashboardNavbar userInitials={initial} />
-
-      <div className="flex flex-1 relative">
-        <DashboardSidebar
-          subscriptionStatus={org.subscription_status}
-          locale={locale}
-          canViewImportExport={canViewImportExport}
-        />
-
-        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
+    <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
           <div className="max-w-5xl ml-0 space-y-8 text-left">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
               <div className="flex flex-col gap-1">
@@ -405,8 +393,6 @@ export default async function SettingsSectionPage({
               </>
             )}
           </div>
-        </main>
-      </div>
-    </div>
+    </main>
   );
 }

@@ -1,7 +1,5 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
-import DashboardNavbar from '@/components/DashboardNavbar';
-import DashboardSidebar from '@/components/DashboardSidebar';
 import { getUserOrganization } from '@/lib/organization';
 import ProfileSettingsForm from './ProfileSettingsForm';
 import PasswordForm from '../settings/PasswordForm';
@@ -28,7 +26,6 @@ export default async function DashboardProfileSettingsPage({
   if (!org) {
     redirect(`/${locale}/auth/access-pending`);
   }
-  const canViewImportExport = role === 'owner' || role === 'admin';
 
   const { data: profile } = await supabase
     .from('user_profiles')
@@ -36,20 +33,8 @@ export default async function DashboardProfileSettingsPage({
     .eq('user_id', user.id)
     .maybeSingle();
 
-  const initial = org.name ? org.name.charAt(0) : 'C';
-
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      <DashboardNavbar userInitials={initial} />
-
-      <div className="flex flex-1 relative">
-        <DashboardSidebar
-          subscriptionStatus={org.subscription_status}
-          locale={locale}
-          canViewImportExport={canViewImportExport}
-        />
-
-        <main className="flex-1 p-6 md:p-12 overflow-y-auto">
+    <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
           <div className="max-w-5xl ml-0 space-y-6 text-left">
             <div className="border-b border-gray-200 pb-5">
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">
@@ -76,8 +61,6 @@ export default async function DashboardProfileSettingsPage({
               <PasswordForm locale={locale} />
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+    </main>
   );
 }
