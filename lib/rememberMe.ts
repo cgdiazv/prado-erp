@@ -94,6 +94,43 @@ export async function clearRememberToken() {
   cookieStore.delete(REMEMBER_ME_COOKIE_NAME);
 }
 
+export async function revokeOtherRememberTokensForUser(userId: string) {
+  const cookieStore = await cookies();
+  const currentRawToken = cookieStore.get(REMEMBER_ME_COOKIE_NAME)?.value;
+  const currentTokenHash = currentRawToken ? hashRememberToken(currentRawToken) : null;
+  const nowIso = new Date().toISOString();
+  const supabaseAdmin = createAdminClient();
+
+  const updateQuery = supabaseAdmin
+    .from('auth_remember_tokens')
+    .update({ revoked_at: nowIso })
+    .eq('user_id', userId)
+    .is('revoked_at', null);
+
+  const { error } = currentTokenHash
+    ? await updateQuery.neq('token_hash', currentTokenHash)
+    : await updateQuery;
+
+  if (error) {
+    throw new Error(`Failed to revoke other remember tokens: ${error.message}`);
+  }
+}
+
+export async function revokeAllRememberTokensForUser(userId: string) {
+  const nowIso = new Date().toISOString();
+  const supabaseAdmin = createAdminClient();
+
+  const { error } = await supabaseAdmin
+    .from('auth_remember_tokens')
+    .update({ revoked_at: nowIso })
+    .eq('user_id', userId)
+    .is('revoked_at', null);
+
+  if (error) {
+    throw new Error(`Failed to revoke remember tokens: ${error.message}`);
+  }
+}
+
 export async function tryRestoreRememberedSession(supabase: SupabaseClient) {
   const cookieStore = await cookies();
   const rawToken = cookieStore.get(REMEMBER_ME_COOKIE_NAME)?.value;

@@ -13,7 +13,7 @@ export default function Header({ orgName }: { orgName: string }) {
       <form action={async () => {
         'use server';
         const serverSupabase = await createClient();
-        await serverSupabase.auth.signOut();
+        await serverSupabase.auth.signOut({ scope: 'local' });
         await clearRememberToken();
         redirect('/login');
       }}>

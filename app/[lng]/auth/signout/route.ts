@@ -8,7 +8,7 @@ async function handleSignOut(request: Request) {
   // 1. Terminate the user session securely on Supabase auth service
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
   }
 
   await clearRememberToken();

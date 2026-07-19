@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { revalidatePath } from 'next/cache';
 import Stripe from 'stripe';
 import { Resend } from 'resend';
+import { clearRememberToken, revokeAllRememberTokensForUser, revokeOtherRememberTokensForUser } from '@/lib/rememberMe';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
@@ -24,11 +25,59 @@ export async function updatePassword(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be signed in to update your password.' };
+  }
+
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) {
     return { error: error.message };
   }
+
+  try {
+    await revokeAllRememberTokensForUser(user.id);
+  } catch (rememberError) {
+    return { error: (rememberError as Error).message };
+  }
+
+  await clearRememberToken();
+  await supabase.auth.signOut({ scope: 'global' });
+
+  return { success: true, requiresReauth: true };
+}
+
+export async function signOutOtherActiveDevices(formData: FormData) {
+  const locale = (formData.get('locale') as string | null)?.trim() || 'en';
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be signed in to manage sessions.' };
+  }
+
+  const { error } = await supabase.auth.signOut({ scope: 'others' });
+  if (error) {
+    return { error: error.message };
+  }
+
+  try {
+    await revokeOtherRememberTokensForUser(user.id);
+  } catch (rememberError) {
+    return { error: (rememberError as Error).message };
+  }
+
+  revalidatePath('/dashboard/profile-settings');
+  revalidatePath(`/${locale}/dashboard/profile-settings`);
+  revalidatePath('/dashboard/settings/profile-settings');
+  revalidatePath(`/${locale}/dashboard/settings/profile-settings`);
 
   return { success: true };
 }

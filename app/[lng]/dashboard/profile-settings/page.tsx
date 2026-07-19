@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import { getUserOrganization } from '@/lib/organization';
 import ProfileSettingsForm from './ProfileSettingsForm';
@@ -33,6 +34,15 @@ export default async function DashboardProfileSettingsPage({
     .eq('user_id', user.id)
     .maybeSingle();
 
+  const supabaseAdmin = createAdminClient();
+  const nowIso = new Date().toISOString();
+  const { count: activeRememberedSessions } = await supabaseAdmin
+    .from('auth_remember_tokens')
+    .select('token_hash', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .is('revoked_at', null)
+    .gt('expires_at', nowIso);
+
   return (
     <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
           <div className="max-w-5xl ml-0 space-y-6 text-left">
@@ -58,7 +68,7 @@ export default async function DashboardProfileSettingsPage({
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-              <PasswordForm locale={locale} />
+              <PasswordForm locale={locale} activeRememberedSessions={activeRememberedSessions || 0} />
             </div>
           </div>
     </main>
