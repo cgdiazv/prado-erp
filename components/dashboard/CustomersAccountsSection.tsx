@@ -52,6 +52,19 @@ export default function CustomersAccountsSection({
 
   const withoutOptional = (label: string) => label.replace(/\s*\((?:optional|opcional)\)\s*/gi, '').trim();
 
+  const formatPhoneDisplay = (value?: string | null) => {
+    if (!value) {
+      return '—';
+    }
+
+    const digits = value.replace(/\D/g, '');
+    if (digits.length !== 10) {
+      return value;
+    }
+
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
   const sortedCustomers = useMemo(() => {
     const getCustomerName = (customer: Customer) => `${customer.first_name} ${customer.last_name}`.trim().toLowerCase();
     const getEmail = (customer: Customer) => (customer.email || '').trim().toLowerCase();
@@ -269,7 +282,7 @@ export default function CustomersAccountsSection({
                     <Link href={`/dashboard/customers/${customer.id}`}>{customer.first_name} {customer.last_name}</Link>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{customer.email || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500">{customer.phone || '—'}</td>
+                  <td className="px-4 py-3 text-gray-500">{formatPhoneDisplay(customer.phone)}</td>
                   <td className="px-4 py-3 font-bold text-slate-800">
                     {paidBalances[customer.id] > 0 ? `$${paidBalances[customer.id].toFixed(2)}` : '—'}
                   </td>

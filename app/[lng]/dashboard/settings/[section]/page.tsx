@@ -373,17 +373,17 @@ export default async function SettingsSectionPage({
                   <SubscriptionCancellationCard currentSubscriptionStatus={org.subscription_status} locale={locale} />
                 </div>
 
-                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                <div className="bg-white rounded-xl border border-red-200 shadow-xs overflow-hidden">
                   <div className="p-6 md:p-8 flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{translations.dashboard.deleteAccountTitle}</h3>
+                      <h3 className="text-sm font-bold text-red-700 uppercase tracking-wider mb-1">{translations.dashboard.deleteAccountTitle}</h3>
                       <p className="text-xs text-slate-400">{translations.dashboard.deleteAccountDescription}</p>
                     </div>
 
                     <form action={`/${locale}/auth/delete-account`} method="POST">
                       <button
                         type="submit"
-                        className="text-xs font-semibold px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition"
+                        className="text-xs font-semibold px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-300 transition"
                       >
                         {translations.dashboard.deleteAccountButton}
                       </button>

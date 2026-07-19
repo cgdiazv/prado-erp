@@ -120,7 +120,14 @@ export default function AddCustomerModal({ organizationId, locale = 'en' }: AddC
                   name="phone"
                   placeholder={translations.dashboard.phoneNumber}
                   value={formData.phone}
-                  onChange={handleInputChange}
+                  onChange={(event) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      phone: event.target.value.replace(/\D/g, ''),
+                    }));
+                  }}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
                 />
 

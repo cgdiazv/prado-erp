@@ -493,13 +493,19 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
                       </td>
                       <td className="py-2.5 px-3 text-sm text-gray-800">{formatLastLogin(member.last_login_at)}</td>
                       <td className="py-2.5 px-3 text-right">
-                        <button
-                          onClick={() => handleRemoveMember(member.email)}
-                          disabled={deletingEmail === member.email}
-                          className="px-2 py-1 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded transition disabled:opacity-50"
-                        >
-                          {deletingEmail === member.email ? (isEs ? 'Eliminando...' : 'Removing...') : (isEs ? 'Eliminar' : 'Remove')}
-                        </button>
+                        {member.role === 'owner' ? (
+                          <span className="text-xs font-semibold text-red-600">
+                            {isEs ? 'Usa Eliminar cuenta' : 'Use Delete Account'}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleRemoveMember(member.email)}
+                            disabled={deletingEmail === member.email}
+                            className="px-2 py-1 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded transition disabled:opacity-50"
+                          >
+                            {deletingEmail === member.email ? (isEs ? 'Eliminando...' : 'Removing...') : (isEs ? 'Eliminar' : 'Remove')}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))

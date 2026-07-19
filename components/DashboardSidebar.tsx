@@ -201,7 +201,7 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en', ca
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm0 0H12m3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm-9 8.625h9c1.036 0 1.875-.84 1.875-1.875V6.75c0-1.035-.84-1.875-1.875-1.875h-9c-1.035 0-1.875.84-1.875 1.875V16.5c0 1.035.84 1.875 1.875 1.875Z" />
             </svg>
-            {translations.footer.support}
+            {isEs ? 'Ayuda' : 'Help'}
           </button>
         </div>
       </aside>

@@ -167,7 +167,9 @@ export default function CustomerDetailsForm({
                     type="text"
                     name="phone"
                     value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
+                    onChange={(event) => setPhone(event.target.value.replace(/\D/g, ''))}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     className="w-full rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium transition"
                   />
                 </div>

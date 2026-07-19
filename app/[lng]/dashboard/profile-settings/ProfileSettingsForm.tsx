@@ -155,8 +155,10 @@ export default function ProfileSettingsForm({
               <input
                 type="text"
                 value={phone}
-                onChange={(event) => setPhone(event.target.value)}
+                onChange={(event) => setPhone(event.target.value.replace(/\D/g, ''))}
                 placeholder={isEs ? 'Telefono' : 'Phone'}
+                inputMode="numeric"
+                pattern="[0-9]*"
                 className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
               />
             </div>

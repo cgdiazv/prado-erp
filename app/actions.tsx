@@ -2143,6 +2143,11 @@ export async function removeTeamMember(organizationId: string, email: string) {
       return { success: false, error: 'Only organization owner can remove members.' };
     }
 
+    const { data: ownerAccount } = await supabaseAdmin.auth.admin.getUserById(orgData.owner_id);
+    if (ownerAccount?.user?.email && ownerAccount.user.email.toLowerCase() === email.toLowerCase()) {
+      return { success: false, error: 'Owners cannot remove themselves. Use Delete Account instead.' };
+    }
+
     // First, try to remove from organization_invitations (pending invites)
     const { error: inviteDeleteError } = await supabaseAdmin
       .from('organization_invitations')
@@ -2153,6 +2158,10 @@ export async function removeTeamMember(organizationId: string, email: string) {
     // Second, try to remove from organization_users (accepted members)
     const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
     const targetUser = authUsers?.users?.find(u => u.email === email);
+
+    if (targetUser?.id && targetUser.id === orgData.owner_id) {
+      return { success: false, error: 'Owners cannot remove themselves. Use Delete Account instead.' };
+    }
 
     if (targetUser) {
       const { error: memberDeleteError } = await supabaseAdmin

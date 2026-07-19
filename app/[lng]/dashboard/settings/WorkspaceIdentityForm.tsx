@@ -267,9 +267,11 @@ export default function WorkspaceIdentityForm({
                       type="tel"
                       name="phone"
                       value={phone}
-                      onChange={(event) => setPhone(event.target.value)}
+                      onChange={(event) => setPhone(event.target.value.replace(/\D/g, ''))}
                       placeholder={translations.dashboard.workspacePhonePlaceholder}
                       maxLength={50}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
                     />
                   </div>
