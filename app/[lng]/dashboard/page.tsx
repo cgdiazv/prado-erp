@@ -416,7 +416,7 @@ export default async function DashboardHome({
 
   const operationsPanel = (
     <section className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-      <div className="lg:col-span-5 space-y-4">
+      <div className="lg:col-span-5 space-y-4 tour-priority-alerts">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">{t.priorityAlerts}</h2>
           {(overdueInvoices === 0 && unassignedScheduledJobs === 0 && sentEstimates === 0 && draftEstimates === 0) && (

@@ -50,7 +50,7 @@ export default function OnboardingTour({ locale = 'en' }: OnboardingTourProps) {
     },
     {
       target: '.tour-sidebar',
-      placement: 'right',
+      placement: 'right-start',
       title: isEs ? 'Panel de Navegación' : 'Workspace Operations',
       content: isEs
         ? 'Accede rápidamente a tus clientes, presupuestos, rutas de despacho y libros financieros.'
@@ -63,6 +63,14 @@ export default function OnboardingTour({ locale = 'en' }: OnboardingTourProps) {
       content: isEs
         ? 'Usa estos accesos para crear presupuestos, programar trabajos, gestionar facturas y registrar gastos en segundos.'
         : 'Use these shortcuts to open estimates, schedule jobs, manage invoices, and track expenses in seconds.',
+    },
+    {
+      target: '.tour-priority-alerts',
+      placement: 'bottom',
+      title: isEs ? 'Alertas Prioritarias' : 'Priority Alerts',
+      content: isEs
+        ? 'Monitorea tus tareas críticas: facturas vencidas, trabajos sin asignar, presupuestos pendientes y trabajos incompletos.'
+        : 'Monitor your critical tasks: overdue invoices, unassigned jobs, pending estimates, and incomplete work.',
     },
     {
       target: '.tour-metrics',
