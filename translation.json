@@ -195,6 +195,7 @@
     },
     "dashboard": {
       "metricsSubtitle": "Workspace operational metrics and fleet logs hub",
+      "businessPerformance": "Business Performance",
       "totalInvoicedRevenue": "Total Invoiced Revenue",
       "trackedExpenses": "Tracked Expenses",
       "netIncome": "Net Income",
@@ -582,6 +583,7 @@
     },
     "dashboard": {
       "metricsSubtitle": "Panel de métricas operativas y registro de flota",
+      "businessPerformance": "Desempeño del Negocio",
       "totalInvoicedRevenue": "Ingresos totales facturados",
       "trackedExpenses": "Gastos registrados",
       "netIncome": "Ingresos netos",

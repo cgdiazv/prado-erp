@@ -196,6 +196,7 @@ type TranslationBundle = {
   };
   dashboard: {
     metricsSubtitle: string;
+    businessPerformance: string;
     totalInvoicedRevenue: string;
     trackedExpenses: string;
     netIncome: string;
