@@ -76,7 +76,7 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en', ca
 
       {/* Sidebar Container Panel */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col p-4 select-none shrink-0 
+        fixed inset-y-0 left-0 z-50 w-56 bg-white border-r border-gray-200 flex flex-col p-4 select-none shrink-0 
         transform transition-transform duration-300 ease-in-out
         md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:translate-x-0 md:z-auto
         ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:shadow-none'}
