@@ -15,7 +15,6 @@ type InactivityLockScreenProps = {
 export default function InactivityLockScreen({
   children,
   locale,
-  isRemembered,
   userEmail,
 }: InactivityLockScreenProps) {
   const [isLocked, setIsLocked] = useState(false);
