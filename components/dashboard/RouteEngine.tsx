@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DispatchMap from '@/components/DispatchMap';
 import { updateJobTruckAssignment } from '@/app/actions';
@@ -257,6 +257,14 @@ export default function RouteEngine({
   const [syncingJobId, setSyncingJobId] = useState<string | null>(null);
   const [mapDropActive, setMapDropActive] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
+  const touchDragHoldRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartPointRef = useRef<{ x: number; y: number } | null>(null);
+
+  const clearTouchHold = () => {
+    if (!touchDragHoldRef.current) return;
+    clearTimeout(touchDragHoldRef.current);
+    touchDragHoldRef.current = null;
+  };
 
   useEffect(() => {
     const baseState = buildBaseRouteState(routeJobs, routeTrucks);
@@ -331,9 +339,48 @@ export default function RouteEngine({
   };
 
   const handleDragEnd = () => {
+    clearTouchHold();
+    touchStartPointRef.current = null;
     setDraggingJob(null);
     setMapDropActive(false);
   };
+
+  const startTouchHoldDrag = (
+    event: React.TouchEvent<HTMLElement>,
+    jobId: string,
+    fromTruckId: string | null
+  ) => {
+    if (!canStartTouchDrag(event.target)) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    touchStartPointRef.current = { x: touch.clientX, y: touch.clientY };
+    clearTouchHold();
+    touchDragHoldRef.current = setTimeout(() => {
+      setDraggingJob({ jobId, fromTruckId });
+      touchDragHoldRef.current = null;
+    }, 280);
+  };
+
+  const handleTouchMove = (event: React.TouchEvent<HTMLElement>) => {
+    const startPoint = touchStartPointRef.current;
+    if (!startPoint || draggingJob) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const movedX = Math.abs(touch.clientX - startPoint.x);
+    const movedY = Math.abs(touch.clientY - startPoint.y);
+
+    if (movedX > 8 || movedY > 8) {
+      clearTouchHold();
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      clearTouchHold();
+    };
+  }, []);
 
   const handleTouchDrop = async (clientX: number, clientY: number) => {
     if (!draggingJob) return;
@@ -480,11 +527,12 @@ export default function RouteEngine({
         draggable
         onDragStart={() => handleDragStart(job.id, sourceTruckId)}
         onDragEnd={handleDragEnd}
-        onTouchStart={(event) => {
-          if (!canStartTouchDrag(event.target)) return;
-          handleDragStart(job.id, sourceTruckId);
-        }}
+        onTouchStart={(event) => startTouchHoldDrag(event, job.id, sourceTruckId)}
+        onTouchMove={handleTouchMove}
+        onTouchCancel={handleDragEnd}
         onTouchEnd={(event) => {
+          clearTouchHold();
+          touchStartPointRef.current = null;
           if (!draggingJob) return;
           const touch = event.changedTouches[0];
           if (!touch) return;
@@ -703,11 +751,12 @@ export default function RouteEngine({
                           draggable
                           onDragStart={() => handleDragStart(job.id, truck.id)}
                           onDragEnd={handleDragEnd}
-                          onTouchStart={(event) => {
-                            if (!canStartTouchDrag(event.target)) return;
-                            handleDragStart(job.id, truck.id);
-                          }}
+                          onTouchStart={(event) => startTouchHoldDrag(event, job.id, truck.id)}
+                          onTouchMove={handleTouchMove}
+                          onTouchCancel={handleDragEnd}
                           onTouchEnd={(event) => {
+                            clearTouchHold();
+                            touchStartPointRef.current = null;
                             if (!draggingJob) return;
                             const touch = event.changedTouches[0];
                             if (!touch) return;
