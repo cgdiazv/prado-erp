@@ -200,7 +200,7 @@ export default async function SettingsSectionPage({
   const normalizedZipCode = hasShiftedIdentityValues ? rawState : rawZip;
 
   return (
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
           <div className="w-full px-6 md:px-10 pt-10 pb-8 space-y-8 text-left">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
               <div className="flex flex-col gap-1">
@@ -209,7 +209,7 @@ export default async function SettingsSectionPage({
               </div>
             </div>
 
-            <nav className="-mt-3 overflow-x-auto pb-1 -mx-6 px-6 sm:mx-0 sm:px-0">
+            <nav className="overflow-x-auto pb-1">
               <div className="flex min-w-max items-center gap-2">
                 {sectionLinks.map((link) => {
                   const isActive = link.id === section;

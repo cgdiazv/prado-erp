@@ -156,8 +156,8 @@ export default function InactivityLockScreen({
     : 'Enter your account password to continue.';
 
   return (
-    <div className="relative flex flex-1">
-      <div className={isLocked ? 'pointer-events-none blur-sm select-none flex flex-1' : 'flex flex-1'}>
+    <div className="relative flex flex-1 min-w-0">
+      <div className={isLocked ? 'pointer-events-none blur-sm select-none flex flex-1 min-w-0' : 'flex flex-1 min-w-0'}>
         {children}
       </div>
 
