@@ -209,7 +209,7 @@ export default async function SettingsSectionPage({
               </div>
             </div>
 
-            <nav className="-mt-3 overflow-x-auto pb-1">
+            <nav className="-mt-3 overflow-x-auto pb-1 -mx-6 px-6 sm:mx-0 sm:px-0">
               <div className="flex min-w-max items-center gap-2">
                 {sectionLinks.map((link) => {
                   const isActive = link.id === section;
@@ -339,7 +339,7 @@ export default async function SettingsSectionPage({
                       <label htmlFor="max-jobs-per-truck" className="block text-xs font-semibold text-gray-500 uppercase">
                         {translations.dashboard.routeMaxStops}
                       </label>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <input
                           id="max-jobs-per-truck"
                           type="number"
@@ -347,11 +347,11 @@ export default async function SettingsSectionPage({
                           min={1}
                           max={100}
                           defaultValue={org.max_jobs_per_truck ?? 4}
-                          className="w-32 rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                          className="w-full sm:w-32 rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
                         />
                         <button
                           type="submit"
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition shadow-sm"
+                          className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition shadow-sm"
                         >
                           Update Dispatch Settings
                         </button>
