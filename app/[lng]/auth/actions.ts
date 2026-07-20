@@ -46,6 +46,24 @@ export async function login(formData: FormData) {
   return { success: true };
 }
 
+export async function verifyWorkspacePassword(formData: FormData) {
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (!data?.session) {
+    return { error: 'Please check your email and confirm your account before continuing.' };
+  }
+
+  return { success: true };
+}
+
 export async function signup(formData: FormData) {
   try {
     const email = formData.get('email') as string;

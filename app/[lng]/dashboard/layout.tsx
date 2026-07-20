@@ -38,7 +38,6 @@ export default async function DashboardLayout({
 
   const canViewImportExport = role === 'owner' || role === 'admin';
   const initial = org.name ? org.name.charAt(0).toUpperCase() : 'U';
-  const isRemembered = hasRememberCookie;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
@@ -51,7 +50,7 @@ export default async function DashboardLayout({
             canViewImportExport={canViewImportExport}
           />
         </div>
-        <InactivityLockScreen locale={locale} isRemembered={isRemembered}>
+        <InactivityLockScreen locale={locale} userEmail={user.email ?? ''}>
           {children}
         </InactivityLockScreen>
       </div>
