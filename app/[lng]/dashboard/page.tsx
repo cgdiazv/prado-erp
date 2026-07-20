@@ -229,7 +229,7 @@ export default async function DashboardHome({
       subtitle: t.alertAwaitingCustomer,
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/estimates`,
-      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
       badgeClass: 'bg-emerald-600 text-white',
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
@@ -240,7 +240,7 @@ export default async function DashboardHome({
       subtitle: t.alertReadyToFinalize,
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/estimates`,
-      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
       badgeClass: 'bg-emerald-600 text-white',
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
@@ -251,7 +251,7 @@ export default async function DashboardHome({
       subtitle: t.alertReviewSchedule,
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/schedule`,
-      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
       badgeClass: 'bg-emerald-600 text-white',
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
@@ -262,7 +262,7 @@ export default async function DashboardHome({
       subtitle: t.alertAssignAssets,
       cta: t.alertResolveAll,
       href: `/${locale}/dashboard/schedule`,
-      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
       badgeClass: 'bg-emerald-600 text-white',
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
@@ -273,7 +273,7 @@ export default async function DashboardHome({
       subtitle: t.alertResolvePending,
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/schedule`,
-      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
       badgeClass: 'bg-emerald-600 text-white',
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
@@ -284,7 +284,7 @@ export default async function DashboardHome({
       subtitle: t.alertSendReminders,
       cta: t.alertResolveNow,
       href: `/${locale}/dashboard/invoices-ledger`,
-      cardClass: 'border-emerald-300 bg-emerald-50/40',
+      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
       badgeClass: 'bg-emerald-600 text-white',
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
@@ -338,7 +338,7 @@ export default async function DashboardHome({
 
   const operationsPanel = (
     <section className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-      <div className="lg:col-span-5 bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
+      <div className="lg:col-span-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">{t.priorityAlerts}</h2>
           {(overdueInvoices === 0 && unassignedScheduledJobs === 0 && sentEstimates === 0 && draftEstimates === 0) && (
