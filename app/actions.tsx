@@ -1137,10 +1137,13 @@ export async function submitDemoRequest(formData: FormData) {
   const name = (formData.get('name') as string | null)?.trim() || '';
   const email = (formData.get('email') as string | null)?.trim() || '';
   const companyName = (formData.get('companyName') as string | null)?.trim() || '';
+  const phoneCountryCode = (formData.get('phoneCountryCode') as string | null)?.trim() || '+1';
   const phone = (formData.get('phone') as string | null)?.trim() || '';
+  const fullPhone = `${phoneCountryCode} ${phone}`.trim();
   const preferredDate = (formData.get('preferredDate') as string | null)?.trim() || '';
+  const notes = (formData.get('notes') as string | null)?.trim() || '';
 
-  if (!name || !email || !companyName || !phone || !preferredDate) {
+  if (!name || !email || !companyName || !phone) {
     return { error: 'Please fill out all required fields.' };
   }
 
@@ -1152,6 +1155,7 @@ export async function submitDemoRequest(formData: FormData) {
           full_name: name,
           email,
           company_name: companyName,
+          phone: fullPhone,
           locale: 'en',
           source: 'demo-request',
         },
@@ -1178,8 +1182,9 @@ export async function submitDemoRequest(formData: FormData) {
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Company:</strong> ${companyName}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Preferred Date:</strong> ${preferredDate}</p>
+        <p><strong>Phone:</strong> ${fullPhone}</p>
+        ${preferredDate ? `<p><strong>Preferred Date:</strong> ${preferredDate}</p>` : ''}
+        ${notes ? `<p><strong>Notes / Requirements:</strong> ${notes}</p>` : ''}
       `,
     });
 
