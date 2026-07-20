@@ -12,6 +12,13 @@ import { getUserOrganization } from '@/lib/organization';
 
 type DashboardView = 'operations' | 'financials';
 
+type TrendDirection = 'up' | 'down';
+
+type MetricTrend = {
+  direction: TrendDirection;
+  percentage: number;
+};
+
 export default async function DashboardHome({
   params,
   searchParams,
@@ -149,6 +156,77 @@ export default async function DashboardHome({
   const totalRevenue = invoices.reduce((acc, inv) => acc + Number(inv.total_amount), 0);
   const totalExpenses = expenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
   const netProfit = totalRevenue - totalExpenses;
+
+  const parseIsoDate = (value: string | null | undefined) => {
+    if (!value) return null;
+    const parsed = new Date(`${value}T00:00:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const periodEnd = new Date();
+  periodEnd.setHours(23, 59, 59, 999);
+
+  const currentPeriodStart = new Date(periodEnd);
+  currentPeriodStart.setDate(currentPeriodStart.getDate() - 29);
+  currentPeriodStart.setHours(0, 0, 0, 0);
+
+  const previousPeriodEnd = new Date(currentPeriodStart);
+  previousPeriodEnd.setDate(previousPeriodEnd.getDate() - 1);
+  previousPeriodEnd.setHours(23, 59, 59, 999);
+
+  const previousPeriodStart = new Date(previousPeriodEnd);
+  previousPeriodStart.setDate(previousPeriodStart.getDate() - 29);
+  previousPeriodStart.setHours(0, 0, 0, 0);
+
+  const isWithinRange = (date: Date, rangeStart: Date, rangeEnd: Date) => date >= rangeStart && date <= rangeEnd;
+
+  const sumInvoiceAmountInRange = (rangeStart: Date, rangeEnd: Date) => {
+    return invoices.reduce((total, invoice) => {
+      const invoiceDate = parseIsoDate(invoice.due_date);
+      if (!invoiceDate || !isWithinRange(invoiceDate, rangeStart, rangeEnd)) return total;
+      return total + Number(invoice.total_amount || 0);
+    }, 0);
+  };
+
+  const sumExpenseAmountInRange = (rangeStart: Date, rangeEnd: Date) => {
+    return expenses.reduce((total, expense) => {
+      const expenseDate = parseIsoDate(expense.expense_date);
+      if (!expenseDate || !isWithinRange(expenseDate, rangeStart, rangeEnd)) return total;
+      return total + Number(expense.amount || 0);
+    }, 0);
+  };
+
+  const currentRevenueWindow = sumInvoiceAmountInRange(currentPeriodStart, periodEnd);
+  const currentExpensesWindow = sumExpenseAmountInRange(currentPeriodStart, periodEnd);
+  const currentNetWindow = currentRevenueWindow - currentExpensesWindow;
+
+  const previousRevenueWindow = sumInvoiceAmountInRange(previousPeriodStart, previousPeriodEnd);
+  const previousExpensesWindow = sumExpenseAmountInRange(previousPeriodStart, previousPeriodEnd);
+  const previousNetWindow = previousRevenueWindow - previousExpensesWindow;
+
+  const buildTrend = (currentValue: number, previousValue: number): MetricTrend => {
+    const delta = currentValue - previousValue;
+
+    if (previousValue === 0) {
+      return {
+        direction: delta >= 0 ? 'up' : 'down',
+        percentage: currentValue === 0 ? 0 : 100,
+      };
+    }
+
+    const percentage = Math.abs((delta / Math.abs(previousValue)) * 100);
+
+    return {
+      direction: delta >= 0 ? 'up' : 'down',
+      percentage,
+    };
+  };
+
+  const metricTrends = {
+    revenue: buildTrend(currentRevenueWindow, previousRevenueWindow),
+    expenses: buildTrend(currentExpensesWindow, previousExpensesWindow),
+    netProfit: buildTrend(currentNetWindow, previousNetWindow),
+  };
 
   const toDayKey = (value: Date) => {
     const year = value.getFullYear();
@@ -396,7 +474,13 @@ export default async function DashboardHome({
         {activeView === 'operations' ? (
           <>
             {operationsPanel}
-            <Metrics totalRevenue={totalRevenue} totalExpenses={totalExpenses} netProfit={netProfit} locale={locale} />
+            <Metrics
+              totalRevenue={totalRevenue}
+              totalExpenses={totalExpenses}
+              netProfit={netProfit}
+              trends={metricTrends}
+              locale={locale}
+            />
             <PerformanceChart
               invoices={invoices}
               expenses={expenses}
@@ -405,7 +489,13 @@ export default async function DashboardHome({
           </>
         ) : (
           <>
-            <Metrics totalRevenue={totalRevenue} totalExpenses={totalExpenses} netProfit={netProfit} locale={locale} />
+            <Metrics
+              totalRevenue={totalRevenue}
+              totalExpenses={totalExpenses}
+              netProfit={netProfit}
+              trends={metricTrends}
+              locale={locale}
+            />
             <PerformanceChart
               invoices={invoices}
               expenses={expenses}
