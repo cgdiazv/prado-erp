@@ -493,8 +493,8 @@ export default async function PrintReportsPage({
   }
 
   return (
-    <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-      <div className="max-w-5xl ml-0 grid grid-cols-1 gap-8 text-left">
+    <main className="flex-1 overflow-y-auto">
+      <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-8 text-left">
         <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t.title}</h1>
           <p className="text-xs text-slate-400 mt-1">{t.subtitle}</p>

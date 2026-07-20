@@ -200,8 +200,8 @@ export default async function SettingsSectionPage({
   const normalizedZipCode = hasShiftedIdentityValues ? rawState : rawZip;
 
   return (
-    <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
-          <div className="max-w-5xl ml-0 space-y-8 text-left">
+        <main className="flex-1 overflow-y-auto">
+          <div className="w-full px-6 md:px-10 pt-10 pb-8 space-y-8 text-left">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
               <div className="flex flex-col gap-1">
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.accountWorkspaceSettings}</h1>

@@ -55,7 +55,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
 
   if (!customer) {
     return (
-      <main className="flex-1 p-4 sm:p-6 md:p-8 text-left">
+      <main className="flex-1 px-6 md:px-10 pt-10 pb-8 text-left">
         <h1 className="text-xl font-bold text-gray-800">{translations.dashboard.customerNotFound}</h1>
         <Link href="/dashboard/customers" className="mt-4 inline-block text-sm text-emerald-600 hover:underline">
           {translations.dashboard.returnToCustomers}
@@ -65,8 +65,8 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
   }
 
   return (
-    <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
-          <div className="max-w-5xl ml-0 space-y-8 text-left">
+        <main className="flex-1 overflow-y-auto">
+          <div className="w-full px-6 md:px-10 pt-10 pb-8 space-y-8 text-left">
             
             {/* Navigation Breadcrumb Bar & Actions Layout */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">

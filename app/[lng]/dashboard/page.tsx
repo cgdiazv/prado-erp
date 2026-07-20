@@ -447,8 +447,8 @@ export default async function DashboardHome({
   );
 
   return (
-    <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
-      <div className="max-w-5xl ml-0 space-y-8 text-left">
+    <main className="flex-1 overflow-y-auto">
+      <div className="w-full px-6 md:px-10 pt-10 pb-8 space-y-8 text-left">
         <OnboardingTour locale={locale} />
         
         {/* Conditional Trial Alert Banner Asset */}
