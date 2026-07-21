@@ -219,7 +219,7 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
           <table className="min-w-full divide-y divide-gray-200 text-left text-sm whitespace-nowrap">
             <thead className="bg-gray-50 text-xs font-medium text-gray-500">
               <tr>
-                <th className="px-4 py-3">
+                <th className="px-4 py-3 table-date-column">
                   <button type="button" onClick={() => handleSort('date')} className="inline-flex items-center gap-1">
                     <span>{translations.dashboard.dueDate}</span>
                     {renderSortIndicator('date')}
@@ -263,7 +263,7 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
 
                 return (
                   <tr key={inv.id} className="hover:bg-gray-50/50 transition duration-150">
-                    <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
+                    <td className="px-4 py-3 text-slate-700 whitespace-nowrap table-date-column">
                       {new Date(inv.due_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-700">{customerName}</td>

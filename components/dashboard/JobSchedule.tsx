@@ -275,7 +275,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
           <table className="min-w-full divide-y divide-gray-200 text-left text-sm whitespace-nowrap">
             <thead className="bg-gray-50 text-xs font-medium text-gray-500">
               <tr>
-                <th className="px-4 py-3">
+                <th className="px-4 py-3 table-date-column">
                   <button type="button" onClick={() => handleSort('date')} className="inline-flex items-center gap-1">
                     <span>{translations.dashboard.date}</span>
                     {renderSortIndicator('date')}
@@ -313,7 +313,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
             <tbody className="divide-y divide-gray-200 bg-white">
               {paginatedJobs.map((job) => (
                 <tr key={job.id} className="hover:bg-gray-50/50 transition duration-150">
-                  <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
+                  <td className="px-4 py-3 text-slate-700 whitespace-nowrap table-date-column">
                     {formatJobDate(job.scheduled_date)}
                   </td>
                   <td className="px-4 py-3 text-gray-500">{job.properties?.street_address || '—'}</td>

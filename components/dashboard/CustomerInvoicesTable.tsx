@@ -154,7 +154,7 @@ export default function CustomerInvoicesTable({ invoices, customerId, locale = '
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-gray-200 bg-slate-50 text-slate-500 font-bold">
-                    <th className="p-4">{translations.dashboard.dueDate}</th>
+                    <th className="p-4 table-date-column">{translations.dashboard.dueDate}</th>
                     <th className="p-4">{translations.dashboard.taxCharge}</th>
                     <th className="p-4 text-right">{translations.dashboard.totalOwed}</th>
                     <th className="p-4 text-right">{isEs ? 'Pago' : 'Payment'}</th>
@@ -164,7 +164,7 @@ export default function CustomerInvoicesTable({ invoices, customerId, locale = '
                 <tbody className="divide-y divide-gray-100">
                   {paginatedRows.map((inv) => (
                     <tr key={inv.id} className="hover:bg-slate-50 transition">
-                      <td className="p-4 text-slate-700 whitespace-nowrap">
+                      <td className="p-4 text-slate-700 whitespace-nowrap table-date-column">
                         {new Date(`${inv.due_date}T00:00:00`).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                       </td>
                       <td className="p-4 text-slate-700">${Number(inv.tax_amount || 0).toFixed(2)}</td>

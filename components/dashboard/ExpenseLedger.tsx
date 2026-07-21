@@ -142,7 +142,7 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
           <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
             <thead className="bg-gray-50 text-xs font-medium text-gray-500">
               <tr>
-                <th className="px-4 py-3">
+                <th className="px-4 py-3 table-date-column">
                   <button type="button" onClick={() => handleSort('date')} className="inline-flex items-center gap-1">
                     <span>{translations.dashboard.expenseDate}</span>
                     {renderSortIndicator('date')}
@@ -183,7 +183,7 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
             <tbody className="divide-y divide-gray-200 bg-white">
               {paginatedExpenses.map((exp) => (
                 <tr key={exp.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
+                  <td className="px-4 py-3 text-slate-700 whitespace-nowrap table-date-column">
                     {new Date(exp.expense_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{exp.description || '—'}</td>

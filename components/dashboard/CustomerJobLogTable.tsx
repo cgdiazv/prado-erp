@@ -142,7 +142,7 @@ export default function CustomerJobLogTable({ jobs, locale = 'en' }: CustomerJob
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-gray-200 bg-slate-50 text-slate-500 font-bold">
-                  <th className="p-4">{translations.dashboard.date}</th>
+                  <th className="p-4 table-date-column">{translations.dashboard.date}</th>
                   <th className="p-4">{translations.dashboard.location}</th>
                   <th className="p-4">{translations.dashboard.type}</th>
                   <th className="p-4 text-right">{translations.dashboard.cost}</th>
@@ -161,7 +161,7 @@ export default function CustomerJobLogTable({ jobs, locale = 'en' }: CustomerJob
 
                   return (
                     <tr key={job.id} className="hover:bg-slate-50 transition">
-                      <td className="p-4 text-slate-700 whitespace-nowrap">
+                      <td className="p-4 text-slate-700 whitespace-nowrap table-date-column">
                         {new Date(`${job.scheduled_date}T00:00:00`).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                       </td>
                       <td className="p-4">

@@ -23,3 +23,10 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+.table-date-column {
+  width: 9rem;
+  min-width: 9rem;
+  max-width: 9rem;
+  white-space: nowrap;
+}
