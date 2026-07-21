@@ -31,12 +31,19 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [editingDate, setEditingDate] = useState('');
   const [editingTruckId, setEditingTruckId] = useState('');
+  const [editingIsRecurring, setEditingIsRecurring] = useState(false);
+  const [editingRecurrenceIntervalDays, setEditingRecurrenceIntervalDays] = useState('30');
+  const [editingAutoChargeEnabled, setEditingAutoChargeEnabled] = useState(false);
   const [isUpdatingSchedule, setIsUpdatingSchedule] = useState(false);
 
   const openScheduleDetails = (job: any) => {
     setEditingJobId(job.id);
     setEditingDate((job.scheduled_date || '').slice(0, 10));
     setEditingTruckId(job.truck_id || '');
+    const isRecurring = Boolean(job.is_recurring);
+    setEditingIsRecurring(isRecurring);
+    setEditingRecurrenceIntervalDays(isRecurring && Number(job.recurrence_interval_days || 0) > 0 ? String(job.recurrence_interval_days) : '30');
+    setEditingAutoChargeEnabled(isRecurring ? Boolean(job.auto_charge_enabled) : false);
   };
 
   const closeScheduleDetails = () => {
@@ -44,14 +51,27 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
     setEditingJobId(null);
     setEditingDate('');
     setEditingTruckId('');
+    setEditingIsRecurring(false);
+    setEditingRecurrenceIntervalDays('30');
+    setEditingAutoChargeEnabled(false);
   };
 
   const handleScheduleUpdate = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!editingJobId || !editingDate || isUpdatingSchedule) return;
 
+    const normalizedInterval = Number.parseInt(editingRecurrenceIntervalDays || '0', 10);
+    if (editingIsRecurring && (!Number.isFinite(normalizedInterval) || normalizedInterval < 1)) {
+      alert(isEs ? 'La frecuencia debe ser un numero mayor a 0.' : 'Frequency must be a number greater than 0.');
+      return;
+    }
+
     setIsUpdatingSchedule(true);
-    const result = await updateJobScheduleDetails(editingJobId, editingDate, editingTruckId || null);
+    const result = await updateJobScheduleDetails(editingJobId, editingDate, editingTruckId || null, {
+      isRecurring: editingIsRecurring,
+      recurrenceIntervalDays: editingIsRecurring ? normalizedInterval : null,
+      autoChargeEnabled: editingIsRecurring ? editingAutoChargeEnabled : false,
+    });
 
     if (result?.error) {
       alert(result.error);
@@ -406,6 +426,58 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="rounded-lg border border-gray-200 bg-slate-50 p-3 space-y-2">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={editingIsRecurring}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      setEditingIsRecurring(checked);
+                      if (!checked) {
+                        setEditingAutoChargeEnabled(false);
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-emerald-600"
+                  />
+                  {isEs ? 'Servicio recurrente' : 'Recurring service'}
+                </label>
+
+                {editingIsRecurring ? (
+                  <>
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {isEs ? 'Frecuencia (dias)' : 'Frequency (days)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={editingRecurrenceIntervalDays}
+                        onChange={(event) => setEditingRecurrenceIntervalDays(event.target.value)}
+                        className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={editingAutoChargeEnabled}
+                        onChange={(event) => setEditingAutoChargeEnabled(event.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-emerald-600"
+                      />
+                      {isEs ? 'Pagos recurrentes (autocobro)' : 'Recurring payments (auto-charge)'}
+                    </label>
+
+                    <p className="text-[11px] text-slate-500">
+                      {isEs
+                        ? 'Al completar el trabajo, Prado creara el siguiente servicio recurrente y aplicara el autocobro si el cliente tiene autopago activo.'
+                        : 'When this job is completed, Prado will create the next recurring service and apply auto-charge if customer autopay is active.'}
+                    </p>
+                  </>
+                ) : null}
               </div>
 
               <div className="flex gap-2 pt-2">

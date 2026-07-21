@@ -33,8 +33,8 @@ export default function InvoiceEmail({
         <table style={{ width: '100%', marginBottom: 32 }}>
           <tbody>
             <tr>
-              <td style={{ verticalAlign: 'top' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <td colSpan={2} style={{ verticalAlign: 'top', paddingBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   {organizationLogoUrl ? (
                     <img
                       src={organizationLogoUrl}
@@ -50,7 +50,9 @@ export default function InvoiceEmail({
                 </div>
                 <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan}</p>
               </td>
-              <td style={{ textAlign: 'right', verticalAlign: 'top' }}>
+            </tr>
+            <tr>
+              <td colSpan={2} style={{ textAlign: 'right', verticalAlign: 'top' }}>
                 <h2 style={{ margin: 0, fontSize: 22, fontWeight: 750, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invoice</h2>
                 <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#64748b' }}>Due Date: {dueDate}</p>
               </td>

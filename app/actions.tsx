@@ -375,7 +375,16 @@ export async function updateJobTruckAssignment(jobId: string, truckId: string | 
   }
 }
 
-export async function updateJobScheduleDetails(jobId: string, scheduledDate: string, truckId: string | null) {
+export async function updateJobScheduleDetails(
+  jobId: string,
+  scheduledDate: string,
+  truckId: string | null,
+  options?: {
+    isRecurring?: boolean;
+    recurrenceIntervalDays?: number | null;
+    autoChargeEnabled?: boolean;
+  }
+) {
   if (!jobId || !scheduledDate) return { error: 'Missing scheduling parameters.' };
 
   try {
@@ -423,11 +432,25 @@ export async function updateJobScheduleDetails(jobId: string, scheduledDate: str
       return { error: 'Job not found for this organization.' };
     }
 
+    const normalizedIsRecurring = Boolean(options?.isRecurring);
+    const requestedInterval = Number(options?.recurrenceIntervalDays || 0);
+    const normalizedRecurrenceIntervalDays = normalizedIsRecurring
+      ? (Number.isFinite(requestedInterval) && requestedInterval > 0 ? Math.floor(requestedInterval) : null)
+      : null;
+    const normalizedAutoChargeEnabled = normalizedIsRecurring ? Boolean(options?.autoChargeEnabled) : false;
+
+    if (normalizedIsRecurring && !normalizedRecurrenceIntervalDays) {
+      return { error: 'Recurring jobs require a valid recurrence interval.' };
+    }
+
     const { error } = await supabase
       .from('jobs')
       .update({
         scheduled_date: scheduledDate,
         truck_id: truckId || null,
+        is_recurring: normalizedIsRecurring,
+        recurrence_interval_days: normalizedRecurrenceIntervalDays,
+        auto_charge_enabled: normalizedAutoChargeEnabled,
       })
       .eq('id', jobId);
 
