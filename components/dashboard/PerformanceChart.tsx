@@ -21,8 +21,19 @@ interface PerformanceChartProps {
 
 type PeriodFilter = '7d' | '30d' | '90d' | 'all';
 
+type MetricTrend = {
+  key: 'revenue' | 'expenses' | 'netIncome';
+  label: string;
+  total: number;
+  stroke: string;
+  fill: string;
+  textClassName: string;
+  values: number[];
+  ariaLabel: string;
+};
+
 export default function PerformanceChart({ invoices, expenses, locale = 'en' }: PerformanceChartProps) {
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('30d');
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('7d');
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
 
@@ -113,73 +124,61 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
     };
   }, [invoices, expenses, dateRange, locale]);
 
-  // Chart rendering logic
-  const chartWidth = 100;
-  const chartHeight = 42;
-  const minY = 4;
-  const maxY = 36;
-  const chartEndX = 112;
+  const metricTrends = useMemo<MetricTrend[]>(() => {
+    const metrics: Omit<MetricTrend, 'values'>[] = [
+      {
+        key: 'revenue',
+        label: translations.dashboard.revenue,
+        total: totalRevenue,
+        stroke: 'rgb(16 185 129)',
+        fill: 'rgba(16, 185, 129, 0.16)',
+        textClassName: 'text-emerald-600',
+        ariaLabel: `${translations.dashboard.revenue} trend`,
+      },
+      {
+        key: 'expenses',
+        label: translations.dashboard.expenses,
+        total: totalExpenses,
+        stroke: 'rgb(244 63 94)',
+        fill: 'rgba(244, 63, 94, 0.16)',
+        textClassName: 'text-rose-600',
+        ariaLabel: `${translations.dashboard.expenses} trend`,
+      },
+      {
+        key: 'netIncome',
+        label: translations.dashboard.netIncome,
+        total: netProfit,
+        stroke: netProfit >= 0 ? 'rgb(37 99 235)' : 'rgb(234 88 12)',
+        fill: netProfit >= 0 ? 'rgba(37, 99, 235, 0.16)' : 'rgba(234, 88, 12, 0.16)',
+        textClassName: netProfit >= 0 ? 'text-blue-600' : 'text-orange-600',
+        ariaLabel: `${translations.dashboard.netIncome} trend`,
+      },
+    ];
 
-  const allValues = trendData.flatMap((entry) => [entry.revenue, entry.expenses, entry.netIncome]);
-  const peak = Math.max(...allValues.map((value) => Math.abs(value)), 1);
-
-  const toX = (index: number) => (trendData.length <= 1 ? 0 : (index / (trendData.length - 1)) * chartEndX);
-  const toY = (value: number) => {
-    const normalized = (value + peak) / (2 * peak);
-    return maxY - normalized * (maxY - minY);
-  };
-
-  const yGridLines = [
-    { y: 4,  value: peak },
-    { y: 12, value: peak / 2 },
-    { y: 20, value: 0 },
-    { y: 28, value: -(peak / 2) },
-    { y: 36, value: -peak },
-  ];
-
-  const formatYLabel = (value: number): string => {
-    const abs = Math.abs(value);
-    const prefix = value < 0 ? '-$' : '$';
-    if (abs >= 1_000_000) return `${prefix}${(abs / 1_000_000).toFixed(1)}M`;
-    if (abs >= 1_000) return `${prefix}${(abs / 1_000).toFixed(1)}k`;
-    return `${prefix}${abs.toFixed(0)}`;
-  };
-
-  const buildLine = (selector: (entry: (typeof trendData)[number]) => number) =>
-    trendData.map((entry, index) => `${toX(index)},${toY(selector(entry))}`).join(' ');
-
-  const revenueLine = buildLine((entry) => entry.revenue);
-  const expensesLine = buildLine((entry) => entry.expenses);
-  const netLine = buildLine((entry) => entry.netIncome);
-
-  // Spread X-axis ticks across the full data range to avoid label clustering on all-time views.
-  const axisTicks = useMemo(() => {
-    const lastIndex = Math.max(trendData.length - 1, 0);
-
-    if (lastIndex === 0) {
-      return [
-        {
-          key: 0,
-          label: trendData[0]?.dateLabel || '',
-          position: 0,
-        },
-      ];
-    }
-
-    const targetTickCount = periodFilter === 'all' ? 6 : 5;
-    const step = lastIndex / (targetTickCount - 1);
-    const tickIndexes = Array.from({ length: targetTickCount }, (_, idx) =>
-      Math.round(idx * step)
-    );
-
-    const uniqueSortedIndexes = Array.from(new Set([0, ...tickIndexes, lastIndex])).sort((a, b) => a - b);
-
-    return uniqueSortedIndexes.map((index) => ({
-      key: index,
-      label: trendData[index]?.dateLabel || '',
-      position: (index / lastIndex) * 100,
+    return metrics.map((metric) => ({
+      ...metric,
+      values: trendData.map((entry) => entry[metric.key]),
     }));
-  }, [trendData, periodFilter]);
+  }, [trendData, totalRevenue, totalExpenses, netProfit, translations.dashboard]);
+
+  const buildSparkline = (values: number[]) => {
+    const width = 100;
+    const minY = 5;
+    const maxY = 39;
+    const lastIndex = Math.max(values.length - 1, 0);
+    const maxValue = Math.max(...values);
+    const minValue = Math.min(...values);
+    const range = maxValue - minValue || 1;
+
+    const toX = (index: number) => (lastIndex === 0 ? width / 2 : (index / lastIndex) * width);
+    const toY = (value: number) => maxY - ((value - minValue) / range) * (maxY - minY);
+
+    const line = values.map((value, index) => `${toX(index)},${toY(value)}`).join(' ');
+    const area = `${line} ${width},${maxY} 0,${maxY}`;
+    const gridLines = [minY, (minY + maxY) / 2, maxY];
+
+    return { line, area, baseline: toY(values[values.length - 1] ?? 0), gridLines };
+  };
 
   const periodLabels: Record<PeriodFilter, string> = {
     '7d': isEs ? 'Últimos 7 días' : 'Last 7 days',
@@ -228,51 +227,33 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
         </div>
       </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 pb-0">
-          <div className="rounded-lg bg-white border border-slate-200 px-3 py-2 flex items-center justify-between text-xs font-semibold">
-            <span className="text-slate-500">{translations.dashboard.revenue}</span>
-            <span className="text-emerald-600 font-mono">${totalRevenue.toFixed(2)}</span>
-          </div>
-          <div className="rounded-lg bg-white border border-slate-200 px-3 py-2 flex items-center justify-between text-xs font-semibold">
-            <span className="text-slate-500">{translations.dashboard.expenses}</span>
-            <span className="text-rose-600 font-mono">${totalExpenses.toFixed(2)}</span>
-          </div>
-          <div className="rounded-lg bg-white border border-slate-200 px-3 py-2 flex items-center justify-between text-xs font-semibold">
-            <span className="text-slate-500">{translations.dashboard.netIncome}</span>
-            <span className={`font-mono ${netProfit >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-              ${netProfit.toFixed(2)}
-            </span>
-          </div>
-        </div>
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+            {metricTrends.map((metric) => {
+              const { line, area, baseline, gridLines } = buildSparkline(metric.values);
 
-          <svg viewBox="0 0 130 42" className="w-full h-56" aria-label="Revenue, expenses, and net income trend chart" role="img">
-            {/* Horizontal grid lines */}
-            {yGridLines.map(({ y }) => (
-              <line key={y} x1="0" y1={y} x2={chartEndX} y2={y} stroke="rgb(226 232 240)" strokeWidth={y === 20 ? '0.4' : '0.25'} strokeDasharray={y === 20 ? '2 2' : undefined} />
-            ))}
-            {/* Y-axis labels on the right */}
-            {yGridLines.map(({ y, value }) => (
-              <text key={y} x={chartEndX + 2} y={y} fontSize="2.2" fill="rgb(148 163 184)" textAnchor="start" dominantBaseline="middle">
-                {formatYLabel(value)}
-              </text>
-            ))}
-            <polyline points={revenueLine} fill="none" stroke="rgb(16 185 129)" strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
-            <polyline points={expensesLine} fill="none" stroke="rgb(244 63 94)" strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
-            <polyline points={netLine} fill="none" stroke={netProfit >= 0 ? 'rgb(37 99 235)' : 'rgb(234 88 12)'} strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+              return (
+                <div key={metric.key} className="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-xs">
+                  <div className="mb-3 flex items-center justify-between gap-3 text-xs font-semibold">
+                    <span className="text-slate-500">{metric.label}</span>
+                    <span className={`font-mono ${metric.textClassName}`}>${metric.total.toFixed(2)}</span>
+                  </div>
 
-          <div className="relative h-4 px-4 pb-4 text-[10px] font-semibold text-slate-500" style={{ paddingRight: '18%' }}>
-            {axisTicks.map((tick) => (
-              <span
-                key={tick.key}
-                className="absolute -translate-x-1/2"
-                style={{ left: `${tick.position}%` }}
-              >
-                {tick.label}
-              </span>
-            ))}
-          </div>
+                  <svg viewBox="0 0 100 44" className="h-28 w-full" aria-label={metric.ariaLabel} role="img">
+                    {gridLines.map((y) => (
+                      <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="rgb(226 232 240)" strokeWidth="0.35" />
+                    ))}
+                    <line x1="0" y1={baseline} x2="100" y2={baseline} stroke="rgb(226 232 240)" strokeWidth="0.5" strokeDasharray="2 2" />
+                    <polyline points={area} fill={metric.fill} stroke="none" />
+                    <polyline points={line} fill="none" stroke={metric.stroke} strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+
+                  <div className="mt-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    <span>{trendData[0]?.dateLabel || periodLabels[periodFilter]}</span>
+                    <span>{trendData[trendData.length - 1]?.dateLabel || periodLabels[periodFilter]}</span>
+                  </div>
+                </div>
+              );
+            })}
         </div>
       </div>
 
