@@ -7,9 +7,10 @@ import { TRIAL_DAYS } from '@/lib/trialCheck';
 interface BillingModalProps {
   userEmail?: string;
   orgId?: string;
+  locale?: string;
 }
 
-export default function BillingModal({ userEmail = '', orgId = '' }: BillingModalProps) {
+export default function BillingModal({ userEmail = '', orgId = '', locale = 'en' }: BillingModalProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -38,7 +39,7 @@ export default function BillingModal({ userEmail = '', orgId = '' }: BillingModa
     // If the trial isn't explicitly expired, let them dismiss it safely
     if (!isExpiredParam) {
       setIsOpen(false);
-      router.push('/dashboard'); 
+      router.push(`/${locale}/dashboard`);
     }
   };
 

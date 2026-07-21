@@ -25,9 +25,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <head>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-1005758859"></script>
-        <script
+      <head />
+      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-1005758859"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="google-ads-gtag-init"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               window.dataLayer = window.dataLayer || [];
@@ -37,8 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
-      </head>
-      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
         {children}
         <Script
           id="chatbase-integration-global"

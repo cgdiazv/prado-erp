@@ -118,14 +118,31 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
   const chartHeight = 42;
   const minY = 4;
   const maxY = 36;
+  const chartEndX = 112;
 
   const allValues = trendData.flatMap((entry) => [entry.revenue, entry.expenses, entry.netIncome]);
   const peak = Math.max(...allValues.map((value) => Math.abs(value)), 1);
 
-  const toX = (index: number) => (trendData.length <= 1 ? 0 : (index / (trendData.length - 1)) * chartWidth);
+  const toX = (index: number) => (trendData.length <= 1 ? 0 : (index / (trendData.length - 1)) * chartEndX);
   const toY = (value: number) => {
     const normalized = (value + peak) / (2 * peak);
     return maxY - normalized * (maxY - minY);
+  };
+
+  const yGridLines = [
+    { y: 4,  value: peak },
+    { y: 12, value: peak / 2 },
+    { y: 20, value: 0 },
+    { y: 28, value: -(peak / 2) },
+    { y: 36, value: -peak },
+  ];
+
+  const formatYLabel = (value: number): string => {
+    const abs = Math.abs(value);
+    const prefix = value < 0 ? '-$' : '$';
+    if (abs >= 1_000_000) return `${prefix}${(abs / 1_000_000).toFixed(1)}M`;
+    if (abs >= 1_000) return `${prefix}${(abs / 1_000).toFixed(1)}k`;
+    return `${prefix}${abs.toFixed(0)}`;
   };
 
   const buildLine = (selector: (entry: (typeof trendData)[number]) => number) =>
@@ -211,8 +228,8 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
         </div>
       </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 pb-0">
           <div className="rounded-lg bg-white border border-slate-200 px-3 py-2 flex items-center justify-between text-xs font-semibold">
             <span className="text-slate-500">{translations.dashboard.revenue}</span>
             <span className="text-emerald-600 font-mono">${totalRevenue.toFixed(2)}</span>
@@ -229,14 +246,23 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
           </div>
         </div>
 
-          <svg viewBox="0 0 100 42" className="w-full h-56" aria-label="Revenue, expenses, and net income trend chart" role="img">
-            <polyline points="0,20 100,20" fill="none" stroke="rgb(203 213 225)" strokeWidth="0.35" strokeDasharray="2 2" />
+          <svg viewBox="0 0 130 42" className="w-full h-56" aria-label="Revenue, expenses, and net income trend chart" role="img">
+            {/* Horizontal grid lines */}
+            {yGridLines.map(({ y }) => (
+              <line key={y} x1="0" y1={y} x2={chartEndX} y2={y} stroke="rgb(226 232 240)" strokeWidth={y === 20 ? '0.4' : '0.25'} strokeDasharray={y === 20 ? '2 2' : undefined} />
+            ))}
+            {/* Y-axis labels on the right */}
+            {yGridLines.map(({ y, value }) => (
+              <text key={y} x={chartEndX + 2} y={y} fontSize="2.2" fill="rgb(148 163 184)" textAnchor="start" dominantBaseline="middle">
+                {formatYLabel(value)}
+              </text>
+            ))}
             <polyline points={revenueLine} fill="none" stroke="rgb(16 185 129)" strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
             <polyline points={expensesLine} fill="none" stroke="rgb(244 63 94)" strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
             <polyline points={netLine} fill="none" stroke={netProfit >= 0 ? 'rgb(37 99 235)' : 'rgb(234 88 12)'} strokeWidth="0.45" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
 
-          <div className="mt-3 relative h-4 text-[10px] font-semibold text-slate-500">
+          <div className="relative h-4 px-4 pb-4 text-[10px] font-semibold text-slate-500" style={{ paddingRight: '18%' }}>
             {axisTicks.map((tick) => (
               <span
                 key={tick.key}

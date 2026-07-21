@@ -6,6 +6,7 @@ import TrucksPanel from '../TrucksPanel';
 import ExpenseCategoriesPanel from '../ExpenseCategoriesPanel';
 import TeamsPanel from '../TeamsPanel';
 import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
+import DeleteAccountSurveyCard from '../DeleteAccountSurveyCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
 import XeroConnectionCard from '../XeroConnectionCard';
 import QBOConnectionCard from '../QBOConnectionCard';
@@ -380,14 +381,11 @@ export default async function SettingsSectionPage({
                       <p className="text-xs text-slate-400">{translations.dashboard.deleteAccountDescription}</p>
                     </div>
 
-                    <form action={`/${locale}/auth/delete-account`} method="POST">
-                      <button
-                        type="submit"
-                        className="text-xs font-semibold px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-300 transition"
-                      >
-                        {translations.dashboard.deleteAccountButton}
-                      </button>
-                    </form>
+                    <DeleteAccountSurveyCard
+                      locale={locale}
+                      actionPath={`/${locale}/auth/delete-account`}
+                      buttonLabel={translations.dashboard.deleteAccountButton}
+                    />
                   </div>
                 </div>
               </>

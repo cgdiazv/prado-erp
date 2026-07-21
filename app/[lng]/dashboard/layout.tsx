@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
+import BillingModal from '@/components/BillingModal';
 import { getUserOrganization } from '@/lib/organization';
 import { REMEMBER_ME_COOKIE_NAME } from '@/lib/rememberMe';
 import InactivityLockScreen from '@/components/dashboard/InactivityLockScreen';
@@ -53,6 +54,7 @@ export default async function DashboardLayout({
         <InactivityLockScreen locale={locale} userEmail={user.email ?? ''}>
           {children}
         </InactivityLockScreen>
+        <BillingModal userEmail={user.email ?? ''} orgId={org.id} locale={locale} />
       </div>
     </div>
   );
