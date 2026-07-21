@@ -449,7 +449,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
     : estimates.filter(e => e.status === statusFilter);
 
   const getCustomerLabel = (estimate: Estimate) =>
-    (estimate.customers.company_name || `${estimate.customers.first_name} ${estimate.customers.last_name}`).trim().toLowerCase();
+    `${estimate.customers.first_name} ${estimate.customers.last_name}`.trim().toLowerCase();
 
   const getStatusRank = (status: Estimate['status']) => {
     const rank: Record<Estimate['status'], number> = {
@@ -747,7 +747,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                   </td>
                   <td className="p-4">
                     <span className="font-bold text-slate-900">
-                      {estimate.customers.company_name || `${estimate.customers.first_name} ${estimate.customers.last_name}`}
+                      {`${estimate.customers.first_name} ${estimate.customers.last_name}`.trim()}
                     </span>
                     <span className="block text-[10px] text-slate-500 mt-0.5">
                       {estimate.properties?.street_address || t.noProperty}
@@ -850,7 +850,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                 >
                   <option value="">{t.optionSelectCustomer}</option>
                   {customers.map(c => (
-                    <option key={c.id} value={c.id}>{c.company_name || `${c.first_name} ${c.last_name}`}</option>
+                    <option key={c.id} value={c.id}>{`${c.first_name} ${c.last_name}`.trim()}</option>
                   ))}
                 </select>
               </div>

@@ -30,6 +30,22 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [streetAddress, setStreetAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [stateValue, setStateValue] = useState('');
+  const [zipCode, setZipCode] = useState('');
+  const [serviceNotes, setServiceNotes] = useState('');
+
+  const resolveStateName = (value: string) => {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return '';
+
+    const byCode = US_STATES.find((entry) => entry.code.toLowerCase() === normalized);
+    if (byCode) return byCode.name;
+
+    const byName = US_STATES.find((entry) => entry.name.toLowerCase() === normalized);
+    return byName?.name || value;
+  };
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,6 +65,11 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
     }
 
     form.reset();
+    setStreetAddress('');
+    setCity('');
+    setStateValue('');
+    setZipCode('');
+    setServiceNotes('');
     setEditingCreate(false);
     setSuccessMsg(isEs ? 'Sitio de servicio vinculado.' : 'Service site linked.');
   }
@@ -107,6 +128,14 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <AddressAutocompleteInput
                     name="streetAddress"
+                    value={streetAddress}
+                    onChange={(event) => setStreetAddress(event.target.value)}
+                    onAddressResolved={(resolved) => {
+                      if (resolved.streetAddress) setStreetAddress(resolved.streetAddress);
+                      if (resolved.city) setCity(resolved.city);
+                      if (resolved.state) setStateValue(resolveStateName(resolved.state));
+                      if (resolved.zipCode) setZipCode(resolved.zipCode);
+                    }}
                     placeholder={translations.dashboard.streetAddress}
                     required
                     className="md:col-span-2 rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium"
@@ -116,13 +145,16 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
                     name="city"
                     placeholder={translations.dashboard.city}
                     required
+                    value={city}
+                    onChange={(event) => setCity(event.target.value)}
                     className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium"
                   />
                   <div className="grid grid-cols-2 gap-2">
                     <select
                       name="state"
                       required
-                      defaultValue=""
+                      value={stateValue}
+                      onChange={(event) => setStateValue(event.target.value)}
                       className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium"
                     >
                       <option value="">{isEs ? 'Selecciona estado' : 'Select state'}</option>
@@ -137,6 +169,8 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
                       name="zipCode"
                       placeholder={translations.dashboard.zip}
                       required
+                      value={zipCode}
+                      onChange={(event) => setZipCode(event.target.value)}
                       className="rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium"
                     />
                   </div>
@@ -146,6 +180,8 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
                   type="text"
                   name="serviceNotes"
                   placeholder={translations.dashboard.gateCodesLabel}
+                  value={serviceNotes}
+                  onChange={(event) => setServiceNotes(event.target.value)}
                   className="w-full rounded-md border border-gray-300 p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-gray-900 font-medium"
                 />
               </div>

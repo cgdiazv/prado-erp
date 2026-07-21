@@ -7,9 +7,18 @@ interface AddressAutocompleteInputProps {
   defaultValue?: string;
   value?: string;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onAddressResolved?: (value: ResolvedAddress) => void;
   placeholder?: string;
   required?: boolean;
   className?: string;
+}
+
+interface ResolvedAddress {
+  streetAddress: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  formattedAddress: string;
 }
 
 interface PlaceSuggestion {
@@ -17,13 +26,83 @@ interface PlaceSuggestion {
   text: string;
 }
 
+interface AutocompleteSuggestionItem {
+  placePrediction?: {
+    placeId?: string;
+    text?: {
+      text?: string;
+    };
+  };
+}
+
+interface AutocompleteApiResponse {
+  suggestions?: AutocompleteSuggestionItem[];
+}
+
 const AUTOCOMPLETE_ENDPOINT = 'https://places.googleapis.com/v1/places:autocomplete';
+const PLACE_DETAILS_ENDPOINT = 'https://places.googleapis.com/v1/places';
+
+function getAddressComponent(
+  components: Array<{ longText?: string; shortText?: string; long_name?: string; short_name?: string; types?: string[] }> | undefined,
+  type: string,
+  preferShort = false
+) {
+  if (!components || components.length === 0) return '';
+  const match = components.find((component) => component?.types?.includes(type));
+  if (!match) return '';
+
+  const longValue = match.longText || match.long_name || '';
+  const shortValue = match.shortText || match.short_name || '';
+
+  return preferShort ? shortValue || longValue : longValue || shortValue;
+}
+
+async function fetchPlaceDetails(apiKey: string, placeId: string): Promise<ResolvedAddress | null> {
+  try {
+    const response = await fetch(`${PLACE_DETAILS_ENDPOINT}/${encodeURIComponent(placeId)}`, {
+      method: 'GET',
+      headers: {
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'formattedAddress,addressComponents',
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const payload = await response.json();
+    const components = payload?.addressComponents as
+      | Array<{ longText?: string; shortText?: string; long_name?: string; short_name?: string; types?: string[] }>
+      | undefined;
+
+    const streetNumber = getAddressComponent(components, 'street_number');
+    const route = getAddressComponent(components, 'route');
+    const locality = getAddressComponent(components, 'locality');
+    const subLocality = getAddressComponent(components, 'sublocality');
+    const adminAreaLevel2 = getAddressComponent(components, 'administrative_area_level_2');
+    const state = getAddressComponent(components, 'administrative_area_level_1', true);
+    const zipCode = getAddressComponent(components, 'postal_code');
+
+    const streetAddress = `${streetNumber} ${route}`.trim();
+    const city = locality || subLocality || adminAreaLevel2;
+
+    return {
+      streetAddress,
+      city,
+      state,
+      zipCode,
+      formattedAddress: payload?.formattedAddress || '',
+    };
+  } catch {
+    return null;
+  }
+}
 
 export default function AddressAutocompleteInput({
   name,
   defaultValue = '',
   value: controlledValue,
   onChange,
+  onAddressResolved,
   placeholder,
   required = false,
   className,
@@ -34,6 +113,7 @@ export default function AddressAutocompleteInput({
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const requestCounterRef = useRef(0);
+  const activeQuery = (controlledValue ?? inputValue).trim();
 
   const fallbackInput = useMemo(
     () => (
@@ -51,10 +131,6 @@ export default function AddressAutocompleteInput({
   );
 
   useEffect(() => {
-    setInputValue(defaultValue);
-  }, [defaultValue]);
-
-  useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
       if (!wrapperRef.current?.contains(event.target as Node)) {
         setIsOpen(false);
@@ -68,11 +144,8 @@ export default function AddressAutocompleteInput({
   useEffect(() => {
     if (!apiKey) return;
 
-    const query = (controlledValue ?? inputValue).trim();
-    if (query.length < 3) {
-      setSuggestions([]);
-      return;
-    }
+    const query = activeQuery;
+    if (query.length < 3) return;
 
     const requestId = ++requestCounterRef.current;
     const controller = new AbortController();
@@ -98,11 +171,11 @@ export default function AddressAutocompleteInput({
           return;
         }
 
-        const payload = await response.json();
+        const payload = (await response.json()) as AutocompleteApiResponse;
         if (requestCounterRef.current !== requestId) return;
 
         const nextSuggestions: PlaceSuggestion[] = (payload?.suggestions || [])
-          .map((item: any) => ({
+          .map((item) => ({
             placeId: item?.placePrediction?.placeId || '',
             text: item?.placePrediction?.text?.text || '',
           }))
@@ -122,7 +195,7 @@ export default function AddressAutocompleteInput({
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [apiKey, controlledValue, inputValue]);
+  }, [activeQuery, apiKey]);
 
   if (!apiKey) {
     return fallbackInput;
@@ -148,7 +221,7 @@ export default function AddressAutocompleteInput({
         className={className}
       />
 
-      {isOpen && suggestions.length > 0 && (
+      {activeQuery.length >= 3 && isOpen && suggestions.length > 0 && (
         <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
           <ul className="max-h-56 overflow-y-auto py-1">
             {suggestions.map((suggestion) => (
@@ -158,6 +231,19 @@ export default function AddressAutocompleteInput({
                   onClick={() => {
                     setInputValue(suggestion.text);
                     setIsOpen(false);
+
+                    const syntheticEvent = {
+                      target: { value: suggestion.text },
+                    } as React.ChangeEvent<HTMLInputElement>;
+                    onChange?.(syntheticEvent);
+
+                    if (apiKey && onAddressResolved) {
+                      fetchPlaceDetails(apiKey, suggestion.placeId).then((resolved) => {
+                        if (resolved) {
+                          onAddressResolved(resolved);
+                        }
+                      });
+                    }
                   }}
                   className="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-100"
                 >
