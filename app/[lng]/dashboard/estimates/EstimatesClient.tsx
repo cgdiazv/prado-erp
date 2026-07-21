@@ -693,6 +693,32 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                         </span>
                       </button>
                     </th>
+                    <th className="p-4 w-28 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('amount')}
+                        className="inline-flex items-center gap-1 justify-end"
+                      >
+                        <span>{t.thAmount}</span>
+                        <span className="inline-flex flex-col leading-none text-[8px]">
+                          <span className={sortColumn === 'amount' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                          <span className={sortColumn === 'amount' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                        </span>
+                      </button>
+                    </th>
+                    <th className="p-4 w-36 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('status')}
+                        className="inline-flex items-center gap-1 justify-center"
+                      >
+                        <span>{t.thStatus}</span>
+                        <span className="inline-flex flex-col leading-none text-[8px]">
+                          <span className={sortColumn === 'status' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
+                          <span className={sortColumn === 'status' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
+                        </span>
+                      </button>
+                    </th>
                     <th className="p-4 text-right w-64">
                       <button
                         type="button"
@@ -703,32 +729,6 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                         <span className="inline-flex flex-col leading-none text-[8px]">
                           <span className={sortColumn === 'actions' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
                           <span className={sortColumn === 'actions' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
-                        </span>
-                      </button>
-                    </th>
-                    <th className="p-4">
-                      <button
-                        type="button"
-                        onClick={() => handleSort('status')}
-                        className="inline-flex items-center gap-1"
-                      >
-                        <span>{t.thStatus}</span>
-                        <span className="inline-flex flex-col leading-none text-[8px]">
-                          <span className={sortColumn === 'status' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
-                          <span className={sortColumn === 'status' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
-                        </span>
-                      </button>
-                    </th>
-                    <th className="p-4">
-                      <button
-                        type="button"
-                        onClick={() => handleSort('amount')}
-                        className="inline-flex items-center gap-1"
-                      >
-                        <span>{t.thAmount}</span>
-                        <span className="inline-flex flex-col leading-none text-[8px]">
-                          <span className={sortColumn === 'amount' && sortDirection === 'asc' ? 'text-slate-700' : 'text-slate-300'}>▲</span>
-                          <span className={sortColumn === 'amount' && sortDirection === 'desc' ? 'text-slate-700' : 'text-slate-300'}>▼</span>
                         </span>
                       </button>
                     </th>
@@ -758,6 +758,17 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                     {estimate.description && (
                       <span className="block text-[10px] text-slate-500 truncate max-w-xs mt-0.5">{estimate.description}</span>
                     )}
+                  </td>
+                  <td className="p-4 w-28 text-right font-bold text-slate-800">${estimate.estimated_amount.toFixed(2)}</td>
+                  <td className="p-4 w-36 text-center">
+                    <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                      estimate.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                      estimate.status === 'sent' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                      estimate.status === 'declined' ? 'bg-red-100 text-red-700 border border-red-200' :
+                      'bg-slate-100 text-slate-600 border border-slate-200'
+                    }`}>
+                      {estimate.status === 'draft' ? t.filterDraft : estimate.status === 'sent' ? t.filterSent : estimate.status === 'approved' ? t.filterApproved : t.filterDeclined}
+                    </span>
                   </td>
                   <td className="p-4 text-right space-x-2 w-64">
                     {estimate.status === 'draft' && (
@@ -801,17 +812,6 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                       <span className="text-[10px] text-red-500 font-bold">{t.declined}</span>
                     )}
                   </td>
-                  <td className="p-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
-                      estimate.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
-                      estimate.status === 'sent' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                      estimate.status === 'declined' ? 'bg-red-100 text-red-700 border border-red-200' :
-                      'bg-slate-100 text-slate-600 border border-slate-200'
-                    }`}>
-                      {estimate.status === 'draft' ? t.filterDraft : estimate.status === 'sent' ? t.filterSent : estimate.status === 'approved' ? t.filterApproved : t.filterDeclined}
-                    </span>
-                  </td>
-                  <td className="p-4 font-bold text-slate-800">${estimate.estimated_amount.toFixed(2)}</td>
                 </tr>
               ))
             )}
