@@ -31,7 +31,6 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/screen1.webp',
         sizes: '898x476',
         type: 'image/webp',
-        // @ts-expect-error – 'form_factor' is valid per spec but not yet typed in Next.js
         form_factor: 'wide',
         label: 'Prado Dashboard Overview',
       },
