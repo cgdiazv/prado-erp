@@ -232,19 +232,19 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
               const { line, area, baseline, gridLines } = buildSparkline(metric.values);
 
               return (
-                <div key={metric.key} className="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-xs">
+                <div key={metric.key} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-xs">
                   <div className="mb-3 flex items-center justify-between gap-3 text-xs font-semibold">
                     <span className="text-slate-500">{metric.label}</span>
                     <span className={`font-mono ${metric.textClassName}`}>${metric.total.toFixed(2)}</span>
                   </div>
 
-                  <svg viewBox="0 0 100 44" className="h-28 w-full" aria-label={metric.ariaLabel} role="img">
+                  <svg viewBox="0 0 100 44" preserveAspectRatio="none" className="h-28 w-full" aria-label={metric.ariaLabel} role="img">
                     {gridLines.map((y) => (
-                      <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="rgb(226 232 240)" strokeWidth="0.35" />
+                      <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="rgb(226 232 240)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                     ))}
-                    <line x1="0" y1={baseline} x2="100" y2={baseline} stroke="rgb(226 232 240)" strokeWidth="0.5" strokeDasharray="2 2" />
+                    <line x1="0" y1={baseline} x2="100" y2={baseline} stroke="rgb(226 232 240)" strokeWidth="1" strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
                     <polyline points={area} fill={metric.fill} stroke="none" />
-                    <polyline points={line} fill="none" stroke={metric.stroke} strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
+                    <polyline points={line} fill="none" stroke={metric.stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
                   </svg>
 
                   <div className="mt-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-slate-400">
