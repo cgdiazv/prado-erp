@@ -308,7 +308,11 @@ export default async function DashboardHome({
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/estimates`,
       cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      badgeClass: 'bg-emerald-600 text-white',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 8.25v8.25a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V8.25m19.5 0V6a2.25 2.25 0 00-2.25-2.25H4.5A2.25 2.25 0 002.25 6v2.25m19.5 0l-8.69 5.212a2.25 2.25 0 01-2.12 0L2.25 8.25" />
+        </svg>
+      ),
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
     {
@@ -319,7 +323,11 @@ export default async function DashboardHome({
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/estimates`,
       cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      badgeClass: 'bg-emerald-600 text-white',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
+          <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.687a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+        </svg>
+      ),
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
     {
@@ -330,7 +338,11 @@ export default async function DashboardHome({
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/schedule`,
       cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      badgeClass: 'bg-emerald-600 text-white',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+        </svg>
+      ),
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
     {
@@ -341,7 +353,11 @@ export default async function DashboardHome({
       cta: t.alertResolveAll,
       href: `/${locale}/dashboard/schedule`,
       cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      badgeClass: 'bg-emerald-600 text-white',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0Zm10.5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0ZM3.75 6.75h8.25v9.75H3.75V6.75Zm8.25 2.25h3.12a1.5 1.5 0 011.12.502l2.326 2.65a1.5 1.5 0 01.374.99V16.5H12V9Z" />
+        </svg>
+      ),
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
     {
@@ -352,7 +368,11 @@ export default async function DashboardHome({
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/schedule`,
       cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      badgeClass: 'bg-emerald-600 text-white',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12m-12 5.25h12m-12 5.25h12M3.75 6.75h.008v.008H3.75V6.75Zm0 5.25h.008v.008H3.75V12Zm0 5.25h.008v.008H3.75v-.008Z" />
+        </svg>
+      ),
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
     {
@@ -363,7 +383,11 @@ export default async function DashboardHome({
       cta: t.alertResolveNow,
       href: `/${locale}/dashboard/invoices-ledger`,
       cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      badgeClass: 'bg-emerald-600 text-white',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+      ),
       buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
   ];
@@ -426,13 +450,14 @@ export default async function DashboardHome({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {priorityAlertCards.map((card) => (
-            <div key={card.key} className={`rounded-lg border px-3 py-2.5 flex items-center justify-between gap-3 ${card.cardClass}`}>
-              <div className="flex items-center gap-3 min-w-0">
-                <span className={`h-7 w-7 rounded-full text-xs font-extrabold flex items-center justify-center shrink-0 ${card.badgeClass}`}>
-                  {card.count}
+            <div key={card.key} className={`rounded-lg border px-3 py-2.5 flex items-start justify-between gap-3 ${card.cardClass}`}>
+              <div className="flex items-start gap-3 min-w-0">
+                <span className="h-8 w-8 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                  {card.icon}
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-900 truncate">{card.title}</p>
+                  <p className="text-lg font-extrabold text-slate-900 leading-tight">{card.count}</p>
                   <p className="text-xs text-slate-600 truncate">{card.subtitle}</p>
                 </div>
               </div>
