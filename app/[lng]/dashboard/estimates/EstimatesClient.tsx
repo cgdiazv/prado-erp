@@ -654,7 +654,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
               <table className="min-w-[900px] sm:min-w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-gray-200 bg-slate-50 text-slate-500 font-bold">
-                    <th className="p-4">
+                    <th className="p-4 w-28">
                       <button
                         type="button"
                         onClick={() => handleSort('date')}
@@ -693,7 +693,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                         </span>
                       </button>
                     </th>
-                    <th className="p-4 w-28 text-right">
+                    <th className="p-4 text-right">
                       <button
                         type="button"
                         onClick={() => handleSort('amount')}
@@ -706,7 +706,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                         </span>
                       </button>
                     </th>
-                    <th className="p-4 w-36 text-center">
+                    <th className="p-4 text-center whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => handleSort('status')}
@@ -719,7 +719,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                         </span>
                       </button>
                     </th>
-                    <th className="p-4 text-right w-64">
+                    <th className="p-4 text-right w-44">
                       <button
                         type="button"
                         onClick={() => handleSort('actions')}
@@ -742,7 +742,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
             ) : (
               paginatedEstimates.map((estimate) => (
                 <tr key={estimate.id} className="hover:bg-slate-50 transition">
-                  <td className="p-4 text-slate-700 whitespace-nowrap">
+                  <td className="p-4 w-28 text-slate-700 whitespace-nowrap">
                     {new Date(estimate.created_at).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                   </td>
                   <td className="p-4">
@@ -759,8 +759,8 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                       <span className="block text-[10px] text-slate-500 truncate max-w-xs mt-0.5">{estimate.description}</span>
                     )}
                   </td>
-                  <td className="p-4 w-28 text-right font-bold text-slate-800">${estimate.estimated_amount.toFixed(2)}</td>
-                  <td className="p-4 w-36 text-center">
+                  <td className="p-4 text-right font-bold text-slate-800 whitespace-nowrap">${estimate.estimated_amount.toFixed(2)}</td>
+                  <td className="p-4 text-center whitespace-nowrap">
                     <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
                       estimate.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
                       estimate.status === 'sent' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
@@ -770,7 +770,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                       {estimate.status === 'draft' ? t.filterDraft : estimate.status === 'sent' ? t.filterSent : estimate.status === 'approved' ? t.filterApproved : t.filterDeclined}
                     </span>
                   </td>
-                  <td className="p-4 text-right space-x-2 w-64">
+                  <td className="p-4 text-right space-x-2 w-44">
                     {estimate.status === 'draft' && (
                       <>
                         <button
