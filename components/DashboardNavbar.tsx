@@ -58,7 +58,7 @@ export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarP
         body: isEs
           ? 'Agrega tu nombre, apellido y telefono para terminar la configuracion de tu cuenta.'
           : 'Add your first name, last name, and phone number to finish setting up your account.',
-        href: `/${activeLocale}/dashboard/settings/profile-settings`,
+        href: `/${activeLocale}/dashboard/profile-settings`,
         cta: isEs ? 'Abrir perfil' : 'Open profile',
       });
     }
@@ -70,7 +70,7 @@ export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarP
         body: isEs
           ? 'Agrega telefono, direccion, ciudad, estado y codigo postal de tu empresa.'
           : 'Add phone, address, city, state, and zip code for your company.',
-        href: `/${activeLocale}/dashboard/settings/profile-settings`,
+        href: `/${activeLocale}/dashboard/settings`,
         cta: isEs ? 'Ir a configuracion' : 'Go to settings',
       });
     }

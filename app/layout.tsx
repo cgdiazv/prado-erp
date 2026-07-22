@@ -20,6 +20,14 @@ export const metadata: Metadata = {
   },
   description:
     'The all-in-one workspace built for modern service and landscaping professionals. Schedule jobs, manage team workflows, track customers, and simplify billing seamlessly.',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Prado',
+  },
+  formatDetection: { telephone: false },
+  themeColor: '#10b981',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -27,6 +35,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <head />
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
+        <Script
+          id="pwa-sw-register"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+              }
+            `,
+          }}
+        />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-1005758859"
           strategy="afterInteractive"
