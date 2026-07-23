@@ -33,7 +33,7 @@ export default async function DashboardHelpPage({
                 {isEs ? 'Centro de Ayuda' : 'Help Center'}
               </span>
               <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-                {isEs ? 'Auto Helpdesk y Guias Practicas' : 'Auto Helpdesk and How-To Guides'}
+                {isEs ? 'Asistente de Ayuda y Guias Practicas' : 'Help Assistant and How-To Guides'}
               </h1>
               <p className="mt-2 text-sm text-slate-500">
                 {isEs

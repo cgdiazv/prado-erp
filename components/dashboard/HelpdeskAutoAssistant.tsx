@@ -12,15 +12,15 @@ function buildSubscriberReply(question: string, matches: HowToPlaybook[], isEs: 
 
   if (matches.length === 0) {
     return isEs
-      ? 'Gracias por tu pregunta. No encontre una guia exacta todavia. Comparte la pantalla donde te atoras y el resultado esperado para enviarte pasos precisos.'
-      : 'Thanks for your question. I could not find an exact guide yet. Share the screen where you are blocked and the expected result so I can send precise steps.';
+      ? 'No se encontro una guia exacta todavia. Agrega la pantalla en la que estas y la accion que intentabas para obtener pasos mas precisos.'
+      : 'No exact guide was found yet. Add the screen you are on and the action you were trying to complete to get more precise steps.';
   }
 
   const top = matches[0];
 
   return isEs
-    ? `Gracias por tu pregunta.\n\n${top.quickReply}\n\nSi quieres, tambien te puedo guiar paso a paso en tiempo real.`
-    : `Thanks for your question.\n\n${top.quickReply}\n\nIf you want, I can also guide you step-by-step in real time.`;
+    ? `Aqui va la forma mas rapida de hacerlo:\n\n${top.quickReply}\n\nPara mayor precision, incluye la pantalla exacta y el resultado esperado.`
+    : `Here is the quickest way to do it:\n\n${top.quickReply}\n\nFor more precise guidance, include the exact screen and expected result.`;
 }
 
 export default function HelpdeskAutoAssistant({ locale = 'en' }: HelpdeskAutoAssistantProps) {
@@ -43,12 +43,12 @@ export default function HelpdeskAutoAssistant({ locale = 'en' }: HelpdeskAutoAss
     <section className="space-y-4">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-base font-semibold text-slate-900">
-          {isEs ? 'Asistente de ayuda automatica' : 'Auto Helpdesk Assistant'}
+          {isEs ? 'Asistente de ayuda' : 'Help Assistant'}
         </h2>
         <p className="mt-1 text-sm text-slate-500">
           {isEs
-            ? 'Escribe tu pregunta y te mostraremos las mejores guias con una respuesta sugerida.'
-            : 'Type your question and we will suggest the best matching guides with a ready response.'}
+            ? 'Escribe tu pregunta en lenguaje simple para ver las guias mas utiles con pasos sugeridos.'
+            : 'Ask in plain language to see the most useful guides with recommended steps.'}
         </p>
 
         <form
@@ -65,8 +65,8 @@ export default function HelpdeskAutoAssistant({ locale = 'en' }: HelpdeskAutoAss
             required
             placeholder={
               isEs
-                ? 'Ejemplo: Como programo un trabajo y asigno un camion?'
-                : 'Example: How do I schedule a job and assign a truck?'
+                ? 'Ejemplo: Programar un trabajo y asignar un camion'
+                : 'Example: Schedule a job and assign a truck'
             }
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
@@ -96,7 +96,7 @@ export default function HelpdeskAutoAssistant({ locale = 'en' }: HelpdeskAutoAss
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-900">
-              {isEs ? 'Respuesta sugerida' : 'Suggested response'}
+              {isEs ? 'Guia sugerida' : 'Suggested guidance'}
             </h3>
             <pre className="mt-2 whitespace-pre-wrap text-xs text-slate-700 font-sans">{suggestedReply}</pre>
             <button
@@ -108,7 +108,7 @@ export default function HelpdeskAutoAssistant({ locale = 'en' }: HelpdeskAutoAss
               }}
               className="mt-3 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
-              {isEs ? 'Copiar respuesta' : 'Copy response'}
+              {isEs ? 'Copiar guia' : 'Copy guidance'}
             </button>
           </div>
 
