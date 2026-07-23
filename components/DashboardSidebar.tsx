@@ -159,15 +159,6 @@ export default function DashboardSidebar({
               {translations.dashboard.systemSettings}
             </Link>
 
-            {canAccessPradoManagement ? (
-              <Link href={localizedHref('/management')} onClick={closeSidebar} className={linkStyle('/management')}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 5.25h16.5M3.75 12h16.5m-16.5 6.75h16.5" />
-                </svg>
-                {isEs ? 'Consola Prado' : 'Prado Console'}
-              </Link>
-            ) : null}
-
             {canViewImportExport ? (
               <Link href={localizedHref('/dashboard/import-export')} onClick={closeSidebar} className={linkStyle('/dashboard/import-export')}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
@@ -200,13 +191,23 @@ export default function DashboardSidebar({
         </div>
 
         <div className="pt-4 mt-4 border-t border-gray-100">
+          {canAccessPradoManagement ? (
+            <Link href={localizedHref('/management')} onClick={closeSidebar} className={linkStyle('/management')}>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 5.25h16.5M3.75 12h16.5m-16.5 6.75h16.5" />
+              </svg>
+              {isEs ? 'Consola Prado' : 'Prado Console'}
+            </Link>
+          ) : null}
+
           <Link
             href={localizedHref('/dashboard/help')}
             onClick={closeSidebar}
             className={linkStyle('/dashboard/help')}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm0 0H12m3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm-9 8.625h9c1.036 0 1.875-.84 1.875-1.875V6.75c0-1.035-.84-1.875-1.875-1.875h-9c-1.035 0-1.875.84-1.875 1.875V16.5c0 1.035.84 1.875 1.875 1.875Z" />
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6.75 6.75 0 100-13.5 6.75 6.75 0 000 13.5z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.75v.008M9.75 10.5a2.25 2.25 0 114.5 0c0 1.5-2.25 1.875-2.25 3.375" />
             </svg>
             {isEs ? 'Ayuda' : 'Help'}
           </Link>
