@@ -243,7 +243,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
               <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
                 {isEs ? 'Desde el Blog' : 'From the Blog'}
               </h2>
-              <p className="mt-3 text-sm md:text-base text-slate-400 max-w-2xl mx-auto">
+              <p className="mt-3 text-sm md:text-base text-white max-w-2xl mx-auto">
                 {isEs ? 'Guias, ideas y actualizaciones para equipos de servicio en campo.' : 'Insights, guides, and updates for growing field service teams.'}
               </p>
             </div>

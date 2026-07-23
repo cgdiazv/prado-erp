@@ -30,3 +30,54 @@ body {
   max-width: 9rem;
   white-space: nowrap;
 }
+
+#soro-blog iframe {
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#soro-blog article,
+#soro-blog [class*='card'],
+#soro-blog [class*='post'],
+#soro-blog [class*='article'] {
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#soro-blog,
+#soro-blog h1,
+#soro-blog h2,
+#soro-blog h3,
+#soro-blog h4,
+#soro-blog h5,
+#soro-blog h6,
+#soro-blog p,
+#soro-blog span,
+#soro-blog a,
+#soro-blog li,
+#soro-blog small {
+  color: #ffffff !important;
+}
+
+#soro-blog article,
+#soro-blog [class*='card'],
+#soro-blog [class*='post'],
+#soro-blog [class*='article'],
+#soro-blog h1,
+#soro-blog h2,
+#soro-blog h3,
+#soro-blog h4,
+#soro-blog h5,
+#soro-blog h6,
+#soro-blog p,
+#soro-blog time,
+#soro-blog [class*='date'],
+#soro-blog [class*='excerpt'],
+#soro-blog [class*='title'],
+#soro-blog [data-date],
+#soro-blog [data-excerpt],
+#soro-blog [data-title] {
+  text-align: left !important;
+}

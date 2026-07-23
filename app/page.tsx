@@ -219,7 +219,7 @@ export default async function MarketingHomePage() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-10">
               <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">From the Blog</h2>
-              <p className="mt-3 text-sm md:text-base text-slate-400 max-w-2xl mx-auto">
+              <p className="mt-3 text-sm md:text-base text-white max-w-2xl mx-auto">
                 Insights, guides, and updates for growing field service teams.
               </p>
             </div>
