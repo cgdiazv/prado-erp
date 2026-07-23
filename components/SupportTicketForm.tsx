@@ -80,7 +80,7 @@ export default function SupportTicketForm({ locale = 'en', theme = 'light' }: Su
               <input type="text" name="name" required placeholder="Jane Doe" className={inputClassName} />
             </div>
             <div>
-              <label className={labelClassName}>{translations.support.emailLabel}</label>
+              <label className={labelClassName}>Email</label>
               <input type="email" name="email" required placeholder="jane@organization.com" className={inputClassName} />
             </div>
           </div>
