@@ -6,6 +6,7 @@ import Metrics from '@/components/dashboard/Metrics';
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import TrialBanner from '@/components/TrialBanner';
 import OnboardingTour from '@/components/OnboardingTour';
+import DashboardFeedbackStrip from './DashboardFeedbackStrip';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
@@ -531,6 +532,8 @@ export default async function DashboardHome({
             {operationsPanel}
           </>
         )}
+
+        <DashboardFeedbackStrip locale={locale} />
 
       </div>
     </main>
