@@ -103,6 +103,7 @@ export async function createHelpdeskTicket(formData: FormData) {
   const locale = String(formData.get('locale') || 'en');
   const organizationIdRaw = String(formData.get('organizationId') || '').trim();
   const organizationId = organizationIdRaw.length > 0 ? organizationIdRaw : null;
+  const organizationIdForRedirect = organizationId || undefined;
   const organizationName = String(formData.get('organizationName') || '').trim();
   const subject = String(formData.get('subject') || '').trim();
   const description = String(formData.get('description') || '').trim();
@@ -118,11 +119,11 @@ export async function createHelpdeskTicket(formData: FormData) {
   }
 
   if (!subject || !description) {
-    managementRedirect(locale, 'error', 'Ticket subject and description are required.', organizationId);
+    managementRedirect(locale, 'error', 'Ticket subject and description are required.', organizationIdForRedirect);
   }
 
   if (!ALLOWED_TICKET_PRIORITY.has(priority)) {
-    managementRedirect(locale, 'error', 'Invalid ticket priority.', organizationId);
+    managementRedirect(locale, 'error', 'Invalid ticket priority.', organizationIdForRedirect);
   }
 
   const supabaseAdmin = createAdminClient();
@@ -143,7 +144,7 @@ export async function createHelpdeskTicket(formData: FormData) {
     .single();
 
   if (ticketError || !ticket?.id) {
-    managementRedirect(locale, 'error', ticketError?.message || 'Failed to create helpdesk ticket.', organizationId);
+    managementRedirect(locale, 'error', ticketError?.message || 'Failed to create helpdesk ticket.', organizationIdForRedirect);
   }
 
   await supabaseAdmin.from('helpdesk_ticket_events').insert({
@@ -158,7 +159,7 @@ export async function createHelpdeskTicket(formData: FormData) {
   });
 
   revalidatePath(`/${locale}/management`);
-  managementRedirect(locale, 'ticket-created', undefined, organizationId || undefined);
+  managementRedirect(locale, 'ticket-created', undefined, organizationIdForRedirect);
 }
 
 export async function updateHelpdeskTicket(formData: FormData) {
