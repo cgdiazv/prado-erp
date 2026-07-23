@@ -5,6 +5,7 @@ import DashboardSidebar from '@/components/DashboardSidebar';
 import BillingModal from '@/components/BillingModal';
 import { DashboardNotificationProvider } from '@/components/dashboard/DashboardNotificationContext';
 import { getUserOrganization } from '@/lib/organization';
+import { isPradoManagementUser } from '@/lib/pradoManagement';
 import { REMEMBER_ME_COOKIE_NAME } from '@/lib/rememberMe';
 import InactivityLockScreen from '@/components/dashboard/InactivityLockScreen';
 import { cookies } from 'next/headers';
@@ -83,6 +84,7 @@ export default async function DashboardLayout({
     !normalizedZipCode.trim();
 
   const canViewImportExport = role === 'owner' || role === 'admin';
+  const canAccessPradoManagement = isPradoManagementUser(user);
   const initial = org.name ? org.name.charAt(0).toUpperCase() : 'U';
 
   return (
@@ -98,6 +100,7 @@ export default async function DashboardLayout({
               subscriptionStatus={org.subscription_status ?? undefined}
               locale={locale}
               canViewImportExport={canViewImportExport}
+              canAccessPradoManagement={canAccessPradoManagement}
             />
           </div>
           <InactivityLockScreen locale={locale} userEmail={user.email ?? ''}>

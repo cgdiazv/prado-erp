@@ -10,9 +10,15 @@ interface DashboardSidebarProps {
   subscriptionStatus?: string | null; // 'trial' | 'individual' | 'growth' | 'enterprise'
   locale?: string;
   canViewImportExport?: boolean;
+  canAccessPradoManagement?: boolean;
 }
 
-export default function DashboardSidebar({ subscriptionStatus, locale = 'en', canViewImportExport = false }: DashboardSidebarProps) {
+export default function DashboardSidebar({
+  subscriptionStatus,
+  locale = 'en',
+  canViewImportExport = false,
+  canAccessPradoManagement = false,
+}: DashboardSidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -160,6 +166,15 @@ export default function DashboardSidebar({ subscriptionStatus, locale = 'en', ca
               </svg>
               {translations.dashboard.systemSettings}
             </Link>
+
+            {canAccessPradoManagement ? (
+              <Link href={localizedHref('/management')} onClick={closeSidebar} className={linkStyle('/management')}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 5.25h16.5M3.75 12h16.5m-16.5 6.75h16.5" />
+                </svg>
+                {isEs ? 'Consola Prado' : 'Prado Console'}
+              </Link>
+            ) : null}
 
             {canViewImportExport ? (
               <Link href={localizedHref('/dashboard/import-export')} onClick={closeSidebar} className={linkStyle('/dashboard/import-export')}>
