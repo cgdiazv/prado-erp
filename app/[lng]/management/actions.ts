@@ -143,12 +143,14 @@ export async function createHelpdeskTicket(formData: FormData) {
     .select('id')
     .single();
 
-  if (ticketError || !ticket?.id) {
+  const ticketId = ticket?.id;
+
+  if (ticketError || !ticketId) {
     managementRedirect(locale, 'error', ticketError?.message || 'Failed to create helpdesk ticket.', organizationIdForRedirect);
   }
 
   await supabaseAdmin.from('helpdesk_ticket_events').insert({
-    ticket_id: ticket.id,
+    ticket_id: ticketId,
     event_type: 'escalated',
     event_note: isGeneralScope
       ? 'Escalated from management console (general/internal ticket).'
