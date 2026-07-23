@@ -18,7 +18,7 @@ import { getUserOrganization } from '@/lib/organization';
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
 const SECTION_IDS = [
-  'profile-settings',
+  'account-settings',
   'operations-settings',
   'team-settings',
   'integrations',
@@ -53,7 +53,7 @@ export default async function SettingsSectionPage({
   }
 
   if (!isSectionId(sectionParam)) {
-    redirect(`/${locale}/dashboard/settings/profile-settings`);
+    redirect(`/${locale}/dashboard/settings/account-settings`);
   }
 
   const section = sectionParam;
@@ -84,26 +84,26 @@ export default async function SettingsSectionPage({
   const canManageSubscription = isOwnerRole;
 
   if (section === 'team-settings' && isIndividualAccount) {
-    redirect(`/${locale}/dashboard/settings/profile-settings`);
+    redirect(`/${locale}/dashboard/settings/account-settings`);
   }
 
   if (section === 'dispatch-settings' && isIndividualAccount) {
-    redirect(`/${locale}/dashboard/settings/profile-settings`);
+    redirect(`/${locale}/dashboard/settings/account-settings`);
   }
 
   if (section === 'integrations' && !canManageIntegrations) {
-    redirect(`/${locale}/dashboard/settings/profile-settings`);
+    redirect(`/${locale}/dashboard/settings/account-settings`);
   }
 
   if (section === 'manage-subscription' && !canManageSubscription) {
-    redirect(`/${locale}/dashboard/settings/profile-settings`);
+    redirect(`/${locale}/dashboard/settings/account-settings`);
   }
 
   const sectionLinks: SectionLink[] = [
     {
-      id: 'profile-settings',
+      id: 'account-settings',
       label: locale.toLowerCase().startsWith('es') ? 'Configuracion de cuenta' : 'Account Settings',
-      href: `/${locale}/dashboard/settings/profile-settings`,
+      href: `/${locale}/dashboard/settings/account-settings`,
     },
     {
       id: 'operations-settings',
@@ -231,7 +231,7 @@ export default async function SettingsSectionPage({
               </div>
             </nav>
 
-            {section === 'profile-settings' && (
+            {section === 'account-settings' && (
               <>
                 <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                   <WorkspaceIdentityForm

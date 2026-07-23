@@ -86,6 +86,7 @@ export default async function DashboardLayout({
   const canViewImportExport = role === 'owner' || role === 'admin';
   const canAccessPradoManagement = isPradoManagementUser(user);
   const initial = org.name ? org.name.charAt(0).toUpperCase() : 'U';
+  const firstName = profile?.first_name?.trim() || user.user_metadata?.first_name?.trim() || '';
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
@@ -93,7 +94,7 @@ export default async function DashboardLayout({
         hasIncompleteProfile={hasIncompleteProfile}
         hasIncompleteOrgProfile={hasIncompleteOrgProfile}
       >
-        <DashboardNavbar userInitials={initial} />
+        <DashboardNavbar userInitials={initial} userFirstName={firstName} />
         <div className="flex flex-1 relative">
           <div className="tour-sidebar">
             <DashboardSidebar

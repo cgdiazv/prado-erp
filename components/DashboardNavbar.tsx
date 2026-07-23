@@ -4,19 +4,23 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams, usePathname, useParams } from 'next/navigation';
 import { useDashboardNotifications } from '@/components/dashboard/DashboardNotificationContext';
+import { getTranslations } from '@/lib/translations';
 
 interface DashboardNavbarProps {
   userInitials?: string; // e.g., "CD" for Carlos Diaz
+  userFirstName?: string;
 }
 
-export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarProps) {
+export default function DashboardNavbar({ userInitials = "C", userFirstName = '' }: DashboardNavbarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const params = useParams();
   const activeLocale = typeof params.lng === 'string' && params.lng.length > 0 ? params.lng : 'en';
   const isEs = activeLocale.toLowerCase().startsWith('es');
+  const translations = getTranslations(activeLocale);
   const { hasIncompleteProfile, hasIncompleteOrgProfile } = useDashboardNotifications();
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement | null>(null);
   
@@ -36,9 +40,11 @@ export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarP
 
   useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {
-      if (!notificationRef.current) return;
-      if (notificationRef.current.contains(event.target as Node)) return;
-      setShowNotifications(false);
+      const target = event.target as Node;
+
+      if (notificationRef.current && !notificationRef.current.contains(target)) {
+        setShowNotifications(false);
+      }
     };
 
     document.addEventListener('mousedown', handleDocumentClick);
@@ -79,6 +85,29 @@ export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarP
   }, [activeLocale, hasIncompleteProfile, hasIncompleteOrgProfile, isEs]);
 
   const unreadCount = notifications.length;
+  const greeting = useMemo(() => {
+    const firstName = userFirstName.trim();
+    if (!firstName) return '';
+
+    const hour = new Date().getHours();
+    const salutation = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+    return `${salutation}, ${firstName}`;
+  }, [userFirstName]);
+
+  const openSettingsMenu = () => {
+    setShowNotifications(false);
+    setShowSettingsMenu((current) => !current);
+  };
+
+  const closeSettingsMenu = () => {
+    setShowSettingsMenu(false);
+  };
+
+  const closeAllMenus = () => {
+    setShowSettingsMenu(false);
+    setShowNotifications(false);
+  };
 
   return (
     <nav className="w-full border-b border-gray-200 bg-white sticky top-0 z-50 px-6 py-3 select-none">
@@ -95,10 +124,69 @@ export default function DashboardNavbar({ userInitials = "C" }: DashboardNavbarP
           <span className="text-[10px] font-semibold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 ml-1">
             Dashboard
           </span>
+          {greeting ? <span className="ml-2 hidden sm:inline text-base font-semibold text-slate-700">{greeting}</span> : null}
         </Link>
 
         {/* Right Side: Account Settings Avatar & Mobile Menu Toggle */}
         <div className="flex items-center gap-3">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={openSettingsMenu}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+              aria-label={isEs ? 'Abrir configuracion' : 'Open settings'}
+              aria-haspopup="menu"
+              aria-expanded={showSettingsMenu}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-4 w-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.645-.869l.214-1.28z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+
+            {showSettingsMenu ? (
+              <>
+                <div className="fixed inset-0 z-40" onClick={closeSettingsMenu} />
+                <div className="absolute right-0 top-10 z-50 w-52 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
+                <Link
+                  href={`/${activeLocale}/dashboard/profile-settings`}
+                  onClick={closeAllMenus}
+                  className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0ZM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                  </svg>
+                  {isEs ? 'Perfil' : 'Profile Settings'}
+                </Link>
+
+                <Link
+                  href={`/${activeLocale}/dashboard/settings`}
+                  onClick={closeAllMenus}
+                  className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.645-.869l.214-1.28z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {translations.dashboard.systemSettings}
+                </Link>
+
+                <form action={`/${activeLocale}/auth/signout`} method="POST">
+                  <button
+                    type="submit"
+                    className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 006 21h7.5a2.25 2.25 0 002.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                    </svg>
+                    {translations.dashboard.signOutOfAccount}
+                  </button>
+                </form>
+              </div>
+              </>
+            ) : null}
+          </div>
+
           <div className="relative mt-0.5" ref={notificationRef}>
             <button
               type="button"
