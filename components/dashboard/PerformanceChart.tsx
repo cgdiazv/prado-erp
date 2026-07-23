@@ -260,7 +260,6 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
       <button
         type="button"
         onClick={() => {
-          localStorage.removeItem('prado_onboarding_completed');
           window.dispatchEvent(new CustomEvent('prado:restart-tour'));
         }}
         className="mt-2 text-[10px] font-medium text-slate-50 transition hover:opacity-80 focus:opacity-80"

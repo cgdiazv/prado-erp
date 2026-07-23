@@ -24,7 +24,7 @@ export default async function DashboardHome({
   searchParams,
 }: {
   params: Promise<{ lng?: string }>;
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; tour?: string }>;
 }) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
@@ -33,7 +33,9 @@ export default async function DashboardHome({
   const supabase = await createClient();
   const translations = getTranslations(locale);
   const requestedView = resolvedSearchParams.view;
+  const requestedTour = resolvedSearchParams.tour;
   const activeView: DashboardView = requestedView === 'financials' ? 'financials' : 'operations';
+  const forceStartTour = requestedTour === '1';
 
   const t = isEs
     ? {
@@ -474,7 +476,7 @@ export default async function DashboardHome({
   return (
     <main className="flex-1 overflow-y-auto">
       <div className="w-full px-6 md:px-10 pt-10 pb-8 space-y-8 text-left">
-        <OnboardingTour locale={locale} />
+        <OnboardingTour locale={locale} userStorageKey={user.id} forceStart={forceStartTour} />
         
         {/* Conditional Trial Alert Banner Asset */}
         {org.subscription_status === 'trial' && org.trial_starts_at && (

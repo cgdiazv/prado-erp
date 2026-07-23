@@ -11,23 +11,36 @@ const Joyride = dynamic(
 ) as React.ComponentType<JoyrideProps>;
 interface OnboardingTourProps {
   locale?: string;
+  userStorageKey?: string;
+  forceStart?: boolean;
 }
 
-export default function OnboardingTour({ locale = 'en' }: OnboardingTourProps) {
+export default function OnboardingTour({
+  locale = 'en',
+  userStorageKey,
+  forceStart = false,
+}: OnboardingTourProps) {
   const [runTour, setRunTour] = useState(false);
   const isEs = locale.toLowerCase().startsWith('es');
+  const completionKey = userStorageKey
+    ? `prado_onboarding_completed:${userStorageKey}`
+    : 'prado_onboarding_completed';
 
   useEffect(() => {
-    const hasSeenTour = localStorage.getItem('prado_onboarding_completed');
-    if (!hasSeenTour) {
+    if (forceStart) {
+      localStorage.removeItem(completionKey);
+    }
+
+    const hasSeenTour = localStorage.getItem(completionKey);
+    if (forceStart || !hasSeenTour) {
       const timer = setTimeout(() => setRunTour(true), 1200);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [completionKey, forceStart]);
 
   useEffect(() => {
     const handleRestartTour = () => {
-      localStorage.removeItem('prado_onboarding_completed');
+      localStorage.removeItem(completionKey);
       setRunTour(false);
       window.setTimeout(() => setRunTour(true), 60);
     };
@@ -37,7 +50,7 @@ export default function OnboardingTour({ locale = 'en' }: OnboardingTourProps) {
     return () => {
       window.removeEventListener('prado:restart-tour', handleRestartTour);
     };
-  }, []);
+  }, [completionKey]);
 
   const steps: Step[] = [
     {
@@ -101,7 +114,7 @@ export default function OnboardingTour({ locale = 'en' }: OnboardingTourProps) {
   const handleTourCallback = (data: EventData) => {
     const { status } = data;
     if (status === 'finished' || status === 'skipped') {
-      localStorage.setItem('prado_onboarding_completed', 'true');
+      localStorage.setItem(completionKey, 'true');
       setRunTour(false);
     }
   };
