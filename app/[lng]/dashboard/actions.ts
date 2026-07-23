@@ -49,7 +49,8 @@ export async function submitDashboardFeedback(formData: FormData) {
   const locale = normalizeLocale(formData.get('locale') as string | null);
 
   if (!rating) {
-    return { error: 'Invalid feedback rating.' };
+    console.error('Dashboard feedback rejected: invalid rating');
+    return;
   }
 
   const supabase = await createClient();
@@ -58,12 +59,14 @@ export async function submitDashboardFeedback(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'You must be signed in to submit feedback.' };
+    console.error('Dashboard feedback rejected: unauthenticated user');
+    return;
   }
 
   const { organization: org } = await getUserOrganization(user.id);
   if (!org) {
-    return { error: 'Workspace not found.' };
+    console.error('Dashboard feedback rejected: organization not found');
+    return;
   }
 
   const admin = createAdminClient();
@@ -80,7 +83,8 @@ export async function submitDashboardFeedback(formData: FormData) {
   });
 
   if (insertError) {
-    return { error: insertError.message };
+    console.error('Dashboard feedback insert failed:', insertError.message);
+    return;
   }
 
   if (process.env.RESEND_API_KEY) {
@@ -108,6 +112,4 @@ export async function submitDashboardFeedback(formData: FormData) {
 
   revalidatePath('/dashboard');
   revalidatePath(`/${locale}/dashboard`);
-
-  return { success: true };
 }
