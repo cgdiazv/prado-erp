@@ -184,6 +184,18 @@ export default function DashboardSidebar({
             {isEs ? 'Ayuda' : 'Help'}
           </Link>
 
+          <Link
+            href={localizedHref('/dashboard/messenger')}
+            onClick={closeSidebar}
+            className={linkStyle('/dashboard/messenger')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 19.5A2.625 2.625 0 0021 16.875V7.125A2.625 2.625 0 0018.375 4.5H5.625A2.625 2.625 0 003 7.125v9.75A2.625 2.625 0 005.625 19.5h8.155a2.625 2.625 0 011.857.769l1.594 1.594a.375.375 0 00.64-.265V19.5h.504Z" />
+            </svg>
+            {isEs ? 'Messenger' : 'Messenger'}
+          </Link>
+
           <div className="px-3 pt-3 text-[10px] leading-4 text-gray-400 font-medium">
             &copy; {new Date().getFullYear()} Prado Systems. {translations.footer.copyright}
           </div>

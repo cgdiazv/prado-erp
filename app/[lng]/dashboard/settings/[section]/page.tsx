@@ -9,6 +9,7 @@ import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
 import DeleteAccountSurveyCard from '../DeleteAccountSurveyCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
 import InvoiceTaxSettingsPanel from '../InvoiceTaxSettingsPanel';
+import MessengerIntegrationCard from '../MessengerIntegrationCard';
 import XeroConnectionCard from '../XeroConnectionCard';
 import QBOConnectionCard from '../QBOConnectionCard';
 import StripeConnectSettings from '@/components/dashboard/StripeConnectSettings';
@@ -298,6 +299,10 @@ export default async function SettingsSectionPage({
                     initialChargesEnabled={Boolean(org.stripe_account_charges_enabled)}
                     initialPayoutsEnabled={Boolean(org.stripe_account_payouts_enabled)}
                   />
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                  <MessengerIntegrationCard organizationId={org.id} locale={locale} />
                 </div>
 
                 {canAccessXeroSettings ? (
