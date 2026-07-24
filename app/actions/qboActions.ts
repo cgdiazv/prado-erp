@@ -2,6 +2,8 @@
 
 import { getValidQBOToken, getQBOBaseUrl } from '@/lib/qbo';
 import { createAdminClient } from '@/lib/supabaseServer';
+import { normalizeCurrencyCode } from '@/lib/currency';
+import { clearAccountingSyncWarning, setAccountingSyncWarning } from '@/lib/accountingSyncWarnings';
 
 interface QBOInvoiceLineItem {
   description: string;
@@ -17,6 +19,46 @@ interface CreateQBOInvoicePayload {
   dueDate: string;
   baseAmount: number;
   taxAmount: number;
+  taxRatePercent?: number;
+  currencyCode?: string;
+}
+
+function formatTaxRatePercent(value?: number): string {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return '8.25';
+  return Number(parsed.toFixed(2)).toString();
+}
+
+function stringifyQBOError(errorData: any): string {
+  if (!errorData) return '';
+
+  const faults = Array.isArray(errorData?.Fault?.Error) ? errorData.Fault.Error : [];
+  const faultMessages = faults
+    .map((entry: any) => [entry?.Message, entry?.Detail].filter(Boolean).join(' - '))
+    .filter(Boolean);
+
+  return [
+    ...faultMessages,
+    typeof errorData?.message === 'string' ? errorData.message : '',
+    typeof errorData?.error === 'string' ? errorData.error : '',
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
+function buildQBOInvoiceErrorMessage(errorData: any, currencyCode: string): string {
+  const details = stringifyQBOError(errorData).toLowerCase();
+
+  if (
+    details.includes('multicurrency') ||
+    details.includes('currency') ||
+    details.includes('currencyref') ||
+    details.includes('invalid currency')
+  ) {
+    return `QuickBooks rejected this invoice because ${currencyCode} is not enabled for the connected company or multicurrency is turned off.`;
+  }
+
+  return 'QuickBooks rejected the invoice.';
 }
 
 export async function checkQBOConnection(organizationId: string) {
@@ -63,8 +105,13 @@ export async function syncInvoiceToQBO(payload: CreateQBOInvoicePayload) {
 
     // 2. Build the invoice payload
     const total = payload.baseAmount + payload.taxAmount;
+    const taxRateLabel = formatTaxRatePercent(payload.taxRatePercent);
+    const currencyCode = normalizeCurrencyCode(payload.currencyCode);
     const invoiceData = {
       CustomerRef: customerRef,
+      CurrencyRef: {
+        value: currencyCode,
+      },
       DueDate: payload.dueDate,
       Line: [
         {
@@ -82,7 +129,7 @@ export async function syncInvoiceToQBO(payload: CreateQBOInvoicePayload) {
               {
                 Amount: payload.taxAmount,
                 DetailType: 'SalesItemLineDetail',
-                Description: 'Estimated Tax (8.25%)',
+                Description: `Estimated Tax (${taxRateLabel}%)`,
                 SalesItemLineDetail: {
                   Qty: 1,
                   UnitPrice: payload.taxAmount,
@@ -109,13 +156,19 @@ export async function syncInvoiceToQBO(payload: CreateQBOInvoicePayload) {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('QBO invoice error:', errorData);
-      throw new Error('QBO API rejected the invoice.');
+      throw new Error(buildQBOInvoiceErrorMessage(errorData, currencyCode));
     }
 
     const result = await response.json();
+    await clearAccountingSyncWarning(payload.organizationId, 'qbo');
     return { success: true, invoice: result.Invoice };
   } catch (error: any) {
     console.error('Failed to sync invoice to QBO:', error);
+    await setAccountingSyncWarning(
+      payload.organizationId,
+      'qbo',
+      error?.message || 'QuickBooks sync failed for the latest invoice.'
+    );
     return { success: false, error: error.message };
   }
 }

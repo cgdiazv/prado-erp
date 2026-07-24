@@ -15,6 +15,12 @@ export type UserOrganization = {
   city: string | null;
   state: string | null;
   zip_code: string | null;
+  invoice_tax_rate_percent: number | null;
+  invoice_currency_code: string | null;
+  last_qbo_sync_warning: string | null;
+  last_qbo_sync_warning_at: string | null;
+  last_xero_sync_warning: string | null;
+  last_xero_sync_warning_at: string | null;
   max_jobs_per_truck: number | null;
   auto_optimize_drive_routes: boolean | null;
 };
@@ -24,8 +30,8 @@ export type UserOrganizationResult = {
   role: string | null;
 };
 
-const ORG_SELECT_WITH_STRIPE = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, max_jobs_per_truck, auto_optimize_drive_routes, created_at';
-const ORG_SELECT_WITH_MAX = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, max_jobs_per_truck, auto_optimize_drive_routes, created_at';
+const ORG_SELECT_WITH_STRIPE = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, created_at';
+const ORG_SELECT_WITH_MAX = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, created_at';
 const ORG_SELECT_LEGACY = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, created_at';
 
 type OrganizationCandidate = {
@@ -41,6 +47,10 @@ function normalizeOrganizationRow(row: any): UserOrganization {
       typeof row?.stripe_account_charges_enabled === 'boolean' ? row.stripe_account_charges_enabled : false,
     stripe_account_payouts_enabled:
       typeof row?.stripe_account_payouts_enabled === 'boolean' ? row.stripe_account_payouts_enabled : false,
+    invoice_tax_rate_percent:
+      typeof row?.invoice_tax_rate_percent === 'number' ? row.invoice_tax_rate_percent : 8.25,
+    invoice_currency_code:
+      typeof row?.invoice_currency_code === 'string' ? row.invoice_currency_code : 'USD',
     max_jobs_per_truck:
       typeof row?.max_jobs_per_truck === 'number' ? row.max_jobs_per_truck : null,
     auto_optimize_drive_routes:

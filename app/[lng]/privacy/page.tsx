@@ -1,4 +1,5 @@
 import Footer from '@/components/Footer';
+import CookieSettingsButton from '@/components/CookieSettingsButton';
 import PublicNavbar from '@/components/PublicNavbar';
 import { getTranslations } from '@/lib/translations';
 
@@ -65,6 +66,22 @@ export default async function PrivacyPolicyPage({
             <p>
               {translations.privacy.section4Body}
             </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-white tracking-tight">{translations.privacy.section5Title}</h2>
+            <p>
+              {translations.privacy.section5Body}
+            </p>
+            <ul className="list-disc pl-5 space-y-2 text-slate-400">
+              <li>{translations.privacy.section5Item1}</li>
+              <li>{translations.privacy.section5Item2}</li>
+              <li>{translations.privacy.section5Item3}</li>
+              <li>{translations.privacy.section5Item4}</li>
+            </ul>
+            <div className="pt-2">
+              <CookieSettingsButton locale={locale} />
+            </div>
           </section>
         </article>
       </main>

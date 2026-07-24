@@ -19,7 +19,7 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
   const activeLocale = typeof params.lng === 'string' && params.lng.length > 0 ? params.lng : 'en';
   const isEs = activeLocale.toLowerCase().startsWith('es');
   const translations = getTranslations(activeLocale);
-  const { hasIncompleteProfile, hasIncompleteOrgProfile } = useDashboardNotifications();
+  const { hasIncompleteProfile, hasIncompleteOrgProfile, accountingWarnings } = useDashboardNotifications();
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement | null>(null);
@@ -81,8 +81,20 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
       });
     }
 
+    for (const warning of accountingWarnings) {
+      notificationsList.push({
+        id: `accounting-warning-${warning.source}`,
+        title: warning.source === 'qbo'
+          ? (isEs ? 'Alerta de QuickBooks' : 'QuickBooks alert')
+          : (isEs ? 'Alerta de Xero' : 'Xero alert'),
+        body: warning.message,
+        href: `/${activeLocale}/dashboard/settings/integrations`,
+        cta: isEs ? 'Revisar integraciones' : 'Review integrations',
+      });
+    }
+
     return notificationsList;
-  }, [activeLocale, hasIncompleteProfile, hasIncompleteOrgProfile, isEs]);
+  }, [accountingWarnings, activeLocale, hasIncompleteProfile, hasIncompleteOrgProfile, isEs]);
 
   const unreadCount = notifications.length;
   const greeting = useMemo(() => {

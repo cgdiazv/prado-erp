@@ -26,12 +26,12 @@ Use this checklist before deploying online invoice payments to production.
 
 Set up both webhook endpoints in Stripe Dashboard:
 
-- [ ] Endpoint A: `/api/webhooks/stripe`
+- [ ] Endpoint A: `https://www.pradojob.com/api/webhooks/stripe`
   - [ ] `checkout.session.completed`
   - [ ] `checkout.session.async_payment_succeeded`
   - [ ] `checkout.session.async_payment_failed`
 
-- [ ] Endpoint B: `/api/webhooks/stripe-connect`
+- [ ] Endpoint B: `https://www.pradojob.com/api/webhooks/stripe-connect`
   - [ ] `account.updated`
 
 - [ ] Confirm each endpoint has the correct signing secret in env.

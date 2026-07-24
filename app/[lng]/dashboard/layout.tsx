@@ -4,6 +4,7 @@ import DashboardNavbar from '@/components/DashboardNavbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import BillingModal from '@/components/BillingModal';
 import { DashboardNotificationProvider } from '@/components/dashboard/DashboardNotificationContext';
+import AccountingSyncWarningBanner from '@/components/dashboard/AccountingSyncWarningBanner';
 import { getUserOrganization } from '@/lib/organization';
 import { isPradoManagementUser } from '@/lib/pradoManagement';
 import { REMEMBER_ME_COOKIE_NAME } from '@/lib/rememberMe';
@@ -87,14 +88,20 @@ export default async function DashboardLayout({
   const canAccessPradoManagement = isPradoManagementUser(user);
   const initial = org.name ? org.name.charAt(0).toUpperCase() : 'U';
   const firstName = profile?.first_name?.trim() || user.user_metadata?.first_name?.trim() || '';
+  const accountingWarnings = [
+    org.last_qbo_sync_warning ? { source: 'qbo' as const, message: org.last_qbo_sync_warning } : null,
+    org.last_xero_sync_warning ? { source: 'xero' as const, message: org.last_xero_sync_warning } : null,
+  ].filter(Boolean) as Array<{ source: 'qbo' | 'xero'; message: string }>;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-gray-900 selection:bg-emerald-500 selection:text-slate-950 font-sans">
       <DashboardNotificationProvider
         hasIncompleteProfile={hasIncompleteProfile}
         hasIncompleteOrgProfile={hasIncompleteOrgProfile}
+        accountingWarnings={accountingWarnings}
       >
         <DashboardNavbar userInitials={initial} userFirstName={firstName} />
+        <AccountingSyncWarningBanner locale={locale} warnings={accountingWarnings} />
         <div className="flex flex-1 relative">
           <div className="tour-sidebar">
             <DashboardSidebar

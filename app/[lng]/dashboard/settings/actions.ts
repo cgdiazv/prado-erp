@@ -5,8 +5,15 @@ import { revalidatePath } from 'next/cache';
 import Stripe from 'stripe';
 import { Resend } from 'resend';
 import { clearRememberToken, revokeAllRememberTokensForUser, revokeOtherRememberTokensForUser } from '@/lib/rememberMe';
+import { getUserOrganization } from '@/lib/organization';
+import { normalizeCurrencyCode } from '@/lib/currency';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
+
+function normalizeInvoiceTaxRatePercent(value: number): number {
+  if (!Number.isFinite(value)) return 8.25;
+  return Math.round(value * 100) / 100;
+}
 
 export async function updatePassword(formData: FormData) {
   const password = formData.get('password') as string;
@@ -277,6 +284,60 @@ export async function updateDispatchSettings(formData: FormData): Promise<void> 
   revalidatePath(`/${locale}/dashboard/settings`);
   revalidatePath('/dashboard/routing');
   revalidatePath(`/${locale}/dashboard/routing`);
+}
+
+export async function updateInvoiceTaxRate(formData: FormData) {
+  const locale = (formData.get('locale') as string | null)?.trim() || 'en';
+  const taxRateRaw = (formData.get('invoiceTaxRatePercent') as string | null)?.trim() || '';
+  const currencyRaw = (formData.get('invoiceCurrencyCode') as string | null)?.trim() || 'USD';
+  const parsedTaxRate = Number.parseFloat(taxRateRaw);
+
+  if (!Number.isFinite(parsedTaxRate) || parsedTaxRate < 0 || parsedTaxRate > 30) {
+    return { error: 'Tax rate must be a number between 0 and 30.' };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be signed in to update tax settings.' };
+  }
+
+  const { organization, role } = await getUserOrganization(user.id);
+  if (!organization) {
+    return { error: 'Workspace not found.' };
+  }
+
+  const normalizedRole = (role || '').toLowerCase();
+  if (normalizedRole !== 'owner' && normalizedRole !== 'admin') {
+    return { error: 'Only owners and admins can update invoice tax settings.' };
+  }
+
+  const normalizedTaxRate = normalizeInvoiceTaxRatePercent(parsedTaxRate);
+  const normalizedCurrencyCode = normalizeCurrencyCode(currencyRaw);
+
+  const { error } = await supabase
+    .from('organizations')
+    .update({
+      invoice_tax_rate_percent: normalizedTaxRate,
+      invoice_currency_code: normalizedCurrencyCode,
+    })
+    .eq('id', organization.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/dashboard/settings');
+  revalidatePath(`/${locale}/dashboard/settings`);
+
+  return {
+    success: true,
+    taxRatePercent: normalizedTaxRate,
+    currencyCode: normalizedCurrencyCode,
+  };
 }
 
 export async function upsertUserProfile(formData: FormData) {

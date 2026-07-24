@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 
 type JobCompletedEmailProps = {
   customerName: string;
@@ -7,6 +8,8 @@ type JobCompletedEmailProps = {
   address?: string | null;
   baseAmount: number;
   taxAmount: number;
+  taxRatePercent?: number;
+  currencyCode?: string;
   totalAmount: number;
   organizationName?: string;
   organizationSlogan?: string;
@@ -20,12 +23,16 @@ export default function JobCompletedEmail({
   address,
   baseAmount,
   taxAmount,
+  taxRatePercent = 8.25,
+  currencyCode = 'USD',
   totalAmount,
   organizationName = 'Prado Systems',
   organizationSlogan = 'Field Service Software',
   organizationLogoUrl = '',
 }: JobCompletedEmailProps) {
   const fallbackInitial = organizationName.trim().charAt(0).toUpperCase() || 'P';
+  const taxRateLabel = Number((Number.isFinite(taxRatePercent) ? taxRatePercent : 8.25).toFixed(2)).toString();
+  const normalizedCurrency = normalizeCurrencyCode(currencyCode);
   const formattedDate = new Date(completedDate).toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -89,7 +96,7 @@ export default function JobCompletedEmail({
           <tbody style={{ color: '#334155' }}>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px 0', fontWeight: 500 }}>{jobType}</td>
-              <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>${baseAmount.toFixed(2)}</td>
+              <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(baseAmount, normalizedCurrency)}</td>
             </tr>
             {address ? (
               <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -98,8 +105,8 @@ export default function JobCompletedEmail({
               </tr>
             ) : null}
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-              <td style={{ padding: '12px 0', color: '#475569' }}>Estimated Tax (8.25%)</td>
-              <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>${taxAmount.toFixed(2)}</td>
+              <td style={{ padding: '12px 0', color: '#475569' }}>{`Estimated Tax (${taxRateLabel}%)`}</td>
+              <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(taxAmount, normalizedCurrency)}</td>
             </tr>
           </tbody>
         </table>
@@ -110,7 +117,7 @@ export default function JobCompletedEmail({
             <tbody>
               <tr>
                 <td style={{ color: '#059669', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', verticalAlign: 'middle' }}>Total Due</td>
-                <td style={{ textAlign: 'right', fontSize: 22, fontWeight: 800, color: '#0f172a' }}>${totalAmount.toFixed(2)}</td>
+                <td style={{ textAlign: 'right', fontSize: 22, fontWeight: 800, color: '#0f172a' }}>{formatCurrency(totalAmount, normalizedCurrency)}</td>
               </tr>
             </tbody>
           </table>

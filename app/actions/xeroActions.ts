@@ -2,6 +2,8 @@
 
 import { getValidXeroToken } from '@/lib/xero';
 import { createAdminClient } from '@/lib/supabaseServer';
+import { normalizeCurrencyCode } from '@/lib/currency';
+import { clearAccountingSyncWarning, setAccountingSyncWarning } from '@/lib/accountingSyncWarnings';
 
 interface InvoicePayload {
   organizationId: string;
@@ -24,6 +26,49 @@ interface CompletedJobInvoicePayload {
   dueDate: string;
   baseAmount: number;
   taxAmount: number;
+  taxRatePercent?: number;
+  currencyCode?: string;
+}
+
+function formatTaxRatePercent(value?: number): string {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return '8.25';
+  return Number(parsed.toFixed(2)).toString();
+}
+
+function stringifyXeroError(errorData: any): string {
+  if (!errorData) return '';
+
+  const elements = Array.isArray(errorData?.Elements) ? errorData.Elements : [];
+  const validationMessages = elements.flatMap((element: any) =>
+    Array.isArray(element?.ValidationErrors)
+      ? element.ValidationErrors.map((validationError: any) => validationError?.Message).filter(Boolean)
+      : []
+  );
+
+  return [
+    typeof errorData?.Message === 'string' ? errorData.Message : '',
+    typeof errorData?.Detail === 'string' ? errorData.Detail : '',
+    ...validationMessages,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
+function buildXeroInvoiceErrorMessage(errorData: any, currencyCode?: string): string {
+  const resolvedCurrency = normalizeCurrencyCode(currencyCode);
+  const details = stringifyXeroError(errorData).toLowerCase();
+
+  if (
+    details.includes('currency') ||
+    details.includes('currencycode') ||
+    details.includes('not supported') ||
+    details.includes('not available')
+  ) {
+    return `Xero rejected this invoice because ${resolvedCurrency} is not enabled or available for the connected organization.`;
+  }
+
+  return 'Xero rejected the invoice.';
 }
 
 export async function syncEstimateToXeroInvoice(payload: InvoicePayload) {
@@ -93,10 +138,14 @@ export async function syncCompletedJobInvoiceToXero(payload: CompletedJobInvoice
       contact.EmailAddress = payload.customerEmail;
     }
 
+    const taxRateLabel = formatTaxRatePercent(payload.taxRatePercent);
+    const currencyCode = normalizeCurrencyCode(payload.currencyCode);
+
     const xeroInvoiceData = {
       Invoices: [
         {
           Type: 'ACCREC',
+          CurrencyCode: currencyCode,
           Contact: contact,
           Date: new Date().toISOString().split('T')[0],
           DueDate: payload.dueDate,
@@ -109,7 +158,7 @@ export async function syncCompletedJobInvoiceToXero(payload: CompletedJobInvoice
               AccountCode: '200',
             },
             {
-              Description: 'Tax',
+              Description: `Tax (${taxRateLabel}%)`,
               Quantity: 1,
               UnitAmount: payload.taxAmount,
               AccountCode: '200',
@@ -134,13 +183,19 @@ export async function syncCompletedJobInvoiceToXero(payload: CompletedJobInvoice
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Error detallado de Xero (completed job invoice):', errorData);
-      throw new Error('La API de Xero rechazo la factura de job completado.');
+      throw new Error(buildXeroInvoiceErrorMessage(errorData, currencyCode));
     }
 
     const result = await response.json();
+    await clearAccountingSyncWarning(payload.organizationId, 'xero');
     return { success: true, invoice: result.Invoices?.[0] };
   } catch (error: any) {
     console.error('Failed to sync completed job invoice with Xero:', error);
+    await setAccountingSyncWarning(
+      payload.organizationId,
+      'xero',
+      error?.message || 'Xero sync failed for the latest invoice.'
+    );
     return { success: false, error: error.message };
   }
 }
@@ -261,8 +316,12 @@ function buildCompletedJobInvoice(payload: CompletedJobInvoicePayload) {
     contact.EmailAddress = payload.customerEmail;
   }
 
+  const taxRateLabel = formatTaxRatePercent(payload.taxRatePercent);
+  const currencyCode = normalizeCurrencyCode(payload.currencyCode);
+
   return {
     Type: 'ACCREC',
+    CurrencyCode: currencyCode,
     Contact: contact,
     Date: new Date().toISOString().split('T')[0],
     DueDate: payload.dueDate,
@@ -275,7 +334,7 @@ function buildCompletedJobInvoice(payload: CompletedJobInvoicePayload) {
         AccountCode: '200',
       },
       {
-        Description: 'Tax',
+        Description: `Tax (${taxRateLabel}%)`,
         Quantity: 1,
         UnitAmount: payload.taxAmount,
         AccountCode: '200',
@@ -287,6 +346,7 @@ function buildCompletedJobInvoice(payload: CompletedJobInvoicePayload) {
 
 async function postInvoicesToXero(organizationId: string, invoices: any[]) {
   const { accessToken, tenantId } = await getValidXeroToken(organizationId);
+  const firstInvoiceCurrency = invoices.find((invoice) => typeof invoice?.CurrencyCode === 'string')?.CurrencyCode;
 
   const response = await fetch('https://api.xero.com/api.xro/2.0/Invoices', {
     method: 'POST',
@@ -302,7 +362,7 @@ async function postInvoicesToXero(organizationId: string, invoices: any[]) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     console.error('Error detallado de Xero (queue batch):', errorData);
-    throw new Error('Xero rejected batched sync request.');
+    throw new Error(buildXeroInvoiceErrorMessage(errorData, firstInvoiceCurrency));
   }
 
   return response.json();
@@ -415,9 +475,12 @@ export async function processPendingXeroSyncQueue(batchSize = 100) {
         )
       );
 
+      await clearAccountingSyncWarning(organizationId, 'xero');
       synced += rows.length;
     } catch (error: unknown) {
       const message = getErrorMessage(error).slice(0, 500);
+
+      await setAccountingSyncWarning(organizationId, 'xero', message);
 
       await Promise.all(
         rows.map((row) => {

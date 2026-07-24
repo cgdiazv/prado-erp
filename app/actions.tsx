@@ -15,9 +15,24 @@ import { syncInvoiceToQBO } from '@/app/actions/qboActions';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
 import { getUserOrganization } from '@/lib/organization';
 import { findAuthUserIndexByEmail, findAuthUserIndexByUserIds, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
+import { normalizeCurrencyCode, toStripeCurrency } from '@/lib/currency';
 import Stripe from 'stripe';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
+const DEFAULT_INVOICE_TAX_RATE_PERCENT = 8.25;
+
+function normalizeInvoiceTaxRatePercent(value: unknown): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return DEFAULT_INVOICE_TAX_RATE_PERCENT;
+  }
+
+  return Math.round(parsed * 100) / 100;
+}
+
+function formatTaxRatePercent(value: number): string {
+  return Number(value.toFixed(2)).toString();
+}
 
 function getAppBaseUrl() {
   const configured = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL;
@@ -83,6 +98,8 @@ async function createInvoiceCheckoutSession({
   serviceName,
   baseAmount,
   taxAmount,
+  taxRatePercent,
+  currencyCode,
   totalAmount,
   enableAutopayIfPossible,
 }: {
@@ -95,6 +112,8 @@ async function createInvoiceCheckoutSession({
   serviceName: string;
   baseAmount: number;
   taxAmount: number;
+  taxRatePercent: number;
+  currencyCode: string;
   totalAmount: number;
   enableAutopayIfPossible: boolean;
 }) {
@@ -105,6 +124,8 @@ async function createInvoiceCheckoutSession({
   const totalAmountCents = Math.round(Number(totalAmount || 0) * 100);
   const baseAmountCents = Math.round(Number(baseAmount || 0) * 100);
   const taxAmountCents = Math.round(Number(taxAmount || 0) * 100);
+  const taxRateLabel = formatTaxRatePercent(normalizeInvoiceTaxRatePercent(taxRatePercent));
+  const stripeCurrency = toStripeCurrency(normalizeCurrencyCode(currencyCode));
 
   if (totalAmountCents <= 0 || baseAmountCents < 0 || taxAmountCents < 0) {
     return null;
@@ -148,7 +169,7 @@ async function createInvoiceCheckoutSession({
         {
           quantity: 1,
           price_data: {
-            currency: 'usd',
+            currency: stripeCurrency,
             unit_amount: baseAmountCents,
             product_data: {
               name: serviceName,
@@ -160,10 +181,10 @@ async function createInvoiceCheckoutSession({
               {
                 quantity: 1,
                 price_data: {
-                  currency: 'usd',
+                  currency: stripeCurrency,
                   unit_amount: taxAmountCents,
                   product_data: {
-                    name: 'Estimated Tax (8.25%)',
+                    name: `Estimated Tax (${taxRateLabel}%)`,
                   },
                 },
               },
@@ -474,7 +495,7 @@ export async function completeJob(jobId: string) {
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, slogan, logo_url, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled')
+    .select('id, name, slogan, logo_url, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, invoice_tax_rate_percent, invoice_currency_code')
     .eq('owner_id', user?.id)
     .single();
 
@@ -537,8 +558,10 @@ export async function completeJob(jobId: string) {
   }
 
   // 3. Bookkeeping Automation: Auto-generate the customer invoice
-  const cost = job.cost_amount;
-  const estimatedTax = parseFloat((cost * 0.0825).toFixed(2)); // Standard 8.25% tax rate example
+  const cost = Number(job.cost_amount || 0);
+  const taxRatePercent = normalizeInvoiceTaxRatePercent(org?.invoice_tax_rate_percent);
+  const invoiceCurrencyCode = normalizeCurrencyCode(org?.invoice_currency_code);
+  const estimatedTax = parseFloat((cost * (taxRatePercent / 100)).toFixed(2));
   const total = parseFloat((cost + estimatedTax).toFixed(2));
   
   if (!job.properties) {
@@ -559,6 +582,7 @@ export async function completeJob(jobId: string) {
         status: 'unpaid',
         total_amount: total,
         tax_amount: estimatedTax,
+        currency_code: invoiceCurrencyCode,
       },
     ])
     .select('id')
@@ -591,7 +615,7 @@ export async function completeJob(jobId: string) {
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
         const paymentIntent = await stripe.paymentIntents.create({
           amount: Math.round(Number(total || 0) * 100),
-          currency: 'usd',
+          currency: toStripeCurrency(invoiceCurrencyCode),
           customer: customerMeta.stripe_payment_customer_id,
           payment_method: customerMeta.stripe_default_payment_method_id,
           off_session: true,
@@ -633,6 +657,8 @@ export async function completeJob(jobId: string) {
           serviceName: job.job_type,
           baseAmount: Number(cost || 0),
           taxAmount: Number(estimatedTax || 0),
+          taxRatePercent,
+          currencyCode: invoiceCurrencyCode,
           totalAmount: Number(total || 0),
           enableAutopayIfPossible: Boolean(job.auto_charge_enabled),
         });
@@ -672,6 +698,8 @@ export async function completeJob(jobId: string) {
       dueDate: todayStr,
       baseAmount: Number(cost || 0),
       taxAmount: Number(estimatedTax || 0),
+      taxRatePercent,
+      currencyCode: invoiceCurrencyCode,
     });
 
     if (!queueResult.success) {
@@ -687,6 +715,8 @@ export async function completeJob(jobId: string) {
       dueDate: todayStr,
       baseAmount: Number(cost || 0),
       taxAmount: Number(estimatedTax || 0),
+      taxRatePercent,
+      currencyCode: invoiceCurrencyCode,
     }).catch((err) => console.error('QBO sync warning (invoice kept in Prado):', err));
   }
 
@@ -704,6 +734,8 @@ export async function completeJob(jobId: string) {
         dueDate: todayStr,
         baseAmount: cost,
         taxAmount: estimatedTax,
+        taxRatePercent,
+        currencyCode: invoiceCurrencyCode,
         totalAmount: total,
         paymentUrl: paymentUrl || undefined,
         organizationName,
@@ -730,6 +762,8 @@ export async function completeJob(jobId: string) {
           address,
           baseAmount: cost,
           taxAmount: estimatedTax,
+          taxRatePercent,
+          currencyCode: invoiceCurrencyCode,
           totalAmount: total,
           organizationName,
           organizationSlogan,

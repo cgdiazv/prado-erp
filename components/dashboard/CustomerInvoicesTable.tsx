@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { markInvoiceAsPaid } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
+import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 
 interface InvoiceRow {
   id: string;
   due_date: string;
   tax_amount: number | string | null;
   total_amount: number | string | null;
+  currency_code?: string | null;
   status: string | null;
   stripe_payment_url?: string | null;
 }
@@ -167,8 +169,8 @@ export default function CustomerInvoicesTable({ invoices, customerId, locale = '
                       <td className="p-4 text-slate-700 whitespace-nowrap table-date-column">
                         {new Date(`${inv.due_date}T00:00:00`).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                       </td>
-                      <td className="p-4 text-slate-700">${Number(inv.tax_amount || 0).toFixed(2)}</td>
-                      <td className="p-4 text-right font-bold text-slate-800">${Number(inv.total_amount || 0).toFixed(2)}</td>
+                      <td className="p-4 text-slate-700">{formatCurrency(Number(inv.tax_amount || 0), normalizeCurrencyCode(inv.currency_code))}</td>
+                      <td className="p-4 text-right font-bold text-slate-800">{formatCurrency(Number(inv.total_amount || 0), normalizeCurrencyCode(inv.currency_code))}</td>
                       <td className="p-4 text-right">
                         {inv.status !== 'paid' && inv.stripe_payment_url ? (
                           <a

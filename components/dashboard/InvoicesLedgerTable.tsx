@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { markInvoiceAsPaid } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
+import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 
 type FilterType = 'all' | 'unpaid' | 'paid';
 type SortColumn = 'customer' | 'date' | 'tax' | 'total' | 'status';
@@ -14,6 +15,7 @@ interface InvoiceRow {
   due_date: string;
   tax_amount: number;
   total_amount: number;
+  currency_code?: string | null;
   status: 'paid' | 'unpaid';
   stripe_payment_url?: string | null;
   customers?: {
@@ -116,6 +118,7 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
   const paidTotal = invoices
     .filter((invoice) => invoice.status === 'paid')
     .reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
+  const summaryCurrency = normalizeCurrencyCode(invoices[0]?.currency_code);
   const totalInvoices = invoices.length;
 
   return (
@@ -125,14 +128,14 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
           <span className="text-[10px] uppercase font-bold tracking-wider text-red-600">
             {isEs ? 'Total Pendiente' : 'Unpaid Total'}
           </span>
-          <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">${unpaidTotal.toFixed(2)}</p>
+          <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">{formatCurrency(unpaidTotal, summaryCurrency)}</p>
         </div>
 
         <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
           <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600">
             {isEs ? 'Total Pagado' : 'Paid Total'}
           </span>
-          <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">${paidTotal.toFixed(2)}</p>
+          <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">{formatCurrency(paidTotal, summaryCurrency)}</p>
         </div>
 
         <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
@@ -260,6 +263,7 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                   `${inv.customers?.first_name || ''} ${inv.customers?.last_name || ''}`.trim() ||
                   inv.customers?.company_name ||
                   'Customer';
+                const rowCurrency = normalizeCurrencyCode(inv.currency_code);
 
                 return (
                   <tr key={inv.id} className="hover:bg-gray-50/50 transition duration-150">
@@ -267,8 +271,8 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                       {new Date(inv.due_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-700">{customerName}</td>
-                    <td className="px-4 py-3 text-gray-500 font-mono">${inv.tax_amount}</td>
-                    <td className="px-4 py-3 text-right font-bold text-slate-800">${Number(inv.total_amount || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-gray-500 font-mono">{formatCurrency(Number(inv.tax_amount || 0), rowCurrency)}</td>
+                    <td className="px-4 py-3 text-right font-bold text-slate-800">{formatCurrency(Number(inv.total_amount || 0), rowCurrency)}</td>
                     <td className="px-4 py-3 text-right">
                       {inv.status !== 'paid' && inv.stripe_payment_url ? (
                         <a

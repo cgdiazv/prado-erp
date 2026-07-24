@@ -43,6 +43,23 @@ type TranslationBundle = {
     terms: string;
     support: string;
   };
+  cookies: {
+    title: string;
+    description: string;
+    essentialTitle: string;
+    essentialDescription: string;
+    analyticsTitle: string;
+    analyticsDescription: string;
+    marketingTitle: string;
+    marketingDescription: string;
+    managePreferences: string;
+    acceptAll: string;
+    rejectNonEssential: string;
+    savePreferences: string;
+    settingsTitle: string;
+    settingsDescription: string;
+    privacyLink: string;
+  };
   pricing: {
     badge: string;
     titleLine1: string;
@@ -131,6 +148,12 @@ type TranslationBundle = {
     section3Body: string;
     section4Title: string;
     section4Body: string;
+    section5Title: string;
+    section5Body: string;
+    section5Item1: string;
+    section5Item2: string;
+    section5Item3: string;
+    section5Item4: string;
   };
   terms: {
     title: string;

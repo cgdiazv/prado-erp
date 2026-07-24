@@ -42,6 +42,23 @@
       "terms": "Terms & Conditions",
       "support": "Support"
     },
+    "cookies": {
+      "title": "Cookie preferences",
+      "description": "We use strictly necessary cookies to keep Prado secure and functional. Optional analytics and marketing cookies only load after you choose to allow them.",
+      "essentialTitle": "Essential",
+      "essentialDescription": "Required for login, session security, and core workspace features.",
+      "analyticsTitle": "Analytics",
+      "analyticsDescription": "Helps us understand product usage and improve the experience.",
+      "marketingTitle": "Marketing",
+      "marketingDescription": "Supports ad measurement and campaign attribution.",
+      "managePreferences": "Cookie settings",
+      "acceptAll": "Accept all",
+      "rejectNonEssential": "Reject non-essential",
+      "savePreferences": "Save preferences",
+      "settingsTitle": "Manage cookie preferences",
+      "settingsDescription": "You can change your consent choices at any time.",
+      "privacyLink": "Read the privacy policy"
+    },
     "pricing": {
       "badge": "Simple Monthly Tiers",
       "titleLine1": "Plans built to grow",
@@ -129,7 +146,13 @@
       "section3Title": "3. Data Retention & Isolation",
       "section3Body": "Workspace records are logically isolated by organization. Payment card data is handled by Stripe and is not stored by Prado. OAuth tokens and integration credentials required for Xero/QBO connectivity are stored securely and used only for authorized synchronization. If \"Remember Me\" is enabled at login, Prado stores a secure, HTTP-only authentication cookie and a hashed remember token that may persist for up to 30 days, subject to expiration, token rotation, logout, password-security events, and explicit revocation controls. This remember-me mechanism is used for authentication continuity and security only, not for advertising tracking. Data is retained until removed by authorized users, account deletion workflows, or legal/compliance requirements.",
       "section4Title": "4. Contact Channels",
-      "section4Body": "If you have questions about privacy, payment processing, Stripe Connect onboarding, or accounting integrations (Xero/QBO), please contact us through the Support Hub."
+      "section4Body": "If you have questions about privacy, payment processing, Stripe Connect onboarding, or accounting integrations (Xero/QBO), please contact us through the Support Hub.",
+      "section5Title": "5. Cookies and Consent",
+      "section5Body": "Prado uses cookies and similar technologies to keep the platform secure and functional. Optional cookies for analytics or marketing are only loaded after you give consent.",
+      "section5Item1": "Essential cookies keep login, routing, and security features working.",
+      "section5Item2": "Analytics cookies help us understand usage and improve the product.",
+      "section5Item3": "Marketing cookies support ad measurement and campaign attribution.",
+      "section5Item4": "You can change or withdraw your preferences at any time through cookie settings."
     },
     "terms": {
       "title": "Terms & Conditions",
@@ -430,6 +453,23 @@
       "terms": "Términos y condiciones",
       "support": "Soporte"
     },
+    "cookies": {
+      "title": "Preferencias de cookies",
+      "description": "Usamos cookies estrictamente necesarias para mantener Prado seguro y funcional. Las cookies opcionales de analítica y marketing solo se cargan después de que elijas permitirlas.",
+      "essentialTitle": "Esenciales",
+      "essentialDescription": "Necesarias para el inicio de sesión, la seguridad de la sesión y las funciones principales del espacio de trabajo.",
+      "analyticsTitle": "Analítica",
+      "analyticsDescription": "Nos ayuda a entender el uso del producto y mejorar la experiencia.",
+      "marketingTitle": "Marketing",
+      "marketingDescription": "Apoya la medición de anuncios y la atribución de campañas.",
+      "managePreferences": "Configurar cookies",
+      "acceptAll": "Aceptar todo",
+      "rejectNonEssential": "Rechazar no esenciales",
+      "savePreferences": "Guardar preferencias",
+      "settingsTitle": "Gestionar preferencias de cookies",
+      "settingsDescription": "Puedes cambiar tus opciones de consentimiento en cualquier momento.",
+      "privacyLink": "Leer la política de privacidad"
+    },
     "pricing": {
       "badge": "Planes mensuales sencillos",
       "titleLine1": "Planes pensados para crecer",
@@ -517,7 +557,13 @@
       "section3Title": "3. Retención y aislamiento de datos",
       "section3Body": "Los registros del espacio de trabajo se aíslan lógicamente por organización. Los datos de tarjeta de pago los gestiona Stripe y Prado no los almacena. Los tokens OAuth y credenciales de integración necesarios para conectividad con Xero/QBO se almacenan de forma segura y se usan solo para sincronizaciones autorizadas. Si habilitas \"Recordarme\" al iniciar sesión, Prado almacena una cookie de autenticación segura (HTTP-only) y un token de recordatorio con hash que puede persistir hasta 30 días, sujeto a vencimiento, rotación de token, cierre de sesión, eventos de seguridad de contraseña y controles explícitos de revocación. Este mecanismo de \"recordarme\" se utiliza solo para continuidad y seguridad de autenticación, no para seguimiento publicitario. Los datos se conservan hasta que usuarios autorizados los eliminen, se ejecute el flujo de eliminación de cuenta o lo exijan obligaciones legales/compliance.",
       "section4Title": "4. Canales de contacto",
-      "section4Body": "Si tienes preguntas sobre privacidad, procesamiento de pagos, onboarding de Stripe Connect o integraciones contables (Xero/QBO), contáctanos a través del Hub de Soporte."
+      "section4Body": "Si tienes preguntas sobre privacidad, procesamiento de pagos, onboarding de Stripe Connect o integraciones contables (Xero/QBO), contáctanos a través del Hub de Soporte.",
+      "section5Title": "5. Cookies y consentimiento",
+      "section5Body": "Prado usa cookies y tecnologías similares para mantener la plataforma segura y funcional. Las cookies opcionales de analítica o marketing solo se cargan después de que des tu consentimiento.",
+      "section5Item1": "Las cookies esenciales mantienen el inicio de sesión, las rutas y la seguridad.",
+      "section5Item2": "Las cookies de analítica nos ayudan a entender el uso y mejorar el producto.",
+      "section5Item3": "Las cookies de marketing apoyan la medición de anuncios y la atribución de campañas.",
+      "section5Item4": "Puedes cambiar o retirar tus preferencias en cualquier momento desde la configuración de cookies."
     },
     "terms": {
       "title": "Términos y condiciones",

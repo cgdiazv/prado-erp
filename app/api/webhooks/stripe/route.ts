@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { enqueueXeroCompletedJobInvoice } from '@/app/actions/xeroActions';
 import { syncInvoiceToQBO } from '@/app/actions/qboActions';
+import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 
 // 1. Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -81,7 +82,7 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
 
   const { data: invoiceRow, error: invoiceError } = await supabaseAdmin
     .from('invoices')
-    .select('id, customer_id, due_date, total_amount, tax_amount, status, stripe_payment_status, customers(id, first_name, last_name, company_name, email, organization_id)')
+    .select('id, customer_id, due_date, total_amount, tax_amount, currency_code, status, stripe_payment_status, customers(id, first_name, last_name, company_name, email, organization_id)')
     .eq('id', invoiceId)
     .maybeSingle();
 
@@ -114,7 +115,9 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
   const customerName = `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || customer?.company_name || 'Prado Customer';
   const totalAmount = Number(invoiceRow.total_amount || 0);
   const taxAmount = Number(invoiceRow.tax_amount || 0);
+  const currencyCode = normalizeCurrencyCode((invoiceRow as any).currency_code);
   const baseAmount = Math.max(0, Number((totalAmount - taxAmount).toFixed(2)));
+  const taxRatePercent = baseAmount > 0 ? Number(((taxAmount / baseAmount) * 100).toFixed(2)) : 0;
 
   if (organizationId) {
     const enableAutopayIfPossible = session.metadata?.enableAutopayIfPossible === 'true';
@@ -155,6 +158,8 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
       dueDate: invoiceRow.due_date,
       baseAmount,
       taxAmount,
+      taxRatePercent,
+      currencyCode,
     });
 
     if (!queueResult.success) {
@@ -169,6 +174,8 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
       dueDate: invoiceRow.due_date,
       baseAmount,
       taxAmount,
+      taxRatePercent,
+      currencyCode,
     }).catch((err) => console.error('QBO sync warning from Stripe invoice webhook:', err));
 
     try {
@@ -193,7 +200,7 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
               <p><strong>Organization:</strong> ${org?.name || 'Prado Workspace'}</p>
               <p><strong>Invoice ID:</strong> ${invoiceRow.id}</p>
               <p><strong>Customer:</strong> ${customerName}</p>
-              <p><strong>Total Paid:</strong> $${totalAmount.toFixed(2)} USD</p>
+              <p><strong>Total Paid:</strong> ${formatCurrency(totalAmount, currencyCode)} ${currencyCode}</p>
               <p><strong>Paid At:</strong> ${paidAt}</p>
             `,
           });

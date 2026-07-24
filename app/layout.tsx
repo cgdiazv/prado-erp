@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import CookieConsentBanner from '@/components/CookieConsentBanner';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -46,71 +47,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-1005758859"
-          strategy="afterInteractive"
-        />
-        <Script
-          id="google-ads-gtag-init"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'AW-1005758859');
-            `,
-          }}
-        />
         {children}
-        <Script
-          id="chatbase-integration-global"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                const chatbotId = 'QBldWxwKvYFFN27nBni1s';
-
-                if (!window.chatbase || window.chatbase('getState') !== 'initialized') {
-                  window.chatbase = (...args) => {
-                    if (!window.chatbase.q) {
-                      window.chatbase.q = [];
-                    }
-                    window.chatbase.q.push(args);
-                  };
-
-                  window.chatbase = new Proxy(window.chatbase, {
-                    get(target, prop) {
-                      if (prop === 'q') {
-                        return target.q;
-                      }
-
-                      return (...args) => target(prop, ...args);
-                    },
-                  });
-                }
-
-                const loadChatbase = () => {
-                  if (document.getElementById(chatbotId)) {
-                    return;
-                  }
-
-                  const chatbaseScript = document.createElement('script');
-                  chatbaseScript.id = chatbotId;
-                  chatbaseScript.src = 'https://www.chatbase.co/embed.min.js';
-                  chatbaseScript.domain = 'www.chatbase.co';
-                  document.body.appendChild(chatbaseScript);
-                };
-
-                if (document.readyState === 'complete') {
-                  loadChatbase();
-                } else {
-                  window.addEventListener('load', loadChatbase, { once: true });
-                }
-              })();
-            `,
-          }}
-        />
+        <CookieConsentBanner />
       </body>
     </html>
   );

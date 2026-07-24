@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 
 type InvoiceEmailProps = {
   customerName: string;
@@ -6,6 +7,8 @@ type InvoiceEmailProps = {
   dueDate: string;
   baseAmount: number;
   taxAmount: number;
+  taxRatePercent?: number;
+  currencyCode?: string;
   totalAmount: number;
   paymentUrl?: string;
   organizationName?: string;
@@ -19,6 +22,8 @@ export default function InvoiceEmail({
   dueDate,
   baseAmount,
   taxAmount,
+  taxRatePercent = 8.25,
+  currencyCode = 'USD',
   totalAmount,
   paymentUrl,
   organizationName = 'Prado Systems',
@@ -26,6 +31,8 @@ export default function InvoiceEmail({
   organizationLogoUrl = '',
 }: InvoiceEmailProps) {
   const fallbackInitial = organizationName.trim().charAt(0).toUpperCase() || 'P';
+  const taxRateLabel = Number((Number.isFinite(taxRatePercent) ? taxRatePercent : 8.25).toFixed(2)).toString();
+  const normalizedCurrency = normalizeCurrencyCode(currencyCode);
 
   return (
     <div style={{ fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', maxWidth: 600, margin: '20px auto', color: '#0f172a', padding: '10px' }}>
@@ -78,11 +85,11 @@ export default function InvoiceEmail({
           <tbody style={{ color: '#334155' }}>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px 0', fontWeight: 500 }}>{serviceName}</td>
-              <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>${baseAmount.toFixed(2)}</td>
+              <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(baseAmount, normalizedCurrency)}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-              <td style={{ padding: '12px 0', color: '#475569' }}>Estimated Tax (8.25%)</td>
-              <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>${taxAmount.toFixed(2)}</td>
+              <td style={{ padding: '12px 0', color: '#475569' }}>{`Estimated Tax (${taxRateLabel}%)`}</td>
+              <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(taxAmount, normalizedCurrency)}</td>
             </tr>
           </tbody>
         </table>
@@ -92,7 +99,7 @@ export default function InvoiceEmail({
             <tbody>
               <tr>
                 <td style={{ color: '#059669', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', verticalAlign: 'middle' }}>Total Due</td>
-                <td style={{ textAlign: 'right', fontSize: 22, fontWeight: 800, color: '#0f172a' }}>${totalAmount.toFixed(2)}</td>
+                <td style={{ textAlign: 'right', fontSize: 22, fontWeight: 800, color: '#0f172a' }}>{formatCurrency(totalAmount, normalizedCurrency)}</td>
               </tr>
             </tbody>
           </table>

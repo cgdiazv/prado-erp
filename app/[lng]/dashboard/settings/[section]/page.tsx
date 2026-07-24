@@ -8,6 +8,7 @@ import TeamsPanel from '../TeamsPanel';
 import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
 import DeleteAccountSurveyCard from '../DeleteAccountSurveyCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
+import InvoiceTaxSettingsPanel from '../InvoiceTaxSettingsPanel';
 import XeroConnectionCard from '../XeroConnectionCard';
 import QBOConnectionCard from '../QBOConnectionCard';
 import StripeConnectSettings from '@/components/dashboard/StripeConnectSettings';
@@ -253,6 +254,14 @@ export default async function SettingsSectionPage({
 
             {section === 'operations-settings' && (
               <>
+                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                  <InvoiceTaxSettingsPanel
+                    initialTaxRatePercent={org.invoice_tax_rate_percent ?? 8.25}
+                    initialCurrencyCode={org.invoice_currency_code || 'USD'}
+                    locale={locale}
+                  />
+                </div>
+
                 <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                   <ServicesPanel initialServices={services} locale={locale} />
                 </div>

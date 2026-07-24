@@ -11,6 +11,7 @@ interface InvoiceRow {
   due_date: string;
   tax_amount: number;
   total_amount: number;
+  currency_code?: string | null;
   status: 'paid' | 'unpaid';
   stripe_payment_url?: string | null;
   customers?: {
@@ -54,7 +55,7 @@ export default async function InvoicesLedgerPage({
   const { data: invoices } = customerIds.length > 0
     ? await supabase
         .from('invoices')
-      .select('id, customer_id, due_date, tax_amount, total_amount, status, stripe_payment_url, customers(first_name, last_name, company_name)')
+        .select('id, customer_id, due_date, tax_amount, total_amount, currency_code, status, stripe_payment_url, customers(first_name, last_name, company_name)')
         .in('customer_id', customerIds)
         .order('created_at', { ascending: false })
     : { data: [] as InvoiceRow[] };
