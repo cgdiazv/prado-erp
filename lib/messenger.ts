@@ -50,8 +50,9 @@ export function buildMessengerPreview(text: string | null, attachmentPayload?: u
     return text.trim().slice(0, 160);
   }
 
-  const attachments = Array.isArray((attachmentPayload as { attachments?: unknown[] } | null)?.attachments)
-    ? (attachmentPayload as { attachments?: unknown[] }).attachments
+  const attachmentWrapper = attachmentPayload as { attachments?: unknown[] } | null | undefined;
+  const attachments: unknown[] = Array.isArray(attachmentWrapper?.attachments)
+    ? attachmentWrapper.attachments
     : [];
 
   if (attachments.length > 0) {
