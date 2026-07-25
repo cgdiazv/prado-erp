@@ -3,25 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabaseServer';
 import { getUserOrganization } from '@/lib/organization';
-import {
-  getMessengerConnectionByOrganizationId,
-  insertMessengerMessage,
-  markMessengerConversationRead as markConversationReadInStore,
-  setMessengerConversationCustomer,
-  upsertMessengerConversation,
-} from '@/lib/messengerStore';
-import {
-  getMessengerSendApiUrl,
-  normalizeMessengerText,
-  type MessengerConversationRecord,
-} from '@/lib/messenger';
+
+const ACTIVE_SUPPORT_TICKET_STATUSES = ['open', 'in_progress', 'blocked'];
+const VISIBLE_SUPPORT_TICKET_STATUSES = ['open', 'in_progress', 'blocked', 'resolved', 'closed'];
 
 function getLocaleRevalidationPaths(locale: string) {
   return [
     '/dashboard/messenger',
     `/${locale}/dashboard/messenger`,
-    '/dashboard/settings/integrations',
-    `/${locale}/dashboard/settings/integrations`,
   ];
 }
 
@@ -44,164 +33,176 @@ async function requireOrgAccess() {
 }
 
 export async function checkMessengerConnection(organizationId: string) {
-  try {
-    const connection = await getMessengerConnectionByOrganizationId(organizationId);
-    return {
-      isConnected: Boolean(connection?.id),
-      pageName: connection?.page_name || null,
-      pageId: connection?.page_id || null,
-    };
-  } catch {
-    return { isConnected: false, pageName: null, pageId: null };
-  }
+  void organizationId;
+  return { isConnected: true, pageName: 'Prado Support', pageId: 'internal-support' };
 }
 
 export async function saveMessengerConnection(formData: FormData) {
-  const locale = (formData.get('locale') as string | null)?.trim() || 'en';
-  const pageId = (formData.get('pageId') as string | null)?.trim() || '';
-  const pageName = (formData.get('pageName') as string | null)?.trim() || '';
-  const pageAccessToken = (formData.get('pageAccessToken') as string | null)?.trim() || '';
-  const { organization, role } = await requireOrgAccess();
-
-  if (!pageId) {
-    return { error: 'Page ID is required.' };
-  }
-
-  const existingConnection = await getMessengerConnectionByOrganizationId(organization.id).catch(() => null);
-  const resolvedPageAccessToken = pageAccessToken || existingConnection?.page_access_token || '';
-
-  if (!resolvedPageAccessToken) {
-    return { error: 'Page ID and Page Access Token are required.' };
-  }
-
-  if (role !== 'owner' && role !== 'admin') {
-    return { error: 'Only owners and admins can update Messenger settings.' };
-  }
-
-  const supabaseAdmin = createAdminClient();
-  const { error } = await supabaseAdmin
-    .from('facebook_page_connections')
-    .upsert({
-      organization_id: organization.id,
-      page_id: pageId,
-      page_name: pageName || null,
-      page_access_token: resolvedPageAccessToken,
-      is_active: true,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'organization_id' });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  for (const path of getLocaleRevalidationPaths(locale)) {
-    revalidatePath(path);
-  }
-
-  return { success: true };
+  void formData;
+  return { error: 'Facebook connection is no longer required. Use Support Chat in the dashboard.' };
 }
 
 export async function disconnectMessengerConnection(organizationId: string, locale = 'en') {
-  const { organization, role } = await requireOrgAccess();
-  if (organization.id !== organizationId) {
-    return { error: 'Workspace mismatch.' };
-  }
-
-  if (role !== 'owner' && role !== 'admin') {
-    return { error: 'Only owners and admins can disconnect Messenger.' };
-  }
-
-  const supabaseAdmin = createAdminClient();
-  const { error } = await supabaseAdmin
-    .from('facebook_page_connections')
-    .delete()
-    .eq('organization_id', organization.id);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  for (const path of getLocaleRevalidationPaths(locale)) {
-    revalidatePath(path);
-  }
-
-  return { success: true };
+  void organizationId;
+  void locale;
+  return { error: 'Facebook connection is no longer required. Use Support Chat in the dashboard.' };
 }
 
-export async function sendMessengerReply({
-  conversationId,
+async function getOrCreateDashboardSupportTicket({
+  organizationId,
+  requestedByUserId,
+  requestedByEmail,
+}: {
+  organizationId: string;
+  requestedByUserId: string;
+  requestedByEmail: string | null;
+}) {
+  const supabaseAdmin = createAdminClient();
+  const { data: activeTicket, error: activeTicketError } = await supabaseAdmin
+    .from('helpdesk_tickets')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('escalated_from', 'dashboard_chat')
+    .in('status', ACTIVE_SUPPORT_TICKET_STATUSES)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (activeTicketError) {
+    throw new Error(activeTicketError.message);
+  }
+
+  if (activeTicket?.id) {
+    return activeTicket.id as string;
+  }
+
+  const { data: createdTicket, error: createdTicketError } = await supabaseAdmin
+    .from('helpdesk_tickets')
+    .insert({
+      organization_id: organizationId,
+      requested_by_user_id: requestedByUserId,
+      requested_by_email: requestedByEmail,
+      subject: 'Dashboard Support Chat',
+      description: 'Conversation started from dashboard support chat.',
+      priority: 'medium',
+      status: 'open',
+      escalated_from: 'dashboard_chat',
+    })
+    .select('id')
+    .single();
+
+  if (createdTicketError || !createdTicket?.id) {
+    throw new Error(createdTicketError?.message || 'Failed to create support chat ticket.');
+  }
+
+  await supabaseAdmin.from('helpdesk_ticket_events').insert({
+    ticket_id: createdTicket.id,
+    event_type: 'escalated',
+    event_note: 'Conversation opened from dashboard support chat.',
+    actor_user_id: requestedByUserId,
+    actor_email: requestedByEmail,
+    metadata: { source: 'dashboard_chat' },
+  });
+
+  return createdTicket.id as string;
+}
+
+export async function getDashboardSupportThread() {
+  const { organization } = await requireOrgAccess();
+  const supabaseAdmin = createAdminClient();
+
+  const { data: ticket, error: ticketError } = await supabaseAdmin
+    .from('helpdesk_tickets')
+    .select('id, status, priority, updated_at')
+    .eq('organization_id', organization.id)
+    .eq('escalated_from', 'dashboard_chat')
+    .in('status', VISIBLE_SUPPORT_TICKET_STATUSES)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (ticketError) {
+    return { error: ticketError.message };
+  }
+
+  if (!ticket?.id) {
+    return {
+      ticketStatus: null,
+      ticketPriority: null,
+      messages: [] as Array<{
+        id: string;
+        author_user_id: string | null;
+        author_email: string | null;
+        comment: string;
+        created_at: string;
+      }>,
+    };
+  }
+
+  const { data: comments, error: commentsError } = await supabaseAdmin
+    .from('helpdesk_ticket_comments')
+    .select('id, author_user_id, author_email, comment, created_at')
+    .eq('ticket_id', ticket.id)
+    .order('created_at', { ascending: true });
+
+  if (commentsError) {
+    return { error: commentsError.message };
+  }
+
+  return {
+    ticketStatus: typeof ticket.status === 'string' ? ticket.status : null,
+    ticketPriority: typeof ticket.priority === 'string' ? ticket.priority : null,
+    messages: (comments || []).map((item: any) => ({
+      id: item.id,
+      author_user_id: item.author_user_id || null,
+      author_email: item.author_email || null,
+      comment: typeof item.comment === 'string' ? item.comment : '',
+      created_at: item.created_at,
+    })),
+  };
+}
+
+export async function sendDashboardSupportMessage({
   message,
   locale = 'en',
 }: {
-  conversationId: string;
   message: string;
   locale?: string;
 }) {
-  const normalizedMessage = normalizeMessengerText(message, 2000);
+  const normalizedMessage = typeof message === 'string' ? message.trim().slice(0, 4000) : '';
   if (!normalizedMessage) {
     return { error: 'Message cannot be empty.' };
   }
 
-  const { organization } = await requireOrgAccess();
-  const connection = await getMessengerConnectionByOrganizationId(organization.id);
-  if (!connection) {
-    return { error: 'Messenger Page is not connected.' };
-  }
+  const { user, organization } = await requireOrgAccess();
+  const ticketId = await getOrCreateDashboardSupportTicket({
+    organizationId: organization.id,
+    requestedByUserId: user.id,
+    requestedByEmail: user.email || null,
+  });
 
   const supabaseAdmin = createAdminClient();
-  const { data: conversation, error: conversationError } = await supabaseAdmin
-    .from('messenger_conversations')
-    .select('id, sender_psid, page_id, page_name')
-    .eq('id', conversationId)
-    .eq('organization_id', organization.id)
-    .maybeSingle();
+  const { error: commentError } = await supabaseAdmin
+    .from('helpdesk_ticket_comments')
+    .insert({
+      ticket_id: ticketId,
+      author_user_id: user.id,
+      author_email: user.email || null,
+      comment: normalizedMessage,
+    });
 
-  if (conversationError || !conversation) {
-    return { error: conversationError?.message || 'Conversation not found.' };
+  if (commentError) {
+    return { error: commentError.message };
   }
 
-  const sendResponse = await fetch(getMessengerSendApiUrl(connection.page_access_token), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      messaging_type: 'RESPONSE',
-      recipient: { id: conversation.sender_psid },
-      message: { text: normalizedMessage },
-    }),
+  await supabaseAdmin.from('helpdesk_ticket_events').insert({
+    ticket_id: ticketId,
+    event_type: 'comment',
+    event_note: normalizedMessage,
+    actor_user_id: user.id,
+    actor_email: user.email || null,
+    metadata: { source: 'dashboard_chat' },
   });
-
-  const sendData = await sendResponse.json().catch(() => ({}));
-  if (!sendResponse.ok) {
-    const detail = typeof sendData?.error?.message === 'string' ? sendData.error.message : 'Meta rejected the reply.';
-    return { error: detail };
-  }
-
-  const sentAtIso = new Date().toISOString();
-  await upsertMessengerConversation({
-    organizationId: organization.id,
-    pageId: conversation.page_id,
-    pageName: conversation.page_name || connection.page_name,
-    senderPsid: conversation.sender_psid,
-    messageText: normalizedMessage,
-    occurredAtIso: sentAtIso,
-    incrementUnread: false,
-  });
-
-  await insertMessengerMessage({
-    conversationId: conversation.id,
-    organizationId: organization.id,
-    pageId: conversation.page_id,
-    senderPsid: conversation.sender_psid,
-    direction: 'outbound',
-    messageText: normalizedMessage,
-    externalMessageId: typeof sendData?.message_id === 'string' ? sendData.message_id : null,
-    sentAtIso,
-    rawEvent: sendData,
-  });
-
-  await markConversationReadInStore(conversation.id, organization.id);
 
   for (const path of getLocaleRevalidationPaths(locale)) {
     revalidatePath(path);
@@ -210,38 +211,14 @@ export async function sendMessengerReply({
   return { success: true };
 }
 
-export async function markMessengerConversationRead({
-  conversationId,
-  locale = 'en',
-}: {
-  conversationId: string;
-  locale?: string;
-}) {
-  const { organization } = await requireOrgAccess();
-  await markConversationReadInStore(conversationId, organization.id);
+export async function sendMessengerReply({ message, locale = 'en' }: { message: string; locale?: string }) {
+  return sendDashboardSupportMessage({ message, locale });
+}
 
-  for (const path of getLocaleRevalidationPaths(locale)) {
-    revalidatePath(path);
-  }
-
+export async function markMessengerConversationRead() {
   return { success: true };
 }
 
-export async function linkMessengerConversationCustomer({
-  conversationId,
-  customerId,
-  locale = 'en',
-}: {
-  conversationId: string;
-  customerId: string | null;
-  locale?: string;
-}) {
-  const { organization } = await requireOrgAccess();
-  await setMessengerConversationCustomer(conversationId, organization.id, customerId);
-
-  for (const path of getLocaleRevalidationPaths(locale)) {
-    revalidatePath(path);
-  }
-
+export async function linkMessengerConversationCustomer() {
   return { success: true };
 }

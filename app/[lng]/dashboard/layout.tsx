@@ -9,6 +9,7 @@ import { getUserOrganization } from '@/lib/organization';
 import { isPradoManagementUser } from '@/lib/pradoManagement';
 import { REMEMBER_ME_COOKIE_NAME } from '@/lib/rememberMe';
 import InactivityLockScreen from '@/components/dashboard/InactivityLockScreen';
+import SupportChatModal from '@/components/dashboard/SupportChatModal';
 import { cookies } from 'next/headers';
 
 export default async function DashboardLayout({
@@ -115,6 +116,7 @@ export default async function DashboardLayout({
             {children}
           </InactivityLockScreen>
           <BillingModal userEmail={user.email ?? ''} orgId={org.id} locale={locale} />
+          <SupportChatModal locale={locale} currentUserId={user.id} />
         </div>
       </DashboardNotificationProvider>
     </div>
