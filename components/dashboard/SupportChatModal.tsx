@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { createPortal } from 'react-dom';
 import { getDashboardSupportThread, sendDashboardSupportMessage } from '@/app/actions/messengerActions';
 
 type SupportMessage = {
@@ -74,6 +75,35 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
     const nextHeight = Math.min(composer.scrollHeight, 140);
     composer.style.height = `${nextHeight}px`;
   }, [messageText, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const scrollY = window.scrollY;
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    const originalTop = document.body.style.top;
+    const originalLeft = document.body.style.left;
+    const originalRight = document.body.style.right;
+    const originalWidth = document.body.style.width;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.top = originalTop;
+      document.body.style.left = originalLeft;
+      document.body.style.right = originalRight;
+      document.body.style.width = originalWidth;
+      window.scrollTo(0, scrollY);
+    };
+  }, [isOpen]);
 
   const normalizedStatus = (ticketStatus || '').toLowerCase();
   const isClosed = normalizedStatus === 'closed';
@@ -155,35 +185,38 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
         </button>
       ) : null}
 
-      {isOpen ? (
-        <div className="fixed inset-0 z-40 flex h-dvh flex-col bg-white md:inset-auto md:bottom-20 md:right-5 md:h-[min(78vh,680px)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-2xl md:border md:border-slate-200 md:shadow-2xl">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">{isEs ? 'Chat con Prado' : 'Prado support chat'}</h3>
-              <div className="mt-1 flex items-center gap-2">
-                <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
-                  {statusLabel}
-                </span>
-                {ticketPriority ? (
-                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
-                    {ticketPriority}
+      {isOpen && typeof document !== 'undefined'
+        ? createPortal(
+          <div className="fixed inset-0 z-[9999] flex h-dvh flex-col overscroll-none bg-white md:inset-auto md:bottom-20 md:right-5 md:h-[min(78vh,680px)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-2xl md:border md:border-slate-200 md:shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+              <button
+                type="button"
+                onClick={toggleModal}
+                className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900"
+                aria-label={isEs ? 'Volver al dashboard' : 'Back to dashboard'}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                </svg>
+                <span>{isEs ? 'Volver' : 'Back'}</span>
+              </button>
+
+              <div className="text-right">
+                <h3 className="text-sm font-bold text-slate-900">{isEs ? 'Chat con Prado' : 'Prado support chat'}</h3>
+                <div className="mt-1 flex items-center justify-end gap-2">
+                  <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                    {statusLabel}
                   </span>
-                ) : null}
+                  {ticketPriority ? (
+                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                      {ticketPriority}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={toggleModal}
-              className="rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-              aria-label={isEs ? 'Cerrar chat' : 'Close chat'}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-4 py-4 space-y-2">
+            <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-4 py-4 space-y-2">
             {isLoadingThread ? (
               <p className="text-sm text-slate-500">{isEs ? 'Cargando conversación...' : 'Loading conversation...'}</p>
             ) : null}
@@ -225,9 +258,9 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
             })}
 
             <div ref={scrollAnchorRef} />
-          </div>
+            </div>
 
-          <div className="border-t border-slate-200 px-4 py-3 space-y-2">
+            <div className="border-t border-slate-200 px-4 py-3 space-y-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {isClosed ? (
               <p className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] text-sky-700">
                 {isEs ? 'Este chat fue cerrado. Envía un nuevo mensaje para abrir una conversación nueva.' : 'This chat was closed. Send a new message to open a new conversation.'}
@@ -269,9 +302,11 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
                 )}
               </button>
             </div>
-          </div>
-        </div>
-      ) : null}
+            </div>
+          </div>,
+          document.body
+        )
+        : null}
     </>
   );
 }
