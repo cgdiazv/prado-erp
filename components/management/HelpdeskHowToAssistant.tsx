@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { findHowToMatchesByLocale, type HowToPlaybook } from '@/lib/helpdeskHowTo';
 
 type HelpdeskHowToAssistantProps = {
@@ -40,6 +39,8 @@ export default function HelpdeskHowToAssistant({ locale }: HelpdeskHowToAssistan
   const isEs = locale.toLowerCase().startsWith('es');
   const [question, setQuestion] = useState('');
   const [submittedQuestion, setSubmittedQuestion] = useState('');
+  const [isHowToModalOpen, setIsHowToModalOpen] = useState(false);
+  const [howToPath, setHowToPath] = useState(`/${locale}/management/how-to`);
   const questionRef = useRef<HTMLTextAreaElement | null>(null);
 
   const matches = useMemo(() => {
@@ -60,6 +61,11 @@ export default function HelpdeskHowToAssistant({ locale }: HelpdeskHowToAssistan
     const nextHeight = Math.min(field.scrollHeight, 140);
     field.style.height = `${nextHeight}px`;
   }, [question]);
+
+  const openHowToModal = (path?: string) => {
+    setHowToPath(path || `/${locale}/management/how-to`);
+    setIsHowToModalOpen(true);
+  };
 
   return (
     <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
@@ -109,12 +115,13 @@ export default function HelpdeskHowToAssistant({ locale }: HelpdeskHowToAssistan
           >
             {isEs ? 'Limpiar' : 'Clear'}
           </button>
-          <Link
-            href={`/${locale}/management/how-to`}
+          <button
+            type="button"
+            onClick={() => openHowToModal()}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             {isEs ? 'Abrir guias paso a paso' : 'Open How-To Screens'}
-          </Link>
+          </button>
         </div>
       </form>
 
@@ -150,16 +157,53 @@ export default function HelpdeskHowToAssistant({ locale }: HelpdeskHowToAssistan
                   <li key={match.slug} className="rounded-lg border border-slate-200 p-3 bg-slate-50">
                     <p className="text-xs font-semibold text-slate-900">{match.title}</p>
                     <p className="mt-1 text-xs text-slate-600">{match.summary}</p>
-                    <Link
-                      href={`/${locale}/management/how-to/${match.slug}`}
+                    <button
+                      type="button"
+                      onClick={() => openHowToModal(`/${locale}/management/how-to/${match.slug}`)}
                       className="mt-2 inline-flex text-xs font-semibold text-emerald-700 hover:text-emerald-600"
                     >
                       {isEs ? 'Abrir guia completa' : 'Open full how-to screen'}
-                    </Link>
+                    </button>
                   </li>
                 ))}
               </ul>
             )}
+          </div>
+        </div>
+      ) : null}
+
+      {isHowToModalOpen ? (
+        <div className="fixed inset-0 z-50 pointer-events-none">
+          <div className="pointer-events-auto fixed bottom-4 left-4 flex h-[70vh] w-[min(820px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2.5">
+              <p className="text-sm font-semibold text-slate-900">{isEs ? 'Guias paso a paso' : 'How-To Screens'}</p>
+              <div className="flex items-center gap-2">
+                <a
+                  href={howToPath}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  {isEs ? 'Abrir en pagina' : 'Open page'}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setIsHowToModalOpen(false)}
+                  className="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                  aria-label={isEs ? 'Cerrar modal' : 'Close modal'}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <iframe
+              title={isEs ? 'Guias paso a paso' : 'How-To Screens'}
+              src={howToPath}
+              className="h-full w-full border-0"
+            />
           </div>
         </div>
       ) : null}

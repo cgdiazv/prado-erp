@@ -157,12 +157,6 @@ export default async function PradoManagementPage({
           <p className="text-sm text-slate-500 mt-2">Manage subscriber account status, trial lifecycle, and support/helpdesk operations.</p>
 
           <div className="mt-4 flex flex-wrap gap-3 text-sm">
-            <Link
-              href={`/${locale}/management/how-to`}
-              className="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 font-medium hover:bg-slate-50"
-            >
-              Open How-To Screens
-            </Link>
             <GeneralInternalTicketModal locale={locale} createTicketAction={createHelpdeskTicket} />
             <a
               href="mailto:support@pradojob.com?subject=Prado%20Helpdesk%20Escalation"
