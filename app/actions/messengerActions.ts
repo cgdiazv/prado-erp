@@ -143,6 +143,23 @@ export async function getDashboardSupportThread() {
     };
   }
 
+  const ticketStatus = typeof ticket.status === 'string' ? ticket.status.toLowerCase() : null;
+
+  // If the agent closed the conversation, clear client-visible thread history.
+  if (ticketStatus === 'closed') {
+    return {
+      ticketStatus: 'closed',
+      ticketPriority: typeof ticket.priority === 'string' ? ticket.priority : null,
+      messages: [] as Array<{
+        id: string;
+        author_user_id: string | null;
+        author_email: string | null;
+        comment: string;
+        created_at: string;
+      }>,
+    };
+  }
+
   const { data: comments, error: commentsError } = await supabaseAdmin
     .from('helpdesk_ticket_comments')
     .select('id, author_user_id, author_email, comment, created_at')
