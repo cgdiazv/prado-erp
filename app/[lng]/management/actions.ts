@@ -21,7 +21,8 @@ function managementRedirect(
   locale: string,
   state: 'account-updated' | 'ticket-created' | 'ticket-updated' | 'comment-added' | 'error',
   message?: string,
-  organizationId?: string
+  organizationId?: string,
+  destination: 'management' | 'helpdesk' = 'management'
 ) {
   const params = new URLSearchParams();
 
@@ -38,7 +39,8 @@ function managementRedirect(
   }
 
   const query = params.toString();
-  redirect(`/${locale}/management${query ? `?${query}` : ''}`);
+  const basePath = destination === 'helpdesk' ? `/${locale}/management/helpdesk` : `/${locale}/management`;
+  redirect(`${basePath}${query ? `?${query}` : ''}`);
 }
 
 async function requireManagementSession(locale: string) {
@@ -101,6 +103,7 @@ export async function updateSubscriberAccount(formData: FormData) {
 
 export async function createHelpdeskTicket(formData: FormData) {
   const locale = String(formData.get('locale') || 'en');
+  const redirectTo = String(formData.get('redirectTo') || 'management').trim().toLowerCase() === 'helpdesk' ? 'helpdesk' : 'management';
   const organizationIdRaw = String(formData.get('organizationId') || '').trim();
   const organizationId = organizationIdRaw.length > 0 ? organizationIdRaw : null;
   const organizationIdForRedirect = organizationId || undefined;
@@ -115,15 +118,15 @@ export async function createHelpdeskTicket(formData: FormData) {
   const isGeneralScope = ticketScope === 'general';
 
   if (!isGeneralScope && !organizationId) {
-    managementRedirect(locale, 'error', 'Organization ID is required to create a subscriber ticket.');
+    managementRedirect(locale, 'error', 'Organization ID is required to create a subscriber ticket.', undefined, redirectTo);
   }
 
   if (!subject || !description) {
-    managementRedirect(locale, 'error', 'Ticket subject and description are required.', organizationIdForRedirect);
+    managementRedirect(locale, 'error', 'Ticket subject and description are required.', organizationIdForRedirect, redirectTo);
   }
 
   if (!ALLOWED_TICKET_PRIORITY.has(priority)) {
-    managementRedirect(locale, 'error', 'Invalid ticket priority.', organizationIdForRedirect);
+    managementRedirect(locale, 'error', 'Invalid ticket priority.', organizationIdForRedirect, redirectTo);
   }
 
   const supabaseAdmin = createAdminClient();
@@ -146,7 +149,7 @@ export async function createHelpdeskTicket(formData: FormData) {
   const ticketId = ticket?.id;
 
   if (ticketError || !ticketId) {
-    managementRedirect(locale, 'error', ticketError?.message || 'Failed to create helpdesk ticket.', organizationIdForRedirect);
+    managementRedirect(locale, 'error', ticketError?.message || 'Failed to create helpdesk ticket.', organizationIdForRedirect, redirectTo);
   }
 
   await supabaseAdmin.from('helpdesk_ticket_events').insert({
@@ -161,11 +164,13 @@ export async function createHelpdeskTicket(formData: FormData) {
   });
 
   revalidatePath(`/${locale}/management`);
-  managementRedirect(locale, 'ticket-created', undefined, organizationIdForRedirect);
+  revalidatePath(`/${locale}/management/helpdesk`);
+  managementRedirect(locale, 'ticket-created', undefined, organizationIdForRedirect, redirectTo);
 }
 
 export async function updateHelpdeskTicket(formData: FormData) {
   const locale = String(formData.get('locale') || 'en');
+  const redirectTo = String(formData.get('redirectTo') || 'management').trim().toLowerCase() === 'helpdesk' ? 'helpdesk' : 'management';
   const ticketId = String(formData.get('ticketId') || '').trim();
   const status = String(formData.get('status') || '').trim().toLowerCase();
   const priority = String(formData.get('priority') || '').trim().toLowerCase();
@@ -175,15 +180,15 @@ export async function updateHelpdeskTicket(formData: FormData) {
   const user = await requireManagementSession(locale);
 
   if (!ticketId) {
-    managementRedirect(locale, 'error', 'Ticket ID is required.');
+    managementRedirect(locale, 'error', 'Ticket ID is required.', undefined, redirectTo);
   }
 
   if (!ALLOWED_TICKET_STATUS.has(status)) {
-    managementRedirect(locale, 'error', 'Invalid ticket status.');
+    managementRedirect(locale, 'error', 'Invalid ticket status.', undefined, redirectTo);
   }
 
   if (!ALLOWED_TICKET_PRIORITY.has(priority)) {
-    managementRedirect(locale, 'error', 'Invalid ticket priority.');
+    managementRedirect(locale, 'error', 'Invalid ticket priority.', undefined, redirectTo);
   }
 
   const supabaseAdmin = createAdminClient();
@@ -199,7 +204,7 @@ export async function updateHelpdeskTicket(formData: FormData) {
     .eq('id', ticketId);
 
   if (updateError) {
-    managementRedirect(locale, 'error', updateError.message);
+    managementRedirect(locale, 'error', updateError.message, undefined, redirectTo);
   }
 
   await supabaseAdmin.from('helpdesk_ticket_events').insert({
@@ -217,22 +222,24 @@ export async function updateHelpdeskTicket(formData: FormData) {
   });
 
   revalidatePath(`/${locale}/management`);
-  managementRedirect(locale, 'ticket-updated');
+  revalidatePath(`/${locale}/management/helpdesk`);
+  managementRedirect(locale, 'ticket-updated', undefined, undefined, redirectTo);
 }
 
 export async function addHelpdeskTicketComment(formData: FormData) {
   const locale = String(formData.get('locale') || 'en');
+  const redirectTo = String(formData.get('redirectTo') || 'management').trim().toLowerCase() === 'helpdesk' ? 'helpdesk' : 'management';
   const ticketId = String(formData.get('ticketId') || '').trim();
   const comment = String(formData.get('comment') || '').trim();
 
   const user = await requireManagementSession(locale);
 
   if (!ticketId) {
-    managementRedirect(locale, 'error', 'Ticket ID is required.');
+    managementRedirect(locale, 'error', 'Ticket ID is required.', undefined, redirectTo);
   }
 
   if (!comment) {
-    managementRedirect(locale, 'error', 'Comment cannot be empty.');
+    managementRedirect(locale, 'error', 'Comment cannot be empty.', undefined, redirectTo);
   }
 
   const supabaseAdmin = createAdminClient();
@@ -247,7 +254,7 @@ export async function addHelpdeskTicketComment(formData: FormData) {
     });
 
   if (commentError) {
-    managementRedirect(locale, 'error', commentError.message);
+    managementRedirect(locale, 'error', commentError.message, undefined, redirectTo);
   }
 
   await supabaseAdmin.from('helpdesk_ticket_events').insert({
@@ -260,5 +267,6 @@ export async function addHelpdeskTicketComment(formData: FormData) {
   });
 
   revalidatePath(`/${locale}/management`);
-  managementRedirect(locale, 'comment-added');
+  revalidatePath(`/${locale}/management/helpdesk`);
+  managementRedirect(locale, 'comment-added', undefined, undefined, redirectTo);
 }

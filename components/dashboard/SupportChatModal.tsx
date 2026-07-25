@@ -91,8 +91,6 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
   };
 
   const handleSendMessage = () => {
-    if (isClosed) return;
-
     startTransition(async () => {
       setStatusMessage('');
       setErrorMessage('');
@@ -124,7 +122,7 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
 
     event.preventDefault();
 
-    if (isClosed || isSending || messageText.trim().length === 0) {
+    if (isSending || messageText.trim().length === 0) {
       return;
     }
 
@@ -218,6 +216,11 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
           </div>
 
           <div className="border-t border-slate-200 px-4 py-3 space-y-2">
+            {isClosed ? (
+              <p className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] text-sky-700">
+                {isEs ? 'Este chat fue cerrado. Envía un nuevo mensaje para abrir una conversación nueva.' : 'This chat was closed. Send a new message to open a new conversation.'}
+              </p>
+            ) : null}
             {isResolved ? (
               <p className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-700">
                 {isEs ? 'Ticket resuelto. Puedes enviar un nuevo mensaje para reabrir.' : 'Ticket resolved. Send a new message to reopen it.'}
@@ -233,13 +236,13 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
               rows={3}
               placeholder={isEs ? 'Escribe tu mensaje...' : 'Write your message...'}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              disabled={isClosed || isSending}
+              disabled={isSending}
             />
             <div className="flex justify-end">
               <button
                 type="button"
                 onClick={handleSendMessage}
-                disabled={isClosed || isSending || messageText.trim().length === 0}
+                disabled={isSending || messageText.trim().length === 0}
                 className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
               >
                 {isSending ? (isEs ? 'Enviando...' : 'Sending...') : (isEs ? 'Enviar' : 'Send')}

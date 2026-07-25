@@ -53,8 +53,6 @@ export default function MessengerInbox({
   }, [isEs, ticketStatus]);
 
   const handleSend = () => {
-    if (ticketClosed) return;
-
     startTransition(async () => {
       setStatusMessage('');
       setErrorMessage('');
@@ -130,6 +128,11 @@ export default function MessengerInbox({
       </div>
 
       <div className="border-t border-slate-200 px-5 py-4 space-y-3">
+        {ticketClosed ? (
+          <p className="text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded-lg px-3 py-2">
+            {isEs ? 'Este chat fue cerrado. Envía un nuevo mensaje para abrir una conversación nueva.' : 'This chat was closed. Send a new message to open a new conversation.'}
+          </p>
+        ) : null}
         {ticketResolved ? (
           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
             {isEs ? 'Este ticket está resuelto. Puedes enviar un nuevo mensaje para reabrir la conversación.' : 'This ticket is resolved. Send a new message to reopen the conversation.'}
@@ -143,13 +146,13 @@ export default function MessengerInbox({
           rows={4}
           placeholder={isEs ? 'Escribe tu mensaje para soporte…' : 'Write your message for support…'}
           className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
-          disabled={pending || ticketClosed}
+          disabled={pending}
         />
         <div className="flex justify-end">
           <button
             type="button"
             onClick={handleSend}
-            disabled={pending || ticketClosed || messageText.trim().length === 0}
+            disabled={pending || messageText.trim().length === 0}
             className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
           >
             {pending ? (isEs ? 'Enviando...' : 'Sending...') : (isEs ? 'Enviar mensaje' : 'Send message')}
