@@ -24,17 +24,6 @@ export default async function ManagementHowToIndexPage({
               ? 'Playbooks listos para que el equipo de gestion y soporte responda preguntas operativas rapidamente.'
               : 'Ready playbooks your management/helpdesk team can use to answer subscriber how-to questions quickly.'}
           </p>
-          <div className="mt-4">
-            <Link
-              href={`/${locale}/management`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-              </svg>
-              {isEs ? 'Volver a la consola de gestion' : 'Back to Management Console'}
-            </Link>
-          </div>
         </header>
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
