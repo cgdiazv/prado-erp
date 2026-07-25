@@ -98,6 +98,7 @@ export default function HelpdeskInbox({
   const previousUnreadByTicketRef = useRef<Map<string, number>>(new Map());
   const initializedUnreadSnapshotRef = useRef(false);
   const replyComposerRef = useRef<HTMLTextAreaElement | null>(null);
+  const fallbackPollTimerRef = useRef<number | null>(null);
 
   const orgNameById = useMemo(() => {
     return new Map(snapshot.organizations.map((org) => [org.id, org.name]));
@@ -263,16 +264,6 @@ export default function HelpdeskInbox({
   }, [locale]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      void refreshSnapshot();
-    }, 8000);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [refreshSnapshot]);
-
-  useEffect(() => {
     const currentUnreadByTicket = new Map<string, number>();
     for (const ticket of ticketSummaries) {
       currentUnreadByTicket.set(ticket.id, Number(ticket.unreadForAgent || 0));
@@ -315,6 +306,21 @@ export default function HelpdeskInbox({
   }, [desktopAlertsEnabled, isEs, notificationPermission, orgNameById, playNotificationSound, soundAlertsEnabled, ticketSummaries]);
 
   useEffect(() => {
+    const clearFallbackPolling = () => {
+      if (fallbackPollTimerRef.current !== null) {
+        window.clearInterval(fallbackPollTimerRef.current);
+        fallbackPollTimerRef.current = null;
+      }
+    };
+
+    const startFallbackPolling = () => {
+      if (fallbackPollTimerRef.current !== null) return;
+
+      fallbackPollTimerRef.current = window.setInterval(() => {
+        void refreshSnapshot();
+      }, 30000);
+    };
+
     const channel = realtime
       .channel(`helpdesk-inbox-${locale}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'helpdesk_ticket_comments' }, () => {
@@ -323,9 +329,19 @@ export default function HelpdeskInbox({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'helpdesk_tickets' }, () => {
         void refreshSnapshot();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          clearFallbackPolling();
+          return;
+        }
+
+        // If realtime is interrupted, use a lightweight polling fallback.
+        void refreshSnapshot();
+        startFallbackPolling();
+      });
 
     return () => {
+      clearFallbackPolling();
       void realtime.removeChannel(channel);
     };
   }, [locale, realtime, refreshSnapshot]);
