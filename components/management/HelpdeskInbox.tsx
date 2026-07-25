@@ -209,6 +209,11 @@ export default function HelpdeskInbox({
     return ticketSummaries.find((ticket) => ticket.id === selectedTicketId) || visibleTickets[0] || null;
   }, [selectedTicketId, ticketSummaries, visibleTickets]);
 
+  const selectedTicketMessages = useMemo(() => {
+    if (!selectedTicket) return [] as CommentRow[];
+    return selectedTicket.status.toLowerCase() === 'closed' ? [] : selectedTicket.comments;
+  }, [selectedTicket]);
+
   useEffect(() => {
     if (selectedTicket) {
       if (selectedTicket.id !== selectedTicketId) {
@@ -612,10 +617,10 @@ export default function HelpdeskInbox({
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-4 py-4 space-y-2">
-                {selectedTicket.comments.length === 0 ? (
+                {selectedTicketMessages.length === 0 ? (
                   <p className="text-sm text-slate-500">{isEs ? 'Sin mensajes todavía.' : 'No messages yet.'}</p>
                 ) : (
-                  selectedTicket.comments.map((comment) => {
+                  selectedTicketMessages.map((comment) => {
                     const requesterEmail = (selectedTicket.requested_by_email || '').toLowerCase();
                     const authorEmail = (comment.author_email || '').toLowerCase();
                     const fromRequester = requesterEmail.length > 0 && authorEmail === requesterEmail;
