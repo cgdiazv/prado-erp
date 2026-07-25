@@ -192,10 +192,10 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
                 ? (isEs ? 'Tú' : 'You')
                 : (isPrado ? (isEs ? 'Soporte Prado' : 'Prado Support') : (isEs ? 'Equipo' : 'Team'));
               const bubbleClassName = isMine
-                ? 'ml-auto bg-emerald-600 text-white'
+                ? 'ml-auto bg-emerald-200 border border-emerald-300 text-emerald-900'
                 : (isPrado ? 'bg-sky-50 text-sky-900 border border-sky-200' : 'bg-white text-slate-800 border border-slate-200');
               const timestampClassName = isMine
-                ? 'text-emerald-100'
+                ? 'text-emerald-700'
                 : (isPrado ? 'text-sky-500' : 'text-slate-400');
 
               return (

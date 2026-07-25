@@ -87,6 +87,10 @@ async function getOrCreateDashboardSupportTicket({
       priority: 'medium',
       status: 'open',
       escalated_from: 'dashboard_chat',
+      waiting_on: 'none',
+      unread_for_agent_count: 0,
+      unread_for_user_count: 0,
+      last_comment_author_email: requestedByEmail,
     })
     .select('id')
     .single();
@@ -149,6 +153,11 @@ export async function getDashboardSupportThread() {
     return { error: commentsError.message };
   }
 
+  await supabaseAdmin
+    .from('helpdesk_tickets')
+    .update({ unread_for_user_count: 0, updated_at: new Date().toISOString() })
+    .eq('id', ticket.id);
+
   return {
     ticketStatus: typeof ticket.status === 'string' ? ticket.status : null,
     ticketPriority: typeof ticket.priority === 'string' ? ticket.priority : null,
@@ -194,6 +203,26 @@ export async function sendDashboardSupportMessage({
   if (commentError) {
     return { error: commentError.message };
   }
+
+  const { data: currentTicket } = await supabaseAdmin
+    .from('helpdesk_tickets')
+    .select('unread_for_agent_count')
+    .eq('id', ticketId)
+    .maybeSingle();
+
+  const unreadForAgent = Number(currentTicket?.unread_for_agent_count || 0) + 1;
+
+  await supabaseAdmin
+    .from('helpdesk_tickets')
+    .update({
+      unread_for_agent_count: unreadForAgent,
+      unread_for_user_count: 0,
+      waiting_on: 'agent',
+      last_comment_at: new Date().toISOString(),
+      last_comment_author_email: user.email || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', ticketId);
 
   await supabaseAdmin.from('helpdesk_ticket_events').insert({
     ticket_id: ticketId,

@@ -5,9 +5,10 @@ import { useState } from 'react';
 interface GeneralInternalTicketModalProps {
   locale: string;
   createTicketAction: (formData: FormData) => void | Promise<void>;
+  redirectTo?: 'management' | 'helpdesk';
 }
 
-export default function GeneralInternalTicketModal({ locale, createTicketAction }: GeneralInternalTicketModalProps) {
+export default function GeneralInternalTicketModal({ locale, createTicketAction, redirectTo = 'management' }: GeneralInternalTicketModalProps) {
   const isEs = locale.toLowerCase().startsWith('es');
   const [isOpen, setIsOpen] = useState(false);
 
@@ -47,6 +48,7 @@ export default function GeneralInternalTicketModal({ locale, createTicketAction 
 
             <form action={createTicketAction} className="mt-5 space-y-4">
               <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="redirectTo" value={redirectTo} />
               <input type="hidden" name="ticketScope" value="general" />
               <input type="hidden" name="organizationId" value="" />
               <input type="hidden" name="organizationName" value="Internal" />

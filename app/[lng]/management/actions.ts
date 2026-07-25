@@ -17,6 +17,8 @@ const ALLOWED_SUBSCRIPTION_STATUS = new Set([
 const ALLOWED_TICKET_STATUS = new Set(['open', 'in_progress', 'blocked', 'resolved', 'closed']);
 const ALLOWED_TICKET_PRIORITY = new Set(['low', 'medium', 'high', 'urgent']);
 
+type TicketMessageRole = 'agent' | 'user';
+
 function managementRedirect(
   locale: string,
   state: 'account-updated' | 'ticket-created' | 'ticket-updated' | 'comment-added' | 'error',
@@ -54,6 +56,50 @@ async function requireManagementSession(locale: string) {
   }
 
   return user;
+}
+
+async function applyTicketMessageState({
+  ticketId,
+  role,
+  authorEmail,
+}: {
+  ticketId: string;
+  role: TicketMessageRole;
+  authorEmail: string | null;
+}) {
+  const supabaseAdmin = createAdminClient();
+  const { data: current, error: currentError } = await supabaseAdmin
+    .from('helpdesk_tickets')
+    .select('id, unread_for_agent_count, unread_for_user_count')
+    .eq('id', ticketId)
+    .maybeSingle();
+
+  if (currentError || !current?.id) {
+    throw new Error(currentError?.message || 'Ticket not found.');
+  }
+
+  const currentUnreadForAgent = Number(current.unread_for_agent_count || 0);
+  const currentUnreadForUser = Number(current.unread_for_user_count || 0);
+
+  const unreadForAgent = role === 'user' ? currentUnreadForAgent + 1 : 0;
+  const unreadForUser = role === 'agent' ? currentUnreadForUser + 1 : 0;
+  const waitingOn = role === 'user' ? 'agent' : 'user';
+
+  const { error: updateError } = await supabaseAdmin
+    .from('helpdesk_tickets')
+    .update({
+      unread_for_agent_count: unreadForAgent,
+      unread_for_user_count: unreadForUser,
+      waiting_on: waitingOn,
+      last_comment_at: new Date().toISOString(),
+      last_comment_author_email: authorEmail,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', ticketId);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
 }
 
 export async function updateSubscriberAccount(formData: FormData) {
@@ -142,6 +188,10 @@ export async function createHelpdeskTicket(formData: FormData) {
       priority,
       status: 'open',
       escalated_from: isGeneralScope ? 'management_console_general' : 'management_console',
+      waiting_on: 'none',
+      unread_for_agent_count: 0,
+      unread_for_user_count: 0,
+      last_comment_author_email: user.email || null,
     })
     .select('id')
     .single();
@@ -257,6 +307,12 @@ export async function addHelpdeskTicketComment(formData: FormData) {
     managementRedirect(locale, 'error', commentError.message, undefined, redirectTo);
   }
 
+  await applyTicketMessageState({
+    ticketId,
+    role: 'agent',
+    authorEmail: user.email || null,
+  });
+
   await supabaseAdmin.from('helpdesk_ticket_events').insert({
     ticket_id: ticketId,
     event_type: 'comment',
@@ -269,4 +325,218 @@ export async function addHelpdeskTicketComment(formData: FormData) {
   revalidatePath(`/${locale}/management`);
   revalidatePath(`/${locale}/management/helpdesk`);
   managementRedirect(locale, 'comment-added', undefined, undefined, redirectTo);
+}
+
+function isAllowedHelpdeskStatus(status: string) {
+  return ALLOWED_TICKET_STATUS.has(status);
+}
+
+export async function getHelpdeskInboxSnapshot(locale = 'en') {
+  await requireManagementSession(locale);
+
+  const supabaseAdmin = createAdminClient();
+
+  const [{ data: orgRows }, { data: ticketRows, error: ticketsError }] = await Promise.all([
+    supabaseAdmin.from('organizations').select('id, name'),
+    supabaseAdmin
+      .from('helpdesk_tickets')
+        .select('id, organization_id, subject, description, priority, status, assignee_name, assignee_email, requested_by_email, escalated_from, created_at, updated_at, unread_for_agent_count, unread_for_user_count, waiting_on, last_comment_at, last_comment_author_email')
+      .order('updated_at', { ascending: false })
+      .limit(200),
+  ]);
+
+  if (ticketsError) {
+    return { error: ticketsError.message };
+  }
+
+  const tickets = ticketRows || [];
+  const ticketIds = tickets.map((ticket: any) => ticket.id);
+
+  const [commentsResult, eventsResult] = ticketIds.length
+    ? await Promise.all([
+        supabaseAdmin
+          .from('helpdesk_ticket_comments')
+          .select('id, ticket_id, author_user_id, author_email, comment, created_at')
+          .in('ticket_id', ticketIds)
+          .order('created_at', { ascending: true }),
+        supabaseAdmin
+          .from('helpdesk_ticket_events')
+          .select('id, ticket_id, event_type, event_note, actor_email, created_at')
+          .in('ticket_id', ticketIds)
+          .order('created_at', { ascending: false }),
+      ])
+    : [{ data: [], error: null }, { data: [], error: null }];
+
+  if (commentsResult.error || eventsResult.error) {
+    return { error: commentsResult.error?.message || eventsResult.error?.message || 'Failed to load helpdesk details.' };
+  }
+
+  return {
+    organizations: (orgRows || []).map((org: any) => ({ id: org.id, name: org.name || 'Unnamed organization' })),
+    tickets: tickets.map((ticket: any) => ({
+      id: ticket.id,
+      organization_id: ticket.organization_id || null,
+      subject: ticket.subject,
+      description: ticket.description,
+      priority: ticket.priority,
+      status: ticket.status,
+      assignee_name: ticket.assignee_name || null,
+      assignee_email: ticket.assignee_email || null,
+      requested_by_email: ticket.requested_by_email || null,
+      escalated_from: ticket.escalated_from || null,
+      unread_for_agent_count: Number(ticket.unread_for_agent_count || 0),
+      unread_for_user_count: Number(ticket.unread_for_user_count || 0),
+      waiting_on: typeof ticket.waiting_on === 'string' ? ticket.waiting_on : 'none',
+      last_comment_at: ticket.last_comment_at || null,
+      last_comment_author_email: ticket.last_comment_author_email || null,
+      created_at: ticket.created_at,
+      updated_at: ticket.updated_at,
+    })),
+    comments: (commentsResult.data || []).map((comment: any) => ({
+      id: comment.id,
+      ticket_id: comment.ticket_id,
+      author_user_id: comment.author_user_id || null,
+      author_email: comment.author_email || null,
+      comment: comment.comment,
+      created_at: comment.created_at,
+    })),
+    events: (eventsResult.data || []).map((event: any) => ({
+      id: event.id,
+      ticket_id: event.ticket_id,
+      event_type: event.event_type,
+      event_note: event.event_note || null,
+      actor_email: event.actor_email || null,
+      created_at: event.created_at,
+    })),
+  };
+}
+
+export async function sendHelpdeskAgentReply({
+  locale = 'en',
+  ticketId,
+  comment,
+}: {
+  locale?: string;
+  ticketId: string;
+  comment: string;
+}) {
+  const user = await requireManagementSession(locale);
+  const normalizedTicketId = String(ticketId || '').trim();
+  const normalizedComment = String(comment || '').trim();
+
+  if (!normalizedTicketId) {
+    return { error: 'Ticket ID is required.' };
+  }
+
+  if (!normalizedComment) {
+    return { error: 'Comment cannot be empty.' };
+  }
+
+  const supabaseAdmin = createAdminClient();
+
+  const { error: commentError } = await supabaseAdmin
+    .from('helpdesk_ticket_comments')
+    .insert({
+      ticket_id: normalizedTicketId,
+      author_user_id: user.id,
+      author_email: user.email || null,
+      comment: normalizedComment,
+    });
+
+  if (commentError) {
+    return { error: commentError.message };
+  }
+
+  await applyTicketMessageState({
+    ticketId: normalizedTicketId,
+    role: 'agent',
+    authorEmail: user.email || null,
+  });
+
+  await supabaseAdmin.from('helpdesk_ticket_events').insert({
+    ticket_id: normalizedTicketId,
+    event_type: 'comment',
+    event_note: normalizedComment,
+    actor_user_id: user.id,
+    actor_email: user.email || null,
+    metadata: { source: 'helpdesk_inbox' },
+  });
+
+  revalidatePath(`/${locale}/management`);
+  revalidatePath(`/${locale}/management/helpdesk`);
+
+  return { success: true };
+}
+
+export async function markHelpdeskTicketSeenByAgent({
+  locale = 'en',
+  ticketId,
+}: {
+  locale?: string;
+  ticketId: string;
+}) {
+  await requireManagementSession(locale);
+  const normalizedTicketId = String(ticketId || '').trim();
+  if (!normalizedTicketId) {
+    return { error: 'Ticket ID is required.' };
+  }
+
+  const supabaseAdmin = createAdminClient();
+  const { error } = await supabaseAdmin
+    .from('helpdesk_tickets')
+    .update({ unread_for_agent_count: 0, updated_at: new Date().toISOString() })
+    .eq('id', normalizedTicketId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/${locale}/management/helpdesk`);
+  return { success: true };
+}
+
+export async function updateHelpdeskTicketStatusQuick({
+  locale = 'en',
+  ticketId,
+  status,
+}: {
+  locale?: string;
+  ticketId: string;
+  status: string;
+}) {
+  const user = await requireManagementSession(locale);
+  const normalizedTicketId = String(ticketId || '').trim();
+  const normalizedStatus = String(status || '').trim().toLowerCase();
+
+  if (!normalizedTicketId) {
+    return { error: 'Ticket ID is required.' };
+  }
+
+  if (!isAllowedHelpdeskStatus(normalizedStatus)) {
+    return { error: 'Invalid ticket status.' };
+  }
+
+  const supabaseAdmin = createAdminClient();
+  const { error: updateError } = await supabaseAdmin
+    .from('helpdesk_tickets')
+    .update({ status: normalizedStatus })
+    .eq('id', normalizedTicketId);
+
+  if (updateError) {
+    return { error: updateError.message };
+  }
+
+  await supabaseAdmin.from('helpdesk_ticket_events').insert({
+    ticket_id: normalizedTicketId,
+    event_type: 'status_changed',
+    event_note: `Status changed to ${normalizedStatus} from helpdesk inbox.`,
+    actor_user_id: user.id,
+    actor_email: user.email || null,
+    metadata: { status: normalizedStatus, source: 'helpdesk_inbox' },
+  });
+
+  revalidatePath(`/${locale}/management`);
+  revalidatePath(`/${locale}/management/helpdesk`);
+
+  return { success: true };
 }
