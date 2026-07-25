@@ -97,6 +97,7 @@ export default function HelpdeskInbox({
   const [isPending, startTransition] = useTransition();
   const previousUnreadByTicketRef = useRef<Map<string, number>>(new Map());
   const initializedUnreadSnapshotRef = useRef(false);
+  const replyComposerRef = useRef<HTMLTextAreaElement | null>(null);
 
   const orgNameById = useMemo(() => {
     return new Map(snapshot.organizations.map((org) => [org.id, org.name]));
@@ -328,6 +329,15 @@ export default function HelpdeskInbox({
       void realtime.removeChannel(channel);
     };
   }, [locale, realtime, refreshSnapshot]);
+
+  useEffect(() => {
+    const composer = replyComposerRef.current;
+    if (!composer) return;
+
+    composer.style.height = '0px';
+    const nextHeight = Math.min(composer.scrollHeight, 140);
+    composer.style.height = `${nextHeight}px`;
+  }, [replyText, selectedTicketId]);
 
   useEffect(() => {
     if (!selectedTicket) return;
@@ -612,30 +622,39 @@ export default function HelpdeskInbox({
               <div className="border-t border-slate-200 px-4 py-3 space-y-2">
                 {statusMessage ? <p className="text-xs text-emerald-600">{statusMessage}</p> : null}
                 {errorMessage ? <p className="text-xs text-rose-600">{errorMessage}</p> : null}
-                <textarea
-                  value={replyText}
-                  onChange={(event) => setReplyText(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                      event.preventDefault();
-                      if (!isPending && replyText.trim().length > 0) {
-                        sendReply();
+                <div className="flex items-end gap-2">
+                  <textarea
+                    ref={replyComposerRef}
+                    value={replyText}
+                    onChange={(event) => setReplyText(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        if (!isPending && replyText.trim().length > 0) {
+                          sendReply();
+                        }
                       }
-                    }
-                  }}
-                  rows={3}
-                  placeholder={isEs ? 'Escribe una respuesta...' : 'Write a reply...'}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                  disabled={isPending}
-                />
-                <div className="flex justify-end">
+                    }}
+                    rows={1}
+                    placeholder={isEs ? 'Escribe una respuesta...' : 'Write a reply...'}
+                    className="min-h-[40px] max-h-[140px] flex-1 resize-none overflow-y-auto rounded-full border border-slate-300 px-4 py-2.5 text-sm leading-5"
+                    disabled={isPending}
+                  />
                   <button
                     type="button"
                     onClick={sendReply}
                     disabled={isPending || replyText.trim().length === 0}
-                    className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white transition hover:bg-slate-800 disabled:opacity-60"
+                    aria-label={isEs ? 'Enviar respuesta' : 'Send reply'}
                   >
-                    {isPending ? (isEs ? 'Enviando...' : 'Sending...') : (isEs ? 'Enviar respuesta' : 'Send reply')}
+                    {isPending ? (
+                      <span className="text-[10px] font-semibold">{isEs ? '...' : '...'}</span>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m13 6 6 6-6 6" />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>

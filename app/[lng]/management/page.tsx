@@ -226,17 +226,13 @@ export default async function PradoManagementPage({
                   <thead>
                     <tr className="border-b border-slate-200 text-slate-500">
                       <th className="py-2 pr-3 text-left font-semibold">Subscriber</th>
-                      <th className="py-2 pr-3 text-left font-semibold">Owner</th>
                       <th className="py-2 pr-3 text-left font-semibold">Account Controls</th>
                       <th className="py-2 pr-3 text-left font-semibold">Support</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredRows.map((row) => {
-                      const ownerProfile = row.owner_id ? ownerProfileByUserId.get(row.owner_id) : null;
                       const ownerEmail = row.owner_id ? ownerEmailByUserId.get(row.owner_id) : null;
-                      const ownerName = `${ownerProfile?.first_name || ''} ${ownerProfile?.last_name || ''}`.trim() || 'N/A';
-                      const ownerPhone = ownerProfile?.phone?.trim() || 'N/A';
 
                       return (
                         <tr key={row.id} className="border-b border-slate-100 align-top">
@@ -244,12 +240,6 @@ export default async function PradoManagementPage({
                             <p className="font-semibold text-slate-900">{row.name || 'Unnamed organization'}</p>
                             <p className="text-xs text-slate-500">Org ID: {row.id}</p>
                             <p className="text-xs text-slate-500">Created: {formatDate(row.created_at)}</p>
-                          </td>
-
-                          <td className="py-3 pr-3">
-                            <p className="font-medium text-slate-800">{ownerName}</p>
-                            <p className="text-xs text-slate-500">{ownerEmail || 'No email available'}</p>
-                            <p className="text-xs text-slate-500">{ownerPhone}</p>
                           </td>
 
                           <td className="py-3 pr-3">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { findHowToMatchesByLocale, type HowToPlaybook } from '@/lib/helpdeskHowTo';
 
@@ -40,6 +40,7 @@ export default function HelpdeskHowToAssistant({ locale }: HelpdeskHowToAssistan
   const isEs = locale.toLowerCase().startsWith('es');
   const [question, setQuestion] = useState('');
   const [submittedQuestion, setSubmittedQuestion] = useState('');
+  const questionRef = useRef<HTMLTextAreaElement | null>(null);
 
   const matches = useMemo(() => {
     const source = submittedQuestion || question;
@@ -50,6 +51,15 @@ export default function HelpdeskHowToAssistant({ locale }: HelpdeskHowToAssistan
     () => buildSuggestedReply(submittedQuestion || question, matches, isEs),
     [question, submittedQuestion, matches, isEs]
   );
+
+  useEffect(() => {
+    const field = questionRef.current;
+    if (!field) return;
+
+    field.style.height = '0px';
+    const nextHeight = Math.min(field.scrollHeight, 140);
+    field.style.height = `${nextHeight}px`;
+  }, [question]);
 
   return (
     <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
@@ -72,10 +82,11 @@ export default function HelpdeskHowToAssistant({ locale }: HelpdeskHowToAssistan
         <label className="block text-xs text-slate-600 font-medium">
           {isEs ? 'Pregunta del usuario' : 'User question'}
           <textarea
+            ref={questionRef}
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            rows={4}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            rows={1}
+            className="mt-1 min-h-[40px] max-h-[140px] w-full resize-none overflow-y-auto rounded-full border border-slate-300 px-4 py-2.5 text-sm leading-5"
             placeholder={isEs ? 'Ejemplo: Como programo un trabajo y asigno un camion?' : 'Example: How do I schedule a job and assign a truck?'}
             required
           />
