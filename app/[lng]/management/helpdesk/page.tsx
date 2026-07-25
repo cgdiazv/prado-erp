@@ -37,8 +37,8 @@ export default async function PradoManagementHelpdeskPage({
   ]);
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900 px-4 sm:px-6 lg:px-10 py-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <main className="min-h-screen w-full bg-slate-50 p-8 text-slate-900">
+      <div className="w-full space-y-6">
         <header className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Helpdesk Queue</h1>
           <p className="text-sm text-slate-500">Agent inbox for real-time handling of subscriber support conversations.</p>

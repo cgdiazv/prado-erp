@@ -28,6 +28,7 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
   const [errorMessage, setErrorMessage] = useState('');
   const [isSending, startTransition] = useTransition();
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
 
   const loadThread = async () => {
     setIsLoadingThread(true);
@@ -64,6 +65,15 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
     if (!isOpen) return;
     scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [isOpen, messages.length]);
+
+  useEffect(() => {
+    const composer = composerRef.current;
+    if (!composer) return;
+
+    composer.style.height = '0px';
+    const nextHeight = Math.min(composer.scrollHeight, 140);
+    composer.style.height = `${nextHeight}px`;
+  }, [messageText, isOpen]);
 
   const normalizedStatus = (ticketStatus || '').toLowerCase();
   const isClosed = normalizedStatus === 'closed';
@@ -131,20 +141,22 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
 
   return (
     <>
-      <button
-        type="button"
-        onClick={toggleModal}
-        className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/25 transition hover:bg-emerald-700"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 19.5A2.625 2.625 0 0021 16.875V7.125A2.625 2.625 0 0018.375 4.5H5.625A2.625 2.625 0 003 7.125v9.75A2.625 2.625 0 005.625 19.5h8.155a2.625 2.625 0 011.857.769l1.594 1.594a.375.375 0 00.64-.265V19.5h.504Z" />
-        </svg>
-        <span>{isOpen ? (isEs ? 'Cerrar chat' : 'Close chat') : (isEs ? 'Chat soporte' : 'Support chat')}</span>
-      </button>
+      {!isOpen ? (
+        <button
+          type="button"
+          onClick={toggleModal}
+          className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/25 transition hover:bg-emerald-700"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 19.5A2.625 2.625 0 0021 16.875V7.125A2.625 2.625 0 0018.375 4.5H5.625A2.625 2.625 0 003 7.125v9.75A2.625 2.625 0 005.625 19.5h8.155a2.625 2.625 0 011.857.769l1.594 1.594a.375.375 0 00.64-.265V19.5h.504Z" />
+          </svg>
+          <span>{isEs ? 'Chat soporte' : 'Support chat'}</span>
+        </button>
+      ) : null}
 
       {isOpen ? (
-        <div className="fixed bottom-20 right-4 z-40 w-[calc(100vw-2rem)] max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl md:right-5">
+        <div className="fixed inset-0 z-40 flex h-dvh flex-col bg-white md:inset-auto md:bottom-20 md:right-5 md:h-[min(78vh,680px)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-2xl md:border md:border-slate-200 md:shadow-2xl">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div>
               <h3 className="text-sm font-bold text-slate-900">{isEs ? 'Chat con Prado' : 'Prado support chat'}</h3>
@@ -171,7 +183,7 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
             </button>
           </div>
 
-          <div className="h-80 overflow-y-auto bg-slate-50 px-4 py-4 space-y-2">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-4 py-4 space-y-2">
             {isLoadingThread ? (
               <p className="text-sm text-slate-500">{isEs ? 'Cargando conversación...' : 'Loading conversation...'}</p>
             ) : null}
@@ -229,23 +241,31 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
             {statusMessage ? <p className="text-xs text-emerald-600">{statusMessage}</p> : null}
             {errorMessage ? <p className="text-xs text-red-600">{errorMessage}</p> : null}
 
-            <textarea
-              value={messageText}
-              onChange={(event) => setMessageText(event.target.value)}
-              onKeyDown={handleComposerKeyDown}
-              rows={3}
-              placeholder={isEs ? 'Escribe tu mensaje...' : 'Write your message...'}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              disabled={isSending}
-            />
-            <div className="flex justify-end">
+            <div className="flex items-end gap-2">
+              <textarea
+                ref={composerRef}
+                value={messageText}
+                onChange={(event) => setMessageText(event.target.value)}
+                onKeyDown={handleComposerKeyDown}
+                rows={1}
+                placeholder={isEs ? 'Escribe tu mensaje...' : 'Write your message...'}
+                className="min-h-[40px] max-h-[140px] flex-1 resize-none overflow-y-auto rounded-full border border-slate-300 px-4 py-2.5 text-sm leading-5"
+                disabled={isSending}
+              />
               <button
                 type="button"
                 onClick={handleSendMessage}
                 disabled={isSending || messageText.trim().length === 0}
-                className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                aria-label={isEs ? 'Enviar mensaje' : 'Send message'}
               >
-                {isSending ? (isEs ? 'Enviando...' : 'Sending...') : (isEs ? 'Enviar' : 'Send')}
+                {isSending ? (
+                  <span className="text-[10px] font-semibold">{isEs ? '...' : '...'}</span>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m3 12 18-9-6 9 6 9-18-9Z" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
