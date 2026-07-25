@@ -24,7 +24,7 @@ function managementRedirect(
   state: 'account-updated' | 'ticket-created' | 'ticket-updated' | 'comment-added' | 'error',
   message?: string,
   organizationId?: string,
-  destination: 'management' | 'helpdesk' = 'management'
+  destination: 'management' = 'management'
 ) {
   const params = new URLSearchParams();
 
@@ -41,7 +41,7 @@ function managementRedirect(
   }
 
   const query = params.toString();
-  const basePath = destination === 'helpdesk' ? `/${locale}/management/helpdesk` : `/${locale}/management`;
+  const basePath = `/${locale}/management`;
   redirect(`${basePath}${query ? `?${query}` : ''}`);
 }
 
@@ -149,7 +149,7 @@ export async function updateSubscriberAccount(formData: FormData) {
 
 export async function createHelpdeskTicket(formData: FormData) {
   const locale = String(formData.get('locale') || 'en');
-  const redirectTo = String(formData.get('redirectTo') || 'management').trim().toLowerCase() === 'helpdesk' ? 'helpdesk' : 'management';
+  const redirectTo: 'management' = 'management';
   const organizationIdRaw = String(formData.get('organizationId') || '').trim();
   const organizationId = organizationIdRaw.length > 0 ? organizationIdRaw : null;
   const organizationIdForRedirect = organizationId || undefined;
@@ -214,13 +214,12 @@ export async function createHelpdeskTicket(formData: FormData) {
   });
 
   revalidatePath(`/${locale}/management`);
-  revalidatePath(`/${locale}/management/helpdesk`);
   managementRedirect(locale, 'ticket-created', undefined, organizationIdForRedirect, redirectTo);
 }
 
 export async function updateHelpdeskTicket(formData: FormData) {
   const locale = String(formData.get('locale') || 'en');
-  const redirectTo = String(formData.get('redirectTo') || 'management').trim().toLowerCase() === 'helpdesk' ? 'helpdesk' : 'management';
+  const redirectTo: 'management' = 'management';
   const ticketId = String(formData.get('ticketId') || '').trim();
   const status = String(formData.get('status') || '').trim().toLowerCase();
   const priority = String(formData.get('priority') || '').trim().toLowerCase();
@@ -272,13 +271,12 @@ export async function updateHelpdeskTicket(formData: FormData) {
   });
 
   revalidatePath(`/${locale}/management`);
-  revalidatePath(`/${locale}/management/helpdesk`);
   managementRedirect(locale, 'ticket-updated', undefined, undefined, redirectTo);
 }
 
 export async function addHelpdeskTicketComment(formData: FormData) {
   const locale = String(formData.get('locale') || 'en');
-  const redirectTo = String(formData.get('redirectTo') || 'management').trim().toLowerCase() === 'helpdesk' ? 'helpdesk' : 'management';
+  const redirectTo: 'management' = 'management';
   const ticketId = String(formData.get('ticketId') || '').trim();
   const comment = String(formData.get('comment') || '').trim();
 
@@ -323,7 +321,6 @@ export async function addHelpdeskTicketComment(formData: FormData) {
   });
 
   revalidatePath(`/${locale}/management`);
-  revalidatePath(`/${locale}/management/helpdesk`);
   managementRedirect(locale, 'comment-added', undefined, undefined, redirectTo);
 }
 
@@ -463,7 +460,6 @@ export async function sendHelpdeskAgentReply({
   });
 
   revalidatePath(`/${locale}/management`);
-  revalidatePath(`/${locale}/management/helpdesk`);
 
   return { success: true };
 }
@@ -491,7 +487,7 @@ export async function markHelpdeskTicketSeenByAgent({
     return { error: error.message };
   }
 
-  revalidatePath(`/${locale}/management/helpdesk`);
+  revalidatePath(`/${locale}/management`);
   return { success: true };
 }
 
@@ -536,7 +532,6 @@ export async function updateHelpdeskTicketStatusQuick({
   });
 
   revalidatePath(`/${locale}/management`);
-  revalidatePath(`/${locale}/management/helpdesk`);
 
   return { success: true };
 }
