@@ -24,6 +24,15 @@ body {
   color: var(--foreground);
 }
 
+/* Prevent focus zoom on mobile form controls (Android and iOS). */
+@media screen and (max-width: 1024px) and (hover: none) and (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 .table-date-column {
   width: 9rem;
   min-width: 9rem;
