@@ -21,6 +21,7 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
   const isEs = locale.toLowerCase().startsWith('es');
   const [isOpen, setIsOpen] = useState(false);
   const [isLoadingThread, setIsLoadingThread] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [ticketStatus, setTicketStatus] = useState<string | null>(null);
   const [ticketPriority, setTicketPriority] = useState<string | null>(null);
@@ -63,6 +64,22 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
   }, [isOpen]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const updateViewportState = () => {
+      setIsMobileViewport(mediaQuery.matches);
+    };
+
+    updateViewportState();
+
+    mediaQuery.addEventListener('change', updateViewportState);
+    return () => {
+      mediaQuery.removeEventListener('change', updateViewportState);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isOpen) return;
     scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [isOpen, messages.length]);
@@ -74,10 +91,11 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
     composer.style.height = '0px';
     const nextHeight = Math.min(composer.scrollHeight, 140);
     composer.style.height = `${nextHeight}px`;
+    composer.style.overflowY = composer.scrollHeight > 140 ? 'auto' : 'hidden';
   }, [messageText, isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !isMobileViewport) return;
 
     const scrollY = window.scrollY;
     const originalOverflow = document.body.style.overflow;
@@ -103,7 +121,7 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
       document.body.style.width = originalWidth;
       window.scrollTo(0, scrollY);
     };
-  }, [isOpen]);
+  }, [isMobileViewport, isOpen]);
 
   const normalizedStatus = (ticketStatus || '').toLowerCase();
   const isClosed = normalizedStatus === 'closed';
@@ -282,7 +300,7 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
                 onKeyDown={handleComposerKeyDown}
                 rows={1}
                 placeholder={isEs ? 'Escribe tu mensaje...' : 'Write your message...'}
-                className="min-h-[40px] max-h-[140px] flex-1 resize-none overflow-y-auto rounded-full border border-slate-300 px-4 py-2.5 text-sm leading-5"
+                className="support-chat-composer min-h-[40px] max-h-[140px] flex-1 resize-none rounded-full border border-slate-300 px-4 py-2.5 text-sm leading-5"
                 disabled={isSending}
               />
               <button
