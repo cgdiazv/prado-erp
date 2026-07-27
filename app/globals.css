@@ -52,101 +52,155 @@ body {
   white-space: nowrap;
 }
 
-#soro-blog iframe {
-  border: 0 !important;
-  outline: none !important;
-  box-shadow: none !important;
+/* Soro Blog 2-Column Responsive Layout Overrides */
+div#soro-blog .soro-blog {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 auto !important;
 }
 
-#soro-blog article,
-#soro-blog [class*='card'],
-#soro-blog [class*='post'],
-#soro-blog [class*='article'] {
-  border: 0 !important;
-  outline: none !important;
-  box-shadow: none !important;
+div#soro-blog .soro-blog-list {
+  display: grid !important;
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  gap: 1.5rem !important;
+}
+
+@media (min-width: 640px) {
+  div#soro-blog .soro-blog-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+div#soro-blog .soro-blog-card {
   display: flex !important;
   flex-direction: column !important;
-  gap: 0.75rem !important;
-  overflow: hidden !important;
+  gap: 1rem !important;
+  padding: 1.25rem !important;
+  width: 100% !important;
+  height: 100% !important;
+  background-color: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(51, 65, 85, 0.6) !important;
+  border-radius: 1rem !important;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+  text-decoration: none !important;
 }
 
-#soro-blog,
-#soro-blog h1,
-#soro-blog h2,
-#soro-blog h3,
-#soro-blog h4,
-#soro-blog h5,
-#soro-blog h6,
-#soro-blog p,
-#soro-blog span,
-#soro-blog a,
-#soro-blog li,
-#soro-blog small {
+div#soro-blog .soro-blog-card:hover {
+  border-color: rgba(52, 211, 153, 0.5) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+div#soro-blog .soro-blog-card-image {
+  width: 100% !important;
+  height: 220px !important;
+  object-fit: cover !important;
+  border-radius: 0.75rem !important;
+  flex-shrink: 0 !important;
+}
+
+div#soro-blog .soro-blog-card-content {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  gap: 0.5rem !important;
+}
+
+div#soro-blog .soro-blog-card-title {
   color: #ffffff !important;
-}
-
-#soro-blog article,
-#soro-blog [class*='card'],
-#soro-blog [class*='post'],
-#soro-blog [class*='article'],
-#soro-blog img,
-#soro-blog picture,
-#soro-blog figure,
-#soro-blog [class*='image'],
-#soro-blog h1,
-#soro-blog h2,
-#soro-blog h3,
-#soro-blog h4,
-#soro-blog h5,
-#soro-blog h6,
-#soro-blog p,
-#soro-blog time,
-#soro-blog [class*='date'],
-#soro-blog [class*='excerpt'],
-#soro-blog [class*='title'],
-#soro-blog [data-date],
-#soro-blog [data-excerpt],
-#soro-blog [data-title] {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
   text-align: left !important;
 }
 
-#soro-blog [class*='excerpt'],
-#soro-blog [data-excerpt] {
-  display: none !important;
-}
-
-#soro-blog img,
-#soro-blog picture,
-#soro-blog figure,
-#soro-blog [class*='image'] {
-  order: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-#soro-blog img {
-  display: block !important;
-  height: 320px !important;
-  object-fit: cover !important;
-  border-radius: 1.5rem !important;
-}
-
-#soro-blog h1,
-#soro-blog h2,
-#soro-blog h3,
-#soro-blog h4,
-#soro-blog h5,
-#soro-blog h6,
-#soro-blog [class*='title'],
-#soro-blog [data-title] {
-  order: 1 !important;
+div#soro-blog .soro-blog-card-excerpt {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  color: #94a3b8 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
   margin: 0 !important;
+  text-align: left !important;
 }
 
-#soro-blog time,
-#soro-blog [class*='date'],
-#soro-blog [data-date] {
-  order: 2 !important;
-  margin: 0 !important;
+div#soro-blog .soro-blog-card-date {
+  color: #64748b !important;
+  font-size: 0.75rem !important;
+  margin-top: auto !important;
+  text-align: left !important;
+}
+
+/* Internal Article Page & Universal Soro Text Colors */
+div#soro-blog .soro-blog-back {
+  color: #e2e8f0 !important;
+  border-color: rgba(51, 65, 85, 0.8) !important;
+  background-color: rgba(15, 23, 42, 0.8) !important;
+}
+
+div#soro-blog .soro-blog-back:hover {
+  color: #ffffff !important;
+  border-color: rgba(52, 211, 153, 0.6) !important;
+  background-color: rgba(30, 41, 59, 0.9) !important;
+}
+
+/* Explicit Left Text Alignment Overrides */
+div#soro-blog,
+div#soro-blog *,
+div#soro-blog .soro-blog-article,
+div#soro-blog .soro-blog-article-title,
+div#soro-blog .soro-blog-article-date,
+div#soro-blog .soro-blog-article-content,
+div#soro-blog .soro-blog-article-content p,
+div#soro-blog .soro-blog-article-content h1,
+div#soro-blog .soro-blog-article-content h2,
+div#soro-blog .soro-blog-article-content h3,
+div#soro-blog .soro-blog-article-content h4,
+div#soro-blog .soro-blog-article-content h5,
+div#soro-blog .soro-blog-article-content h6,
+div#soro-blog .soro-blog-article-content ul,
+div#soro-blog .soro-blog-article-content ol,
+div#soro-blog .soro-blog-article-content li,
+div#soro-blog .soro-blog-article-content blockquote,
+div#soro-blog .soro-blog-article-content div,
+div#soro-blog .soro-blog-article-content span {
+  text-align: left !important;
+}
+
+div#soro-blog .soro-blog-article-title,
+div#soro-blog .soro-blog-article-content h1,
+div#soro-blog .soro-blog-article-content h2,
+div#soro-blog .soro-blog-article-content h3,
+div#soro-blog .soro-blog-article-content h4,
+div#soro-blog .soro-blog-article-content h5,
+div#soro-blog .soro-blog-article-content h6 {
+  color: #ffffff !important;
+}
+
+div#soro-blog .soro-blog-article-date,
+div#soro-blog .soro-blog-loading,
+div#soro-blog .soro-blog-empty {
+  color: #94a3b8 !important;
+}
+
+div#soro-blog .soro-blog-article-content,
+div#soro-blog .soro-blog-article-content p,
+div#soro-blog .soro-blog-article-content span,
+div#soro-blog .soro-blog-article-content li,
+div#soro-blog .soro-blog-article-content div,
+div#soro-blog .soro-blog-article-content blockquote,
+div#soro-blog .soro-blog-article-content td,
+div#soro-blog .soro-blog-article-content th,
+div#soro-blog .soro-blog-article-content strong,
+div#soro-blog .soro-blog-article-content em,
+div#soro-blog .soro-blog-article-content code {
+  color: #f1f5f9 !important;
+}
+
+div#soro-blog .soro-blog-article-content a {
+  color: #34d399 !important;
+  text-decoration: underline !important;
 }

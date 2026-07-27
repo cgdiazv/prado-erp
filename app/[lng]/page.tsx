@@ -72,34 +72,36 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
       <PublicNavbar locale={lng} />
 
       {/* Hero Presentation Section */}
-      <main className="flex-1 max-w-4xl mx-auto px-6 pt-20 pb-16 text-center flex flex-col items-center justify-center">
-        <div className="inline-flex items-center gap-2.5 bg-emerald-950/40 border border-emerald-800/60 rounded-full px-3.5 py-1 text-xs text-emerald-400 font-medium mb-6 backdrop-blur-xs">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          {translations.home.badge}
-        </div>
+      <main className="flex-1 w-full text-center flex flex-col items-center justify-center">
+        <div className="w-full max-w-4xl mx-auto px-6 pt-20 pb-16 flex flex-col items-center justify-center">
+          <div className="inline-flex items-center gap-2.5 bg-emerald-950/40 border border-emerald-800/60 rounded-full px-3.5 py-1 text-xs text-emerald-400 font-medium mb-6 backdrop-blur-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            {translations.home.badge}
+          </div>
 
-        <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight max-w-2xl">
-          {translations.home.heroTitleLine1} <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300">
-            {translations.home.heroTitleLine2}
-          </span>
-        </h1>
+          <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight max-w-2xl">
+            {translations.home.heroTitleLine1} <br />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300">
+              {translations.home.heroTitleLine2}
+            </span>
+          </h1>
 
-        <p className="mt-6 text-base md:text-lg text-slate-400 max-w-xl font-medium leading-relaxed">
-          {translations.home.heroDescription}
-        </p>
+          <p className="mt-6 text-base md:text-lg text-slate-400 max-w-xl font-medium leading-relaxed">
+            {translations.home.heroDescription}
+          </p>
 
-        <div className="mt-10 mb-12 flex flex-col sm:flex-row items-center gap-4">
-          <Link href="/signup" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
-            {translations.home.viewPricing}
-          </Link>
-          <Link href="/demo" className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-850 text-slate-200 px-6 py-3 rounded-xl transition border border-slate-800">
-            {translations.home.exploreDemo}
-          </Link>
+          <div className="mt-10 mb-12 flex flex-col sm:flex-row items-center gap-4">
+            <Link href="/signup" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
+              {translations.home.viewPricing}
+            </Link>
+            <Link href="/demo" className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-850 text-slate-200 px-6 py-3 rounded-xl transition border border-slate-800">
+              {translations.home.exploreDemo}
+            </Link>
+          </div>
         </div>
 
         <section className="bg-slate-950/40 py-24 px-6 relative overflow-hidden w-full">
-          <div className="max-w-6xl mx-auto flex justify-center">
+          <div className="max-w-7xl mx-auto flex justify-center">
             <ScreenshotCarousel />
           </div>
         </section>
@@ -202,7 +204,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
 
         {/* Industries Section */}
         <section className="border-t border-slate-900 bg-slate-950/40 py-24 px-6 relative overflow-hidden w-full">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
                 {translations.home.industriesTitlePrefix} <span className="text-emerald-400">Prado</span>
@@ -238,7 +240,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
         </section>
 
         <section className="border-t border-slate-900 bg-slate-950/60 py-24 px-6 w-full">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="text-center mb-10">
               <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
                 {isEs ? 'Desde el Blog' : 'From the Blog'}

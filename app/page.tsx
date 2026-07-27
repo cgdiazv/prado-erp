@@ -59,65 +59,67 @@ export default async function MarketingHomePage() {
       <PublicNavbar />
 
       {/* Hero Presentation Section */}
-      <main className="flex-1 max-w-4xl mx-auto px-6 pt-20 pb-16 text-center flex flex-col items-center justify-center">
-        <div className="inline-flex items-center gap-2.5 bg-emerald-950/40 border border-emerald-800/60 rounded-full px-3.5 py-1 text-xs text-emerald-400 font-medium mb-6 backdrop-blur-xs">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          Next-Gen Field Service Management
-        </div>
+      <main className="flex-1 w-full text-center flex flex-col items-center justify-center">
+        <div className="w-full max-w-4xl mx-auto px-6 pt-20 pb-16 flex flex-col items-center justify-center">
+          <div className="inline-flex items-center gap-2.5 bg-emerald-950/40 border border-emerald-800/60 rounded-full px-3.5 py-1 text-xs text-emerald-400 font-medium mb-6 backdrop-blur-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Next-Gen Field Service Management
+          </div>
 
-        <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight max-w-2xl">
-          Automate your jobs. <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300">
-            Scale your workflow.
-          </span>
-        </h1>
+          <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight max-w-2xl">
+            Automate your jobs. <br />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300">
+              Scale your workflow.
+            </span>
+          </h1>
 
-        <p className="mt-6 text-base md:text-lg text-slate-400 max-w-xl font-medium leading-relaxed">
-          Prado combines secure tenant multi-occupancy billing, predictive path dispatch optimization, and automated invoicing in one central operational hub.
-        </p>
+          <p className="mt-6 text-base md:text-lg text-slate-400 max-w-xl font-medium leading-relaxed">
+            Prado combines secure tenant multi-occupancy billing, predictive path dispatch optimization, and automated invoicing in one central operational hub.
+          </p>
 
-        <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
-          <Link href="/pricing" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
-            View Pricing
-          </Link>
-          <Link href="/demo" className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-850 text-slate-200 px-6 py-3 rounded-xl transition border border-slate-800">
-            Explore Live Demo
-          </Link>
-        </div>
+          <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
+            <Link href="/pricing" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
+              View Pricing
+            </Link>
+            <Link href="/demo" className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-850 text-slate-200 px-6 py-3 rounded-xl transition border border-slate-800">
+              Explore Live Demo
+            </Link>
+          </div>
 
-        {/* Minimalist Dashboard Preview Wireframe */}
-        <div className="mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/40 p-2 shadow-2xl shadow-emerald-500/5 backdrop-blur-xs max-w-5xl">
-          <div className="rounded-xl border border-slate-800/80 bg-slate-950 overflow-hidden aspect-[16/9] flex flex-col text-left text-xs text-slate-500">
-            <div className="border-b border-slate-900 p-3 flex items-center gap-2 bg-slate-900/20">
-              <div className="flex gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+          {/* Minimalist Dashboard Preview Wireframe */}
+          <div className="mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/40 p-2 shadow-2xl shadow-emerald-500/5 backdrop-blur-xs max-w-6xl">
+            <div className="rounded-xl border border-slate-800/80 bg-slate-950 overflow-hidden aspect-[16/9] flex flex-col text-left text-xs text-slate-500">
+              <div className="border-b border-slate-900 p-3 flex items-center gap-2 bg-slate-900/20">
+                <div className="flex gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+                </div>
+                <div className="h-4 w-32 bg-slate-900 rounded mx-auto"></div>
               </div>
-              <div className="h-4 w-32 bg-slate-900 rounded mx-auto"></div>
-            </div>
-            <div className="p-4 grid grid-cols-3 gap-4 flex-1">
-              <div className="border border-slate-900 rounded-lg p-3 space-y-2 bg-slate-900/10">
-                <div className="h-3 w-16 bg-slate-900 rounded"></div>
-                <div className="h-6 w-24 bg-slate-900/60 rounded"></div>
-              </div>
-              <div className="border border-slate-900 rounded-lg p-3 space-y-2 bg-slate-900/10">
-                <div className="h-3 w-16 bg-slate-900 rounded"></div>
-                <div className="h-6 w-24 bg-slate-900/60 rounded"></div>
-              </div>
-              <div className="border border-slate-900 rounded-lg p-3 space-y-2 bg-slate-900/10">
-                <div className="h-3 w-16 bg-slate-900 rounded"></div>
-                <div className="h-6 w-24 bg-slate-900/60 rounded"></div>
+              <div className="p-4 grid grid-cols-3 gap-4 flex-1">
+                <div className="border border-slate-900 rounded-lg p-3 space-y-2 bg-slate-900/10">
+                  <div className="h-3 w-16 bg-slate-900 rounded"></div>
+                  <div className="h-6 w-24 bg-slate-900/60 rounded"></div>
+                </div>
+                <div className="border border-slate-900 rounded-lg p-3 space-y-2 bg-slate-900/10">
+                  <div className="h-3 w-16 bg-slate-900 rounded"></div>
+                  <div className="h-6 w-24 bg-slate-900/60 rounded"></div>
+                </div>
+                <div className="border border-slate-900 rounded-lg p-3 space-y-2 bg-slate-900/10">
+                  <div className="h-3 w-16 bg-slate-900 rounded"></div>
+                  <div className="h-6 w-24 bg-slate-900/60 rounded"></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Why Choose Prado Section */}
-        <section className="border-t border-slate-900 bg-slate-950/50 py-24 px-6 relative overflow-hidden">
+        <section className="border-t border-slate-900 bg-slate-950/50 py-24 px-6 relative overflow-hidden w-full">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-emerald-500/5 blur-[100px] pointer-events-none"></div>
 
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
                 Why run your business on <span className="text-emerald-400">Prado?</span>
@@ -180,7 +182,7 @@ export default async function MarketingHomePage() {
 
         {/* Industries Section */}
         <section className="border-t border-slate-900 bg-slate-950/40 py-24 px-6 relative overflow-hidden w-full">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
                 Industries that grow with <span className="text-emerald-400">Prado</span>
@@ -216,7 +218,7 @@ export default async function MarketingHomePage() {
         </section>
 
         <section className="border-t border-slate-900 bg-slate-950/60 py-24 px-6 w-full">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="text-center mb-10">
               <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">From the Blog</h2>
               <p className="mt-3 text-sm md:text-base text-white max-w-2xl mx-auto">
