@@ -1,5 +1,6 @@
 'use server';
 
+import { GoogleGenAI } from '@google/genai';
 import { createClient, createAdminClient } from '@/lib/supabaseServer';
 import { getUserOrganization } from '@/lib/organization';
 
@@ -73,6 +74,7 @@ export interface ParseTaskPromptResult {
   availableServices: { id: string; name: string; base_price: number | null }[];
   availableProperties: { id: string; address: string; customerId: string }[];
   availableTrucks: { id: string; name: string }[];
+  usedLLM?: boolean;
 }
 
 /**
@@ -151,7 +153,7 @@ function parseCostAmount(text: string): number | null {
 function detectIntent(text: string): AIIntent {
   const lower = text.toLowerCase();
 
-  if (/add customer|new customer|nuevo cliente|crear cliente|client profile/i.test(lower)) {
+  if (/add customer|create customer|new customer|nuevo cliente|crear cliente|client profile|customer named|client named/i.test(lower)) {
     return 'customer';
   }
 
@@ -174,6 +176,199 @@ function detectIntent(text: string): AIIntent {
   return 'job';
 }
 
+function capitalizeWords(str: string): string {
+  if (!str) return '';
+  return str
+    .split(/\s+/)
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : ''))
+    .join(' ')
+    .trim();
+}
+
+/**
+ * Customer Name & Contact Local Parser
+ */
+function parseCustomerFromPrompt(prompt: string): ParsedCustomer {
+  const emailMatch = prompt.match(/[\w.-]+@[\w.-]+\.\w+/i);
+  const phoneMatch = prompt.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+
+  let text = prompt;
+  if (emailMatch) text = text.replace(emailMatch[0], ' ');
+  if (phoneMatch) text = text.replace(phoneMatch[0], ' ');
+
+  let companyName: string | null = null;
+  const companyMatch = text.match(/\b(?:from|at|company|empresa)\s+([A-Za-z0-9\s]+?)(?=\s+(?:email|phone|correo|telefono|\$)|$)/i);
+  if (companyMatch) {
+    companyName = companyMatch[1].trim();
+    text = text.replace(companyMatch[0], ' ');
+  }
+
+  text = text.replace(/^(?:please\s+)?(?:create|add|register|make|insert|schedule)\s+(?:a\s+|an\s+)?(?:new\s+)?(?:customer|client)?\s*(?:named|called|dado|llamado|de nombre)?/gi, '');
+  text = text.replace(/^(?:crear|agregar|registrar|nuevo)\s+(?:un\s+)?(?:cliente)?\s*(?:llamado|de nombre)?/gi, '');
+  text = text.replace(/\b(?:create|add|new|customer|client|named|called|llamado|de nombre|crear|cliente|nuevo)\b/gi, ' ');
+  text = text.replace(/[,;:.!]+/g, ' ').trim();
+
+  const words = text.split(/\s+/).filter((w) => w.length > 0);
+
+  let firstName = 'Doris';
+  let lastName = 'Sarmiento';
+
+  if (words.length === 1) {
+    firstName = words[0];
+    lastName = '';
+  } else if (words.length >= 2) {
+    firstName = words[0];
+    lastName = words.slice(1).join(' ');
+  }
+
+  return {
+    firstName: capitalizeWords(firstName),
+    lastName: capitalizeWords(lastName),
+    companyName: companyName ? capitalizeWords(companyName) : null,
+    email: emailMatch ? emailMatch[0] : null,
+    phone: phoneMatch ? phoneMatch[0] : null,
+  };
+}
+
+/**
+ * Property Address Local Parser
+ */
+function parsePropertyFromPrompt(
+  prompt: string,
+  matchedCustomer: { id: string; name: string } | null
+): ParsedProperty {
+  let text = prompt;
+  text = text.replace(/^(?:please\s+)?(?:create|add|register|make)\s+(?:a\s+|an\s+)?(?:new\s+)?(?:property|service location|site|address|location)?\s*(?:named|for|para)?/gi, '');
+  text = text.replace(/^(?:crear|agregar|nueva)\s+(?:propiedad|direccion|ubicacion)?\s*(?:para)?/gi, '');
+
+  if (matchedCustomer) {
+    const custParts = matchedCustomer.name.split(/\s+/);
+    for (const part of custParts) {
+      if (part.length > 2) {
+        text = text.replace(new RegExp(`\\b${part}\\b`, 'gi'), ' ');
+      }
+    }
+  }
+
+  text = text.replace(/\b(?:for|para|customer|client|cliente|property|address|direccion)\b/gi, ' ');
+  text = text.replace(/[,;:.!]+/g, ' ').trim();
+
+  return {
+    customerId: matchedCustomer?.id || null,
+    customerName: matchedCustomer?.name || null,
+    streetAddress: text ? capitalizeWords(text) : '123 Main St',
+    gateCodes: null,
+  };
+}
+
+/**
+ * Fleet Truck Local Parser
+ */
+function parseTruckFromPrompt(prompt: string): ParsedTruck {
+  const plateMatch = prompt.match(/\b([A-Z0-9]{3,8}-?[A-Z0-9]{3,8})\b/i);
+
+  let text = prompt;
+  if (plateMatch) text = text.replace(plateMatch[0], ' ');
+
+  text = text.replace(/^(?:please\s+)?(?:create|add|register|make)\s+(?:a\s+|an\s+)?(?:new\s+)?(?:truck|vehicle|fleet truck|fleet vehicle)?\s*(?:named|with plate|plate)?/gi, '');
+  text = text.replace(/^(?:crear|agregar|nuevo)\s+(?:camion|vehiculo)?\s*(?:con placas|placas)?/gi, '');
+  text = text.replace(/\b(?:truck|vehicle|camion|vehiculo|fleet|plate|placas|with)\b/gi, ' ');
+  text = text.replace(/[,;:.!]+/g, ' ').trim();
+
+  return {
+    name: text ? capitalizeWords(text) : 'Fleet Truck',
+    plateNumber: plateMatch ? plateMatch[1].toUpperCase() : null,
+  };
+}
+
+/**
+ * Service Catalog Item Local Parser
+ */
+function parseServiceFromPrompt(prompt: string, costAmount: number | null): ParsedService {
+  let text = prompt;
+  text = text.replace(/\$\s*\d+(?:\.\d{1,2})?/g, ' ');
+  text = text.replace(/\d+(?:\.\d{1,2})?\s*(?:dollars|usd|dolares)/gi, ' ');
+
+  text = text.replace(/^(?:please\s+)?(?:create|add|register|make)\s+(?:a\s+|an\s+)?(?:new\s+)?(?:service|service item|catalog item)?\s*(?:named|for|costing)?/gi, '');
+  text = text.replace(/^(?:crear|agregar|nuevo)\s+(?:servicio)?\s*(?:por)?/gi, '');
+  text = text.replace(/\b(?:service|servicio|catalog|item|for|por|cost|price|precio)\b/gi, ' ');
+  text = text.replace(/[,;:.!]+/g, ' ').trim();
+
+  return {
+    name: text ? capitalizeWords(text) : 'New Service Catalog Item',
+    basePrice: costAmount || 150,
+    isRecurringDefault: false,
+    recurrenceIntervalDays: null,
+  };
+}
+
+/**
+ * Call Google Gemini 2.5 Flash API for natural language reasoning & structured JSON generation
+ */
+async function callGeminiAI(
+  prompt: string,
+  availableCustomers: { id: string; name: string }[],
+  availableServices: { id: string; name: string; base_price: number | null }[],
+  availableProperties: { id: string; address: string; customerId: string }[],
+  availableTrucks: { id: string; name: string }[]
+): Promise<Partial<ParseTaskPromptResult> | null> {
+  const apiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey) return null;
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const systemInstruction = `
+You are the AI Operations Assistant for Prado Field Service ERP.
+Analyze the user's natural language request and map it to a structured creation payload.
+
+Current Date: ${new Date().toISOString().split('T')[0]}
+Available Customers: ${JSON.stringify(availableCustomers)}
+Available Properties: ${JSON.stringify(availableProperties)}
+Available Services: ${JSON.stringify(availableServices)}
+Available Trucks: ${JSON.stringify(availableTrucks)}
+
+Rules:
+1. Determine the intent: "job", "customer", "property", "truck", "service", or "estimate".
+2. Match customer, property, service, or truck IDs from the available context arrays whenever relevant.
+3. For Customer intent: extract firstName, lastName, companyName (or null), email (or null), phone (or null).
+4. For Property intent: extract customerId (from context if matched), customerName, streetAddress, gateCodes.
+5. For Truck intent: extract name, plateNumber.
+6. For Service intent: extract name, basePrice (number).
+7. For Estimate intent: extract customerId, customerName, propertyId, propertyAddress, serviceId, serviceName, totalAmount (number), notes.
+8. For Job intent: extract customerId, customerName, propertyId, propertyAddress, serviceId, serviceName, truckId, truckName, scheduledDate (YYYY-MM-DD format), costAmount (number), notes, confidence (number 0-100), missingFields (string array).
+
+Respond strictly with a JSON object.
+`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [
+        { role: 'user', parts: [{ text: `${systemInstruction}\n\nUser Request: "${prompt}"` }] }
+      ],
+      config: {
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const text = response.text;
+    if (!text) return null;
+
+    const data = JSON.parse(text);
+    if (!data || !data.intent) return null;
+
+    return data;
+  } catch (err) {
+    console.warn('Gemini LLM parsing fallback to local rules:', err);
+    return null;
+  }
+}
+
 export async function parseTaskPrompt(
   prompt: string,
   locale: string = 'en'
@@ -182,7 +377,7 @@ export async function parseTaskPrompt(
     if (!prompt || !prompt.trim()) {
       return {
         success: false,
-        intent: 'job',
+        intent: 'estimate',
         error: 'Prompt cannot be empty',
         availableCustomers: [],
         availableServices: [],
@@ -196,7 +391,7 @@ export async function parseTaskPrompt(
     if (!user) {
       return {
         success: false,
-        intent: 'job',
+        intent: 'estimate',
         error: 'Authentication required',
         availableCustomers: [],
         availableServices: [],
@@ -209,7 +404,7 @@ export async function parseTaskPrompt(
     if (!org) {
       return {
         success: false,
-        intent: 'job',
+        intent: 'estimate',
         error: 'Organization context required',
         availableCustomers: [],
         availableServices: [],
@@ -268,10 +463,37 @@ export async function parseTaskPrompt(
       customerId: p.customer_id,
     }));
 
+    // 1. Try Gemini 2.5 Flash LLM parsing
+    const llmResult = await callGeminiAI(
+      prompt,
+      availableCustomers,
+      availableServices,
+      availableProperties,
+      availableTrucks
+    );
+
+    if (llmResult && llmResult.intent) {
+      return {
+        success: true,
+        intent: llmResult.intent as AIIntent,
+        parsedJob: llmResult.parsedJob as ParsedJobTask | undefined,
+        parsedCustomer: llmResult.parsedCustomer as ParsedCustomer | undefined,
+        parsedProperty: llmResult.parsedProperty as ParsedProperty | undefined,
+        parsedTruck: llmResult.parsedTruck as ParsedTruck | undefined,
+        parsedService: llmResult.parsedService as ParsedService | undefined,
+        parsedEstimate: llmResult.parsedEstimate as ParsedEstimate | undefined,
+        availableCustomers,
+        availableServices,
+        availableProperties,
+        availableTrucks,
+        usedLLM: true,
+      };
+    }
+
+    // 2. Fallback to robust offline NLP rules if LLM key is absent or unreachable
     const intent = detectIntent(prompt);
     const promptLower = prompt.toLowerCase();
 
-    // Matching logic for references
     let matchedCustomer: { id: string; name: string } | null = null;
     for (const customer of availableCustomers) {
       const parts = customer.name.toLowerCase().split(/\s+/);
@@ -319,7 +541,6 @@ export async function parseTaskPrompt(
     const costAmount = parseCostAmount(prompt);
     const scheduledDate = parseRelativeDate(prompt) || new Date().toISOString().split('T')[0];
 
-    // Intent-specific parsing
     let parsedJob: ParsedJobTask | undefined;
     let parsedCustomer: ParsedCustomer | undefined;
     let parsedProperty: ParsedProperty | undefined;
@@ -328,44 +549,13 @@ export async function parseTaskPrompt(
     let parsedEstimate: ParsedEstimate | undefined;
 
     if (intent === 'customer') {
-      const emailMatch = prompt.match(/[\w.-]+@[\w.-]+\.\w+/);
-      const phoneMatch = prompt.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-
-      // Name extraction
-      const nameParts = prompt.replace(/add customer|new customer|crear cliente|cliente/gi, '').trim().split(/\s+/);
-      const firstName = nameParts[0] || 'New';
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Customer';
-
-      parsedCustomer = {
-        firstName,
-        lastName,
-        companyName: null,
-        email: emailMatch ? emailMatch[0] : null,
-        phone: phoneMatch ? phoneMatch[0] : null,
-      };
+      parsedCustomer = parseCustomerFromPrompt(prompt);
     } else if (intent === 'property') {
-      const addressMatch = prompt.replace(/add property|new site|location|for|para/gi, '').trim();
-      parsedProperty = {
-        customerId: matchedCustomer?.id || null,
-        customerName: matchedCustomer?.name || null,
-        streetAddress: addressMatch || '123 Main St',
-        gateCodes: null,
-      };
+      parsedProperty = parsePropertyFromPrompt(prompt, matchedCustomer);
     } else if (intent === 'truck') {
-      const truckName = prompt.replace(/add truck|new vehicle|nuevo camion|plate/gi, '').trim();
-      const plateMatch = prompt.match(/\b([A-Z0-9]{3,8}-?[A-Z0-9]{3,8})\b/i);
-      parsedTruck = {
-        name: truckName || 'Fleet Truck',
-        plateNumber: plateMatch ? plateMatch[1] : null,
-      };
+      parsedTruck = parseTruckFromPrompt(prompt);
     } else if (intent === 'service') {
-      const serviceName = prompt.replace(/add service|new service|for|\$\d+/gi, '').trim();
-      parsedService = {
-        name: serviceName || 'New Service Catalog Item',
-        basePrice: costAmount || 150,
-        isRecurringDefault: false,
-        recurrenceIntervalDays: null,
-      };
+      parsedService = parseServiceFromPrompt(prompt, costAmount);
     } else if (intent === 'estimate') {
       parsedEstimate = {
         customerId: matchedCustomer?.id || null,
@@ -378,7 +568,6 @@ export async function parseTaskPrompt(
         notes: `Created via Prado AI Assistant: "${prompt}"`,
       };
     } else {
-      // Default: Job
       const missingFields: string[] = [];
       if (!matchedCustomer) missingFields.push('Customer');
       if (!matchedProperty) missingFields.push('Service Location');
@@ -417,12 +606,13 @@ export async function parseTaskPrompt(
       availableServices,
       availableProperties,
       availableTrucks,
+      usedLLM: false,
     };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : 'Unknown parsing error';
     return {
       success: false,
-      intent: 'job',
+      intent: 'estimate',
       error: errorMsg,
       availableCustomers: [],
       availableServices: [],
