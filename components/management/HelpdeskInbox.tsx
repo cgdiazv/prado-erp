@@ -311,42 +311,26 @@ export default function HelpdeskInbox({
   }, [desktopAlertsEnabled, isEs, notificationPermission, orgNameById, playNotificationSound, soundAlertsEnabled, ticketSummaries]);
 
   useEffect(() => {
-    const clearFallbackPolling = () => {
-      if (fallbackPollTimerRef.current !== null) {
-        window.clearInterval(fallbackPollTimerRef.current);
-        fallbackPollTimerRef.current = null;
+    let isMounted = true;
+
+    const triggerRefresh = () => {
+      if (isMounted) {
+        void refreshSnapshot();
       }
     };
 
-    const startFallbackPolling = () => {
-      if (fallbackPollTimerRef.current !== null) return;
-
-      fallbackPollTimerRef.current = window.setInterval(() => {
-        void refreshSnapshot();
-      }, 30000);
-    };
+    // Active polling every 5 seconds to ensure fast queue updates under all network conditions
+    const pollInterval = window.setInterval(triggerRefresh, 5000);
 
     const channel = realtime
       .channel(`helpdesk-inbox-${locale}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'helpdesk_ticket_comments' }, () => {
-        void refreshSnapshot();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'helpdesk_tickets' }, () => {
-        void refreshSnapshot();
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          clearFallbackPolling();
-          return;
-        }
-
-        // If realtime is interrupted, use a lightweight polling fallback.
-        void refreshSnapshot();
-        startFallbackPolling();
-      });
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'helpdesk_ticket_comments' }, triggerRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'helpdesk_tickets' }, triggerRefresh)
+      .subscribe();
 
     return () => {
-      clearFallbackPolling();
+      isMounted = false;
+      window.clearInterval(pollInterval);
       void realtime.removeChannel(channel);
     };
   }, [locale, realtime, refreshSnapshot]);
