@@ -152,11 +152,13 @@ export default async function PradoManagementPage({
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 px-4 sm:px-6 lg:px-8 xl:px-10 py-8">
       <div className="mx-auto w-full max-w-[1800px] space-y-6">
-        <header className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Prado Management Console</h1>
-          <p className="text-sm text-slate-500 mt-2">Manage subscriber account status, trial lifecycle, and support/helpdesk operations.</p>
+        <header className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Prado Management Console</h1>
+            <p className="text-sm text-slate-500 mt-2">Manage subscriber account status, trial lifecycle, and support/helpdesk operations.</p>
+          </div>
 
-          <div className="mt-4 flex flex-wrap gap-3 text-sm">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
             <GeneralInternalTicketModal locale={locale} createTicketAction={createHelpdeskTicket} />
             <a
               href="mailto:support@pradojob.com?subject=Prado%20Helpdesk%20Escalation"
@@ -164,6 +166,17 @@ export default async function PradoManagementPage({
             >
               Email Helpdesk (Fallback)
             </a>
+            <form action={`/${locale}/auth/signout`} method="POST">
+              <button
+                type="submit"
+                className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4 mr-1.5 text-slate-500">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 006 21h7.5a2.25 2.25 0 002.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                </svg>
+                {locale.toLowerCase().startsWith('es') ? 'Cerrar sesión' : 'Sign Out'}
+              </button>
+            </form>
           </div>
         </header>
 
