@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter, useSearchParams, usePathname, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useDashboardNotifications } from '@/components/dashboard/DashboardNotificationContext';
 import { getTranslations } from '@/lib/translations';
 
@@ -14,9 +14,6 @@ interface DashboardNavbarProps {
 }
 
 export default function DashboardNavbar({ userInitials = "C", userFirstName = '' }: DashboardNavbarProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
   const params = useParams();
   const activeLocale = typeof params.lng === 'string' && params.lng.length > 0 ? params.lng : 'en';
   const isEs = activeLocale.toLowerCase().startsWith('es');
@@ -27,18 +24,8 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const notificationRef = useRef<HTMLDivElement | null>(null);
   
-  // Verify state criteria from current URL search parameters
-  const isSidebarOpen = searchParams.get('sidebar') === 'open';
-
   const toggleSidebar = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (isSidebarOpen) {
-      params.delete('sidebar');
-    } else {
-      params.set('sidebar', 'open');
-    }
-    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
-    router.replace(newUrl, { scroll: false });
+    window.dispatchEvent(new CustomEvent('prado:dashboard-sidebar-toggle'));
   };
 
   useEffect(() => {

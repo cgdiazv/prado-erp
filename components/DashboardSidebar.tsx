@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams, useRouter, useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { usePathname, useSearchParams, useParams } from 'next/navigation';
 import { getTranslations } from '@/lib/translations';
 
 interface DashboardSidebarProps {
@@ -19,15 +20,31 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const params = useParams();
   const lng = params.lng;
   const activeLocale = typeof lng === 'string' && lng.length > 0 ? lng : locale;
   const translations = getTranslations(locale);
   const isEs = activeLocale.toLowerCase().startsWith('es');
-  
-  // Check if mobile sidebar is open via URL parameters
-  const isOpen = searchParams.get('sidebar') === 'open';
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    // Keep backward compatibility for links that may still include ?sidebar=open
+    const openFromUrl = searchParams.get('sidebar') === 'open';
+    if (openFromUrl) {
+      setIsOpen(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const handleToggle = () => {
+      setIsOpen((current) => !current);
+    };
+
+    window.addEventListener('prado:dashboard-sidebar-toggle', handleToggle);
+    return () => {
+      window.removeEventListener('prado:dashboard-sidebar-toggle', handleToggle);
+    };
+  }, []);
 
   // Premium features are visible during trial OR with growth/enterprise plans
   const showPremiumFeatures = subscriptionStatus !== 'individual';
@@ -53,11 +70,7 @@ export default function DashboardSidebar({
 
   // Function to gracefully close the sidebar on mobile when a link is clicked
   const closeSidebar = () => {
-    if (!isOpen) return;
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('sidebar');
-    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
-    router.replace(newUrl, { scroll: false });
+    setIsOpen(false);
   };
 
   const localizedHref = (path: string) => `/${activeLocale}${path}`;
