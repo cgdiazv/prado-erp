@@ -22,11 +22,28 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement | null>(null);
   
   const toggleSidebar = () => {
-    window.dispatchEvent(new CustomEvent('prado:dashboard-sidebar-toggle'));
+    const nextOpen = !isSidebarOpen;
+    setIsSidebarOpen(nextOpen);
+    window.dispatchEvent(new CustomEvent('prado:dashboard-sidebar-toggle', { detail: { open: nextOpen } }));
   };
+
+  useEffect(() => {
+    const handleSidebarState = (event: Event) => {
+      const customEvent = event as CustomEvent<{ open?: boolean }>;
+      if (typeof customEvent.detail?.open === 'boolean') {
+        setIsSidebarOpen(customEvent.detail.open);
+      }
+    };
+
+    window.addEventListener('prado:dashboard-sidebar-state', handleSidebarState as EventListener);
+    return () => {
+      window.removeEventListener('prado:dashboard-sidebar-state', handleSidebarState as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {

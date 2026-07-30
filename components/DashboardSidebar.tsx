@@ -36,15 +36,25 @@ export default function DashboardSidebar({
   }, [searchParams]);
 
   useEffect(() => {
-    const handleToggle = () => {
+    const handleToggle = (event: Event) => {
+      const customEvent = event as CustomEvent<{ open?: boolean }>;
+      if (typeof customEvent.detail?.open === 'boolean') {
+        setIsOpen(customEvent.detail.open);
+        return;
+      }
+
       setIsOpen((current) => !current);
     };
 
-    window.addEventListener('prado:dashboard-sidebar-toggle', handleToggle);
+    window.addEventListener('prado:dashboard-sidebar-toggle', handleToggle as EventListener);
     return () => {
-      window.removeEventListener('prado:dashboard-sidebar-toggle', handleToggle);
+      window.removeEventListener('prado:dashboard-sidebar-toggle', handleToggle as EventListener);
     };
   }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('prado:dashboard-sidebar-state', { detail: { open: isOpen } }));
+  }, [isOpen]);
 
   // Premium features are visible during trial OR with growth/enterprise plans
   const showPremiumFeatures = subscriptionStatus !== 'individual';
