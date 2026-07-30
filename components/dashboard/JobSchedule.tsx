@@ -10,6 +10,8 @@ import { downloadICS } from '@/lib/icsExport';
 type FilterType = 'all' | 'scheduled' | 'completed' | 'archived';
 type SortColumn = 'date' | 'address' | 'type' | 'truck' | 'cost' | 'action';
 type SortDirection = 'asc' | 'desc';
+type ScheduleView = 'list' | 'calendar';
+type TimelineSpan = 7 | 12 | 14;
 
 interface JobScheduleProps {
   jobs: any[] | null;
@@ -28,6 +30,12 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortColumn, setSortColumn] = useState<SortColumn>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [activeView, setActiveView] = useState<ScheduleView>('list');
+  const [timelineSpan, setTimelineSpan] = useState<TimelineSpan>(12);
+  const [timelineStart, setTimelineStart] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  });
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [editingDate, setEditingDate] = useState('');
   const [editingTruckId, setEditingTruckId] = useState('');
@@ -181,6 +189,78 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
     return new Date(normalized).toLocaleDateString(dateLocale);
   };
 
+  const toDateKey = (value: string | null | undefined) => {
+    if (!value) return null;
+    return value.slice(0, 10);
+  };
+
+  const getDateKey = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const pendingScheduledJobs = useMemo(
+    () => jobsList.filter((job) => job.status === 'scheduled' && Boolean(toDateKey(job.scheduled_date))),
+    [jobsList]
+  );
+
+  const timelineDays = useMemo(() => {
+    return Array.from({ length: timelineSpan }, (_, index) => {
+      const date = new Date(timelineStart);
+      date.setDate(timelineStart.getDate() + index);
+      return {
+        key: getDateKey(date),
+        shortLabel: new Intl.DateTimeFormat(dateLocale, {
+          weekday: 'short',
+          day: 'numeric',
+        }).format(date),
+      };
+    });
+  }, [dateLocale, timelineSpan, timelineStart]);
+
+  const timelineRangeLabel = useMemo(() => {
+    const end = new Date(timelineStart);
+    end.setDate(timelineStart.getDate() + (timelineSpan - 1));
+    const rangeFormat = new Intl.DateTimeFormat(dateLocale, { month: 'short', day: 'numeric' });
+    return `${rangeFormat.format(timelineStart)} - ${rangeFormat.format(end)}`;
+  }, [dateLocale, timelineSpan, timelineStart]);
+
+  const timelineRows = useMemo(() => {
+    const rows = [
+      ...trucks.map((truck) => ({
+        id: truck.id,
+        label: truck.name,
+        isUnassigned: false,
+      })),
+      {
+        id: '__unassigned__',
+        label: isEs ? 'Sin asignar' : 'Unassigned',
+        isUnassigned: true,
+      },
+    ];
+
+    return rows.map((row) => {
+      const jobsByDay = new Map<string, any[]>();
+
+      for (const day of timelineDays) {
+        const dayJobs = pendingScheduledJobs.filter((job) => {
+          const sameDay = toDateKey(job.scheduled_date) === day.key;
+          if (!sameDay) return false;
+          if (row.isUnassigned) return !job.truck_id;
+          return job.truck_id === row.id;
+        });
+        jobsByDay.set(day.key, dayJobs);
+      }
+
+      return {
+        ...row,
+        jobsByDay,
+      };
+    });
+  }, [isEs, pendingScheduledJobs, timelineDays, trucks]);
+
   return (
     <>
       <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
@@ -206,6 +286,34 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
         </div>
       </div>
 
+      <div className="mb-3 sm:mb-6 md:mb-3 flex items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-0.5 w-fit">
+          <button
+            type="button"
+            onClick={() => setActiveView('list')}
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition ${
+              activeView === 'list' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            {isEs ? 'Lista' : 'List'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveView('calendar')}
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition ${
+              activeView === 'calendar' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            {isEs ? 'Calendario' : 'Calendar'}
+          </button>
+        </div>
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          {pendingScheduledJobs.length} {isEs ? 'pendientes' : 'pending'}
+        </span>
+      </div>
+
+      {activeView === 'list' ? (
+        <>
       {/* Filter tabs + pagination */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-6 md:mb-3">
         {/* Desktop filter buttons */}
@@ -403,6 +511,115 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
         </div>
       ) : (
         <p className="text-gray-500 text-sm italic">{translations.dashboard.noActiveDispatchLogs}</p>
+      )}
+        </>
+      ) : (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = new Date(timelineStart);
+                  next.setDate(timelineStart.getDate() - timelineSpan);
+                  setTimelineStart(next);
+                }}
+                className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50"
+              >
+                {isEs ? 'Anterior' : 'Prev'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  setTimelineStart(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+                }}
+                className="text-xs font-semibold text-emerald-700 border border-emerald-200 bg-emerald-50 rounded-md px-2.5 py-1.5 hover:bg-emerald-100"
+              >
+                {isEs ? 'Hoy' : 'Today'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = new Date(timelineStart);
+                  next.setDate(timelineStart.getDate() + timelineSpan);
+                  setTimelineStart(next);
+                }}
+                className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50"
+              >
+                {isEs ? 'Siguiente' : 'Next'}
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-0.5">
+                {[7, 12, 14].map((span) => (
+                  <button
+                    key={span}
+                    type="button"
+                    onClick={() => setTimelineSpan(span as TimelineSpan)}
+                    className={`px-2 py-1 rounded-md text-[11px] font-semibold transition ${
+                      timelineSpan === span ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {span}d
+                  </button>
+                ))}
+              </div>
+              <p className="text-sm font-bold text-slate-900">{timelineRangeLabel}</p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <div className="min-w-[980px]">
+              <div className="grid grid-cols-[180px_1fr] border border-slate-200 rounded-t-lg bg-slate-50 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                <div className="px-3 py-2 border-r border-slate-200">{isEs ? 'Camion' : 'Truck'}</div>
+                <div
+                  className="grid"
+                  style={{ gridTemplateColumns: `repeat(${timelineDays.length}, minmax(68px, 1fr))` }}
+                >
+                  {timelineDays.map((day) => (
+                    <div key={day.key} className="px-2 py-2 text-center border-r last:border-r-0 border-slate-200">
+                      {day.shortLabel}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {timelineRows.map((row) => (
+                <div key={row.id} className="grid grid-cols-[180px_1fr] border-x border-b border-slate-200 last:rounded-b-lg overflow-hidden">
+                  <div className="px-3 py-2.5 border-r border-slate-200 bg-white text-xs font-semibold text-slate-700 truncate">
+                    {row.label}
+                  </div>
+                  <div className="grid" style={{ gridTemplateColumns: `repeat(${timelineDays.length}, minmax(68px, 1fr))` }}>
+                    {timelineDays.map((day) => {
+                      const dayJobs = row.jobsByDay.get(day.key) || [];
+                      return (
+                        <div key={`${row.id}-${day.key}`} className="min-h-[78px] border-r last:border-r-0 border-slate-200 bg-white p-1.5">
+                          <div className="space-y-1">
+                            {dayJobs.slice(0, 2).map((job) => (
+                              <button
+                                key={job.id}
+                                type="button"
+                                onClick={() => openScheduleDetails(job)}
+                                className="w-full truncate rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-left text-[10px] font-semibold text-emerald-800 hover:bg-emerald-100"
+                                title={`${job.job_type} • ${job.properties?.street_address || ''}`}
+                              >
+                                {job.job_type}
+                              </button>
+                            ))}
+                            {dayJobs.length > 2 ? (
+                              <p className="text-[10px] font-semibold text-slate-500">+{dayJobs.length - 2}</p>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {editingJobId && (
