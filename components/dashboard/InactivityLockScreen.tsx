@@ -95,10 +95,6 @@ export default function InactivityLockScreen({
     [password, router, startLockTimer, userEmail]
   );
 
-  const sendToLogin = useCallback(() => {
-    window.location.href = `/${locale}/login?locked=true`;
-  }, [locale]);
-
   useEffect(() => {
     const events: Array<keyof WindowEventMap> = [
       'mousemove',
@@ -134,10 +130,6 @@ export default function InactivityLockScreen({
   const unlockLabel = locale.toLowerCase().startsWith('es')
     ? 'Desbloquear espacio de trabajo'
     : 'Unlock Workspace';
-
-  const reauthLabel = locale.toLowerCase().startsWith('es')
-    ? 'Volver a iniciar sesion'
-    : 'Re-authenticate';
 
   const unlockWithPasswordLabel = locale.toLowerCase().startsWith('es')
     ? 'Desbloquear con contraseña'
@@ -204,22 +196,13 @@ export default function InactivityLockScreen({
                     />
                   </div>
 
-                  <div className="flex gap-3">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="flex-1 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                    >
-                      {isSubmitting ? (locale.toLowerCase().startsWith('es') ? 'Verificando...' : 'Verifying...') : unlockLabel}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={sendToLogin}
-                      className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      {reauthLabel}
-                    </button>
-                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {isSubmitting ? (locale.toLowerCase().startsWith('es') ? 'Verificando...' : 'Verifying...') : unlockLabel}
+                  </button>
                 </form>
               </div>
             </div>
