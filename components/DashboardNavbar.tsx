@@ -143,17 +143,18 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
         </Link>
 
         {/* Right Side: Account Settings Avatar & Mobile Menu Toggle */}
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex items-center gap-2">
+          <div className="order-2 flex items-center gap-2">
+            <div className="relative">
             <button
               type="button"
               onClick={openSettingsMenu}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+              className="inline-flex h-8 w-8 items-center justify-center text-slate-600 transition hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
               aria-label={isEs ? 'Abrir configuracion' : 'Open settings'}
               aria-haspopup="menu"
               aria-expanded={showSettingsMenu}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-4 w-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.645-.869l.214-1.28z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
@@ -200,16 +201,16 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
               </div>
               </>
             ) : null}
-          </div>
+            </div>
 
-          <div className="relative mt-0.5" ref={notificationRef}>
+            <div className="relative mt-0.5" ref={notificationRef}>
             <button
               type="button"
               onClick={() => setShowNotifications((current) => !current)}
-              className="tour-notification-icon relative h-8 w-8 cursor-pointer rounded-full border border-gray-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+              className="tour-notification-icon relative h-8 w-8 cursor-pointer text-slate-600 transition hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
               aria-label={isEs ? 'Abrir notificaciones' : 'Open notifications'}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="mx-auto h-4 w-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="mx-auto h-5 w-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9a6 6 0 00-12 0v.05-.05.7a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.081 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
               </svg>
               {unreadCount > 0 ? (
@@ -249,12 +250,13 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
                 </div>
               </div>
             ) : null}
+            </div>
           </div>
 
           {/* Mobile Hamburger Toggle Trigger Menu Button */}
           <button
             onClick={toggleSidebar}
-            className="md:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 focus:outline-none transition cursor-pointer"
+            className="order-3 md:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 focus:outline-none transition cursor-pointer"
             aria-label="Toggle workspace side menu"
           >
             {isSidebarOpen ? (
@@ -275,7 +277,7 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
               closeAllMenus();
               setShowAIAssistant(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-xs hover:bg-emerald-100 hover:border-emerald-300 transition cursor-pointer"
+            className="order-1 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-xs hover:bg-emerald-100 hover:border-emerald-300 transition cursor-pointer"
             aria-label={isEs ? 'Asistente IA' : 'AI Assistant'}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4 text-emerald-600">
