@@ -584,6 +584,7 @@ export default function RouteEngine({
     {
       label: translations.dashboard.routeMissingGeo,
       value: missingGeoCount,
+      hideOnMobile: true,
     },
     {
       label: translations.dashboard.unassignedJobs,
@@ -649,9 +650,12 @@ export default function RouteEngine({
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-3 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
           {routeAlerts.map((alert) => (
-            <div key={alert.label} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <div
+              key={alert.label}
+              className={`rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 ${alert.hideOnMobile ? 'hidden sm:block' : ''}`}
+            >
               <span className="block text-slate-500 uppercase tracking-wider font-semibold">{alert.label}</span>
               <span className="block mt-1 text-slate-900 font-bold">{alert.value}</span>
             </div>

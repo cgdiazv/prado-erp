@@ -8,7 +8,7 @@ import { getTranslations } from '@/lib/translations';
 import { downloadICS } from '@/lib/icsExport';
 
 type FilterType = 'all' | 'scheduled' | 'completed' | 'archived';
-type SortColumn = 'date' | 'address' | 'type' | 'cost' | 'action';
+type SortColumn = 'date' | 'address' | 'type' | 'truck' | 'cost' | 'action';
 type SortDirection = 'asc' | 'desc';
 
 interface JobScheduleProps {
@@ -99,8 +99,13 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
   ).length;
 
   const sortedJobs = useMemo(() => {
+    const truckNameById = new Map(trucks.map((truck) => [truck.id, truck.name]));
     const getAddress = (job: any) => (job.properties?.street_address || '').toLowerCase();
     const getType = (job: any) => (job.job_type || '').toLowerCase();
+    const getTruck = (job: any) => (
+      (job.truck_id ? (truckNameById.get(job.truck_id) || '') : (isEs ? 'sin asignar' : 'unassigned'))
+        .toLowerCase()
+    );
     const getCost = (job: any) => Number.parseFloat(String(job.cost_amount || 0));
     const getDate = (job: any) => new Date(job.scheduled_date || 0).getTime();
     const getActionRank = (job: any) => {
@@ -119,6 +124,8 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
         result = getAddress(a).localeCompare(getAddress(b));
       } else if (sortColumn === 'type') {
         result = getType(a).localeCompare(getType(b));
+      } else if (sortColumn === 'truck') {
+        result = getTruck(a).localeCompare(getTruck(b));
       } else if (sortColumn === 'cost') {
         result = getCost(a) - getCost(b);
       } else if (sortColumn === 'action') {
@@ -129,7 +136,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
     });
 
     return sorted;
-  }, [filteredJobs, sortColumn, sortDirection]);
+  }, [filteredJobs, isEs, sortColumn, sortDirection, trucks]);
 
   const totalPages = Math.max(1, Math.ceil(sortedJobs.length / pageSize));
   const paginatedJobs = sortedJobs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -294,7 +301,10 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                   </button>
                 </th>
                 <th className="px-4 py-3">
-                  <span>{isEs ? 'Camión' : 'Truck'}</span>
+                  <button type="button" onClick={() => handleSort('truck')} className="inline-flex items-center gap-1">
+                    <span>{isEs ? 'Camión' : 'Truck'}</span>
+                    {renderSortIndicator('truck')}
+                  </button>
                 </th>
                 <th className="px-4 py-3">
                   <button type="button" onClick={() => handleSort('cost')} className="inline-flex items-center gap-1">
