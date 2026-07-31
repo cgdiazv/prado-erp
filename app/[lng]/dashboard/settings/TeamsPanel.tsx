@@ -46,7 +46,7 @@ const USER_ROLES = [
 export default function TeamsPanel({ organizationId, locale = 'en', subscriptionStatus = null, currentUserRole = null, initialRolePermissions }: TeamsPanelProps) {
   const isEs = locale.toLowerCase().startsWith('es');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<TeamMember['role']>('supervisor');
+  const [role, setRole] = useState<TeamMember['role']>('owner');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -212,7 +212,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
       if (result.success) {
         setMessage(result.message || 'Invitation sent successfully!');
         setEmail('');
-        setRole('supervisor');
+        setRole('owner');
         
         // Reload members list
         await loadMembers();
@@ -439,8 +439,9 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
                     onChange={(e) => setRole(e.target.value as TeamMember['role'])}
                     className="rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   >
-                    <option value="supervisor">{isEs ? 'Supervisor' : 'Supervisor'}</option>
+                    <option value="owner">{isEs ? 'Admin/Propietario' : 'Admin/Owner'}</option>
                     <option value="manager">{isEs ? 'Gerente' : 'Manager'}</option>
+                    <option value="supervisor">{isEs ? 'Supervisor' : 'Supervisor'}</option>
                     <option value="dispatcher">{isEs ? 'Despachador' : 'Dispatcher'}</option>
                     <option value="billing">{isEs ? 'Facturación' : 'Billing'}</option>
                   </select>

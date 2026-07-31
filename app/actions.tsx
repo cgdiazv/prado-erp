@@ -1968,16 +1968,7 @@ export async function verifyPlanLimitBeforeAddingMember(organizationId: string):
 interface AddTeamMemberPayload {
   organizationId: string;
   email: string;
-  role:
-    | 'member'
-    | 'admin'
-    | 'accountant'
-    | 'viewer'
-    | 'owner'
-    | 'manager'
-    | 'supervisor'
-    | 'dispatcher'
-    | 'billing';
+  role: 'owner' | 'manager' | 'supervisor' | 'dispatcher' | 'billing';
 }
 
 export async function inviteTeamMember(payload: AddTeamMemberPayload) {
