@@ -1,6 +1,7 @@
 'use server';
 
-import { createAdminClient, createClient } from '@/lib/supabaseServer';
+import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { getUserOrganization } from '@/lib/organization';
 import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';

@@ -1,6 +1,7 @@
 'use server';
 
-import { createClient, createAdminClient } from '@/lib/supabaseServer'; 
+import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { Resend } from 'resend';
 import { findAuthUserIndexByEmail, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 import { issueRememberToken } from '@/lib/rememberMe';

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import ExpenseLedger from '@/components/dashboard/ExpenseLedger';
 import LogExpenseModal from '@/components/dashboard/LogExpenseModal';
+import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { getUserOrganization } from '@/lib/organization';
 import { createClient } from '@/lib/supabaseServer';
 import { getTranslations } from '@/lib/translations';
@@ -40,10 +41,15 @@ export default async function ExpenseLedgerPage({ params }: ExpenseLedgerPagePro
     redirect('/login');
   }
 
-  const { organization: org } = await getUserOrganization(user.id);
+  const { organization: org, role } = await getUserOrganization(user.id);
 
   if (!org) {
     redirect(`/${locale}/auth/access-pending`);
+  }
+
+  const canAccessExpenses = await hasDashboardModuleAccess(org.id, role, 'expenses');
+  if (!canAccessExpenses) {
+    redirect(`/${locale}/dashboard`);
   }
 
   const { data: expensesData, error } = await supabase

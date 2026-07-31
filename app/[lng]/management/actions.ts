@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { createAdminClient, createClient } from '@/lib/supabaseServer';
+import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { isPradoManagementUser } from '@/lib/pradoManagement';
 
 const ALLOWED_SUBSCRIPTION_STATUS = new Set([

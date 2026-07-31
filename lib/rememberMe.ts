@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { randomBytes, createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createAdminClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 
 export const REMEMBER_ME_COOKIE_NAME = 'prado_remember';
 const REMEMBER_ME_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;

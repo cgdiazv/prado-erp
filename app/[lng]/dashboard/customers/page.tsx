@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import AddCustomerModal from '@/components/dashboard/AddCustomerModal';
 import CustomersAccountsSection from '@/components/dashboard/CustomersAccountsSection';
+import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
@@ -21,6 +22,11 @@ export default async function CustomersPage({
 
   const { organization: org, role } = await getUserOrganization(user.id);
   if (!org) redirect(`/${locale}/auth/access-pending`);
+
+  const canAccessCustomers = await hasDashboardModuleAccess(org.id, role, 'customers');
+  if (!canAccessCustomers) {
+    redirect(`/${locale}/dashboard`);
+  }
 
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);

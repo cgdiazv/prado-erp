@@ -1,7 +1,7 @@
 'use server';
 
 import { getValidXeroToken } from '@/lib/xero';
-import { createAdminClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { normalizeCurrencyCode } from '@/lib/currency';
 import { clearAccountingSyncWarning, setAccountingSyncWarning } from '@/lib/accountingSyncWarnings';
 

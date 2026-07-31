@@ -13,6 +13,7 @@ import XeroConnectionCard from '../XeroConnectionCard';
 import QBOConnectionCard from '../QBOConnectionCard';
 import StripeConnectSettings from '@/components/dashboard/StripeConnectSettings';
 import { updateDispatchSettings } from '../actions';
+import { getOrganizationRolePermissions, hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
 
@@ -72,6 +73,11 @@ export default async function SettingsSectionPage({
 
   if (!org) {
     redirect(`/${locale}/auth/access-pending`);
+  }
+
+  const canAccessSettingsModule = await hasDashboardModuleAccess(org.id, role, 'settings');
+  if (!canAccessSettingsModule) {
+    redirect(`/${locale}/dashboard`);
   }
 
   const initial = org.name ? org.name.charAt(0) : 'C';
@@ -155,6 +161,7 @@ export default async function SettingsSectionPage({
     auto_charge_default: boolean | null;
   }> = [];
   let trucks: Array<{ id: string; name: string; plate_number: string | null; is_active: boolean; status: string | null }> = [];
+  const initialRolePermissions = !isIndividualAccount ? await getOrganizationRolePermissions(org.id) : null;
 
   if (section === 'operations-settings') {
     const [{ data: serviceRows }, { data: truckRows }] = await Promise.all([
@@ -286,6 +293,7 @@ export default async function SettingsSectionPage({
                 locale={locale}
                 subscriptionStatus={org.subscription_status || null}
                 currentUserRole={normalizedRole || null}
+                initialRolePermissions={initialRolePermissions || undefined}
               />
             )}
 

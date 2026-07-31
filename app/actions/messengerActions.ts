@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient, createAdminClient } from '@/lib/supabaseServer';
+import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { getUserOrganization } from '@/lib/organization';
 
 const ACTIVE_SUPPORT_TICKET_STATUSES = ['open', 'in_progress', 'blocked'];

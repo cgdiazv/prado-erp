@@ -1,7 +1,8 @@
 'use server';
 
 import { GoogleGenAI } from '@google/genai';
-import { createClient, createAdminClient } from '@/lib/supabaseServer';
+import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { getUserOrganization } from '@/lib/organization';
 
 export type AIIntent = 'job' | 'customer' | 'property' | 'truck' | 'service' | 'estimate';

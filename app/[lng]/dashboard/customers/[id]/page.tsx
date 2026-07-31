@@ -7,6 +7,7 @@ import CustomerJobLogTable from '@/components/dashboard/CustomerJobLogTable';
 import ServiceSitesSection from '@/components/dashboard/ServiceSitesSection';
 import CustomerEmailModal from '@/components/dashboard/CustomerEmailModal';
 import { deleteCustomer } from '../../../../actions';
+import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
 
@@ -33,6 +34,11 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
 
   if (!org) {
     redirect(`/${locale}/auth/access-pending`);
+  }
+
+  const canAccessCustomers = await hasDashboardModuleAccess(org.id, role, 'customers');
+  if (!canAccessCustomers) {
+    redirect(`/${locale}/dashboard`);
   }
 
   // 3. Fetch all components securely isolated to this customer's profile scope

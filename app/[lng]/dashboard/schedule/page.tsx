@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import JobSchedule from '@/components/dashboard/JobSchedule';
 import ScheduleJobModal from '@/components/dashboard/ScheduleJobModal';
+import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
@@ -24,6 +25,11 @@ export default async function SchedulePage({
 
   const { organization: org, role } = await getUserOrganization(user.id);
   if (!org) redirect(`/${locale}/auth/access-pending`);
+
+  const canAccessJobs = await hasDashboardModuleAccess(org.id, role, 'jobs');
+  if (!canAccessJobs) {
+    redirect(`/${locale}/dashboard`);
+  }
 
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);

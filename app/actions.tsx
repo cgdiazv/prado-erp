@@ -1,6 +1,7 @@
 'use server';
 
-import { createClient, createAdminClient } from '@/lib/supabaseServer';
+import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
 import { Resend } from 'resend';
@@ -13,6 +14,13 @@ import JobCompletedEmail from '@/emails/job-completed-email';
 import { enqueueXeroCompletedJobInvoice, enqueueXeroExpenseBill } from '@/app/actions/xeroActions';
 import { syncInvoiceToQBO } from '@/app/actions/qboActions';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
+import {
+  DASHBOARD_MODULES,
+  getDefaultModulesForRole,
+  hasDashboardModuleAccess,
+  isDashboardModule,
+  isEditableDashboardRole,
+} from '@/lib/dashboardRolePermissions';
 import { getUserOrganization } from '@/lib/organization';
 import { findAuthUserIndexByEmail, findAuthUserIndexByUserIds, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 import { normalizeCurrencyCode, toStripeCurrency } from '@/lib/currency';
@@ -1551,6 +1559,11 @@ export async function getEstimatesDashboardData() {
       return { error: 'Organization not found.', estimates: [], customers: [], services: [], trucks: [] };
     }
 
+    const canAccessEstimates = await hasDashboardModuleAccess(org.id, role, 'estimates');
+    if (!canAccessEstimates) {
+      return { error: 'Access denied for estimates module.', estimates: [], customers: [], services: [], trucks: [] };
+    }
+
     const normalizedRole = (role || '').toLowerCase();
     const canViewImportExport = normalizedRole === 'owner' || normalizedRole === 'admin';
 
@@ -1955,7 +1968,16 @@ export async function verifyPlanLimitBeforeAddingMember(organizationId: string):
 interface AddTeamMemberPayload {
   organizationId: string;
   email: string;
-  role: 'member' | 'admin' | 'accountant' | 'viewer'; // Supervisor, Manager, Accountant, Guest
+  role:
+    | 'member'
+    | 'admin'
+    | 'accountant'
+    | 'viewer'
+    | 'owner'
+    | 'manager'
+    | 'supervisor'
+    | 'dispatcher'
+    | 'billing';
 }
 
 export async function inviteTeamMember(payload: AddTeamMemberPayload) {
@@ -2397,7 +2419,8 @@ export async function getTeamMembers(organizationId: string) {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if ((membership as any)?.role !== 'admin') {
+      const memberRole = String((membership as any)?.role || '').toLowerCase();
+      if (memberRole !== 'admin' && memberRole !== 'manager') {
         return { success: false, members: [], error: 'Only organization owner or manager can view members.' };
       }
     }
@@ -2483,6 +2506,97 @@ export async function getTeamMembers(organizationId: string) {
   } catch (error: unknown) {
     console.error('Failed to fetch team members:', error);
     return { success: false, members: [], error: (error as Error)?.message || 'Failed to fetch team members.' };
+  }
+}
+
+export async function saveOrganizationRolePermissions(payload: {
+  organizationId: string;
+  role: string;
+  modules: string[];
+  locale?: string;
+}) {
+  try {
+    const locale = payload.locale || 'en';
+    const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Unauthorized.' };
+    }
+
+    const { organization, role: currentRole } = await getUserOrganization(user.id);
+    if (!organization || organization.id !== payload.organizationId) {
+      return { success: false, error: 'Workspace not found.' };
+    }
+
+    const normalizedActorRole = String(currentRole || '').toLowerCase();
+    const canManageRolePermissions =
+      normalizedActorRole === 'owner' || normalizedActorRole === 'admin' || normalizedActorRole === 'manager';
+
+    if (!canManageRolePermissions) {
+      return { success: false, error: 'Only workspace owners or managers can update role permissions.' };
+    }
+
+    if (!isEditableDashboardRole(payload.role)) {
+      return { success: false, error: 'Invalid role.' };
+    }
+
+    const normalizedModules = Array.from(new Set((payload.modules || []).filter((moduleId) => isDashboardModule(moduleId))));
+
+    const { error } = await supabaseAdmin
+      .from('organization_role_permissions')
+      .upsert(
+        {
+          organization_id: payload.organizationId,
+          role: payload.role,
+          modules: normalizedModules,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'organization_id,role' }
+      );
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    const revalidateTargets = [
+      '/dashboard',
+      `/${locale}/dashboard`,
+      '/dashboard/customers',
+      `/${locale}/dashboard/customers`,
+      '/dashboard/estimates',
+      `/${locale}/dashboard/estimates`,
+      '/dashboard/schedule',
+      `/${locale}/dashboard/schedule`,
+      '/dashboard/routing',
+      `/${locale}/dashboard/routing`,
+      '/dashboard/invoices-ledger',
+      `/${locale}/dashboard/invoices-ledger`,
+      '/dashboard/expense-ledger',
+      `/${locale}/dashboard/expense-ledger`,
+      '/dashboard/settings',
+      `/${locale}/dashboard/settings`,
+      '/dashboard/settings/team-settings',
+      `/${locale}/dashboard/settings/team-settings`,
+    ];
+
+    revalidateTargets.forEach((path) => revalidatePath(path));
+
+    return {
+      success: true,
+      role: payload.role,
+      modules: normalizedModules.length > 0 ? normalizedModules : getDefaultModulesForRole(payload.role),
+      availableModules: [...DASHBOARD_MODULES],
+    };
+  } catch (error: unknown) {
+    console.error('Failed to save organization role permissions:', error);
+    return {
+      success: false,
+      error: (error as Error)?.message || 'Failed to save role permissions.',
+    };
   }
 }
 

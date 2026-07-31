@@ -5,6 +5,7 @@ import DashboardSidebar from '@/components/DashboardSidebar';
 import BillingModal from '@/components/BillingModal';
 import { DashboardNotificationProvider } from '@/components/dashboard/DashboardNotificationContext';
 import AccountingSyncWarningBanner from '@/components/dashboard/AccountingSyncWarningBanner';
+import { getAllowedDashboardModules } from '@/lib/dashboardRolePermissions';
 import { getUserOrganization } from '@/lib/organization';
 import { isPradoManagementUser } from '@/lib/pradoManagement';
 import { REMEMBER_ME_COOKIE_NAME } from '@/lib/rememberMe';
@@ -40,6 +41,8 @@ export default async function DashboardLayout({
   if (!org) {
     redirect(`/${locale}/auth/access-pending`);
   }
+
+  const allowedModules = await getAllowedDashboardModules(org.id, role);
 
   const { data: profile } = await supabase
     .from('user_profiles')
@@ -110,6 +113,7 @@ export default async function DashboardLayout({
               locale={locale}
               canViewImportExport={canViewImportExport}
               canAccessPradoManagement={canAccessPradoManagement}
+              allowedModules={allowedModules}
             />
           </div>
           <InactivityLockScreen locale={locale} userEmail={user.email ?? ''}>

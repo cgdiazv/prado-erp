@@ -6,7 +6,7 @@ type InviteMemberEmailProps = {
   organizationName?: string;
   organizationSlogan?: string;
   organizationLogoUrl?: string;
-  role: 'member' | 'admin' | 'accountant' | 'viewer';
+  role: string;
   inviteLink?: string;
 };
 

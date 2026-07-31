@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabaseServer';
-import { createAdminClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { redirect } from 'next/navigation';
 import { getUserOrganization } from '@/lib/organization';
 import ProfileSettingsForm from './ProfileSettingsForm';

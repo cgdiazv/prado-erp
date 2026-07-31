@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { usePathname, useSearchParams, useParams } from 'next/navigation';
+import { usePathname, useSearchParams, useParams } from 'next/navigation'; 
+import { DASHBOARD_MODULES, type DashboardModule } from '@/lib/dashboardRolePermissions.config';
 import { getTranslations } from '@/lib/translations';
 
 interface DashboardSidebarProps {
@@ -10,6 +11,7 @@ interface DashboardSidebarProps {
   locale?: string;
   canViewImportExport?: boolean;
   canAccessPradoManagement?: boolean;
+  allowedModules?: DashboardModule[];
 }
 
 export default function DashboardSidebar({
@@ -17,6 +19,7 @@ export default function DashboardSidebar({
   locale = 'en',
   canViewImportExport = false,
   canAccessPradoManagement = false,
+  allowedModules = [...DASHBOARD_MODULES],
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -58,6 +61,8 @@ export default function DashboardSidebar({
 
   // Premium features are visible during trial OR with growth/enterprise plans
   const showPremiumFeatures = subscriptionStatus !== 'individual';
+  const hasModuleAccess = (moduleId: DashboardModule) => allowedModules.includes(moduleId);
+  const canSeeFinanceSection = showPremiumFeatures && (hasModuleAccess('invoice') || hasModuleAccess('expenses'));
 
   const linkStyle = (path: string) => {
     // Adjust the path for comparison to include the current language
@@ -112,56 +117,70 @@ export default function DashboardSidebar({
             {translations.dashboard.overviewTerminal}
           </Link>
 
+          {hasModuleAccess('customers') ? (
           <Link href={localizedHref('/dashboard/customers')} onClick={closeSidebar} className={linkStyle('/dashboard/customers')}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
             </svg>
             {translations.dashboard.customerCrm}
           </Link>
+          ) : null}
 
+          {hasModuleAccess('estimates') ? (
           <Link href={localizedHref('/dashboard/estimates')} onClick={closeSidebar} className={linkStyle('/dashboard/estimates')}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12h6m-6 3h3.75M3 16.5V7.5A2.25 2.25 0 015.25 5.25h5.379a1.125 1.125 0 01.795.33l5.121 5.121a1.125 1.125 0 01.33.795V16.5A2.25 2.25 0 0114.625 18.75h-9.375A2.25 2.25 0 013 16.5z" />
             </svg>
             {translations.dashboard.estimates}
           </Link>
+          ) : null}
 
+          {hasModuleAccess('jobs') ? (
           <Link href={localizedHref('/dashboard/schedule')} onClick={closeSidebar} className={linkStyle('/dashboard/schedule')}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
             </svg>
             {translations.dashboard.jobScheduling}
           </Link>
+          ) : null}
 
           {/* PREMIUM CAPABILITIES: Available to Trial, Growth, and Enterprise */}
           {showPremiumFeatures && (
             <>
+              {hasModuleAccess('dispatch') ? (
               <Link href={localizedHref('/dashboard/routing')} onClick={closeSidebar} className={linkStyle('/dashboard/routing')}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.856 1.928a1.125 1.125 0 01-1.006 0L9.503 3.813a1.125 1.125 0 00-1.006 0L3.622 6.565c-.383.19-.622.58-.622 1.006v12.166c0 .836.88 1.38 1.628 1.006l3.856-1.928a1.125 1.125 0 011.006 0l3.856 1.928a1.125 1.125 0 001.006 0z" />
                 </svg>
                 {translations.dashboard.dispatchRouting}
               </Link>
+              ) : null}
 
+              {canSeeFinanceSection ? (
               <div className="pt-2 mt-1 border-t border-gray-100">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-3 mb-2">
                   {isEs ? 'Finanzas' : 'Finances'}
                 </p>
 
+                {hasModuleAccess('invoice') ? (
                 <Link href={localizedHref('/dashboard/invoices-ledger')} onClick={closeSidebar} className={linkStyle('/dashboard/invoices-ledger')}>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M7.5 4.5h9A1.5 1.5 0 0118 6v12a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 016 18V6a1.5 1.5 0 011.5-1.5z" />
                   </svg>
                   Invoices Ledger
                 </Link>
+                ) : null}
 
+                {hasModuleAccess('expenses') ? (
                 <Link href={localizedHref('/dashboard/expense-ledger')} onClick={closeSidebar} className={linkStyle('/dashboard/expense-ledger')}>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   {translations.dashboard.expenseLedger}
                 </Link>
+                ) : null}
               </div>
+              ) : null}
             </>
           )}
 

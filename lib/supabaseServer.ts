@@ -1,5 +1,4 @@
 import { createServerClient } from '@supabase/ssr';
-import { createClient as createSupabaseRawClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 // Standard client for authenticated user flows (Respects RLS)
@@ -25,13 +24,5 @@ export async function createClient() {
         },
       },
     }
-  );
-}
-
-// Admin client for post-signup pipeline (Bypasses RLS before email is confirmed)
-export function createAdminClient() {
-  return createSupabaseRawClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }

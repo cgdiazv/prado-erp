@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createAdminClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 
 export default async function PaymentSuccessPage({
   params,

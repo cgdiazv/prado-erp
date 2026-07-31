@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 
 export type UserOrganization = {
   id: string;

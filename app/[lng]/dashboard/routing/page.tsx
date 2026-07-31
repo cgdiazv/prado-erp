@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import RouteEngine from '@/components/dashboard/RouteEngine';
+import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
@@ -22,6 +23,11 @@ export default async function RoutingPage({
 
   const { organization: org, role } = await getUserOrganization(user.id);
   if (!org) redirect(`/${locale}/auth/access-pending`);
+
+  const canAccessDispatch = await hasDashboardModuleAccess(org.id, role, 'dispatch');
+  if (!canAccessDispatch) {
+    redirect(`/${locale}/dashboard`);
+  }
 
   // 1. SECURITY TIER GUARD: Allow 'enterprise' and active 'trial' profiles, block 'individual'
   if (org.subscription_status === 'individual') {

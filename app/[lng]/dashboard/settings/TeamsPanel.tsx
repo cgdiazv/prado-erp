@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { inviteTeamMember, removeTeamMember, getTeamMembers } from '@/app/actions';
+import { inviteTeamMember, removeTeamMember, getTeamMembers, saveOrganizationRolePermissions } from '@/app/actions';
+import { DASHBOARD_MODULES, DEFAULT_ROLE_MODULES, type DashboardRolePermissionsMap } from '@/lib/dashboardRolePermissions';
 import { getTranslations } from '@/lib/translations';
 import { createClient as createBrowserSupabaseClient } from '@/lib/supabaseClient';
 
@@ -11,7 +12,7 @@ interface TeamMember {
   last_name?: string;
   phone?: string | null;
   last_login_at?: string | null;
-  role: 'member' | 'admin' | 'owner' | 'accountant' | 'viewer';
+  role: 'owner' | 'manager' | 'supervisor' | 'dispatcher' | 'billing';
   invited_at: string;
   status?: 'accepted' | 'pending';
 }
@@ -21,35 +22,31 @@ interface TeamsPanelProps {
   locale?: string;
   subscriptionStatus?: string | null;
   currentUserRole?: string | null;
+  initialRolePermissions?: DashboardRolePermissionsMap;
 }
 
 const USER_ROLES = [
   {
     id: 'owner',
-    permissions: ['manage_team', 'manage_billing', 'manage_settings', 'edit_data', 'view_data']
   },
   {
-    id: 'admin',
-    permissions: ['manage_team', 'manage_settings', 'edit_data', 'view_data']
+    id: 'manager',
   },
   {
-    id: 'member',
-    permissions: ['edit_data', 'view_data']
+    id: 'supervisor',
   },
   {
-    id: 'accountant',
-    permissions: ['manage_billing', 'view_data']
+    id: 'dispatcher',
   },
   {
-    id: 'viewer',
-    permissions: ['view_data']
+    id: 'billing',
   }
 ];
 
-export default function TeamsPanel({ organizationId, locale = 'en', subscriptionStatus = null, currentUserRole = null }: TeamsPanelProps) {
+export default function TeamsPanel({ organizationId, locale = 'en', subscriptionStatus = null, currentUserRole = null, initialRolePermissions }: TeamsPanelProps) {
   const isEs = locale.toLowerCase().startsWith('es');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'member' | 'admin' | 'accountant' | 'viewer'>('member');
+  const [role, setRole] = useState<TeamMember['role']>('supervisor');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -59,7 +56,17 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
   const [isResolvingRole, setIsResolvingRole] = useState(!normalizedInitialRole);
   const [resolvedUserRole, setResolvedUserRole] = useState<string | null>(normalizedInitialRole);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
-  const [showRolesReference, setShowRolesReference] = useState(false);
+  const [rolePermissions, setRolePermissions] = useState<DashboardRolePermissionsMap>(() => ({
+    owner: [...(initialRolePermissions?.owner || DEFAULT_ROLE_MODULES.owner)],
+    manager: [...(initialRolePermissions?.manager || DEFAULT_ROLE_MODULES.manager)],
+    supervisor: [...(initialRolePermissions?.supervisor || DEFAULT_ROLE_MODULES.supervisor)],
+    dispatcher: [...(initialRolePermissions?.dispatcher || DEFAULT_ROLE_MODULES.dispatcher)],
+    billing: [...(initialRolePermissions?.billing || DEFAULT_ROLE_MODULES.billing)],
+  }));
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<TeamMember['role'] | null>(null);
+  const [draftPermissions, setDraftPermissions] = useState<string[]>([]);
+  const [isSavingRolePermissions, setIsSavingRolePermissions] = useState(false);
   const supabase = createBrowserSupabaseClient();
 
   const loadMembers = async (showLoading = false) => {
@@ -78,10 +85,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
   };
 
   const normalizedCurrentUserRole = (resolvedUserRole || '').toLowerCase();
-  const canViewTeamTables =
-    normalizedCurrentUserRole === 'owner' ||
-    normalizedCurrentUserRole === 'admin' ||
-    normalizedCurrentUserRole === 'manager';
+  const canViewTeamTables = normalizedCurrentUserRole === 'owner' || normalizedCurrentUserRole === 'admin' || normalizedCurrentUserRole === 'manager';
 
   useEffect(() => {
     if (normalizedInitialRole) {
@@ -93,37 +97,41 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
     const resolveCurrentUserRole = async () => {
       setIsResolvingRole(true);
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      if (!user) {
+        if (!user) {
+          setResolvedUserRole(null);
+          return;
+        }
+
+        const { data: membership } = await supabase
+          .from('organization_users')
+          .select('role')
+          .eq('organization_id', organizationId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (membership?.role) {
+          setResolvedUserRole(String(membership.role).toLowerCase());
+          return;
+        }
+
+        const { data: orgData } = await supabase
+          .from('organizations')
+          .select('owner_id')
+          .eq('id', organizationId)
+          .maybeSingle();
+
+        setResolvedUserRole(orgData?.owner_id === user.id ? 'owner' : null);
+      } catch (error) {
+        console.error('Failed to resolve team panel role:', error);
         setResolvedUserRole(null);
+      } finally {
         setIsResolvingRole(false);
-        return;
       }
-
-      const { data: membership } = await supabase
-        .from('organization_users')
-        .select('role')
-        .eq('organization_id', organizationId)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (membership?.role) {
-        setResolvedUserRole(String(membership.role).toLowerCase());
-        setIsResolvingRole(false);
-        return;
-      }
-
-      const { data: orgData } = await supabase
-        .from('organizations')
-        .select('owner_id')
-        .eq('id', organizationId)
-        .maybeSingle();
-
-      setResolvedUserRole(orgData?.owner_id === user.id ? 'owner' : null);
-      setIsResolvingRole(false);
     };
 
     resolveCurrentUserRole();
@@ -132,12 +140,6 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
   // Load team members for owner/manager on mount and subscribe to live updates.
   useEffect(() => {
     if (isResolvingRole) {
-      return;
-    }
-
-    if (!canViewTeamTables) {
-      setIsLoadingMembers(false);
-      setMembers([]);
       return;
     }
 
@@ -210,7 +212,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
       if (result.success) {
         setMessage(result.message || 'Invitation sent successfully!');
         setEmail('');
-        setRole('member');
+        setRole('supervisor');
         
         // Reload members list
         await loadMembers();
@@ -245,18 +247,18 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
   const getRoleLabel = (roleId: string) => {
     const labels: Record<string, string> = isEs
       ? {
-          owner: 'Propietario',
-          admin: 'Gestor',
-          member: 'Supervisor',
-          accountant: 'Contador',
-          viewer: 'Invitado',
+          owner: 'Admin/Propietario',
+          manager: 'Gerente',
+          supervisor: 'Supervisor',
+          dispatcher: 'Despachador',
+          billing: 'Facturación',
         }
       : {
-          owner: 'Owner',
-          admin: 'Manager',
-          member: 'Supervisor',
-          accountant: 'Accountant',
-          viewer: 'Guest',
+          owner: 'Admin/Owner',
+          manager: 'Manager',
+          supervisor: 'Supervisor',
+          dispatcher: 'Dispatcher',
+          billing: 'Billing',
         };
 
     return labels[roleId] || roleId;
@@ -265,62 +267,65 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
   const getRoleDescription = (roleId: string) => {
     const descriptions: Record<string, string> = isEs
       ? {
-          owner: 'Acceso total. Gestiona facturacion, equipo y toda la configuracion.',
-          admin: 'Puede gestionar miembros del equipo, configuracion y ver todos los datos.',
-          member: 'Puede editar y crear ordenes de trabajo, estimaciones y datos de clientes.',
-          accountant: 'Puede ver datos y gestionar facturacion y registros financieros.',
-          viewer: 'Acceso de solo lectura a paneles e informes.',
+          owner: 'Acceso total. Gestiona facturación, equipo y toda la configuración.',
+          manager: 'Puede gestionar miembros del equipo, configuración y ver todos los datos.',
+          supervisor: 'Puede editar y crear órdenes de trabajo, estimaciones y datos de clientes.',
+          dispatcher: 'Puede programar trabajos, asignar recursos y ver datos relacionados.',
+          billing: 'Puede ver datos y gestionar facturación y registros financieros.',
         }
       : {
           owner: 'Full access. Manages billing, team, and all settings.',
-          admin: 'Can manage team members, settings, and view all data.',
-          member: 'Can edit and create work orders, estimates, and customer data.',
-          accountant: 'Can view data and manage billing and financial records.',
-          viewer: 'Read-only access to dashboards and reports.',
+          manager: 'Can manage team members, settings, and view all data.',
+          supervisor: 'Can edit and create work orders, estimates, and customer data.',
+          dispatcher: 'Can schedule jobs, assign resources, and view related data.',
+          billing: 'Can view data and manage billing and financial records.',
         };
 
     return descriptions[roleId] || '';
   };
 
-  const getPermissionLabel = (permission: string) => {
+  const getModuleLabel = (moduleId: string) => {
     const labels: Record<string, string> = isEs
       ? {
-          manage_team: 'Gestionar equipo',
-          manage_billing: 'Gestionar facturacion',
-          manage_settings: 'Gestionar configuracion',
-          edit_data: 'Editar datos',
-          view_data: 'Ver datos',
+          customers: 'Módulo de Clientes',
+          estimates: 'Módulo de Estimados',
+          jobs: 'Módulo de Trabajos',
+          dispatch: 'Módulo de Despacho',
+          invoice: 'Módulo de Facturas',
+          expenses: 'Módulo de Gastos',
+          settings: 'Módulo de Configuración',
         }
       : {
-          manage_team: 'Manage team',
-          manage_billing: 'Manage billing',
-          manage_settings: 'Manage settings',
-          edit_data: 'Edit data',
-          view_data: 'View data',
+          customers: 'Customers module',
+          estimates: 'Estimates module',
+          jobs: 'Jobs module',
+          dispatch: 'Dispatch module',
+          invoice: 'Invoice module',
+          expenses: 'Expenses module',
+          settings: 'Settings module',
         };
 
-    return labels[permission] || permission.replace('_', ' ');
+    return labels[moduleId] || moduleId;
   };
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'owner':
         return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'admin':
+      case 'manager':
         return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'member':
+      case 'supervisor':
         return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'accountant':
+      case 'dispatcher':
+        return 'bg-sky-100 text-sky-700 border-sky-200';
+      case 'billing':
         return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'viewer':
-        return 'bg-gray-100 text-gray-700 border-gray-200';
       default:
         return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
   const acceptedMembers = members.filter((member) => member.status !== 'pending');
-  const pendingInvites = members.filter((member) => member.status === 'pending');
 
   const formatLastLogin = (value?: string | null) => {
     if (!value) return isEs ? 'Nunca' : 'Never';
@@ -329,124 +334,170 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
     return parsed.toLocaleString(isEs ? 'es-ES' : 'en-US');
   };
 
+  const allPermissions = [...DASHBOARD_MODULES];
+
+  const openRoleModal = (roleId: TeamMember['role']) => {
+    setEditingRole(roleId);
+    setDraftPermissions([...(rolePermissions[roleId] || [])]);
+    setIsRoleModalOpen(true);
+  };
+
+  const closeRoleModal = () => {
+    setIsRoleModalOpen(false);
+    setEditingRole(null);
+    setDraftPermissions([]);
+  };
+
+  const toggleDraftPermission = (permission: string) => {
+    setDraftPermissions((prev) =>
+      prev.includes(permission)
+        ? prev.filter((value) => value !== permission)
+        : [...prev, permission]
+    );
+  };
+
+  const handleSaveRolePermissions = async () => {
+    if (!editingRole) return;
+
+    setIsSavingRolePermissions(true);
+    setError('');
+
+    try {
+      const result = await saveOrganizationRolePermissions({
+        organizationId,
+        role: editingRole,
+        modules: draftPermissions,
+        locale,
+      });
+
+      if (!result.success) {
+        setError(result.error || (isEs ? 'No se pudieron guardar los permisos.' : 'Failed to save role permissions.'));
+        return;
+      }
+
+      setRolePermissions((prev: DashboardRolePermissionsMap) => ({
+        ...prev,
+        [editingRole]: [...(result.modules || draftPermissions)],
+      }));
+      setMessage(
+        isEs
+          ? `Permisos actualizados para ${getRoleLabel(editingRole)}.`
+          : `Permissions updated for ${getRoleLabel(editingRole)}.`
+      );
+      closeRoleModal();
+    } catch (err) {
+      setError((err as Error).message || (isEs ? 'No se pudieron guardar los permisos.' : 'Failed to save role permissions.'));
+    } finally {
+      setIsSavingRolePermissions(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl border border-gray-200 shadow-xs p-6 md:p-8 space-y-6">
-        {/* Header */}
-        <div>
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">
-            {isEs ? 'Equipo' : 'Team'}
-          </h3>
-          <p className="text-xs text-slate-400">
-            {isEs
-              ? 'Invita miembros del equipo y gestiona sus permisos y roles.'
-              : 'Invite team members and manage their permissions and roles.'}
-          </p>
-        </div>
-
-        {/* User Roles Reference */}
-        <div className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            {isEs ? 'Roles Disponibles' : 'Available Roles'}
-          </p>
-          <button
-            type="button"
-            onClick={() => setShowRolesReference((prev) => !prev)}
-            className="text-xs font-semibold text-emerald-700 hover:text-emerald-600"
-          >
-            {showRolesReference ? (isEs ? 'Ocultar' : 'Hide') : (isEs ? 'Mostrar' : 'Show')}
-          </button>
-        </div>
-        {showRolesReference && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {USER_ROLES.map((userRole) => (
-              <div
-                key={userRole.id}
-                className="border border-gray-200 rounded-lg p-3 bg-slate-50 hover:bg-slate-100 transition"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900">{getRoleLabel(userRole.id)}</h4>
-                    <p className="text-xs text-slate-500 mt-1">{getRoleDescription(userRole.id)}</p>
-                  </div>
-                  {userRole.id === 'owner' && (
-                    <span className="text-[10px] uppercase font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
-                      {isEs ? 'Predeterminado' : 'Default'}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {userRole.permissions.map((perm) => (
-                    <span key={perm} className="text-[10px] bg-white text-slate-600 border border-gray-200 px-1.5 py-0.5 rounded">
-                      {getPermissionLabel(perm)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        </div>
-
-        {/* Invite Form */}
-        {canViewTeamTables ? (
-          <div className="border-t border-gray-200 pt-6">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-              {isEs ? 'Invitar Miembro' : 'Invite Member'}
-            </p>
-
-            {(subscriptionStatus === 'growth' || subscriptionStatus === 'enterprise') && (
-              <p className="text-xs text-slate-500 mb-3">
-                {subscriptionStatus === 'growth'
-                  ? (isEs ? 'Plan Growth: hasta 5 usuarios en total (incluye al propietario).' : 'Growth tier: up to 5 total users (including the owner).')
-                  : (isEs ? 'Plan Enterprise: miembros ilimitados.' : 'Enterprise tier: unlimited members.')}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            {/* Header */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">
+                {isEs ? 'Equipo' : 'Team'}
+              </h3>
+              <p className="text-xs text-slate-400">
+                {isEs
+                  ? 'Invita miembros del equipo y gestiona sus permisos y roles.'
+                  : 'Invite team members and manage their permissions and roles.'}
               </p>
-            )}
-
-            <form onSubmit={handleInvite} className="space-y-3">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="email"
-                placeholder={isEs ? 'correo@ejemplo.com' : 'email@example.com'}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="flex-1 rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              />
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as 'member' | 'admin' | 'accountant' | 'viewer')}
-                className="rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="member">{isEs ? 'Supervisor' : 'Supervisor'}</option>
-                <option value="admin">{isEs ? 'Gestor' : 'Manager'}</option>
-                <option value="accountant">{isEs ? 'Contador' : 'Accountant'}</option>
-                <option value="viewer">{isEs ? 'Invitado' : 'Guest'}</option>
-              </select>
-              <button
-                type="submit"
-                disabled={isLoading || !email}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white text-xs font-bold rounded-lg transition shadow-sm"
-              >
-                {isLoading ? (isEs ? 'Enviando...' : 'Sending...') : (isEs ? 'Invitar' : 'Invite')}
-              </button>
             </div>
 
-            {/* Messages */}
-            {message && (
-              <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 p-2 rounded">
-                {message}
+            {/* Invite Form */}
+            {canViewTeamTables ? (
+              <div className="border-t border-gray-200 pt-6">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                  {isEs ? 'Invitar Miembro' : 'Invite Member'}
+                </p>
+
+                {(subscriptionStatus === 'growth' || subscriptionStatus === 'enterprise') && (
+                  <p className="text-xs text-slate-500 mb-3">
+                    {subscriptionStatus === 'growth'
+                      ? (isEs ? 'Plan Growth: hasta 5 usuarios en total (incluye al propietario).' : 'Growth tier: up to 5 total users (including the owner).')
+                      : (isEs ? 'Plan Enterprise: miembros ilimitados.' : 'Enterprise tier: unlimited members.')}
+                  </p>
+                )}
+
+                <form onSubmit={handleInvite} className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="email"
+                    placeholder={isEs ? 'correo@ejemplo.com' : 'email@example.com'}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="flex-1 rounded-lg border border-gray-300 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as TeamMember['role'])}
+                    className="rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  >
+                    <option value="supervisor">{isEs ? 'Supervisor' : 'Supervisor'}</option>
+                    <option value="manager">{isEs ? 'Gerente' : 'Manager'}</option>
+                    <option value="dispatcher">{isEs ? 'Despachador' : 'Dispatcher'}</option>
+                    <option value="billing">{isEs ? 'Facturación' : 'Billing'}</option>
+                  </select>
+                  <button
+                    type="submit"
+                    disabled={isLoading || !email}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white text-xs font-bold rounded-lg transition shadow-sm"
+                  >
+                    {isLoading ? (isEs ? 'Enviando...' : 'Sending...') : (isEs ? 'Invitar' : 'Invite')}
+                  </button>
+                </div>
+
+                {/* Messages */}
+                {message && (
+                  <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 p-2 rounded">
+                    {message}
+                  </div>
+                )}
+                {error && (
+                  <div className="text-xs text-red-700 bg-red-50 border border-red-200 p-2 rounded">
+                    {error}
+                  </div>
+                )}
+                </form>
               </div>
-            )}
-            {error && (
-              <div className="text-xs text-red-700 bg-red-50 border border-red-200 p-2 rounded">
-                {error}
-              </div>
-            )}
-            </form>
+            ) : null}
           </div>
-        ) : null}
+
+          <div className="rounded-xl border border-gray-200 bg-slate-50/60 p-5 space-y-4">
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Roles &amp; Permission</p>
+              <p className="text-xs text-slate-400 mt-1">Configure module actions and permissions for dashboard roles.</p>
+            </div>
+
+            <div className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+              {USER_ROLES.map((roleItem) => {
+                const roleId = roleItem.id as TeamMember['role'];
+                return (
+                  <div key={roleItem.id} className="p-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{getRoleLabel(roleItem.id)}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{getRoleDescription(roleItem.id)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openRoleModal(roleId)}
+                      disabled={!canViewTeamTables}
+                      className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
 
       {canViewTeamTables ? (
@@ -517,72 +568,57 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
 
           </div>
 
-          <div className="space-y-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              {isEs ? 'Invitaciones Pendientes' : 'Pending Invitations'} ({pendingInvites.length})
-            </p>
-
-            {isLoadingMembers ? (
-              <p className="text-xs text-slate-500">{isEs ? 'Cargando invitaciones...' : 'Loading invitations...'}</p>
-            ) : (
-              <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-xs">
-                <table className="w-full min-w-[760px] text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Correo' : 'Email Address'}</th>
-                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Permiso' : 'Permission Type'}</th>
-                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Invitado el' : 'Invited At'}</th>
-                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Estado' : 'Status'}</th>
-                  <th className="text-right py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Accion' : 'Action'}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingInvites.length === 0 ? (
-                  <tr className="border-t border-gray-100">
-                    <td colSpan={5} className="py-6 px-3 text-sm text-slate-500 text-center">
-                      {isEs ? 'No hay invitaciones pendientes.' : 'No pending invitations.'}
-                    </td>
-                  </tr>
-                ) : (
-                  pendingInvites.map((invite) => (
-                    <tr key={invite.email} className="border-t border-gray-100 hover:bg-slate-50/60">
-                      <td className="py-2.5 px-3 text-sm text-gray-800">{invite.email}</td>
-                      <td className="py-2.5 px-3 text-sm text-gray-800">
-                        <span className={`text-xs font-bold px-2 py-1 rounded border whitespace-nowrap ${getRoleBadgeColor(invite.role)}`}>
-                          {getRoleLabel(invite.role)}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-sm text-gray-800">
-                        {new Date(invite.invited_at).toLocaleString(isEs ? 'es-ES' : 'en-US')}
-                      </td>
-                      <td className="py-2.5 px-3 text-sm text-gray-800">
-                        <span className="text-xs font-bold px-2 py-1 rounded border border-amber-200 bg-amber-50 text-amber-700 whitespace-nowrap">
-                          {isEs ? 'Pendiente' : 'Pending'}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <button
-                          onClick={() => handleRemoveMember(invite.email)}
-                          disabled={deletingEmail === invite.email}
-                          className="px-2 py-1 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded transition disabled:opacity-50"
-                        >
-                          {deletingEmail === invite.email ? (isEs ? 'Eliminando...' : 'Removing...') : (isEs ? 'Cancelar' : 'Cancel')}
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-                </table>
-              </div>
-            )}
-          </div>
         </>
       ) : !isResolvingRole ? (
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
           {isEs
-            ? 'Solo propietario y gestor pueden ver tablas de miembros e invitaciones pendientes.'
-            : 'Only owner and manager can view member and pending invitation tables.'}
+            ? 'Solo propietario y gerente pueden ver la tabla de miembros.'
+            : 'Only owner and manager can view the member table.'}
+        </div>
+      ) : null}
+
+      {isRoleModalOpen && editingRole ? (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-xl bg-white border border-slate-200 shadow-xl">
+            <div className="px-5 py-4 border-b border-slate-200">
+              <p className="text-sm font-bold text-slate-900">{getRoleLabel(editingRole)}</p>
+              <p className="text-xs text-slate-500 mt-1">{isEs ? 'Configura permisos por módulo.' : 'Configure module permissions.'}</p>
+            </div>
+
+            <div className="px-5 py-4 space-y-2 max-h-[55vh] overflow-y-auto">
+              {allPermissions.map((permission) => (
+                <label key={permission} className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={draftPermissions.includes(permission)}
+                    onChange={() => toggleDraftPermission(permission)}
+                    disabled={isSavingRolePermissions}
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span>{getModuleLabel(permission)}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="px-5 py-4 border-t border-slate-200 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeRoleModal}
+                disabled={isSavingRolePermissions}
+                className="px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100"
+              >
+                {isEs ? 'Cancelar' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveRolePermissions}
+                disabled={isSavingRolePermissions}
+                className="px-3 py-1.5 text-xs font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {isSavingRolePermissions ? (isEs ? 'Guardando...' : 'Saving...') : (isEs ? 'Guardar' : 'Save')}
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
 

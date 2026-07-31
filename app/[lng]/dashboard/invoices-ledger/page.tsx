@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import InvoicesLedgerTable from '@/components/dashboard/InvoicesLedgerTable';
+import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { getUserOrganization } from '@/lib/organization';
 
 interface InvoiceRow {
@@ -39,6 +40,11 @@ export default async function InvoicesLedgerPage({
   const { organization: org, role } = await getUserOrganization(user.id);
 
   if (!org) redirect(`/${locale}/auth/access-pending`);
+
+  const canAccessInvoice = await hasDashboardModuleAccess(org.id, role, 'invoice');
+  if (!canAccessInvoice) {
+    redirect(`/${locale}/dashboard`);
+  }
 
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
   if (trial.isExpired) {

@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { redirect } from 'next/navigation';
 import AcceptInviteClient from './AcceptInviteClient';
 

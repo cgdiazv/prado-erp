@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createAdminClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { requirePradoManagementUser } from '@/lib/pradoManagement';
 import HelpdeskHowToAssistant from '@/components/management/HelpdeskHowToAssistant';
 import HelpdeskInbox from '@/components/management/HelpdeskInbox';

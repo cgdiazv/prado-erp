@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { createClient, createAdminClient } from '@/lib/supabaseServer';
+import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { getUserOrganization } from '@/lib/organization';
 import MessengerInbox from '@/components/dashboard/MessengerInbox';
 
