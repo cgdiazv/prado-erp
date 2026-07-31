@@ -11,22 +11,31 @@ type InviteMemberEmailProps = {
 };
 
 const roleLabels: Record<string, { label: string; description: string }> = {
-  member: {
-    label: 'Supervisor',
-    description: 'Can edit and create work orders, estimates, and customer data.'
+  owner: {
+    label: 'Admin/Owner',
+    description: 'Full access. Manages billing, team, and all settings.',
   },
-  admin: {
+  manager: {
     label: 'Manager',
     description: 'Can manage team members, settings, and view all data.'
   },
-  accountant: {
-    label: 'Accountant',
-    description: 'Can view data and manage billing and financial records.'
+  supervisor: {
+    label: 'Supervisor',
+    description: 'Can edit and create work orders, estimates, and customer data.',
   },
-  viewer: {
-    label: 'Guest',
-    description: 'Read-only access to dashboards and reports.'
-  }
+  dispatcher: {
+    label: 'Dispatcher',
+    description: 'Can schedule jobs, assign resources, and view related data.',
+  },
+  billing: {
+    label: 'Billing',
+    description: 'Can view data and manage billing and financial records.',
+  },
+  // Fallback for any other roles
+  member: {
+    label: 'Team Member',
+    description: 'Access to assigned modules and features.',
+  },
 };
 
 export default function InviteMemberEmail({
@@ -35,11 +44,11 @@ export default function InviteMemberEmail({
   organizationName = 'Prado Systems',
   organizationSlogan = 'Field Service Software',
   organizationLogoUrl = '',
-  role = 'member',
+  role = 'supervisor',
   inviteLink = '#'
 }: InviteMemberEmailProps) {
   const fallbackInitial = organizationName.trim().charAt(0).toUpperCase() || 'P';
-  const roleInfo = roleLabels[role] || roleLabels.member;
+  const roleInfo = roleLabels[role] || roleLabels.supervisor;
   const ctaText = 'Set Password and Accept Invitation';
 
   return (
