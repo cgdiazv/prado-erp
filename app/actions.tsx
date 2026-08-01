@@ -8,6 +8,7 @@ import { Resend } from 'resend';
 import { render } from '@react-email/render';
 import EstimateEmail from '@/emails/estimate-email';
 import InvoiceEmail from '@/emails/invoice-email';
+import InvoicePaidEmail from '@/emails/invoice-paid-email';
 import InviteMemberEmail from '@/emails/invite-member-email';
 import JobScheduledEmail from '@/emails/job-scheduled-email';
 import JobCompletedEmail from '@/emails/job-completed-email';
@@ -1148,6 +1149,70 @@ export async function markInvoiceAsPaid(invoiceId: string, customerId: string) {
 
     if (error) return { error: error.message };
 
+    const { data: invoice } = await supabase
+      .from('invoices')
+      .select('id, due_date, total_amount, currency_code, organization_id, customers(first_name, last_name, company_name, email)')
+      .eq('id', invoiceId)
+      .limit(1)
+      .maybeSingle();
+
+    const customer = invoice?.customers as {
+      first_name?: string | null;
+      last_name?: string | null;
+      company_name?: string | null;
+      email?: string | null;
+    } | null;
+
+    if (customer?.email) {
+      const { data: org } = invoice?.organization_id
+        ? await supabase
+            .from('organizations')
+            .select('name, slogan, logo_url')
+            .eq('id', invoice.organization_id)
+            .limit(1)
+            .maybeSingle()
+        : { data: null as { name?: string | null; slogan?: string | null; logo_url?: string | null } | null };
+
+      const organizationName = org?.name?.trim() || 'Prado ERP';
+      const organizationSlogan = org?.slogan?.trim() || 'Field Service Software';
+      const organizationLogoUrl = org?.logo_url?.trim() || '';
+      const customerDisplayName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.company_name || 'Valued Customer';
+      const paidDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+        const fromAddress = `${organizationName} <${fromEmailAddress}>`;
+        const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
+        const paidHtml = await render(
+          InvoicePaidEmail({
+            customerName: customerDisplayName,
+            invoiceId: invoice?.id || invoiceId,
+            paidDate,
+            totalPaid: Number(invoice?.total_amount || 0),
+            currencyCode: invoice?.currency_code || 'USD',
+            organizationName,
+            organizationSlogan,
+            organizationLogoUrl,
+          })
+        );
+
+        await resend.emails.send({
+          from: fromAddress,
+          to: customer.email,
+          replyTo: replyToAddress,
+          subject: `${organizationName} Payment Received: Invoice ${invoice?.id || invoiceId}`,
+          html: paidHtml,
+        });
+      } catch (emailErr) {
+        console.error('Invoice marked paid manually, but paid-receipt email failed:', emailErr);
+      }
+    }
+
     revalidatePath(`/dashboard/customers/${customerId}`);
     revalidatePath('/');
     return { success: true };
@@ -1173,6 +1238,19 @@ export async function submitSupportTicket(formData: FormData) {
   } = await supabase.auth.getUser();
   const replyToAddress = user?.email || email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
 
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
+  const safeUrgency = escapeHtml((urgency || 'normal').toUpperCase());
+  const safeMessage = escapeHtml(message).replace(/\n/g, '<br />');
+
   try {
     const { error } = await resend.emails.send({
       from: 'notifications@indevasa.com',
@@ -1180,14 +1258,28 @@ export async function submitSupportTicket(formData: FormData) {
       subject: `[${urgency.toUpperCase()} SUPPORT TICKET] From ${name}`,
       replyTo: replyToAddress,
       html: `
-        <h2>New Support Hub Ticket Recieved</h2>
-        <p><strong>Operator Name:</strong> ${name}</p>
-        <p><strong>Reply-To Email:</strong> ${email}</p>
-        <p><strong>Urgency Tier:</strong> ${urgency}</p>
-        <p><strong>Operational Message Log:</strong></p>
-        <blockquote style="background: #f4f4f5; padding: 12px; border-left: 4px solid #10b981; border-radius: 4px;">
-          ${message.replace(/\n/g, '<br />')}
-        </blockquote>
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b;">
+          <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+            <div style="background: #009966; padding: 24px; text-align: center; color: #ffffff;">
+              <h1 style="margin: 0; font-size: 22px; font-weight: 700;">PRADO SUPPORT</h1>
+              <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">New Technical Support Ticket</p>
+            </div>
+            <div style="padding: 28px;">
+              <h2 style="margin: 0 0 12px 0;">Support Ticket Received</h2>
+              <p style="margin: 0 0 16px 0;">A new support request has been dispatched to engineering teams:</p>
+              <div style="background: #f1f5f9; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <p style="margin: 0 0 8px 0;"><strong>Submitted By:</strong> ${safeName} (${safeEmail})</p>
+                <p style="margin: 0 0 8px 0;"><strong>Urgency Tier:</strong> <span style="font-size: 14px; font-weight: bold; color: #dc2626;">${safeUrgency}</span></p>
+                <p style="margin: 0;"><strong>Diagnostic Details / Message:</strong></p>
+                <p style="margin: 8px 0 0 0; white-space: pre-wrap; background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1;">${safeMessage}</p>
+              </div>
+              <p style="margin: 0;">Our engineering team will review this operational log notification parameter immediately.</p>
+            </div>
+            <div style="background: #f8fafc; padding: 16px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+              &copy; 2026 Prado Operations. Dispatched to support@pradojob.com
+            </div>
+          </div>
+        </div>
       `,
     });
 
@@ -1810,6 +1902,22 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
             day: 'numeric',
           });
 
+      const { data: property } = await supabase
+        .from('properties')
+        .select('street_address, city, state, zip_code')
+        .eq('id', normalizedPropertyId)
+        .limit(1)
+        .maybeSingle();
+
+      const serviceLocation = [property?.street_address, property?.city, property?.state, property?.zip_code]
+        .filter((part) => typeof part === 'string' && part.trim().length > 0)
+        .join(', ') || 'On file with your customer profile';
+
+      const amountStr = `$${Number(estimate.estimated_amount || 0).toFixed(2)}`;
+      const jobType = estimate.title || 'General Service';
+      const customerDisplayName = customer.first_name || customer.last_name || 'there';
+      const footerYear = new Date().getFullYear();
+
       const servicesHtml =
         serviceItems.length > 0
           ? `<ul style="margin: 10px 0 0 18px; padding: 0; color: #334155;">${serviceItems
@@ -1830,19 +1938,32 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
           from: fromAddress,
           to: customer.email,
           replyTo: replyToAddress,
-          subject: `${organizationName} Service Scheduled: ${estimate.title}`,
+          subject: `${organizationName} Estimate Approved & Scheduled: ${jobType}`,
           html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
-              <h2 style="margin: 0 0 4px 0;">Your Service Has Been Scheduled</h2>
-              <p style="margin: 0 0 16px 0; font-size: 12px; color: #64748b;">${organizationSlogan}</p>
-              <p style="margin: 0 0 12px 0; color: #334155;">Hi ${customer.first_name || customer.last_name || 'there'},</p>
-              <p style="margin: 0 0 14px 0; color: #334155;">Your approved estimate has been scheduled. Here are the service details:</p>
-              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px;">
-                <p style="margin: 0; color: #334155;"><strong>Scheduled Date:</strong> ${formattedDate}</p>
-                <p style="margin: 10px 0 0 0; color: #334155;"><strong>Estimate:</strong> ${estimate.title}</p>
-                ${servicesHtml}
+            <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b;">
+              <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+                <div style="background: #009966; padding: 24px; text-align: center; color: #ffffff;">
+                  <h1 style="margin: 0; font-size: 22px; font-weight: 700;">${organizationName}</h1>
+                  <div style="display: inline-block; background: #E6F4EA; color: #009966; font-weight: bold; padding: 6px 12px; border-radius: 20px; font-size: 12px; margin-top: 8px;">ESTIMATE APPROVED &amp; SCHEDULED</div>
+                </div>
+                <div style="padding: 28px;">
+                  <h2 style="margin: 0 0 12px 0;">Great news, ${customerDisplayName}!</h2>
+                  <p style="margin: 0 0 16px 0;">Your estimate has been approved and converted into a scheduled service job.</p>
+                  <div style="background: #f1f5f9; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                    <p style="margin: 0 0 8px 0;"><strong>Scheduled Service:</strong> ${jobType}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Scheduled Date:</strong> ${formattedDate}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Service Location:</strong> ${serviceLocation}</p>
+                    <p style="margin: 0;"><strong>Approved Amount:</strong> ${amountStr}</p>
+                  </div>
+                  ${serviceItems.length > 0 ? `<p style="margin: 0 0 10px 0;"><strong>Service Breakdown:</strong></p>${servicesHtml}` : ''}
+                  <p style="margin: 16px 0 0 0;">Our team will arrive as scheduled. If you need to make any changes, feel free to reply to this email.</p>
+                  <p style="margin: 12px 0 0 0;">Best regards,<br/><strong>${organizationName} Operations</strong></p>
+                  <p style="margin: 12px 0 0 0; font-size: 12px; color: #64748b;">${organizationSlogan}</p>
+                </div>
+                <div style="background: #f8fafc; padding: 16px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                  &copy; ${footerYear} ${organizationName}. All rights reserved.
+                </div>
               </div>
-              <p style="margin: 16px 0 0 0; font-size: 12px; color: #64748b;">If you need any changes to this appointment, just reply to this email.</p>
             </div>
           `,
         });

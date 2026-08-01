@@ -30,114 +30,97 @@ export default function InvoiceEmail({
   organizationSlogan = 'Field Service Software',
   organizationLogoUrl = '',
 }: InvoiceEmailProps) {
-  const fallbackInitial = organizationName.trim().charAt(0).toUpperCase() || 'P';
-  const taxRateLabel = Number((Number.isFinite(taxRatePercent) ? taxRatePercent : 8.25).toFixed(2)).toString();
   const normalizedCurrency = normalizeCurrencyCode(currencyCode);
+  const safeTaxRatePercent = Number.isFinite(taxRatePercent) ? Number(taxRatePercent) : 8.25;
+  const headerTitle = organizationName?.trim() || 'Prado Systems';
+  const safeCustomerName = customerName?.trim() || 'Customer';
+  const safeServiceName = serviceName?.trim() || 'General Service';
+  const invoiceDate = dueDate?.trim() || 'N/A';
+  const baseStr = formatCurrency(baseAmount, normalizedCurrency);
+  const taxStr = formatCurrency(taxAmount, normalizedCurrency);
+  const totalStr = formatCurrency(totalAmount, normalizedCurrency);
+  const footerYear = new Date().getFullYear();
 
   return (
-    <div style={{ fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', maxWidth: 600, margin: '20px auto', color: '#0f172a', padding: '10px' }}>
-      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '32px', background: '#ffffff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-        <table style={{ width: '100%', marginBottom: 32 }}>
-          <tbody>
-            <tr>
-              <td colSpan={2} style={{ verticalAlign: 'top', paddingBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {organizationLogoUrl ? (
-                    <img
-                      src={organizationLogoUrl}
-                      alt={`${organizationName} logo`}
-                      width="22"
-                      height="22"
-                      style={{ width: 22, height: 22, borderRadius: 5, objectFit: 'contain', border: '1px solid #e2e8f0', background: '#ffffff', display: 'inline-block' }}
-                    />
-                  ) : (
-                    <span style={{ display: 'inline-block', width: 22, height: 22, lineHeight: '22px', borderRadius: 5, background: 'linear-gradient(135deg, #10b981 0%, #14b8a6 100%)', color: '#ffffff', fontSize: 11, fontWeight: 900, textAlign: 'center' }}>{fallbackInitial}</span>
-                  )}
-                  <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.025em', color: '#0f172a' }}>{organizationName}</span>
-                </div>
-                <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan}</p>
-              </td>
-            </tr>
-            <tr>
-              <td colSpan={2} style={{ textAlign: 'right', verticalAlign: 'top' }}>
-                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 750, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invoice</h2>
-                <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#64748b' }}>Due Date: {dueDate}</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div style={{ marginBottom: 32, background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 8, padding: 16 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', letterSpacing: '0.05em', display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>Billed To:</span>
-          <strong style={{ fontSize: 15, color: '#0f172a', display: 'block' }}>{customerName}</strong>
-          <span style={{ fontSize: 12, color: '#475569', display: 'block', marginTop: 2 }}>{serviceName}</span>
+    <div style={{ fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', backgroundColor: '#f8fafc', margin: 0, padding: '20px', color: '#1e293b' }}>
+      <div style={{ maxWidth: 600, margin: '0 auto', background: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div style={{ background: '#009966', padding: '24px', textAlign: 'center', color: '#ffffff' }}>
+          {organizationLogoUrl ? (
+            <img
+              src={organizationLogoUrl}
+              alt={`${headerTitle} logo`}
+              width="44"
+              height="44"
+              style={{ display: 'block', width: 44, height: 44, margin: '0 auto 10px auto', borderRadius: 8, objectFit: 'contain', background: '#ffffff', padding: 4 }}
+            />
+          ) : null}
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>{headerTitle}</h1>
+          <div style={{ display: 'inline-block', background: '#E6F4EA', color: '#009966', fontWeight: 'bold', padding: '6px 12px', borderRadius: 20, fontSize: 12, marginTop: 8 }}>
+            OFFICIAL INVOICE
+          </div>
         </div>
 
-        <h3 style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, borderBottom: '1px solid #e2e8f0', paddingBottom: 6 }}>Billing Breakdown</h3>
+        <div style={{ padding: '28px' }}>
+          <h2 style={{ margin: '0 0 12px 0' }}>Invoice for {safeCustomerName}</h2>
+          <p style={{ margin: '0 0 12px 0' }}><strong>Invoice Date:</strong> {invoiceDate}</p>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 24 }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', fontSize: 11, color: '#64748b', fontWeight: 700 }}>
-              <th style={{ textAlign: 'left', padding: '8px 0' }}>Description</th>
-              <th style={{ textAlign: 'right', padding: '8px 0' }}>Amount</th>
-            </tr>
-          </thead>
-          <tbody style={{ color: '#334155' }}>
-            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-              <td style={{ padding: '12px 0', fontWeight: 500 }}>{serviceName}</td>
-              <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(baseAmount, normalizedCurrency)}</td>
-            </tr>
-            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-              <td style={{ padding: '12px 0', color: '#475569' }}>{`Estimated Tax (${taxRateLabel}%)`}</td>
-              <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(taxAmount, normalizedCurrency)}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', borderTop: '2px solid #0f172a', paddingTop: 16, marginBottom: 16 }}>
-          <table style={{ width: '240px', fontSize: 13 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', margin: '20px 0' }}>
+            <thead>
+              <tr>
+                <th style={{ padding: 12, textAlign: 'left', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 12, textTransform: 'uppercase', color: '#64748b' }}>
+                  Description
+                </th>
+                <th style={{ padding: 12, textAlign: 'right', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 12, textTransform: 'uppercase', color: '#64748b' }}>
+                  Amount
+                </th>
+              </tr>
+            </thead>
             <tbody>
               <tr>
-                <td style={{ color: '#059669', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', verticalAlign: 'middle' }}>Total Due</td>
-                <td style={{ textAlign: 'right', fontSize: 22, fontWeight: 800, color: '#0f172a' }}>{formatCurrency(totalAmount, normalizedCurrency)}</td>
+                <td style={{ padding: 12, textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>{safeServiceName} (Service Completed)</td>
+                <td style={{ padding: 12, textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>{baseStr}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: 12, textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>{`Sales Tax / Service Fees (${safeTaxRatePercent.toFixed(2)}%)`}</td>
+                <td style={{ padding: 12, textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>{taxStr}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: 12, textAlign: 'left', fontSize: 16, fontWeight: 700, color: '#009966', borderTop: '2px solid #009966' }}>TOTAL DUE</td>
+                <td style={{ padding: 12, textAlign: 'right', fontSize: 16, fontWeight: 700, color: '#009966', borderTop: '2px solid #009966' }}>{totalStr}</td>
               </tr>
             </tbody>
           </table>
+
+          <p style={{ margin: '0 0 12px 0' }}>Please review and submit your payment at your earliest convenience.</p>
+          <p style={{ margin: 0 }}>Thank you for your business!</p>
+
+          {paymentUrl ? (
+            <div style={{ marginTop: 16 }}>
+              <a
+                href={paymentUrl}
+                style={{
+                  display: 'inline-block',
+                  background: '#009966',
+                  color: '#ffffff',
+                  textDecoration: 'none',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  padding: '10px 16px',
+                  borderRadius: 8,
+                }}
+              >
+                Pay Invoice
+              </a>
+            </div>
+          ) : null}
+
+          <p style={{ margin: '12px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan}</p>
         </div>
 
-        {paymentUrl ? (
-          <div style={{ marginBottom: 24, textAlign: 'center' }}>
-            <a
-              href={paymentUrl}
-              style={{
-                display: 'inline-block',
-                background: '#10b981',
-                color: '#ffffff',
-                textDecoration: 'none',
-                fontWeight: 700,
-                fontSize: 14,
-                padding: '12px 20px',
-                borderRadius: 10,
-              }}
-            >
-              Pay Invoice Online
-            </a>
-            <p style={{ margin: '12px 0 0 0', fontSize: 11, color: '#64748b', lineHeight: '16px' }}>
-              Secure checkout powered by Stripe.
-            </p>
-          </div>
-        ) : null}
-
-        <div style={{ marginTop: 40, borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
-          <p style={{ margin: 0, fontSize: 11, color: '#64748b', lineHeight: '16px' }}>
-            <strong>Payment Terms:</strong> Payment is due upon receipt. If you have any questions about this invoice, please reply directly to this email.
-          </p>
+        <div style={{ background: '#f8fafc', padding: '16px', textAlign: 'center', fontSize: 12, color: '#64748b', borderTop: '1px solid #e2e8f0' }}>
+          &copy; {footerYear} {organizationName}. All rights reserved.
         </div>
       </div>
-
-      <p style={{ marginTop: 20, textAlign: 'center', color: '#94a3b8', fontSize: 11 }}>
-        This is an official document generated automatically by Prado Hub.
-      </p>
     </div>
   );
 }

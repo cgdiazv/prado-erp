@@ -1,32 +1,31 @@
 import * as React from 'react';
+import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 
-type EstimateLike = {
-  title?: string;
-  estimated_amount?: number;
-  description?: string | null;
-  created_at?: string;
-};
-
-type EstimateEmailProps = {
+type InvoicePaidEmailProps = {
   customerName: string;
-  estimate: EstimateLike;
-  organizationSlogan?: string;
+  invoiceId: string;
+  paidDate: string;
+  totalPaid: number;
+  currencyCode?: string;
   organizationName?: string;
+  organizationSlogan?: string;
   organizationLogoUrl?: string;
 };
 
-export default function EstimateEmail({
+export default function InvoicePaidEmail({
   customerName,
-  estimate,
-  organizationSlogan = 'Field Service Software',
+  invoiceId,
+  paidDate,
+  totalPaid,
+  currencyCode = 'USD',
   organizationName = 'Prado Systems',
+  organizationSlogan = 'Field Service Software',
   organizationLogoUrl = '',
-}: EstimateEmailProps) {
-  const amount = Number(estimate?.estimated_amount || 0).toFixed(2);
-  const estimateTitle = estimate?.title?.trim() || 'General Service';
+}: InvoicePaidEmailProps) {
+  const normalizedCurrency = normalizeCurrencyCode(currencyCode);
   const safeCustomerName = customerName?.trim() || 'Customer';
   const headerTitle = organizationName?.trim() || 'Prado Systems';
-  const amountStr = `$${amount}`;
+  const amountStr = formatCurrency(Number(totalPaid || 0), normalizedCurrency);
   const footerYear = new Date().getFullYear();
 
   return (
@@ -43,34 +42,27 @@ export default function EstimateEmail({
             />
           ) : null}
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>{headerTitle}</h1>
-          <p style={{ margin: '4px 0 0 0', fontSize: 13, opacity: 0.9 }}>New Estimate Prepared</p>
+          <p style={{ margin: '4px 0 0 0', fontSize: 13, opacity: 0.9 }}>Invoice Payment Confirmation</p>
+          <div style={{ display: 'inline-block', background: '#E6F4EA', color: '#009966', fontWeight: 'bold', padding: '6px 12px', borderRadius: 20, fontSize: 12, marginTop: 8 }}>
+            PAYMENT RECEIVED
+          </div>
         </div>
 
         <div style={{ padding: '28px' }}>
           <h2 style={{ margin: '0 0 12px 0' }}>Hello {safeCustomerName},</h2>
-          <p style={{ margin: '0 0 16px 0' }}>We have prepared a new estimate for your review:</p>
+          <p style={{ margin: '0 0 16px 0' }}>
+            We are pleased to confirm that your invoice payment has been successfully received.
+          </p>
 
           <div style={{ background: '#f1f5f9', borderRadius: 8, padding: '16px', margin: '20px 0' }}>
-            <p style={{ margin: '0 0 8px 0' }}>
-              <strong>Estimate Title:</strong> {estimateTitle}
-            </p>
-            <p style={{ margin: 0 }}>
-              <strong>Total Estimated Cost:</strong>{' '}
-              <span style={{ fontSize: 24, fontWeight: 700, color: '#009966' }}>{amountStr}</span>
-            </p>
+            <p style={{ margin: '0 0 8px 0' }}><strong>Invoice ID:</strong> {invoiceId}</p>
+            <p style={{ margin: '0 0 8px 0' }}><strong>Payment Date:</strong> {paidDate}</p>
+            <p style={{ margin: 0 }}><strong>Total Paid:</strong> <span style={{ color: '#009966', fontWeight: 700 }}>{amountStr}</span></p>
           </div>
 
-          <p style={{ margin: '0 0 12px 0' }}>
-            If you approve this estimate, please let us know or reply to this email to schedule your service.
-          </p>
-          <p style={{ margin: 0 }}>
-            Thank you for choosing <strong>{organizationName}</strong>!
-          </p>
-
-          {organizationSlogan ? (
-            <p style={{ margin: '14px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan}</p>
-          ) : null}
-
+          <p style={{ margin: '0 0 12px 0' }}>Your account balance for this invoice is now settled. Thank you for your business.</p>
+          <p style={{ margin: 0 }}>Best regards,<br /><strong>{organizationName} Team</strong></p>
+          <p style={{ margin: '12px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan}</p>
         </div>
 
         <div style={{ background: '#f8fafc', padding: '16px', textAlign: 'center', fontSize: 12, color: '#64748b', borderTop: '1px solid #e2e8f0' }}>

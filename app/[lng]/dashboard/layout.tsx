@@ -117,7 +117,9 @@ export default async function DashboardLayout({
             />
           </div>
           <InactivityLockScreen locale={locale} userEmail={user.email ?? ''}>
-            {children}
+            <div className="flex flex-1 min-w-0 pb-24 md:pb-28">
+              {children}
+            </div>
           </InactivityLockScreen>
           <BillingModal userEmail={user.email ?? ''} orgId={org.id} locale={locale} />
           <SupportChatModal locale={locale} currentUserId={user.id} />
