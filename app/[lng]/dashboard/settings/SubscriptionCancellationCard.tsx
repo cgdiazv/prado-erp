@@ -139,7 +139,7 @@ export default function SubscriptionCancellationCard({ currentSubscriptionStatus
           type="button"
           onClick={() => setIsModalOpen(true)}
           disabled={isPending || !canCancel}
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {isPending ? translations.dashboard.cancelingLoading : translations.dashboard.cancelSubscription}
         </button>

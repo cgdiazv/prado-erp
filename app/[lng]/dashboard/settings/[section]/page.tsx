@@ -392,7 +392,7 @@ export default async function SettingsSectionPage({
                 </div>
 
                 <div className="bg-white rounded-xl border border-red-200 shadow-xs overflow-hidden">
-                  <div className="p-6 md:p-8 flex items-center justify-between">
+                  <div className="p-6 md:p-8 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h3 className="text-sm font-bold text-red-700 uppercase tracking-wider mb-1">{translations.dashboard.deleteAccountTitle}</h3>
                       <p className="text-xs text-slate-400">{translations.dashboard.deleteAccountDescription}</p>

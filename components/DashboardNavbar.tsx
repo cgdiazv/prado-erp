@@ -150,6 +150,7 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
         <div className="flex items-center gap-2">
           <div className="order-2 flex items-center gap-2">
             <div className="relative">
+            {/*
             <button
               type="button"
               onClick={openSettingsMenu}
@@ -163,6 +164,7 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </button>
+            */}
 
             {showSettingsMenu ? (
               <>

@@ -64,13 +64,15 @@ export default function DeleteAccountSurveyCard({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsModalOpen(true)}
-        className="text-xs font-semibold px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-300 transition"
-      >
-        {buttonLabel}
-      </button>
+      <div className="w-full sm:w-auto">
+        <button
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          className="w-full text-xs font-semibold px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-300 transition sm:w-auto"
+        >
+          {buttonLabel}
+        </button>
+      </div>
 
       {isModalOpen ? (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4">

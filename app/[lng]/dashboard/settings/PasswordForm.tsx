@@ -80,6 +80,7 @@ export default function PasswordForm({ locale = 'en', activeRememberedSessions =
   const signOutOthersLabel = isEs
     ? 'Cerrar sesion en todos los demas dispositivos activos'
     : 'Sign out of all other active devices';
+  const signOutLabel = isEs ? 'Cerrar sesion' : 'Sign out';
 
   return (
     <div className="pt-6 md:pt-8 space-y-6">
@@ -185,14 +186,25 @@ export default function PasswordForm({ locale = 'en', activeRememberedSessions =
             </div>
           ) : null}
 
-          <button
-            type="button"
-            onClick={handleSignOutOtherDevices}
-            disabled={sessionLoading}
-            className="mt-3 cursor-pointer rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {sessionLoading ? (isEs ? 'Cerrando sesiones...' : 'Signing out sessions...') : signOutOthersLabel}
-          </button>
+          <div className="mt-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+            <form action={`/${locale}/auth/signout`} method="POST" className="w-full sm:w-auto">
+              <button
+                type="submit"
+                className="w-full cursor-pointer rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 sm:w-auto"
+              >
+                {signOutLabel}
+              </button>
+            </form>
+
+            <button
+              type="button"
+              onClick={handleSignOutOtherDevices}
+              disabled={sessionLoading}
+              className="cursor-pointer rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {sessionLoading ? (isEs ? 'Cerrando sesiones...' : 'Signing out sessions...') : signOutOthersLabel}
+            </button>
+          </div>
         </div>
       </div>
     </div>

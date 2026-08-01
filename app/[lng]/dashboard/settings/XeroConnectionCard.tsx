@@ -120,7 +120,7 @@ export default function XeroConnectionCard({ organizationId }: XeroConnectionCar
           {/* Boton de conectar */}
           <button
             onClick={handleConnect}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-sm"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-sm sm:w-auto"
           >
             {t.connectButton}
           </button>

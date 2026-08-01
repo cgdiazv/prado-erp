@@ -105,7 +105,7 @@ export default function QBOConnectionCard({ organizationId }: QBOConnectionCardP
           <p className="text-sm text-gray-500 mb-4">{t.disconnected}</p>
           <button
             onClick={handleConnect}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-white bg-[#2CA01C] hover:bg-[#258917] px-5 py-2.5 rounded-lg transition shadow-sm"
+            className="inline-flex w-full items-center justify-center gap-2 text-sm font-semibold text-white bg-[#2CA01C] hover:bg-[#258917] px-5 py-2.5 rounded-lg transition shadow-sm sm:w-auto"
           >
             <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
               <circle cx="24" cy="24" r="24" fill="white"/>
