@@ -33,6 +33,12 @@ export default function Footer({ locale = 'en' }: FooterProps) {
             {translations.footer.terms}
           </Link>
           <Link 
+            href={`/${locale}/blog`} 
+            className="transition-colors text-slate-400 hover:text-emerald-400"
+          >
+            Blog
+          </Link>
+          <Link 
             href="/support" 
             className="transition-colors text-slate-400 hover:text-emerald-400"
           >

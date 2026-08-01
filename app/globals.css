@@ -52,7 +52,7 @@ body {
   white-space: nowrap;
 }
 
-/* Soro Blog 2-Column Responsive Layout Overrides */
+/* Soro Blog Responsive Layout Overrides */
 div#soro-blog .soro-blog {
   max-width: 100% !important;
   width: 100% !important;
@@ -68,6 +68,12 @@ div#soro-blog .soro-blog-list {
 @media (min-width: 640px) {
   div#soro-blog .soro-blog-list {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  div#soro-blog .soro-blog-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
 

@@ -217,23 +217,6 @@ export default async function MarketingHomePage() {
           </div>
         </section>
 
-        <section className="border-t border-slate-900 bg-slate-950/60 py-24 px-6 w-full">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">From the Blog</h2>
-              <p className="mt-3 text-sm md:text-base text-white max-w-2xl mx-auto">
-                Insights, guides, and updates for growing field service teams.
-              </p>
-            </div>
-
-            <div id="soro-blog"></div>
-            <Script
-              src="https://app.trysoro.com/api/embed/b4d76162-6cd8-4826-967c-cfe42cf49354"
-              strategy="afterInteractive"
-            />
-          </div>
-        </section>
-
         {/* NEW: Final Call to Action Section */}
         <section className="border-t border-slate-900 bg-slate-950 py-20 px-6 text-center relative overflow-hidden">
           <div className="max-w-3xl mx-auto space-y-6">
