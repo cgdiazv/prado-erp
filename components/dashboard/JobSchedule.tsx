@@ -514,9 +514,9 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
       )}
         </>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
@@ -550,8 +550,8 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                 {isEs ? 'Siguiente' : 'Next'}
               </button>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-0.5">
+            <div className="flex items-center justify-between gap-3 sm:justify-end">
+              <div className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white p-0.5">
                 {[7, 12, 14].map((span) => (
                   <button
                     key={span}
