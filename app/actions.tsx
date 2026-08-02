@@ -515,6 +515,10 @@ export async function completeJob(jobId: string) {
   const organizationLogoUrl = org?.logo_url?.trim() || '';
   const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org?.document_email_header_color);
 
+  if (!org?.id) {
+    return { error: 'No organizational profile found.' };
+  }
+
   // 1. Fetch job details AND include nested customer profile information for email delivery
   const { data: job, error: fetchError } = await supabase
     .from('jobs')

@@ -1,7 +1,12 @@
 import type { DocumentKind } from '@/lib/documentBranding';
 
+type RpcResult = {
+  data: number | null;
+  error: { message: string } | null;
+};
+
 interface RpcClient {
-  rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: number | null; error: { message: string } | null }>;
+  rpc: (fn: string, params?: Record<string, unknown>) => PromiseLike<RpcResult>;
 }
 
 export async function reserveDocumentNumber(
