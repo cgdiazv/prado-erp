@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@/lib/supabaseServer';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 import { getUserOrganization } from '@/lib/organization';
+import { reserveDocumentNumber } from '@/lib/documentNumbers';
 
 export type AIIntent = 'job' | 'customer' | 'property' | 'truck' | 'service' | 'estimate';
 
@@ -725,9 +726,12 @@ export async function executeAICreateEntity(
 
       if (!customerId) return { success: false, error: 'Customer is required for estimate.' };
 
+      const estimateNumber = await reserveDocumentNumber(supabaseAdmin, org.id, 'estimate');
+
       const { error } = await supabaseAdmin.from('estimates').insert([
         {
           organization_id: org.id,
+          estimate_number: estimateNumber,
           customer_id: customerId,
           property_id: propertyId,
           service_id: serviceId,

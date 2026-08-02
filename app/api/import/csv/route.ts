@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
 import { getUserOrganization } from '@/lib/organization';
+import { reserveDocumentNumber } from '@/lib/documentNumbers';
 
 type ImportEntity = 'customers' | 'jobs' | 'expenses' | 'estimates';
 
@@ -244,6 +245,7 @@ export async function POST(request: Request) {
 
         const payload = {
           organization_id: org.id,
+          estimate_number: await reserveDocumentNumber(supabase, org.id, 'estimate'),
           customer_id: customerId,
           property_id: propertyId || null,
           title,

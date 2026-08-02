@@ -9,6 +9,7 @@ import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
 import DeleteAccountSurveyCard from '../DeleteAccountSurveyCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
 import InvoiceTaxSettingsPanel from '../InvoiceTaxSettingsPanel';
+import DocumentBrandingSettingsPanel from '../DocumentBrandingSettingsPanel';
 import XeroConnectionCard from '../XeroConnectionCard';
 import QBOConnectionCard from '../QBOConnectionCard';
 import StripeConnectSettings from '@/components/dashboard/StripeConnectSettings';
@@ -22,6 +23,7 @@ const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 const SECTION_IDS = [
   'account-settings',
   'operations-settings',
+  'document-settings',
   'team-settings',
   'integrations',
   'dispatch-settings',
@@ -116,6 +118,11 @@ export default async function SettingsSectionPage({
       id: 'operations-settings',
       label: locale.toLowerCase().startsWith('es') ? 'Configuracion de operaciones' : 'Operations Settings',
       href: `/${locale}/dashboard/settings/operations-settings`,
+    },
+    {
+      id: 'document-settings',
+      label: locale.toLowerCase().startsWith('es') ? 'Documentos y correos' : 'Documents & Emails',
+      href: `/${locale}/dashboard/settings/document-settings`,
     },
   ];
 
@@ -262,14 +269,6 @@ export default async function SettingsSectionPage({
             {section === 'operations-settings' && (
               <>
                 <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                  <InvoiceTaxSettingsPanel
-                    initialTaxRatePercent={org.invoice_tax_rate_percent ?? 8.25}
-                    initialCurrencyCode={org.invoice_currency_code || 'USD'}
-                    locale={locale}
-                  />
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                   <ServicesPanel initialServices={services} locale={locale} />
                 </div>
 
@@ -284,6 +283,27 @@ export default async function SettingsSectionPage({
                     <ExpenseCategoriesPanel locale={locale} />
                   </div>
                 )}
+              </>
+            )}
+
+            {section === 'document-settings' && (
+              <>
+                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                  <InvoiceTaxSettingsPanel
+                    initialTaxRatePercent={org.invoice_tax_rate_percent ?? 8.25}
+                    initialCurrencyCode={org.invoice_currency_code || 'USD'}
+                    locale={locale}
+                  />
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                  <DocumentBrandingSettingsPanel
+                    initialNextEstimateNumber={org.next_estimate_number ?? 1001}
+                    initialNextInvoiceNumber={org.next_invoice_number ?? 1001}
+                    initialHeaderColor={org.document_email_header_color || '#009966'}
+                    locale={locale}
+                  />
+                </div>
               </>
             )}
 

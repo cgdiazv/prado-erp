@@ -23,6 +23,9 @@ export type UserOrganization = {
   last_xero_sync_warning_at: string | null;
   max_jobs_per_truck: number | null;
   auto_optimize_drive_routes: boolean | null;
+  next_estimate_number: number | null;
+  next_invoice_number: number | null;
+  document_email_header_color: string | null;
 };
 
 export type UserOrganizationResult = {
@@ -30,8 +33,8 @@ export type UserOrganizationResult = {
   role: string | null;
 };
 
-const ORG_SELECT_WITH_STRIPE = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, created_at';
-const ORG_SELECT_WITH_MAX = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, created_at';
+const ORG_SELECT_WITH_STRIPE = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, created_at';
+const ORG_SELECT_WITH_MAX = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, created_at';
 const ORG_SELECT_LEGACY = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, created_at';
 
 type OrganizationCandidate = {
@@ -55,6 +58,12 @@ function normalizeOrganizationRow(row: any): UserOrganization {
       typeof row?.max_jobs_per_truck === 'number' ? row.max_jobs_per_truck : null,
     auto_optimize_drive_routes:
       typeof row?.auto_optimize_drive_routes === 'boolean' ? row.auto_optimize_drive_routes : true,
+    next_estimate_number:
+      typeof row?.next_estimate_number === 'number' ? row.next_estimate_number : 1001,
+    next_invoice_number:
+      typeof row?.next_invoice_number === 'number' ? row.next_invoice_number : 1001,
+    document_email_header_color:
+      typeof row?.document_email_header_color === 'string' ? row.document_email_header_color : '#009966',
   } as UserOrganization;
 }
 

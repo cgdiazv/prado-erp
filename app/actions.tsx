@@ -25,6 +25,8 @@ import {
 import { getUserOrganization } from '@/lib/organization';
 import { findAuthUserIndexByEmail, findAuthUserIndexByUserIds, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 import { normalizeCurrencyCode, toStripeCurrency } from '@/lib/currency';
+import { formatDocumentNumber, normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
+import { reserveDocumentNumber } from '@/lib/documentNumbers';
 import Stripe from 'stripe';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
@@ -504,13 +506,14 @@ export async function completeJob(jobId: string) {
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, slogan, logo_url, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, invoice_tax_rate_percent, invoice_currency_code')
+    .select('id, name, slogan, logo_url, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, invoice_tax_rate_percent, invoice_currency_code, document_email_header_color')
     .eq('owner_id', user?.id)
     .single();
 
   const organizationName = org?.name?.trim() || 'Prado ERP';
   const organizationSlogan = org?.slogan?.trim() || 'Field Service Software';
   const organizationLogoUrl = org?.logo_url?.trim() || '';
+  const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org?.document_email_header_color);
 
   // 1. Fetch job details AND include nested customer profile information for email delivery
   const { data: job, error: fetchError } = await supabase
@@ -581,12 +584,15 @@ export async function completeJob(jobId: string) {
   
   // Set the invoice due date to today (due immediately upon completion)
   const todayStr = new Date().toISOString().split('T')[0];
+  const invoiceNumber = await reserveDocumentNumber(supabase, org.id, 'invoice');
 
   const { data: invoiceRecord, error: invoiceError } = await supabase
     .from('invoices')
     .insert([
       {
+        organization_id: org.id,
         customer_id: customerId,
+        invoice_number: invoiceNumber,
         due_date: todayStr,
         status: 'unpaid',
         total_amount: total,
@@ -594,7 +600,7 @@ export async function completeJob(jobId: string) {
         currency_code: invoiceCurrencyCode,
       },
     ])
-    .select('id')
+    .select('id, invoice_number')
     .single();
 
   if (invoiceError) return { error: invoiceError.message };
@@ -704,6 +710,7 @@ export async function completeJob(jobId: string) {
       customerEmail: customerMeta?.email || null,
       jobType: job.job_type,
       invoiceId: invoiceRecord.id,
+      invoiceNumber: invoiceRecord.invoice_number,
       dueDate: todayStr,
       baseAmount: Number(cost || 0),
       taxAmount: Number(estimatedTax || 0),
@@ -721,6 +728,7 @@ export async function completeJob(jobId: string) {
       customerName: customerDisplayName,
       customerEmail: customerMeta?.email || null,
       jobType: job.job_type,
+      invoiceNumber: invoiceRecord.invoice_number,
       dueDate: todayStr,
       baseAmount: Number(cost || 0),
       taxAmount: Number(estimatedTax || 0),
@@ -736,6 +744,7 @@ export async function completeJob(jobId: string) {
     const fromAddress = `${organizationName} <${fromEmailAddress}>`;
     const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
     const customerDisplayName = `${customerMeta.first_name || ''} ${customerMeta.last_name || ''}`.trim() || customerMeta.company_name || 'Valued Customer';
+    const formattedInvoiceNumber = formatDocumentNumber('invoice', invoiceRecord.invoice_number);
     const invoiceHtml = await render(
       InvoiceEmail({
         customerName: customerDisplayName,
@@ -746,10 +755,12 @@ export async function completeJob(jobId: string) {
         taxRatePercent,
         currencyCode: invoiceCurrencyCode,
         totalAmount: total,
+        invoiceNumber: invoiceRecord.invoice_number,
         paymentUrl: paymentUrl || undefined,
         organizationName,
         organizationSlogan,
         organizationLogoUrl,
+        headerColor: documentEmailHeaderColor,
       })
     );
 
@@ -758,7 +769,9 @@ export async function completeJob(jobId: string) {
         from: fromAddress,
         to: customerMeta.email,
         replyTo: replyToAddress,
-        subject: `Invoice for Completed Service - ${job.job_type}`,
+        subject: formattedInvoiceNumber
+          ? `${organizationName} Invoice ${formattedInvoiceNumber}`
+          : `Invoice for Completed Service - ${job.job_type}`,
         html: invoiceHtml,
       });
 
@@ -1151,7 +1164,7 @@ export async function markInvoiceAsPaid(invoiceId: string, customerId: string) {
 
     const { data: invoice } = await supabase
       .from('invoices')
-      .select('id, due_date, total_amount, currency_code, organization_id, customers(first_name, last_name, company_name, email)')
+      .select('id, invoice_number, due_date, total_amount, currency_code, organization_id, customers(first_name, last_name, company_name, email)')
       .eq('id', invoiceId)
       .limit(1)
       .maybeSingle();
@@ -1191,7 +1204,7 @@ export async function markInvoiceAsPaid(invoiceId: string, customerId: string) {
         const paidHtml = await render(
           InvoicePaidEmail({
             customerName: customerDisplayName,
-            invoiceId: invoice?.id || invoiceId,
+            invoiceId: formatDocumentNumber('invoice', invoice?.invoice_number) || invoice?.id || invoiceId,
             paidDate,
             totalPaid: Number(invoice?.total_amount || 0),
             currencyCode: invoice?.currency_code || 'USD',
@@ -1205,7 +1218,7 @@ export async function markInvoiceAsPaid(invoiceId: string, customerId: string) {
           from: fromAddress,
           to: customer.email,
           replyTo: replyToAddress,
-          subject: `${organizationName} Payment Received: Invoice ${invoice?.id || invoiceId}`,
+          subject: `${organizationName} Payment Received: Invoice ${formatDocumentNumber('invoice', invoice?.invoice_number) || invoice?.id || invoiceId}`,
           html: paidHtml,
         });
       } catch (emailErr) {
@@ -1388,6 +1401,8 @@ export async function createEstimate(formData: FormData) {
       .single();
     if (!org) return { error: 'No organizational profile found.' };
 
+    const estimateNumber = await reserveDocumentNumber(supabase, org.id, 'estimate');
+
     // 3. Extraer datos
     const customerId = formData.get('customerId') as string;
     const propertyId = formData.get('propertyId') as string || null;
@@ -1436,6 +1451,7 @@ export async function createEstimate(formData: FormData) {
       .insert([
         {
           organization_id: org.id,
+          estimate_number: estimateNumber,
           customer_id: customerId,
           property_id: propertyId,
           title,
@@ -1556,13 +1572,14 @@ export async function sendEstimateByEmail(estimateId: string) {
 
     const { data: org } = await supabase
       .from('organizations')
-      .select('name, slogan, logo_url')
+      .select('name, slogan, logo_url, document_email_header_color')
       .eq('owner_id', user?.id)
       .single();
 
     const organizationName = org?.name?.trim() || 'Prado ERP';
     const organizationSlogan = org?.slogan?.trim() || 'Field Service Software';
     const organizationLogoUrl = org?.logo_url?.trim() || '';
+    const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org?.document_email_header_color);
 
     // 1. Fetch Estimate and related Customer data
     const { data: estimate, error: estimateError } = await supabase
@@ -1585,6 +1602,13 @@ export async function sendEstimateByEmail(estimateId: string) {
     }
 
     const customer = estimate.customers as { email: string; first_name: string; last_name: string };
+    const estimateForEmail = estimate as {
+      title?: string;
+      estimated_amount?: number;
+      description?: string | null;
+      created_at?: string;
+      estimate_number?: number | null;
+    };
     if (!customer || !customer.email) {
       throw new Error('Customer email not found for this estimate.');
     }
@@ -1597,18 +1621,23 @@ export async function sendEstimateByEmail(estimateId: string) {
     const emailHtml = await render(
       EstimateEmail({
         customerName: `${customer.first_name} ${customer.last_name}`,
-        estimate: estimate as any,
+        estimate: estimateForEmail,
         organizationSlogan,
         organizationName,
         organizationLogoUrl,
+        headerColor: documentEmailHeaderColor,
       })
     );
+
+    const formattedEstimateNumber = formatDocumentNumber('estimate', estimateForEmail.estimate_number);
 
     const { error: emailError } = await resend.emails.send({
       from: fromAddress,
       to: [customer.email],
       replyTo: replyToAddress,
-      subject: `${organizationName} Estimate: ${estimate.title}`,
+      subject: formattedEstimateNumber
+        ? `${organizationName} Estimate ${formattedEstimateNumber}: ${estimate.title}`
+        : `${organizationName} Estimate: ${estimate.title}`,
       html: emailHtml,
     });
 

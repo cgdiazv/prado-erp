@@ -1,10 +1,12 @@
 import * as React from 'react';
+import { formatDocumentNumber, normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
 
 type EstimateLike = {
   title?: string;
   estimated_amount?: number;
   description?: string | null;
   created_at?: string;
+  estimate_number?: number | null;
 };
 
 type EstimateEmailProps = {
@@ -13,6 +15,7 @@ type EstimateEmailProps = {
   organizationSlogan?: string;
   organizationName?: string;
   organizationLogoUrl?: string;
+  headerColor?: string;
 };
 
 export default function EstimateEmail({
@@ -21,6 +24,7 @@ export default function EstimateEmail({
   organizationSlogan = 'Field Service Software',
   organizationName = 'Prado Systems',
   organizationLogoUrl = '',
+  headerColor = '#009966',
 }: EstimateEmailProps) {
   const amount = Number(estimate?.estimated_amount || 0).toFixed(2);
   const estimateTitle = estimate?.title?.trim() || 'General Service';
@@ -28,11 +32,13 @@ export default function EstimateEmail({
   const headerTitle = organizationName?.trim() || 'Prado Systems';
   const amountStr = `$${amount}`;
   const footerYear = new Date().getFullYear();
+  const normalizedHeaderColor = normalizeDocumentEmailHeaderColor(headerColor);
+  const formattedEstimateNumber = formatDocumentNumber('estimate', estimate?.estimate_number);
 
   return (
     <div style={{ fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', backgroundColor: '#f8fafc', margin: 0, padding: '20px', color: '#1e293b' }}>
       <div style={{ maxWidth: 600, margin: '0 auto', background: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ background: '#009966', padding: '24px', textAlign: 'center', color: '#ffffff' }}>
+        <div style={{ background: normalizedHeaderColor, padding: '24px', textAlign: 'center', color: '#ffffff' }}>
           {organizationLogoUrl ? (
             <img
               src={organizationLogoUrl}
@@ -51,12 +57,17 @@ export default function EstimateEmail({
           <p style={{ margin: '0 0 16px 0' }}>We have prepared a new estimate for your review:</p>
 
           <div style={{ background: '#f1f5f9', borderRadius: 8, padding: '16px', margin: '20px 0' }}>
+            {formattedEstimateNumber ? (
+              <p style={{ margin: '0 0 8px 0' }}>
+                <strong>Estimate Number:</strong> {formattedEstimateNumber}
+              </p>
+            ) : null}
             <p style={{ margin: '0 0 8px 0' }}>
               <strong>Estimate Title:</strong> {estimateTitle}
             </p>
             <p style={{ margin: 0 }}>
               <strong>Total Estimated Cost:</strong>{' '}
-              <span style={{ fontSize: 24, fontWeight: 700, color: '#009966' }}>{amountStr}</span>
+              <span style={{ fontSize: 24, fontWeight: 700, color: normalizedHeaderColor }}>{amountStr}</span>
             </p>
           </div>
 

@@ -229,16 +229,16 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
 
   const timelineRows = useMemo(() => {
     const rows = [
-      ...trucks.map((truck) => ({
-        id: truck.id,
-        label: truck.name,
-        isUnassigned: false,
-      })),
       {
         id: '__unassigned__',
         label: isEs ? 'Sin asignar' : 'Unassigned',
         isUnassigned: true,
       },
+      ...trucks.map((truck) => ({
+        id: truck.id,
+        label: truck.name,
+        isUnassigned: false,
+      })),
     ];
 
     return rows.map((row) => {
@@ -601,7 +601,11 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                                 key={job.id}
                                 type="button"
                                 onClick={() => openScheduleDetails(job)}
-                                className="w-full truncate rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-left text-[10px] font-semibold text-emerald-800 hover:bg-emerald-100"
+                                className={`w-full truncate rounded-md px-1.5 py-1 text-left text-[10px] font-semibold transition ${
+                                  row.isUnassigned
+                                    ? 'border border-red-200 bg-red-50 text-red-800 hover:bg-red-100'
+                                    : 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                }`}
                                 title={`${job.job_type} • ${job.properties?.street_address || ''}`}
                               >
                                 {job.job_type}

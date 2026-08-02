@@ -7,6 +7,7 @@ import { Resend } from 'resend';
 import { clearRememberToken, revokeAllRememberTokensForUser, revokeOtherRememberTokensForUser } from '@/lib/rememberMe';
 import { getUserOrganization } from '@/lib/organization';
 import { normalizeCurrencyCode } from '@/lib/currency';
+import { normalizeDocumentEmailHeaderColor, normalizeDocumentSequenceNumber } from '@/lib/documentBranding';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
@@ -337,6 +338,92 @@ export async function updateInvoiceTaxRate(formData: FormData) {
     success: true,
     taxRatePercent: normalizedTaxRate,
     currencyCode: normalizedCurrencyCode,
+  };
+}
+
+export async function updateDocumentBrandingSettings(formData: FormData) {
+  const locale = (formData.get('locale') as string | null)?.trim() || 'en';
+  const nextEstimateRaw = (formData.get('nextEstimateNumber') as string | null)?.trim() || '';
+  const nextInvoiceRaw = (formData.get('nextInvoiceNumber') as string | null)?.trim() || '';
+  const headerColorRaw = (formData.get('documentEmailHeaderColor') as string | null)?.trim() || '';
+
+  const nextEstimateNumber = normalizeDocumentSequenceNumber(nextEstimateRaw);
+  const nextInvoiceNumber = normalizeDocumentSequenceNumber(nextInvoiceRaw);
+  const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(headerColorRaw);
+
+  if (!/^#[0-9A-F]{6}$/.test(documentEmailHeaderColor)) {
+    return { error: 'Header color must be a valid 6-character hex color.' };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be signed in to update document settings.' };
+  }
+
+  const { organization, role } = await getUserOrganization(user.id);
+  if (!organization) {
+    return { error: 'Workspace not found.' };
+  }
+
+  const normalizedRole = (role || '').toLowerCase();
+  if (normalizedRole !== 'owner' && normalizedRole !== 'admin') {
+    return { error: 'Only owners and admins can update document settings.' };
+  }
+
+  const [{ data: latestEstimate }, { data: latestInvoice }] = await Promise.all([
+    supabase
+      .from('estimates')
+      .select('estimate_number')
+      .eq('organization_id', organization.id)
+      .not('estimate_number', 'is', null)
+      .order('estimate_number', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('invoices')
+      .select('invoice_number')
+      .eq('organization_id', organization.id)
+      .not('invoice_number', 'is', null)
+      .order('invoice_number', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (Number(latestEstimate?.estimate_number || 0) >= nextEstimateNumber) {
+    return { error: `Next estimate number must be greater than ${latestEstimate?.estimate_number}.` };
+  }
+
+  if (Number(latestInvoice?.invoice_number || 0) >= nextInvoiceNumber) {
+    return { error: `Next invoice number must be greater than ${latestInvoice?.invoice_number}.` };
+  }
+
+  const { error } = await supabase
+    .from('organizations')
+    .update({
+      next_estimate_number: nextEstimateNumber,
+      next_invoice_number: nextInvoiceNumber,
+      document_email_header_color: documentEmailHeaderColor,
+    })
+    .eq('id', organization.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/dashboard/settings');
+  revalidatePath(`/${locale}/dashboard/settings`);
+  revalidatePath('/dashboard/estimates');
+  revalidatePath(`/${locale}/dashboard/estimates`);
+
+  return {
+    success: true,
+    nextEstimateNumber,
+    nextInvoiceNumber,
+    documentEmailHeaderColor,
   };
 }
 

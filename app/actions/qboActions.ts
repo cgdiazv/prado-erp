@@ -4,6 +4,7 @@ import { getValidQBOToken, getQBOBaseUrl } from '@/lib/qbo';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 import { normalizeCurrencyCode } from '@/lib/currency';
 import { clearAccountingSyncWarning, setAccountingSyncWarning } from '@/lib/accountingSyncWarnings';
+import { formatDocumentNumber } from '@/lib/documentBranding';
 
 interface QBOInvoiceLineItem {
   description: string;
@@ -16,6 +17,7 @@ interface CreateQBOInvoicePayload {
   customerName: string;
   customerEmail?: string | null;
   jobType: string;
+  invoiceNumber?: number | null;
   dueDate: string;
   baseAmount: number;
   taxAmount: number;
@@ -107,6 +109,7 @@ export async function syncInvoiceToQBO(payload: CreateQBOInvoicePayload) {
     const total = payload.baseAmount + payload.taxAmount;
     const taxRateLabel = formatTaxRatePercent(payload.taxRatePercent);
     const currencyCode = normalizeCurrencyCode(payload.currencyCode);
+    const formattedInvoiceNumber = formatDocumentNumber('invoice', payload.invoiceNumber);
     const invoiceData = {
       CustomerRef: customerRef,
       CurrencyRef: {
@@ -140,7 +143,7 @@ export async function syncInvoiceToQBO(payload: CreateQBOInvoicePayload) {
           : []),
       ],
       TotalAmt: total,
-      DocNumber: `PRADO-${Date.now()}`,
+      DocNumber: formattedInvoiceNumber || `PRADO-${Date.now()}`,
     };
 
     const response = await fetch(`${baseUrl}/v3/company/${realmId}/invoice?minorversion=65`, {

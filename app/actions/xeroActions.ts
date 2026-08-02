@@ -4,6 +4,7 @@ import { getValidXeroToken } from '@/lib/xero';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 import { normalizeCurrencyCode } from '@/lib/currency';
 import { clearAccountingSyncWarning, setAccountingSyncWarning } from '@/lib/accountingSyncWarnings';
+import { formatDocumentNumber } from '@/lib/documentBranding';
 
 interface InvoicePayload {
   organizationId: string;
@@ -23,6 +24,7 @@ interface CompletedJobInvoicePayload {
   customerEmail?: string | null;
   jobType: string;
   invoiceId: string;
+  invoiceNumber?: number | null;
   dueDate: string;
   baseAmount: number;
   taxAmount: number;
@@ -140,6 +142,7 @@ export async function syncCompletedJobInvoiceToXero(payload: CompletedJobInvoice
 
     const taxRateLabel = formatTaxRatePercent(payload.taxRatePercent);
     const currencyCode = normalizeCurrencyCode(payload.currencyCode);
+    const formattedInvoiceNumber = formatDocumentNumber('invoice', payload.invoiceNumber) || payload.invoiceId;
 
     const xeroInvoiceData = {
       Invoices: [
@@ -149,7 +152,7 @@ export async function syncCompletedJobInvoiceToXero(payload: CompletedJobInvoice
           Contact: contact,
           Date: new Date().toISOString().split('T')[0],
           DueDate: payload.dueDate,
-          Reference: `Prado Invoice #${payload.invoiceId}`,
+          Reference: `Prado Invoice #${formattedInvoiceNumber}`,
           LineItems: [
             {
               Description: payload.jobType,
@@ -318,6 +321,7 @@ function buildCompletedJobInvoice(payload: CompletedJobInvoicePayload) {
 
   const taxRateLabel = formatTaxRatePercent(payload.taxRatePercent);
   const currencyCode = normalizeCurrencyCode(payload.currencyCode);
+  const formattedInvoiceNumber = formatDocumentNumber('invoice', payload.invoiceNumber) || payload.invoiceId;
 
   return {
     Type: 'ACCREC',
@@ -325,7 +329,7 @@ function buildCompletedJobInvoice(payload: CompletedJobInvoicePayload) {
     Contact: contact,
     Date: new Date().toISOString().split('T')[0],
     DueDate: payload.dueDate,
-    Reference: `Prado Invoice #${payload.invoiceId}`,
+    Reference: `Prado Invoice #${formattedInvoiceNumber}`,
     LineItems: [
       {
         Description: payload.jobType,

@@ -82,7 +82,7 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
 
   const { data: invoiceRow, error: invoiceError } = await supabaseAdmin
     .from('invoices')
-    .select('id, customer_id, due_date, total_amount, tax_amount, currency_code, status, stripe_payment_status, customers(id, first_name, last_name, company_name, email, organization_id)')
+    .select('id, invoice_number, customer_id, due_date, total_amount, tax_amount, currency_code, status, stripe_payment_status, customers(id, first_name, last_name, company_name, email, organization_id)')
     .eq('id', invoiceId)
     .maybeSingle();
 
@@ -155,6 +155,7 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
       customerEmail: customer?.email || null,
       jobType: `Invoice ${invoiceRow.id}`,
       invoiceId: invoiceRow.id,
+      invoiceNumber: invoiceRow.invoice_number,
       dueDate: invoiceRow.due_date,
       baseAmount,
       taxAmount,
@@ -171,6 +172,7 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
       customerName,
       customerEmail: customer?.email || null,
       jobType: `Invoice ${invoiceRow.id}`,
+      invoiceNumber: invoiceRow.invoice_number,
       dueDate: invoiceRow.due_date,
       baseAmount,
       taxAmount,

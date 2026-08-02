@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
+import { formatDocumentNumber, normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
 
 type InvoiceEmailProps = {
   customerName: string;
@@ -10,10 +11,12 @@ type InvoiceEmailProps = {
   taxRatePercent?: number;
   currencyCode?: string;
   totalAmount: number;
+  invoiceNumber?: number | null;
   paymentUrl?: string;
   organizationName?: string;
   organizationSlogan?: string;
   organizationLogoUrl?: string;
+  headerColor?: string;
 };
 
 export default function InvoiceEmail({
@@ -25,10 +28,12 @@ export default function InvoiceEmail({
   taxRatePercent = 8.25,
   currencyCode = 'USD',
   totalAmount,
+  invoiceNumber,
   paymentUrl,
   organizationName = 'Prado Systems',
   organizationSlogan = 'Field Service Software',
   organizationLogoUrl = '',
+  headerColor = '#009966',
 }: InvoiceEmailProps) {
   const normalizedCurrency = normalizeCurrencyCode(currencyCode);
   const safeTaxRatePercent = Number.isFinite(taxRatePercent) ? Number(taxRatePercent) : 8.25;
@@ -40,11 +45,13 @@ export default function InvoiceEmail({
   const taxStr = formatCurrency(taxAmount, normalizedCurrency);
   const totalStr = formatCurrency(totalAmount, normalizedCurrency);
   const footerYear = new Date().getFullYear();
+  const normalizedHeaderColor = normalizeDocumentEmailHeaderColor(headerColor);
+  const formattedInvoiceNumber = formatDocumentNumber('invoice', invoiceNumber);
 
   return (
     <div style={{ fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', backgroundColor: '#f8fafc', margin: 0, padding: '20px', color: '#1e293b' }}>
       <div style={{ maxWidth: 600, margin: '0 auto', background: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ background: '#009966', padding: '24px', textAlign: 'center', color: '#ffffff' }}>
+        <div style={{ background: normalizedHeaderColor, padding: '24px', textAlign: 'center', color: '#ffffff' }}>
           {organizationLogoUrl ? (
             <img
               src={organizationLogoUrl}
@@ -55,13 +62,14 @@ export default function InvoiceEmail({
             />
           ) : null}
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>{headerTitle}</h1>
-          <div style={{ display: 'inline-block', background: '#E6F4EA', color: '#009966', fontWeight: 'bold', padding: '6px 12px', borderRadius: 20, fontSize: 12, marginTop: 8 }}>
+          <div style={{ display: 'inline-block', background: '#ffffff', color: normalizedHeaderColor, fontWeight: 'bold', padding: '6px 12px', borderRadius: 20, fontSize: 12, marginTop: 8 }}>
             OFFICIAL INVOICE
           </div>
         </div>
 
         <div style={{ padding: '28px' }}>
           <h2 style={{ margin: '0 0 12px 0' }}>Invoice for {safeCustomerName}</h2>
+          {formattedInvoiceNumber ? <p style={{ margin: '0 0 12px 0' }}><strong>Invoice Number:</strong> {formattedInvoiceNumber}</p> : null}
           <p style={{ margin: '0 0 12px 0' }}><strong>Invoice Date:</strong> {invoiceDate}</p>
 
           <table style={{ width: '100%', borderCollapse: 'collapse', margin: '20px 0' }}>
@@ -85,8 +93,8 @@ export default function InvoiceEmail({
                 <td style={{ padding: 12, textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>{taxStr}</td>
               </tr>
               <tr>
-                <td style={{ padding: 12, textAlign: 'left', fontSize: 16, fontWeight: 700, color: '#009966', borderTop: '2px solid #009966' }}>TOTAL DUE</td>
-                <td style={{ padding: 12, textAlign: 'right', fontSize: 16, fontWeight: 700, color: '#009966', borderTop: '2px solid #009966' }}>{totalStr}</td>
+                <td style={{ padding: 12, textAlign: 'left', fontSize: 16, fontWeight: 700, color: normalizedHeaderColor, borderTop: `2px solid ${normalizedHeaderColor}` }}>TOTAL DUE</td>
+                <td style={{ padding: 12, textAlign: 'right', fontSize: 16, fontWeight: 700, color: normalizedHeaderColor, borderTop: `2px solid ${normalizedHeaderColor}` }}>{totalStr}</td>
               </tr>
             </tbody>
           </table>
@@ -100,7 +108,7 @@ export default function InvoiceEmail({
                 href={paymentUrl}
                 style={{
                   display: 'inline-block',
-                  background: '#009966',
+                  background: normalizedHeaderColor,
                   color: '#ffffff',
                   textDecoration: 'none',
                   fontWeight: 700,
