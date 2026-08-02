@@ -395,7 +395,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl border border-gray-200 shadow-xs p-6 md:p-8 space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
           <div className="space-y-6">
             {/* Header */}
             <div>

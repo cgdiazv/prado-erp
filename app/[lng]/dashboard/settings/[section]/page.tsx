@@ -225,7 +225,7 @@ export default async function SettingsSectionPage({
               </div>
             </div>
 
-            <nav className="overflow-x-auto pb-1">
+            <nav className="overflow-x-auto pb-1 lg:hidden">
               <div className="flex min-w-max items-center gap-2">
                 {sectionLinks.map((link) => {
                   const isActive = link.id === section;
@@ -246,6 +246,34 @@ export default async function SettingsSectionPage({
               </div>
             </nav>
 
+            <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+              <aside className="hidden lg:block lg:sticky lg:top-8">
+                <div className="rounded-2xl border border-gray-200 bg-white py-3 shadow-xs">
+                  <p className="px-2 pb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                    {locale.toLowerCase().startsWith('es') ? 'Configuracion' : 'Settings'}
+                  </p>
+                  <nav>
+                    {sectionLinks.map((link) => {
+                      const isActive = link.id === section;
+                      return (
+                        <Link
+                          key={link.id}
+                          href={link.href}
+                          className={`flex px-2 py-3 text-sm font-medium transition ${
+                            isActive
+                              ? 'rounded-none bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                              : 'rounded-md text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span>{link.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                </div>
+              </aside>
+
+              <div className="space-y-6 min-w-0">
             {section === 'account-settings' && (
               <>
                 <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
@@ -427,6 +455,8 @@ export default async function SettingsSectionPage({
                 </div>
               </>
             )}
+              </div>
+            </div>
           </div>
     </main>
   );
