@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { getResendFromAddress } from '@/lib/resend';
 import { enqueueXeroCompletedJobInvoice } from '@/app/actions/xeroActions';
 import { syncInvoiceToQBO } from '@/app/actions/qboActions';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
@@ -194,7 +195,7 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
 
         if (ownerEmail) {
           await resend.emails.send({
-            from: 'Prado Commerce Alerts <notifications@pradocommerce.com>',
+            from: getResendFromAddress({ displayName: 'Prado Commerce Alerts' }),
             to: ownerEmail,
             subject: `Invoice Paid: ${customerName}`,
             html: `
@@ -330,7 +331,7 @@ export async function POST(request: Request) {
 
       if (customerEmail && isExplicitPradoSession) {
         await resend.emails.send({
-          from: 'Prado Commerce <notifications@pradocommerce.com>',
+          from: getResendFromAddress({ displayName: 'Prado Commerce' }),
           to: customerEmail,
           subject: `Welcome to Prado - ${tierWelcomeDetails.label} Plan Activated`,
           html: `
@@ -373,7 +374,7 @@ export async function POST(request: Request) {
       // Notify internal inbox for successful paid checkout events.
       try {
         await resend.emails.send({
-          from: 'Prado Commerce Alerts <notifications@pradocommerce.com>',
+          from: getResendFromAddress({ displayName: 'Prado Commerce Alerts' }),
           to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
           subject: `New Prado Checkout (${assignedStatus})`,
           html: `

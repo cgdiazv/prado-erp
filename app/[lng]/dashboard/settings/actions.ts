@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { revalidatePath } from 'next/cache';
 import Stripe from 'stripe';
 import { Resend } from 'resend';
+import { getResendFromAddress } from '@/lib/resend';
 import { clearRememberToken, revokeAllRememberTokensForUser, revokeOtherRememberTokensForUser } from '@/lib/rememberMe';
 import { getUserOrganization } from '@/lib/organization';
 import { normalizeCurrencyCode } from '@/lib/currency';
@@ -816,7 +817,7 @@ export async function cancelSubscription(reasons: string[] = []) {
 
     // Send cancellation feedback to admin inbox
     await resend.emails.send({
-      from: 'Prado Commerce <notifications@pradocommerce.com>',
+      from: getResendFromAddress({ displayName: 'Prado Commerce' }),
       to: 'info@pradojob.com',
       subject: 'Subscription Canceled - User Feedback',
       html: `
@@ -838,7 +839,7 @@ export async function cancelSubscription(reasons: string[] = []) {
     // Send a cancellation email
     if (user.email) {
       await resend.emails.send({
-        from: 'Prado Commerce <notifications@pradocommerce.com>',
+        from: getResendFromAddress({ displayName: 'Prado Commerce' }),
         to: user.email,
         subject: 'Your Prado Subscription Has Been Canceled',
         html: `

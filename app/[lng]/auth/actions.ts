@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabaseServer';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 import { Resend } from 'resend';
+import { getResendFromAddress } from '@/lib/resend';
 import { findAuthUserIndexByEmail, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 import { issueRememberToken } from '@/lib/rememberMe';
 
@@ -170,7 +171,7 @@ export async function signup(formData: FormData) {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const signupType = inviteOrgId ? 'Invite Signup' : 'New Organization';
         await resend.emails.send({
-          from: 'Prado Commerce <notifications@pradocommerce.com>',
+          from: getResendFromAddress({ displayName: 'Prado Commerce' }),
           to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
           subject: `New Prado Registration - ${signupType} (${intendedPlan || 'trial'})`,
           html: `

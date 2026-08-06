@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabaseAdmin';
 import { getUserOrganization } from '@/lib/organization';
 import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
+import { getResendFromAddress } from '@/lib/resend';
 
 const FEEDBACK_VALUES = ['bad', 'okay', 'good', 'great'] as const;
 type FeedbackValue = (typeof FEEDBACK_VALUES)[number];
@@ -92,7 +93,7 @@ export async function submitDashboardFeedback(formData: FormData) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
       await resend.emails.send({
-        from: 'Prado Commerce Feedback <notifications@pradocommerce.com>',
+        from: getResendFromAddress({ displayName: 'Prado Commerce Feedback' }),
         to: 'info@pradojob.com',
         subject: `Dashboard feedback: ${feedbackLabel}`,
         html: `

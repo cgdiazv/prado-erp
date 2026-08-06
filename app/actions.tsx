@@ -27,6 +27,7 @@ import { findAuthUserIndexByEmail, findAuthUserIndexByUserIds, normalizeAuthEmai
 import { normalizeCurrencyCode, toStripeCurrency } from '@/lib/currency';
 import { formatDocumentNumber, normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
 import { reserveDocumentNumber } from '@/lib/documentNumbers';
+import { getResendFromAddress } from '@/lib/resend';
 import Stripe from 'stripe';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
@@ -316,7 +317,6 @@ export async function createJob(formData: FormData) {
 
     if (customerEmail && org) {
       const resend = new Resend(process.env.RESEND_API_KEY);
-      const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
       const organizationName = org.name?.trim() || 'Prado ERP';
       const customerDisplayName =
         `${customerMeta.first_name || ''} ${customerMeta.last_name || ''}`.trim() ||
@@ -356,7 +356,7 @@ export async function createJob(formData: FormData) {
       );
 
       await resend.emails.send({
-        from: `${organizationName} <${fromEmailAddress}>`,
+        from: getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName }),
         to: customerEmail,
         replyTo: user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined,
         subject: `Service Scheduled: ${resolvedJobType} on ${scheduledDate}`,
@@ -744,8 +744,7 @@ export async function completeJob(jobId: string) {
   // 4. EMAIL AUTOMATION ENGINE: Dispatches invoice instantly via Resend if email is verified
   if (customerMeta?.email) {
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
-    const fromAddress = `${organizationName} <${fromEmailAddress}>`;
+    const fromAddress = getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName });
     const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
     const customerDisplayName = `${customerMeta.first_name || ''} ${customerMeta.last_name || ''}`.trim() || customerMeta.company_name || 'Valued Customer';
     const formattedInvoiceNumber = formatDocumentNumber('invoice', invoiceRecord.invoice_number);
@@ -1202,8 +1201,7 @@ export async function markInvoiceAsPaid(invoiceId: string, customerId: string) {
 
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
-        const fromAddress = `${organizationName} <${fromEmailAddress}>`;
+        const fromAddress = getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName });
         const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
         const paidHtml = await render(
           InvoicePaidEmail({
@@ -1270,7 +1268,7 @@ export async function submitSupportTicket(formData: FormData) {
 
   try {
     const { error } = await resend.emails.send({
-      from: 'notifications@pradocommerce.com',
+      from: getResendFromAddress(),
       to: 'support@pradojob.com',
       subject: `[${urgency.toUpperCase()} SUPPORT TICKET] From ${name}`,
       replyTo: replyToAddress,
@@ -1347,7 +1345,7 @@ export async function submitDemoRequest(formData: FormData) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const { error } = await resend.emails.send({
-      from: 'Prado Commerce Demo <notifications@pradocommerce.com>',
+      from: getResendFromAddress({ displayName: 'Prado Commerce Demo' }),
       to: 'info@pradojob.com',
       replyTo: email,
       subject: `[DEMO REQUEST] ${companyName} - ${name}`,
@@ -1619,8 +1617,7 @@ export async function sendEstimateByEmail(estimateId: string) {
 
     // 2. Send email using Resend
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
-    const fromAddress = `${organizationName} <${fromEmailAddress}>`;
+    const fromAddress = getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName });
     const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
     const emailHtml = await render(
       EstimateEmail({
@@ -1962,8 +1959,7 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
           : `<p style="margin: 10px 0 0 0; color: #334155;"><strong>Service:</strong> ${estimate.title}</p>`;
 
       const resend = new Resend(process.env.RESEND_API_KEY);
-      const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
-      const fromAddress = `${organizationName} <${fromEmailAddress}>`;
+      const fromAddress = getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName });
       const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
 
       try {
@@ -2320,9 +2316,8 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
         console.log('Email would be sent to:', normalizedInviteEmail, 'Subject:', subject);
       } else {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
         const response = await resend.emails.send({
-          from: `${org?.name || 'Prado ERP'} <${fromEmailAddress}>`,
+          from: getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: org?.name || 'Prado ERP' }),
           to: normalizedInviteEmail,
           subject,
           html: htmlString,
@@ -2818,8 +2813,7 @@ export async function sendCustomerDirectEmail(payload: {
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     const organizationName = org.name || 'Prado';
-    const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
-    const fromAddress = `${organizationName} <${fromEmailAddress}>`;
+    const fromAddress = getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName });
     const replyToAddress =
       organizationReplyToEmail || process.env.RESEND_REPLY_TO_EMAIL || user.email || undefined;
     const customerName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Customer';

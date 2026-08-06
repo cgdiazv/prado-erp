@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { getResendFromAddress } from '@/lib/resend';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 
 type LeadPayload = {
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
       const emailCta = normalizedLocale === 'es' ? 'Abrir guia completa' : 'Open complete guide';
 
       await resend.emails.send({
-        from: 'notifications@pradocommerce.com',
+        from: getResendFromAddress(),
         to: email,
         subject: emailSubject,
         html: `
@@ -104,7 +105,7 @@ export async function POST(request: Request) {
       });
 
       await resend.emails.send({
-        from: 'notifications@pradocommerce.com',
+        from: getResendFromAddress(),
         to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
         subject: 'Nuevo lead - Descarga de Guia Operativa Prado',
         html: `

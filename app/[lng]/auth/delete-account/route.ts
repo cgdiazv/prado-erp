@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { getResendFromAddress } from '@/lib/resend';
 
 function escapeHtml(value: string) {
   return value
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       await resend.emails.send({
-        from: 'Prado Commerce Alerts <notifications@pradocommerce.com>',
+        from: getResendFromAddress({ displayName: 'Prado Commerce Alerts' }),
         to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
         subject: 'Account Deleted - User Feedback',
         html: `
