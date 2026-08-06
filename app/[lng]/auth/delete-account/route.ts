@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       await resend.emails.send({
-        from: 'Prado Alerts <notifications@indevasa.com>',
+        from: 'Prado Commerce Alerts <notifications@pradocommerce.com>',
         to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
         subject: 'Account Deleted - User Feedback',
         html: `

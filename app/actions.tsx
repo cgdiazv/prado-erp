@@ -316,7 +316,7 @@ export async function createJob(formData: FormData) {
 
     if (customerEmail && org) {
       const resend = new Resend(process.env.RESEND_API_KEY);
-      const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+      const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
       const organizationName = org.name?.trim() || 'Prado ERP';
       const customerDisplayName =
         `${customerMeta.first_name || ''} ${customerMeta.last_name || ''}`.trim() ||
@@ -744,7 +744,7 @@ export async function completeJob(jobId: string) {
   // 4. EMAIL AUTOMATION ENGINE: Dispatches invoice instantly via Resend if email is verified
   if (customerMeta?.email) {
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+    const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
     const fromAddress = `${organizationName} <${fromEmailAddress}>`;
     const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
     const customerDisplayName = `${customerMeta.first_name || ''} ${customerMeta.last_name || ''}`.trim() || customerMeta.company_name || 'Valued Customer';
@@ -1202,7 +1202,7 @@ export async function markInvoiceAsPaid(invoiceId: string, customerId: string) {
 
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+        const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
         const fromAddress = `${organizationName} <${fromEmailAddress}>`;
         const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
         const paidHtml = await render(
@@ -1270,7 +1270,7 @@ export async function submitSupportTicket(formData: FormData) {
 
   try {
     const { error } = await resend.emails.send({
-      from: 'notifications@indevasa.com',
+      from: 'notifications@pradocommerce.com',
       to: 'support@pradojob.com',
       subject: `[${urgency.toUpperCase()} SUPPORT TICKET] From ${name}`,
       replyTo: replyToAddress,
@@ -1347,7 +1347,7 @@ export async function submitDemoRequest(formData: FormData) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const { error } = await resend.emails.send({
-      from: 'Prado Demo <notifications@indevasa.com>',
+      from: 'Prado Commerce Demo <notifications@pradocommerce.com>',
       to: 'info@pradojob.com',
       replyTo: email,
       subject: `[DEMO REQUEST] ${companyName} - ${name}`,
@@ -1619,7 +1619,7 @@ export async function sendEstimateByEmail(estimateId: string) {
 
     // 2. Send email using Resend
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+    const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
     const fromAddress = `${organizationName} <${fromEmailAddress}>`;
     const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
     const emailHtml = await render(
@@ -1962,7 +1962,7 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
           : `<p style="margin: 10px 0 0 0; color: #334155;"><strong>Service:</strong> ${estimate.title}</p>`;
 
       const resend = new Resend(process.env.RESEND_API_KEY);
-      const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+      const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
       const fromAddress = `${organizationName} <${fromEmailAddress}>`;
       const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
 
@@ -2320,7 +2320,7 @@ export async function inviteTeamMember(payload: AddTeamMemberPayload) {
         console.log('Email would be sent to:', normalizedInviteEmail, 'Subject:', subject);
       } else {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+        const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
         const response = await resend.emails.send({
           from: `${org?.name || 'Prado ERP'} <${fromEmailAddress}>`,
           to: normalizedInviteEmail,
@@ -2818,7 +2818,7 @@ export async function sendCustomerDirectEmail(payload: {
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     const organizationName = org.name || 'Prado';
-    const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@indevasa.com';
+    const fromEmailAddress = process.env.RESEND_FROM_EMAIL || 'notifications@pradocommerce.com';
     const fromAddress = `${organizationName} <${fromEmailAddress}>`;
     const replyToAddress =
       organizationReplyToEmail || process.env.RESEND_REPLY_TO_EMAIL || user.email || undefined;

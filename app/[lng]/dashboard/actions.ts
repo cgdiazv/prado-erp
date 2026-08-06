@@ -92,7 +92,7 @@ export async function submitDashboardFeedback(formData: FormData) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
       await resend.emails.send({
-        from: 'Prado Feedback <notifications@indevasa.com>',
+        from: 'Prado Commerce Feedback <notifications@pradocommerce.com>',
         to: 'info@pradojob.com',
         subject: `Dashboard feedback: ${feedbackLabel}`,
         html: `

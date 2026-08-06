@@ -816,7 +816,7 @@ export async function cancelSubscription(reasons: string[] = []) {
 
     // Send cancellation feedback to admin inbox
     await resend.emails.send({
-      from: 'Prado <billing@pradosa.com>',
+      from: 'Prado Commerce <notifications@pradocommerce.com>',
       to: 'info@pradojob.com',
       subject: 'Subscription Canceled - User Feedback',
       html: `
@@ -838,7 +838,7 @@ export async function cancelSubscription(reasons: string[] = []) {
     // Send a cancellation email
     if (user.email) {
       await resend.emails.send({
-        from: 'Prado <billing@pradosa.com>',
+        from: 'Prado Commerce <notifications@pradocommerce.com>',
         to: user.email,
         subject: 'Your Prado Subscription Has Been Canceled',
         html: `

@@ -194,7 +194,7 @@ async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
 
         if (ownerEmail) {
           await resend.emails.send({
-            from: 'Prado Alerts <notifications@indevasa.com>',
+            from: 'Prado Commerce Alerts <notifications@pradocommerce.com>',
             to: ownerEmail,
             subject: `Invoice Paid: ${customerName}`,
             html: `
@@ -330,7 +330,7 @@ export async function POST(request: Request) {
 
       if (customerEmail && isExplicitPradoSession) {
         await resend.emails.send({
-          from: 'Prado <billing@pradosa.com>',
+          from: 'Prado Commerce <notifications@pradocommerce.com>',
           to: customerEmail,
           subject: `Welcome to Prado - ${tierWelcomeDetails.label} Plan Activated`,
           html: `
@@ -373,7 +373,7 @@ export async function POST(request: Request) {
       // Notify internal inbox for successful paid checkout events.
       try {
         await resend.emails.send({
-          from: 'Prado Alerts <notifications@indevasa.com>',
+          from: 'Prado Commerce Alerts <notifications@pradocommerce.com>',
           to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
           subject: `New Prado Checkout (${assignedStatus})`,
           html: `

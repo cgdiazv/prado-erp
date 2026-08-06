@@ -170,7 +170,7 @@ export async function signup(formData: FormData) {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const signupType = inviteOrgId ? 'Invite Signup' : 'New Organization';
         await resend.emails.send({
-          from: 'Prado <notifications@indevasa.com>',
+          from: 'Prado Commerce <notifications@pradocommerce.com>',
           to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
           subject: `New Prado Registration - ${signupType} (${intendedPlan || 'trial'})`,
           html: `
