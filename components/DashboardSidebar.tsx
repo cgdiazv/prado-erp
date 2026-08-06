@@ -73,10 +73,10 @@ export default function DashboardSidebar({
 
     // Exact match required for parent dashboard link
     if (path === '/dashboard' && pathname !== localizedPath) {
-      return `flex items-center gap-2.5 px-3 py-1.5 text-sm transition rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium`;
+      return `flex items-center gap-2.5 px-3 py-1 text-sm transition rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium`;
     }
 
-    return `flex items-center gap-2.5 px-3 py-1.5 text-sm transition rounded-lg ${
+    return `flex items-center gap-2.5 px-3 py-1 text-sm transition rounded-lg ${
       isActive 
         ? 'bg-emerald-50 text-emerald-800 font-semibold' 
         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium'
@@ -107,7 +107,7 @@ export default function DashboardSidebar({
         md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:translate-x-0 md:z-auto
         ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:shadow-none'}
       `}>
-        <div className="space-y-0.5 flex-1 overflow-y-auto overflow-x-hidden pt-2 md:pt-0">
+        <div className="space-y-0.25 flex-1 overflow-y-auto overflow-x-hidden pt-2 md:pt-0">
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-3 mb-2">{isEs ? 'Operaciones' : 'Operations'}</p>
           
           <Link href={localizedHref('/dashboard')} onClick={closeSidebar} className={linkStyle('/dashboard')}>
