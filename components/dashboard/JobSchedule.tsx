@@ -201,8 +201,8 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
     return `${y}-${m}-${d}`;
   };
 
-  const pendingScheduledJobs = useMemo(
-    () => jobsList.filter((job) => job.status === 'scheduled' && Boolean(toDateKey(job.scheduled_date))),
+  const calendarJobs = useMemo(
+    () => jobsList.filter((job) => (job.status === 'scheduled' || job.status === 'completed') && Boolean(toDateKey(job.scheduled_date))),
     [jobsList]
   );
 
@@ -245,7 +245,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
       const jobsByDay = new Map<string, any[]>();
 
       for (const day of timelineDays) {
-        const dayJobs = pendingScheduledJobs.filter((job) => {
+        const dayJobs = calendarJobs.filter((job) => {
           const sameDay = toDateKey(job.scheduled_date) === day.key;
           if (!sameDay) return false;
           if (row.isUnassigned) return !job.truck_id;
@@ -259,7 +259,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
         jobsByDay,
       };
     });
-  }, [isEs, pendingScheduledJobs, timelineDays, trucks]);
+  }, [calendarJobs, isEs, timelineDays, trucks]);
 
   return (
     <>
@@ -308,7 +308,7 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
           </button>
         </div>
         <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-          {pendingScheduledJobs.length} {isEs ? 'pendientes' : 'pending'}
+          {calendarJobs.length} {isEs ? 'en calendario' : 'in calendar'}
         </span>
       </div>
 
@@ -602,9 +602,11 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                                 type="button"
                                 onClick={() => openScheduleDetails(job)}
                                 className={`w-full truncate rounded-md px-1.5 py-1 text-left text-[10px] font-semibold transition ${
-                                  row.isUnassigned
-                                    ? 'border border-red-200 bg-red-50 text-red-800 hover:bg-red-100'
-                                    : 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                  job.status === 'completed'
+                                    ? 'border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                    : row.isUnassigned
+                                      ? 'border border-red-200 bg-red-50 text-red-800 hover:bg-red-100'
+                                      : 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
                                 }`}
                                 title={`${job.job_type} • ${job.properties?.street_address || ''}`}
                               >
