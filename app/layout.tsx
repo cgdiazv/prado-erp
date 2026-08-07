@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Prado | Streamlined Operations & Job Management',
-    template: '%s | Prado',
+    default: 'Prado Jobs | Streamlined Operations & Job Management',
+    template: '%s | Prado Jobs',
   },
   description:
     'The all-in-one workspace built for modern service and landscaping professionals. Schedule jobs, manage team workflows, track customers, and simplify billing seamlessly.',
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Prado',
+    title: 'Prado Jobs',
   },
   formatDetection: { telephone: false },
   themeColor: '#10b981',
