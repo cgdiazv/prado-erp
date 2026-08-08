@@ -73,10 +73,10 @@ export default function DashboardSidebar({
 
     // Exact match required for parent dashboard link
     if (path === '/dashboard' && pathname !== localizedPath) {
-      return `flex items-center gap-2.5 px-3 py-1 text-sm transition rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium`;
+      return `flex items-center gap-2.5 px-3 py-1.5 text-sm transition rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium`;
     }
 
-    return `flex items-center gap-2.5 px-3 py-1 text-sm transition rounded-lg ${
+    return `flex items-center gap-2.5 px-3 py-1.5 text-sm transition rounded-lg ${
       isActive 
         ? 'bg-emerald-50 text-emerald-800 font-semibold' 
         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium'
