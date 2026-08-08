@@ -108,8 +108,6 @@ export default function DashboardSidebar({
         ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:shadow-none'}
       `}>
         <div className="space-y-0.25 flex-1 overflow-y-auto overflow-x-hidden pt-2 md:pt-0">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-3 mb-2">{isEs ? 'Operaciones' : 'Operations'}</p>
-          
           <Link href={localizedHref('/dashboard')} onClick={closeSidebar} className={linkStyle('/dashboard')}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
@@ -158,10 +156,6 @@ export default function DashboardSidebar({
 
               {canSeeFinanceSection ? (
               <div className="pt-2 mt-1 border-t border-gray-100">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-3 mb-2">
-                  {isEs ? 'Finanzas' : 'Finances'}
-                </p>
-
                 {hasModuleAccess('invoice') ? (
                 <Link href={localizedHref('/dashboard/invoices-ledger')} onClick={closeSidebar} className={linkStyle('/dashboard/invoices-ledger')}>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
@@ -185,7 +179,6 @@ export default function DashboardSidebar({
           )}
 
           <div className="pt-4 border-t border-gray-100 mt-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-3 mb-2">{isEs ? 'Utilidades' : 'Utilities'}</p>
             {canViewImportExport ? (
               <Link href={localizedHref('/dashboard/import-export')} onClick={closeSidebar} className={linkStyle('/dashboard/import-export')}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
@@ -203,8 +196,6 @@ export default function DashboardSidebar({
             </Link>
 
             <div className="pt-2 mt-2 border-t border-gray-100">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-3 mb-2">{isEs ? 'Cuenta' : 'Account'}</p>
-
               <Link href={localizedHref('/dashboard/profile-settings')} onClick={closeSidebar} className={linkStyle('/dashboard/profile-settings')}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0ZM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
