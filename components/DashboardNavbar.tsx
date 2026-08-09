@@ -6,8 +6,6 @@ import { useParams } from 'next/navigation';
 import { useDashboardNotifications } from '@/components/dashboard/DashboardNotificationContext';
 import { getTranslations } from '@/lib/translations';
 
-import AITaskAssistantModal from '@/components/dashboard/AITaskAssistantModal';
-
 interface DashboardNavbarProps {
   userInitials?: string; // e.g., "CD" for Carlos Diaz
   userFirstName?: string;
@@ -21,7 +19,6 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
   const { hasIncompleteProfile, hasIncompleteOrgProfile, accountingWarnings } = useDashboardNotifications();
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement | null>(null);
   
@@ -275,32 +272,9 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
               </svg>
             )}
           </button>
-
-          {/* AI Task Assistant Trigger Button */}
-          <button
-            type="button"
-            onClick={() => {
-              closeAllMenus();
-              setShowAIAssistant(true);
-            }}
-            className="order-1 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-xs hover:bg-emerald-100 hover:border-emerald-300 transition cursor-pointer"
-            aria-label={isEs ? 'Asistente IA' : 'AI Assistant'}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4 text-emerald-600">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456z" />
-            </svg>
-            <span className="hidden sm:inline">{isEs ? 'Asistente IA' : 'AI Assistant'}</span>
-          </button>
         </div>
 
       </div>
-
-      {/* AI Task & Job Creation Assistant Modal */}
-      <AITaskAssistantModal
-        locale={activeLocale}
-        isOpen={showAIAssistant}
-        onClose={() => setShowAIAssistant(false)}
-      />
     </nav>
   );
 }

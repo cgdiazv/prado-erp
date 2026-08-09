@@ -24,6 +24,25 @@ body {
   color: var(--foreground);
 }
 
+@keyframes cookie-consent-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.cookie-consent-enter {
+  animation: cookie-consent-slide-up 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cookie-consent-enter {
+    animation: none;
+  }
+}
+
 .support-chat-composer {
   scrollbar-width: none;
   -ms-overflow-style: none;

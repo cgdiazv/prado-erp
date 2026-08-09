@@ -157,11 +157,11 @@ export default function OnboardingTour({
           padding: '4px',
         },
         tooltip: {
-          backgroundColor: '#ffffff',
+          backgroundColor: '#ecfdf5',
           color: '#0f172a',
         },
         arrow: {
-          color: '#ffffff',
+          color: '#ecfdf5',
         },
       }}
     />

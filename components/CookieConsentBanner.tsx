@@ -114,15 +114,24 @@ export default function CookieConsentBanner() {
   const [hydrated, setHydrated] = useState(false);
   const [consent, setConsent] = useState<CookieConsentState | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showConsentBanner, setShowConsentBanner] = useState(false);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   const [marketingEnabled, setMarketingEnabled] = useState(false);
 
   useEffect(() => {
-    const existingConsent = readStoredConsent();
-    setConsent(existingConsent);
-    setAnalyticsEnabled(existingConsent?.analytics ?? false);
-    setMarketingEnabled(existingConsent?.marketing ?? false);
-    setHydrated(true);
+    const hydrationTimer = window.setTimeout(() => {
+      const existingConsent = readStoredConsent();
+      setConsent(existingConsent);
+      setAnalyticsEnabled(existingConsent?.analytics ?? false);
+      setMarketingEnabled(existingConsent?.marketing ?? false);
+      setHydrated(true);
+    }, 0);
+
+    const bannerTimer = window.setTimeout(() => setShowConsentBanner(true), 2000);
+    return () => {
+      window.clearTimeout(hydrationTimer);
+      window.clearTimeout(bannerTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -173,53 +182,53 @@ export default function CookieConsentBanner() {
     return null;
   }
 
-  const consentBanner = !consent ? (
-    <div className="fixed inset-x-0 bottom-0 z-50 p-4 sm:p-6">
-      <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/95 text-slate-100 shadow-[0_24px_80px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+  const consentBanner = !consent && showConsentBanner ? (
+    <div className="fixed inset-x-0 bottom-0 z-50 px-4 sm:px-6">
+      <div className="cookie-consent-enter mx-auto max-w-5xl overflow-hidden rounded-t-3xl border-x-2 border-t-2 border-emerald-500 bg-white text-slate-950 shadow-[0_-16px_60px_rgba(0,0,0,0.45)]">
         <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1.5fr_1fr] lg:items-start">
           <div className="space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-400">{translations.cookies.title}</p>
-            <p className="text-sm leading-6 text-slate-300">{translations.cookies.description}</p>
-            <div className="grid gap-2 text-xs text-slate-400 sm:grid-cols-3">
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3">
-                <p className="font-semibold text-slate-100">{translations.cookies.essentialTitle}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700">{translations.cookies.title}</p>
+            <p className="text-sm leading-6 text-slate-700">{translations.cookies.description}</p>
+            <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="font-semibold text-slate-950">{translations.cookies.essentialTitle}</p>
                 <p className="mt-1 leading-5">{translations.cookies.essentialDescription}</p>
               </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3">
-                <p className="font-semibold text-slate-100">{translations.cookies.analyticsTitle}</p>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="font-semibold text-slate-950">{translations.cookies.analyticsTitle}</p>
                 <p className="mt-1 leading-5">{translations.cookies.analyticsDescription}</p>
               </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3">
-                <p className="font-semibold text-slate-100">{translations.cookies.marketingTitle}</p>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="font-semibold text-slate-950">{translations.cookies.marketingTitle}</p>
                 <p className="mt-1 leading-5">{translations.cookies.marketingDescription}</p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+          <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
             <button
               type="button"
               onClick={acceptAll}
-              className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400"
+              className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
             >
               {translations.cookies.acceptAll}
             </button>
             <button
               type="button"
               onClick={rejectNonEssential}
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:text-white"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-950"
             >
               {translations.cookies.rejectNonEssential}
             </button>
             <button
               type="button"
               onClick={() => setShowSettings(true)}
-              className="w-full rounded-xl px-4 py-3 text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
+              className="w-full rounded-xl px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:text-emerald-950"
             >
               {translations.cookies.managePreferences}
             </button>
-            <p className="text-xs leading-5 text-slate-400">
-              <Link href="/privacy" className="font-semibold text-slate-200 underline decoration-slate-500 underline-offset-4 hover:text-white">
+            <p className="text-xs leading-5 text-slate-600">
+              <Link href="/privacy" className="font-semibold text-slate-700 underline decoration-slate-400 underline-offset-4 hover:text-slate-950">
                 {translations.cookies.privacyLink}
               </Link>
             </p>
