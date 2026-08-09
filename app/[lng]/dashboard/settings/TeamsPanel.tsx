@@ -470,7 +470,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
             ) : null}
           </div>
 
-          <div className="rounded-xl border border-gray-200 bg-slate-50/60 p-5 space-y-4">
+          <div className="space-y-4">
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Roles &amp; Permission</p>
               <p className="text-xs text-slate-400 mt-1">Configure module actions and permissions for dashboard roles.</p>

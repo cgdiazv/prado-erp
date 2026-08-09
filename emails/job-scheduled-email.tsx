@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
 
 type JobScheduledEmailProps = {
   customerName: string;
@@ -11,6 +12,7 @@ type JobScheduledEmailProps = {
   organizationName?: string;
   organizationSlogan?: string;
   organizationLogoUrl?: string;
+  headerColor?: string;
 };
 
 export default function JobScheduledEmail({
@@ -24,7 +26,9 @@ export default function JobScheduledEmail({
   organizationName = 'Prado Systems',
   organizationSlogan = 'Field Service Software',
   organizationLogoUrl = '',
+  headerColor = '#009966',
 }: JobScheduledEmailProps) {
+  const normalizedHeaderColor = normalizeDocumentEmailHeaderColor(headerColor);
   const fallbackInitial = organizationName.trim().charAt(0).toUpperCase() || 'P';
   const formattedDate = new Date(scheduledDate).toLocaleDateString('en-US', {
     weekday: 'long',
@@ -39,10 +43,10 @@ export default function JobScheduledEmail({
       <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '32px', background: '#ffffff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
 
         {/* Header */}
-        <table style={{ width: '100%', marginBottom: 32 }}>
+        <table style={{ width: '100%', marginBottom: 32, background: normalizedHeaderColor, borderRadius: 8, borderSpacing: 0 }}>
           <tbody>
             <tr>
-              <td colSpan={2} style={{ verticalAlign: 'top', paddingBottom: 10 }}>
+              <td colSpan={2} style={{ verticalAlign: 'top', padding: '18px 18px 10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   {organizationLogoUrl ? (
                     <img
@@ -53,17 +57,17 @@ export default function JobScheduledEmail({
                       style={{ width: 22, height: 22, borderRadius: 5, objectFit: 'contain', border: '1px solid #e2e8f0', background: '#ffffff', display: 'inline-block' }}
                     />
                   ) : (
-                    <span style={{ display: 'inline-block', width: 22, height: 22, lineHeight: '22px', borderRadius: 5, background: 'linear-gradient(135deg, #10b981 0%, #14b8a6 100%)', color: '#ffffff', fontSize: 11, fontWeight: 900, textAlign: 'center' }}>{fallbackInitial}</span>
+                    <span style={{ display: 'inline-block', width: 22, height: 22, lineHeight: '22px', borderRadius: 5, background: '#ffffff', color: normalizedHeaderColor, fontSize: 11, fontWeight: 900, textAlign: 'center' }}>{fallbackInitial}</span>
                   )}
-                  <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.025em', color: '#0f172a' }}>{organizationName}</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.025em', color: '#ffffff' }}>{organizationName}</span>
                 </div>
-                <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan}</p>
+                <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#ffffff' }}>{organizationSlogan}</p>
               </td>
             </tr>
             <tr>
-              <td colSpan={2} style={{ textAlign: 'right', verticalAlign: 'top' }}>
-                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 750, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Scheduled</h2>
-                <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#64748b' }}>Date: {formattedDate}</p>
+              <td colSpan={2} style={{ textAlign: 'right', verticalAlign: 'top', padding: '0 18px 18px' }}>
+                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 750, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Scheduled</h2>
+                <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#ffffff' }}>Date: {formattedDate}</p>
               </td>
             </tr>
           </tbody>
@@ -115,7 +119,7 @@ export default function JobScheduledEmail({
           <table style={{ width: '240px', fontSize: 13 }}>
             <tbody>
               <tr>
-                <td style={{ color: '#059669', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', verticalAlign: 'middle' }}>Estimated Cost</td>
+                <td style={{ color: normalizedHeaderColor, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', verticalAlign: 'middle' }}>Estimated Cost</td>
                 <td style={{ textAlign: 'right', fontSize: 22, fontWeight: 800, color: '#0f172a' }}>${costAmount.toFixed(2)}</td>
               </tr>
             </tbody>
@@ -128,7 +132,7 @@ export default function JobScheduledEmail({
               href={calendarUrl}
               style={{
                 display: 'inline-block',
-                background: '#0f766e',
+                background: normalizedHeaderColor,
                 color: '#ffffff',
                 textDecoration: 'none',
                 fontWeight: 700,

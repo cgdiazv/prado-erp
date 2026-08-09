@@ -302,7 +302,7 @@ export async function createJob(formData: FormData) {
 
     const { data: org } = await supabase2
       .from('organizations')
-      .select('id, name, slogan, logo_url')
+      .select('id, name, slogan, logo_url, document_email_header_color')
       .eq('owner_id', user?.id)
       .single();
 
@@ -352,6 +352,7 @@ export async function createJob(formData: FormData) {
           organizationName,
           organizationSlogan: org.slogan?.trim() || 'Field Service Software',
           organizationLogoUrl: org.logo_url?.trim() || '',
+          headerColor: normalizeDocumentEmailHeaderColor(org.document_email_header_color),
         })
       );
 
@@ -793,6 +794,7 @@ export async function completeJob(jobId: string) {
           organizationName,
           organizationSlogan,
           organizationLogoUrl,
+          headerColor: documentEmailHeaderColor,
         })
       );
       await resend.emails.send({

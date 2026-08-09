@@ -350,11 +350,12 @@ export async function updateDocumentBrandingSettings(formData: FormData) {
 
   const nextEstimateNumber = normalizeDocumentSequenceNumber(nextEstimateRaw);
   const nextInvoiceNumber = normalizeDocumentSequenceNumber(nextInvoiceRaw);
-  const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(headerColorRaw);
+  const headerColorCandidate = headerColorRaw.startsWith('#') ? headerColorRaw : `#${headerColorRaw}`;
 
-  if (!/^#[0-9A-F]{6}$/.test(documentEmailHeaderColor)) {
+  if (!/^#[0-9A-Fa-f]{6}$/.test(headerColorCandidate)) {
     return { error: 'Header color must be a valid 6-character hex color.' };
   }
+  const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(headerColorCandidate);
 
   const supabase = await createClient();
   const {

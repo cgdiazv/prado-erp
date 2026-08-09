@@ -249,9 +249,6 @@ export default async function SettingsSectionPage({
             <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8 lg:items-start">
               <aside className="hidden lg:block lg:sticky lg:top-8">
                 <div className="rounded-2xl border border-gray-200 bg-white py-3 shadow-xs">
-                  <p className="px-2 pb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                    {locale.toLowerCase().startsWith('es') ? 'Configuracion' : 'Settings'}
-                  </p>
                   <nav>
                     {sectionLinks.map((link) => {
                       const isActive = link.id === section;

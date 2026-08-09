@@ -89,8 +89,8 @@ export default function DocumentBrandingSettingsPanel({
         </h3>
         <p className="text-xs text-slate-400">
           {isEs
-            ? 'Controla la siguiente numeracion de estimados y facturas, y el color del encabezado en los correos.'
-            : 'Control the next estimate and invoice numbers, and the email header color.'}
+            ? 'Controla la numeracion de documentos y el color de sus encabezados.'
+            : 'Control document numbering and header color.'}
         </p>
       </div>
 
@@ -176,30 +176,34 @@ export default function DocumentBrandingSettingsPanel({
                 />
               </div>
 
-              <div className="space-y-1 md:col-span-2">
+              <div className="space-y-2 md:col-span-2">
                 <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="document-email-header-color-input">
-                  {isEs ? 'Color del encabezado del correo' : 'Email header color'}
+                  {isEs ? 'Color del encabezado' : 'Header color'}
                 </label>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <input
                     id="document-email-header-color-input"
                     type="color"
-                    value={headerColor}
-                    onChange={(event) => setHeaderColor(normalizeDocumentEmailHeaderColor(event.target.value))}
+                    value={normalizeDocumentEmailHeaderColor(headerColor)}
+                    onChange={(event) => setHeaderColor(event.target.value.toUpperCase())}
                     className="h-11 w-20 rounded-lg border border-gray-300 bg-white p-1"
+                    aria-label={isEs ? 'Seleccionar color del encabezado' : 'Select header color'}
                   />
                   <input
                     type="text"
                     value={headerColor}
                     onChange={(event) => setHeaderColor(event.target.value.toUpperCase())}
-                    className="w-full sm:w-52 rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                    className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 outline-none transition focus:ring-2 focus:ring-emerald-500 sm:w-52"
                     placeholder="#009966"
+                    maxLength={7}
+                    pattern="#[0-9A-Fa-f]{6}"
+                    aria-label={isEs ? 'Color hexadecimal del encabezado' : 'Header hexadecimal color'}
                   />
                 </div>
                 <p className="text-[11px] text-slate-400">
                   {isEs
-                    ? 'Usa un color hexadecimal de 6 caracteres, por ejemplo #009966.'
-                    : 'Use a 6-character hex color, for example #009966.'}
+                    ? 'Se usa en estimados, facturas y correos de confirmacion de trabajos.'
+                    : 'Used for estimates, invoices, and job confirmation emails.'}
                 </p>
               </div>
             </form>

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
+import { normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
 
 type JobCompletedEmailProps = {
   customerName: string;
@@ -14,6 +15,7 @@ type JobCompletedEmailProps = {
   organizationName?: string;
   organizationSlogan?: string;
   organizationLogoUrl?: string;
+  headerColor?: string;
 };
 
 export default function JobCompletedEmail({
@@ -29,7 +31,9 @@ export default function JobCompletedEmail({
   organizationName = 'Prado Systems',
   organizationSlogan = 'Field Service Software',
   organizationLogoUrl = '',
+  headerColor = '#009966',
 }: JobCompletedEmailProps) {
+  const normalizedHeaderColor = normalizeDocumentEmailHeaderColor(headerColor);
   const normalizedCurrency = normalizeCurrencyCode(currencyCode);
   const computedTotal = Number(totalAmount || 0) > 0 ? Number(totalAmount || 0) : Number(baseAmount || 0) + Number(taxAmount || 0);
   const amountStr = formatCurrency(computedTotal, normalizedCurrency);
@@ -50,7 +54,7 @@ export default function JobCompletedEmail({
   return (
     <div style={{ fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', backgroundColor: '#f8fafc', margin: 0, padding: '20px', color: '#1e293b' }}>
       <div style={{ maxWidth: 600, margin: '0 auto', background: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ background: '#009966', padding: '24px', textAlign: 'center', color: '#ffffff' }}>
+        <div style={{ background: normalizedHeaderColor, padding: '24px', textAlign: 'center', color: '#ffffff' }}>
           {organizationLogoUrl ? (
             <img
               src={organizationLogoUrl}
@@ -61,7 +65,7 @@ export default function JobCompletedEmail({
             />
           ) : null}
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>{headerTitle}</h1>
-          <div style={{ display: 'inline-block', background: '#E6F4EA', color: '#009966', fontWeight: 'bold', padding: '6px 12px', borderRadius: 20, fontSize: 12, marginTop: 8 }}>
+          <div style={{ display: 'inline-block', background: '#ffffff', color: normalizedHeaderColor, fontWeight: 'bold', padding: '6px 12px', borderRadius: 20, fontSize: 12, marginTop: 8 }}>
             SERVICE COMPLETED
           </div>
         </div>
