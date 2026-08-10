@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import JobSchedule from '@/components/dashboard/JobSchedule';
 import ScheduleJobModal from '@/components/dashboard/ScheduleJobModal';
 import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
+import { canUseTeamFeatures } from '@/lib/subscriptionAccess';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
@@ -25,6 +26,7 @@ export default async function SchedulePage({
 
   const { organization: org, role } = await getUserOrganization(user.id);
   if (!org) redirect(`/${locale}/auth/access-pending`);
+  const canAssignTrucks = canUseTeamFeatures(org.subscription_status);
 
   const canAccessJobs = await hasDashboardModuleAccess(org.id, role, 'jobs');
   if (!canAccessJobs) {
@@ -78,7 +80,7 @@ export default async function SchedulePage({
                 customers={customers}
                 services={services}
                 trucks={trucks}
-                isIndividualAccount={org.subscription_status === 'individual'}
+                isIndividualAccount={!canAssignTrucks}
                 locale={locale}
               />
             </div>

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import ExpenseLedger from '@/components/dashboard/ExpenseLedger';
 import LogExpenseModal from '@/components/dashboard/LogExpenseModal';
 import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
+import { canUseExpenseLedger } from '@/lib/subscriptionAccess';
 import { getUserOrganization } from '@/lib/organization';
 import { createClient } from '@/lib/supabaseServer';
 import { getTranslations } from '@/lib/translations';
@@ -49,6 +50,10 @@ export default async function ExpenseLedgerPage({ params }: ExpenseLedgerPagePro
 
   const canAccessExpenses = await hasDashboardModuleAccess(org.id, role, 'expenses');
   if (!canAccessExpenses) {
+    redirect(`/${locale}/dashboard`);
+  }
+
+  if (!canUseExpenseLedger(org.subscription_status)) {
     redirect(`/${locale}/dashboard`);
   }
 

@@ -15,6 +15,13 @@ import QBOConnectionCard from '../QBOConnectionCard';
 import StripeConnectSettings from '@/components/dashboard/StripeConnectSettings';
 import { updateDispatchSettings } from '../actions';
 import { getOrganizationRolePermissions, hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
+import {
+  canUseAccountingIntegrations,
+  canUseDispatchEngine,
+  canUseOnlineInvoicePayments,
+  canUseTeamFeatures,
+  normalizeSubscriptionStatus,
+} from '@/lib/subscriptionAccess';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
 
@@ -83,20 +90,23 @@ export default async function SettingsSectionPage({
   }
 
   const initial = org.name ? org.name.charAt(0) : 'C';
-  const isIndividualAccount = org.subscription_status === 'individual';
-  const canAccessStripeSettings = org.subscription_status === 'trial' || org.subscription_status === 'growth' || org.subscription_status === 'enterprise';
-  const canAccessXeroSettings = org.subscription_status === 'trial' || org.subscription_status === 'enterprise';
+  const tier = normalizeSubscriptionStatus(org.subscription_status);
+  const isIndividualAccount = tier === 'individual';
+  const canAccessTeamFeatures = canUseTeamFeatures(tier);
+  const canAccessDispatchSettings = canUseDispatchEngine(tier);
+  const canAccessStripeSettings = canUseOnlineInvoicePayments(tier);
+  const canAccessXeroSettings = canUseAccountingIntegrations(tier);
   const normalizedRole = (role || '').toLowerCase();
   const isOwnerRole = normalizedRole === 'owner';
   const canViewImportExport = normalizedRole === 'owner' || normalizedRole === 'admin';
   const canManageIntegrations = canAccessStripeSettings && (normalizedRole === 'owner' || normalizedRole === 'admin');
   const canManageSubscription = isOwnerRole;
 
-  if (section === 'team-settings' && isIndividualAccount) {
+  if (section === 'team-settings' && !canAccessTeamFeatures) {
     redirect(`/${locale}/dashboard/settings/account-settings`);
   }
 
-  if (section === 'dispatch-settings' && isIndividualAccount) {
+  if (section === 'dispatch-settings' && !canAccessDispatchSettings) {
     redirect(`/${locale}/dashboard/settings/account-settings`);
   }
 
@@ -126,7 +136,7 @@ export default async function SettingsSectionPage({
     },
   ];
 
-  if (!isIndividualAccount) {
+  if (canAccessTeamFeatures) {
     sectionLinks.push({
       id: 'team-settings',
       label: locale.toLowerCase().startsWith('es') ? 'Configuracion de equipo' : 'Team Settings',
@@ -142,7 +152,7 @@ export default async function SettingsSectionPage({
     });
   }
 
-  if (!isIndividualAccount) {
+  if (canAccessDispatchSettings) {
     sectionLinks.push({
       id: 'dispatch-settings',
       label: locale.toLowerCase().startsWith('es') ? 'Despacho' : 'Dispatch',
@@ -168,7 +178,7 @@ export default async function SettingsSectionPage({
     auto_charge_default: boolean | null;
   }> = [];
   let trucks: Array<{ id: string; name: string; plate_number: string | null; is_active: boolean; status: string | null }> = [];
-  const initialRolePermissions = !isIndividualAccount ? await getOrganizationRolePermissions(org.id) : null;
+  const initialRolePermissions = canAccessTeamFeatures ? await getOrganizationRolePermissions(org.id) : null;
 
   if (section === 'operations-settings') {
     const [{ data: serviceRows }, { data: truckRows }] = await Promise.all([
@@ -332,7 +342,7 @@ export default async function SettingsSectionPage({
               </>
             )}
 
-            {section === 'team-settings' && !isIndividualAccount && (
+            {section === 'team-settings' && canAccessTeamFeatures && (
               <TeamsPanel
                 organizationId={org.id}
                 locale={locale}
@@ -366,7 +376,7 @@ export default async function SettingsSectionPage({
               </>
             )}
 
-            {section === 'dispatch-settings' && !isIndividualAccount && (
+            {section === 'dispatch-settings' && canAccessDispatchSettings && (
               <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                 <div className="p-6 md:p-8 space-y-6">
                   <div>

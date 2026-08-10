@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import RouteEngine from '@/components/dashboard/RouteEngine';
 import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
+import { canUseDispatchEngine } from '@/lib/subscriptionAccess';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
@@ -29,8 +30,7 @@ export default async function RoutingPage({
     redirect(`/${locale}/dashboard`);
   }
 
-  // 1. SECURITY TIER GUARD: Allow 'enterprise' and active 'trial' profiles, block 'individual'
-  if (org.subscription_status === 'individual') {
+  if (!canUseDispatchEngine(org.subscription_status)) {
     redirect('/dashboard?restricted=true');
   }
 

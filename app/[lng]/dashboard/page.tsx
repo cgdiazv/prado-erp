@@ -9,6 +9,7 @@ import OnboardingTour from '@/components/OnboardingTour';
 import DashboardFeedbackStrip from './DashboardFeedbackStrip';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
+import { canUseExpenseLedger } from '@/lib/subscriptionAccess';
 import { getUserOrganization } from '@/lib/organization';
 
 type DashboardView = 'operations' | 'financials';
@@ -112,7 +113,7 @@ export default async function DashboardHome({
   const { organization: org } = await getUserOrganization(user.id);
 
   if (!org) redirect(`/${locale}/auth/access-pending`);
-  const isIndividualAccount = org.subscription_status === 'individual';
+  const canAccessExpenseLedger = canUseExpenseLedger(org.subscription_status);
 
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
@@ -427,7 +428,7 @@ export default async function DashboardHome({
         <span>{t.actionManageInvoices}</span>
       </Link>
 
-      {!isIndividualAccount && (
+      {canAccessExpenseLedger && (
         <Link
           href={`/${locale}/dashboard/expense-ledger`}
           className="cursor-pointer rounded-lg border border-gray-200 bg-white h-20 p-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 flex flex-col items-center justify-center gap-2 text-center sm:h-auto sm:flex-row sm:justify-center sm:px-3 sm:py-1.5"

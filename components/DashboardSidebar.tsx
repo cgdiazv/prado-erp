@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useSearchParams, useParams } from 'next/navigation'; 
 import { DASHBOARD_MODULES, type DashboardModule } from '@/lib/dashboardRolePermissions.config';
+import { canUseDispatchEngine, canUseExpenseLedger } from '@/lib/subscriptionAccess';
 import { getTranslations } from '@/lib/translations';
 
 interface DashboardSidebarProps {
@@ -59,10 +60,9 @@ export default function DashboardSidebar({
     window.dispatchEvent(new CustomEvent('prado:dashboard-sidebar-state', { detail: { open: isOpen } }));
   }, [isOpen]);
 
-  // Premium features are visible during trial OR with growth/enterprise plans
-  const showPremiumFeatures = subscriptionStatus !== 'individual';
   const hasModuleAccess = (moduleId: DashboardModule) => allowedModules.includes(moduleId);
-  const canSeeFinanceSection = showPremiumFeatures && (hasModuleAccess('invoice') || hasModuleAccess('expenses'));
+  const canAccessDispatch = canUseDispatchEngine(subscriptionStatus);
+  const canAccessExpenses = canUseExpenseLedger(subscriptionStatus);
 
   const linkStyle = (path: string) => {
     // Adjust the path for comparison to include the current language
@@ -142,41 +142,32 @@ export default function DashboardSidebar({
           </Link>
           ) : null}
 
-          {/* PREMIUM CAPABILITIES: Available to Trial, Growth, and Enterprise */}
-          {showPremiumFeatures && (
-            <>
-              {hasModuleAccess('dispatch') ? (
-              <Link href={localizedHref('/dashboard/routing')} onClick={closeSidebar} className={linkStyle('/dashboard/routing')}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.856 1.928a1.125 1.125 0 01-1.006 0L9.503 3.813a1.125 1.125 0 00-1.006 0L3.622 6.565c-.383.19-.622.58-.622 1.006v12.166c0 .836.88 1.38 1.628 1.006l3.856-1.928a1.125 1.125 0 011.006 0l3.856 1.928a1.125 1.125 0 001.006 0z" />
-                </svg>
-                {translations.dashboard.dispatchRouting}
-              </Link>
-              ) : null}
+          {hasModuleAccess('invoice') ? (
+          <Link href={localizedHref('/dashboard/invoices-ledger')} onClick={closeSidebar} className={linkStyle('/dashboard/invoices-ledger')}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M7.5 4.5h9A1.5 1.5 0 0118 6v12a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 016 18V6a1.5 1.5 0 011.5-1.5z" />
+            </svg>
+            Invoices Ledger
+          </Link>
+          ) : null}
 
-              {canSeeFinanceSection ? (
-              <div className="pt-2 mt-1 border-t border-gray-100">
-                {hasModuleAccess('invoice') ? (
-                <Link href={localizedHref('/dashboard/invoices-ledger')} onClick={closeSidebar} className={linkStyle('/dashboard/invoices-ledger')}>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M7.5 4.5h9A1.5 1.5 0 0118 6v12a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 016 18V6a1.5 1.5 0 011.5-1.5z" />
-                  </svg>
-                  Invoices Ledger
-                </Link>
-                ) : null}
+          {canAccessDispatch && hasModuleAccess('dispatch') ? (
+          <Link href={localizedHref('/dashboard/routing')} onClick={closeSidebar} className={linkStyle('/dashboard/routing')}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.856 1.928a1.125 1.125 0 01-1.006 0L9.503 3.813a1.125 1.125 0 00-1.006 0L3.622 6.565c-.383.19-.622.58-.622 1.006v12.166c0 .836.88 1.38 1.628 1.006l3.856-1.928a1.125 1.125 0 011.006 0l3.856 1.928a1.125 1.125 0 001.006 0z" />
+            </svg>
+            {translations.dashboard.dispatchRouting}
+          </Link>
+          ) : null}
 
-                {hasModuleAccess('expenses') ? (
-                <Link href={localizedHref('/dashboard/expense-ledger')} onClick={closeSidebar} className={linkStyle('/dashboard/expense-ledger')}>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {translations.dashboard.expenseLedger}
-                </Link>
-                ) : null}
-              </div>
-              ) : null}
-            </>
-          )}
+          {canAccessExpenses && hasModuleAccess('expenses') ? (
+          <Link href={localizedHref('/dashboard/expense-ledger')} onClick={closeSidebar} className={linkStyle('/dashboard/expense-ledger')}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {translations.dashboard.expenseLedger}
+          </Link>
+          ) : null}
 
           <div className="pt-4 border-t border-gray-100 mt-4">
             {canViewImportExport ? (

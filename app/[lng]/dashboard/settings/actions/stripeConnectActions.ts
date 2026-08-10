@@ -3,6 +3,7 @@
 import Stripe from 'stripe';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabaseServer';
+import { canUseOnlineInvoicePayments } from '@/lib/subscriptionAccess';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
@@ -69,12 +70,16 @@ export async function createStripeConnectAccountLink(locale = 'en'): Promise<{ u
 
   const { data: org, error: orgError } = await supabase
     .from('organizations')
-    .select('id, stripe_account_id, stripe_soft_disconnected')
+    .select('id, stripe_account_id, stripe_soft_disconnected, subscription_status')
     .eq('owner_id', user.id)
     .single();
 
   if (orgError || !org) {
     return { error: 'Workspace not found.' };
+  }
+
+  if (!canUseOnlineInvoicePayments(org.subscription_status)) {
+    return { error: 'Online invoice payments are not available on the Individual tier.' };
   }
 
   let accountId = org.stripe_account_id || null;
@@ -165,7 +170,7 @@ export async function getStripeAccountStatus(locale = 'en'): Promise<StripeStatu
 
   const { data: org, error: orgError } = await supabase
     .from('organizations')
-    .select('id, stripe_account_id, stripe_soft_disconnected')
+    .select('id, stripe_account_id, stripe_soft_disconnected, subscription_status')
     .eq('owner_id', user.id)
     .single();
 
@@ -177,6 +182,17 @@ export async function getStripeAccountStatus(locale = 'en'): Promise<StripeStatu
       payoutsEnabled: false,
       requirementsDue: [],
       error: 'Workspace not found.',
+    };
+  }
+
+  if (!canUseOnlineInvoicePayments(org.subscription_status)) {
+    return {
+      connected: false,
+      accountId: null,
+      chargesEnabled: false,
+      payoutsEnabled: false,
+      requirementsDue: [],
+      error: 'Online invoice payments are not available on the Individual tier.',
     };
   }
 

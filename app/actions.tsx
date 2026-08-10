@@ -28,6 +28,7 @@ import { normalizeCurrencyCode, toStripeCurrency } from '@/lib/currency';
 import { formatDocumentNumber, normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
 import { reserveDocumentNumber } from '@/lib/documentNumbers';
 import { getResendFromAddress } from '@/lib/resend';
+import { canUseOnlineInvoicePayments, getSeatLimitForPlan, normalizeSubscriptionStatus } from '@/lib/subscriptionAccess';
 import Stripe from 'stripe';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
@@ -618,7 +619,7 @@ export async function completeJob(jobId: string) {
 
   if (
     org?.id &&
-    org?.subscription_status !== 'individual' &&
+    canUseOnlineInvoicePayments(org?.subscription_status) &&
     org?.stripe_account_id &&
     org?.stripe_account_charges_enabled &&
     org?.stripe_account_payouts_enabled &&
@@ -2049,10 +2050,10 @@ export async function verifyPlanLimitBeforeAddingMember(organizationId: string):
       return { allowed: false, currentCount: 0, message: 'Only organization owner can manage team members.' };
     }
 
-    const currentPlan = orgData.subscription_status;
+    const currentPlan = normalizeSubscriptionStatus(orgData.subscription_status);
+    const seatLimit = getSeatLimitForPlan(currentPlan);
 
-    // Enterprise has no restrictions
-    if (currentPlan === 'enterprise') {
+    if (seatLimit === null) {
       return { allowed: true, currentCount: 0 };
     }
 
@@ -2094,7 +2095,7 @@ export async function verifyPlanLimitBeforeAddingMember(organizationId: string):
     const seatsUsed = ownerSeat + acceptedSeats + pendingSeats;
 
     // 3. Validate based on Prado business rules
-    if (currentPlan === 'individual' && seatsUsed >= 1) {
+    if (seatsUsed >= seatLimit && currentPlan === 'individual') {
       return { 
         allowed: false, 
         currentCount: seatsUsed,
@@ -2102,11 +2103,19 @@ export async function verifyPlanLimitBeforeAddingMember(organizationId: string):
       };
     }
 
-    if (currentPlan === 'growth' && seatsUsed >= 5) {
+    if (seatsUsed >= seatLimit && currentPlan === 'growth') {
       return { 
         allowed: false, 
         currentCount: seatsUsed,
         message: 'Growth plan ($59) maximum limit of 5 total users (owner plus team) reached. Upgrade to Enterprise ($99) for unlimited access.' 
+      };
+    }
+
+    if (seatsUsed >= seatLimit) {
+      return {
+        allowed: false,
+        currentCount: seatsUsed,
+        message: 'This workspace cannot add more members on the current subscription tier.',
       };
     }
 
