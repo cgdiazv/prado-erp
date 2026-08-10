@@ -32,21 +32,25 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const isProduction = process.env.NODE_ENV === 'production';
+
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <head />
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
-        <Script
-          id="pwa-sw-register"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
-              }
-            `,
-          }}
-        />
+        {isProduction ? (
+          <Script
+            id="pwa-sw-register"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.register('/sw.js').catch(() => {});
+                }
+              `,
+            }}
+          />
+        ) : null}
         {children}
         <CookieConsentBanner />
       </body>

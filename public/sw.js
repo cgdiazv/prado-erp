@@ -1,5 +1,5 @@
-// Minimal service worker — enables the PWA install prompt on desktop browsers.
-// Caches the app shell on install and serves from cache when offline.
+// Minimal service worker for production PWA behavior.
+// It caches only static assets to avoid serving stale HTML during hydration.
 
 const CACHE_NAME = 'prado-v1';
 
@@ -31,13 +31,25 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Never cache HTML documents or Next internals; this prevents stale SSR markup.
+  const isNavigation = event.request.mode === 'navigate';
+  const isNextInternal = url.pathname.startsWith('/_next/');
+  if (isNavigation || isNextInternal) {
+    return;
+  }
+
+  // Cache-first for static files; update cache in the background.
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+    caches.match(event.request).then((cached) => {
+      const networkFetch = fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => cached);
+
+      return cached || networkFetch;
+    })
   );
 });
