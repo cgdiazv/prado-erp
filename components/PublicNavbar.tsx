@@ -124,14 +124,14 @@ export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNa
                 </button>
               </div>
               
-              <div className="flex flex-col gap-6">
-                <Link href="/pricing" className={`text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
+              <div className="flex flex-col gap-2">
+                <Link href="/pricing" className={`rounded-lg px-3 py-2 text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
                   {translations.nav.pricing}
                 </Link>
-                <Link href="/demo" className={`text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
+                <Link href="/demo" className={`rounded-lg px-3 py-2 text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
                   {translations.nav.liveDemo}
                 </Link>
-                <Link href="/login" className={`text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
+                <Link href="/login" className={`rounded-lg px-3 py-2 text-lg font-medium transition ${drawerLinkClasses[theme]}`} onClick={() => setIsDrawerOpen(false)}>
                   {translations.nav.signIn}
                 </Link>
               </div>
