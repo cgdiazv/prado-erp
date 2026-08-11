@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import PradoLogo from '@/components/PradoLogo';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useDashboardNotifications } from '@/components/dashboard/DashboardNotificationContext';
@@ -130,18 +131,12 @@ export default function DashboardNavbar({ userInitials = "C", userFirstName = ''
       <div className="mx-auto flex justify-between items-center">
         
         {/* Left Side: Logo Branding */}
-        <Link href="/dashboard" className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2 hover:opacity-90 transition">
-          <span className="h-6 w-6 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-md shadow-emerald-500/20 text-white shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white">
-              <path d="M12 3c.12 4.96-3.03 9.04-7.96 9.17C8.96 12.29 12 16.31 12 21c0-4.69 3.04-8.71 7.96-8.83C15.03 12.04 11.88 7.96 12 3z" />
-            </svg>
-          </span>
-          <span className="font-sans">Prado</span>
-          <span className="text-[10px] font-semibold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 ml-1">
-            Dashboard
-          </span>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="hover:opacity-95 transition">
+            <PradoLogo theme="light" iconType="layers" badgeText="Dashboard" subtitle="Job & Field Operations" />
+          </Link>
           {greeting ? <span className="ml-2 hidden sm:inline text-base font-semibold text-slate-700">{greeting}</span> : null}
-        </Link>
+        </div>
 
         {/* Right Side: Account Settings Avatar & Mobile Menu Toggle */}
         <div className="flex items-center gap-2">

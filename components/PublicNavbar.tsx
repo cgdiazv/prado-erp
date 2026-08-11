@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import PradoLogo from '@/components/PradoLogo';
 import { useState } from 'react';
 import { getTranslations } from '@/lib/translations';
 
@@ -47,13 +48,8 @@ export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNa
     <>
       <nav className={`sticky top-0 z-50 px-6 py-4 border-b ${navClasses[theme]}`}>
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <Link href="/" className={`text-xl font-bold tracking-tight flex items-center gap-2 ${logoTextClasses[theme]}`}>
-            <span className="h-6 w-6 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white">
-                <path d="M12 3c.12 4.96-3.03 9.04-7.96 9.17C8.96 12.29 12 16.31 12 21c0-4.69 3.04-8.71 7.96-8.83C15.03 12.04 11.88 7.96 12 3z" />
-              </svg>
-            </span>
-            Prado
+          <Link href="/" className="hover:opacity-95 transition">
+            <PradoLogo theme={theme} iconType="layers" subtitle="Operations & ERP" />
           </Link>
 
           {/* Mobile menu button */}
@@ -102,15 +98,10 @@ export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNa
               <div className="flex justify-between items-center mb-10">
                 <Link 
                   href="/" 
-                  className={`text-xl font-bold tracking-tight flex items-center gap-2 ${logoTextClasses[theme]}`}
+                  className="hover:opacity-95 transition"
                   onClick={() => setIsDrawerOpen(false)}
                 >
-                  <span className="h-6 w-6 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white">
-                      <path d="M12 3c.12 4.96-3.03 9.04-7.96 9.17C8.96 12.29 12 16.31 12 21c0-4.69 3.04-8.71 7.96-8.83C15.03 12.04 11.88 7.96 12 3z" />
-                    </svg>
-                  </span>
-                  Prado
+                  <PradoLogo theme={theme} iconType="layers" subtitle="Operations & ERP" />
                 </Link>
 
                 <button
