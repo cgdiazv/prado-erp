@@ -17,7 +17,7 @@ export default function DispatchMap({ stops }: { stops: MapStop[] }) {
 
   return (
     <APIProvider apiKey={apiKey}>
-      <div className="w-full h-64 rounded-xl overflow-hidden border border-gray-200 shadow-inner bg-gray-100">
+      <div className="w-full h-64 md:h-80 lg:h-[460px] rounded-xl overflow-hidden border border-gray-200 shadow-inner bg-gray-100">
         {apiKey ? (
           <Map
             defaultCenter={validStops[0] ? { lat: Number(validStops[0].latitude), lng: Number(validStops[0].longitude) } : defaultCenter}
