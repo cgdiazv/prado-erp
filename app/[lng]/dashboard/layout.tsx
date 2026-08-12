@@ -90,8 +90,22 @@ export default async function DashboardLayout({
 
   const canViewImportExport = role === 'owner' || role === 'admin';
   const canAccessPradoManagement = isPradoManagementUser(user);
-  const initial = org.name ? org.name.charAt(0).toUpperCase() : 'U';
-  const firstName = profile?.first_name?.trim() || user.user_metadata?.first_name?.trim() || '';
+  const rawFirstName = profile?.first_name?.trim() || user.user_metadata?.first_name?.trim() || '';
+  const rawLastName = profile?.last_name?.trim() || user.user_metadata?.last_name?.trim() || '';
+  const combinedName = [rawFirstName, rawLastName].filter(Boolean).join(' ');
+  const metadataName = user.user_metadata?.full_name?.trim() || user.user_metadata?.name?.trim() || '';
+  
+  const emailPrefix = user.email ? user.email.split('@')[0].replace(/[._-]/g, ' ') : '';
+  const formattedEmailName = emailPrefix
+    ? emailPrefix.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    : '';
+
+  const userFullName = combinedName || metadataName || (formattedEmailName && formattedEmailName.length > 2 ? formattedEmailName : 'Carlos Diaz del Valle');
+  const userFirstName = rawFirstName || userFullName.split(' ')[0] || 'Carlos';
+  const companyName = org.name?.trim() || 'Indeva Websites';
+  const initial = userFirstName 
+    ? userFirstName.charAt(0).toUpperCase() 
+    : (userFullName ? userFullName.charAt(0).toUpperCase() : 'C');
   const accountingWarnings = [
     org.last_qbo_sync_warning ? { source: 'qbo' as const, message: org.last_qbo_sync_warning } : null,
     org.last_xero_sync_warning ? { source: 'xero' as const, message: org.last_xero_sync_warning } : null,
@@ -104,7 +118,13 @@ export default async function DashboardLayout({
         hasIncompleteOrgProfile={hasIncompleteOrgProfile}
         accountingWarnings={accountingWarnings}
       >
-        <DashboardNavbar userInitials={initial} userFirstName={firstName} />
+        <DashboardNavbar 
+          userInitials={initial} 
+          userFirstName={userFirstName} 
+          userFullName={userFullName}
+          companyName={companyName}
+          userRole={role ?? undefined}
+        />
         <AccountingSyncWarningBanner locale={locale} warnings={accountingWarnings} />
         <div className="flex flex-1 relative">
           <div className="tour-sidebar">
