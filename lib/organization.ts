@@ -163,6 +163,60 @@ export async function getUserOrganization(userId: string): Promise<UserOrganizat
   });
 
   const winner = scoredCandidates[0];
+  if (winner?.organization?.id) {
+    try {
+      const [{ data: latestEstimate }, { data: latestInvoice }] = await Promise.all([
+        supabase
+          .from('estimates')
+          .select('estimate_number')
+          .eq('organization_id', winner.organization.id)
+          .not('estimate_number', 'is', null)
+          .order('estimate_number', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('invoices')
+          .select('invoice_number')
+          .eq('organization_id', winner.organization.id)
+          .not('invoice_number', 'is', null)
+          .order('invoice_number', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      const maxEstimateNumber = Number(latestEstimate?.estimate_number || 0);
+      const maxInvoiceNumber = Number(latestInvoice?.invoice_number || 0);
+
+      const currentEstimateSeq = typeof winner.organization.next_estimate_number === 'number'
+        ? winner.organization.next_estimate_number
+        : 1001;
+      const currentInvoiceSeq = typeof winner.organization.next_invoice_number === 'number'
+        ? winner.organization.next_invoice_number
+        : 1001;
+
+      const reconciledNextEstimate = Math.max(currentEstimateSeq, maxEstimateNumber + 1);
+      const reconciledNextInvoice = Math.max(currentInvoiceSeq, maxInvoiceNumber + 1);
+
+      if (
+        reconciledNextEstimate !== winner.organization.next_estimate_number ||
+        reconciledNextInvoice !== winner.organization.next_invoice_number
+      ) {
+        winner.organization.next_estimate_number = reconciledNextEstimate;
+        winner.organization.next_invoice_number = reconciledNextInvoice;
+
+        await supabase
+          .from('organizations')
+          .update({
+            next_estimate_number: reconciledNextEstimate,
+            next_invoice_number: reconciledNextInvoice,
+          })
+          .eq('id', winner.organization.id);
+      }
+    } catch {
+      // Ignore query errors during sequence reconciliation fallback.
+    }
+  }
+
   return {
     organization: winner?.organization ? normalizeOrganizationRow(winner.organization) : null,
     role: winner?.role || null,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import {
   formatDocumentNumber,
   normalizeDocumentEmailHeaderColor,
@@ -35,6 +35,17 @@ export default function DocumentBrandingSettingsPanel({
   const [currentHeaderColor, setCurrentHeaderColor] = useState(safeInitialHeaderColor);
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (!editing) {
+      setCurrentEstimateNumber(safeInitialEstimateNumber);
+      setCurrentInvoiceNumber(safeInitialInvoiceNumber);
+      setCurrentHeaderColor(safeInitialHeaderColor);
+      setNextEstimateNumber(String(safeInitialEstimateNumber));
+      setNextInvoiceNumber(String(safeInitialInvoiceNumber));
+      setHeaderColor(safeInitialHeaderColor);
+    }
+  }, [safeInitialEstimateNumber, safeInitialInvoiceNumber, safeInitialHeaderColor, editing]);
 
   const toggleEditing = () => {
     setStatusMessage('');

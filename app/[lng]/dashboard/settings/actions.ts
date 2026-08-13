@@ -395,19 +395,17 @@ export async function updateDocumentBrandingSettings(formData: FormData) {
       .maybeSingle(),
   ]);
 
-  if (Number(latestEstimate?.estimate_number || 0) >= nextEstimateNumber) {
-    return { error: `Next estimate number must be greater than ${latestEstimate?.estimate_number}.` };
-  }
+  const maxEstimateNumber = Number(latestEstimate?.estimate_number || 0);
+  const maxInvoiceNumber = Number(latestInvoice?.invoice_number || 0);
 
-  if (Number(latestInvoice?.invoice_number || 0) >= nextInvoiceNumber) {
-    return { error: `Next invoice number must be greater than ${latestInvoice?.invoice_number}.` };
-  }
+  const safeNextEstimateNumber = Math.max(nextEstimateNumber, maxEstimateNumber + 1);
+  const safeNextInvoiceNumber = Math.max(nextInvoiceNumber, maxInvoiceNumber + 1);
 
   const { error } = await supabase
     .from('organizations')
     .update({
-      next_estimate_number: nextEstimateNumber,
-      next_invoice_number: nextInvoiceNumber,
+      next_estimate_number: safeNextEstimateNumber,
+      next_invoice_number: safeNextInvoiceNumber,
       document_email_header_color: documentEmailHeaderColor,
     })
     .eq('id', organization.id);
@@ -423,8 +421,8 @@ export async function updateDocumentBrandingSettings(formData: FormData) {
 
   return {
     success: true,
-    nextEstimateNumber,
-    nextInvoiceNumber,
+    nextEstimateNumber: safeNextEstimateNumber,
+    nextInvoiceNumber: safeNextInvoiceNumber,
     documentEmailHeaderColor,
   };
 }
