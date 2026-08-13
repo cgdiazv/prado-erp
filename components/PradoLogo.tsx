@@ -16,7 +16,7 @@ interface PradoLogoProps {
 
 export default function PradoLogo({
   theme = 'light',
-  subtitle = 'Operations & ERP',
+  subtitle = 'Job & Field Operations',
   badgeText,
   size = 'md',
   iconType = 'layers',

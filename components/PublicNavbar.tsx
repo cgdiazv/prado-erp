@@ -49,7 +49,7 @@ export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNa
       <nav className={`sticky top-0 z-50 px-6 py-4 border-b ${navClasses[theme]}`}>
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <Link href="/" className="hover:opacity-95 transition">
-            <PradoLogo theme={theme} iconType="layers" subtitle="Operations & ERP" />
+            <PradoLogo theme={theme} iconType="layers" subtitle="Job & Field Operations" />
           </Link>
 
           {/* Mobile menu button */}
@@ -101,7 +101,7 @@ export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNa
                   className="hover:opacity-95 transition"
                   onClick={() => setIsDrawerOpen(false)}
                 >
-                  <PradoLogo theme={theme} iconType="layers" subtitle="Operations & ERP" />
+                  <PradoLogo theme={theme} iconType="layers" subtitle="Job & Field Operations" />
                 </Link>
 
                 <button
