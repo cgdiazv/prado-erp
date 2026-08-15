@@ -12,7 +12,7 @@ interface TeamMember {
   last_name?: string;
   phone?: string | null;
   last_login_at?: string | null;
-  role: 'owner' | 'manager' | 'supervisor' | 'dispatcher' | 'billing';
+  role: 'owner' | 'manager' | 'supervisor' | 'dispatcher' | 'billing' | 'subcontractor';
   invited_at: string;
   status?: 'accepted' | 'pending';
 }
@@ -40,6 +40,9 @@ const USER_ROLES = [
   },
   {
     id: 'billing',
+  },
+  {
+    id: 'subcontractor',
   }
 ];
 
@@ -62,6 +65,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
     supervisor: [...(initialRolePermissions?.supervisor || DEFAULT_ROLE_MODULES.supervisor)],
     dispatcher: [...(initialRolePermissions?.dispatcher || DEFAULT_ROLE_MODULES.dispatcher)],
     billing: [...(initialRolePermissions?.billing || DEFAULT_ROLE_MODULES.billing)],
+    subcontractor: [...(initialRolePermissions?.subcontractor || DEFAULT_ROLE_MODULES.subcontractor)],
   }));
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<TeamMember['role'] | null>(null);
@@ -252,6 +256,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
           supervisor: 'Supervisor',
           dispatcher: 'Despachador',
           billing: 'Facturación',
+          subcontractor: 'Subcontratista',
         }
       : {
           owner: 'Admin/Owner',
@@ -259,6 +264,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
           supervisor: 'Supervisor',
           dispatcher: 'Dispatcher',
           billing: 'Billing',
+          subcontractor: 'Subcontractor',
         };
 
     return labels[roleId] || roleId;
@@ -272,6 +278,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
           supervisor: 'Puede editar y crear órdenes de trabajo, estimaciones y datos de clientes.',
           dispatcher: 'Puede programar trabajos, asignar recursos y ver datos relacionados.',
           billing: 'Puede ver datos y gestionar facturación y registros financieros.',
+          subcontractor: 'Contratista externo. Puede ver y actualizar solo sus trabajos y despachos asignados.',
         }
       : {
           owner: 'Full access. Manages billing, team, and all settings.',
@@ -279,6 +286,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
           supervisor: 'Can edit and create work orders, estimates, and customer data.',
           dispatcher: 'Can schedule jobs, assign resources, and view related data.',
           billing: 'Can view data and manage billing and financial records.',
+          subcontractor: 'External contractor. Can view and update assigned jobs and dispatch orders only.',
         };
 
     return descriptions[roleId] || '';
@@ -320,6 +328,8 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
         return 'bg-sky-100 text-sky-700 border-sky-200';
       case 'billing':
         return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'subcontractor':
+        return 'bg-teal-100 text-teal-700 border-teal-200';
       default:
         return 'bg-gray-100 text-gray-700 border-gray-200';
     }
@@ -444,6 +454,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
                     <option value="supervisor">{isEs ? 'Supervisor' : 'Supervisor'}</option>
                     <option value="dispatcher">{isEs ? 'Despachador' : 'Dispatcher'}</option>
                     <option value="billing">{isEs ? 'Facturación' : 'Billing'}</option>
+                    <option value="subcontractor">{isEs ? 'Subcontratista' : 'Subcontractor'}</option>
                   </select>
                   <button
                     type="submit"

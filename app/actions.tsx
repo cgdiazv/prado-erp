@@ -2218,7 +2218,7 @@ export async function verifyPlanLimitBeforeAddingMember(organizationId: string):
 interface AddTeamMemberPayload {
   organizationId: string;
   email: string;
-  role: 'owner' | 'manager' | 'supervisor' | 'dispatcher' | 'billing';
+  role: 'owner' | 'manager' | 'supervisor' | 'dispatcher' | 'billing' | 'subcontractor';
 }
 
 export async function inviteTeamMember(payload: AddTeamMemberPayload) {
