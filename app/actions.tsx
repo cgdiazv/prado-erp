@@ -12,6 +12,7 @@ import InvoicePaidEmail from '@/emails/invoice-paid-email';
 import InviteMemberEmail from '@/emails/invite-member-email';
 import JobScheduledEmail from '@/emails/job-scheduled-email';
 import JobCompletedEmail from '@/emails/job-completed-email';
+import WelcomeCustomerEmail from '@/emails/welcome-customer-email';
 import { enqueueXeroCompletedJobInvoice, enqueueXeroExpenseBill } from '@/app/actions/xeroActions';
 import { syncInvoiceToQBO } from '@/app/actions/qboActions';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
@@ -928,7 +929,7 @@ export async function createCustomer(formData: FormData) {
   }
 
   const supabaseAdmin = createAdminClient();
-  const { error } = await supabaseAdmin
+  const { data: insertedCustomers, error } = await supabaseAdmin
     .from('customers')
     .insert([
       {
@@ -939,11 +940,90 @@ export async function createCustomer(formData: FormData) {
         phone: phone || null,
         organization_id: organizationId
       }
-    ]);
+    ])
+    .select('id');
 
   if (error) {
     console.error("Supabase Insertion Error details:", error.message);
     return { error: error.message };
+  }
+
+  // Dispatch Automated Welcome Email if customer email & Resend API Key are present
+  if (email && email.trim() && process.env.RESEND_API_KEY) {
+    try {
+      const { data: org } = await supabaseAdmin
+        .from('organizations')
+        .select('id, name, slogan, logo_url, document_email_header_color, owner_id')
+        .eq('id', organizationId)
+        .maybeSingle();
+
+      const organizationName = org?.name?.trim() || 'Prado Systems';
+      const organizationSlogan = org?.slogan?.trim() || 'Field Service Software';
+      const organizationLogoUrl = org?.logo_url?.trim() || '';
+      const headerColor = org?.document_email_header_color || '#009966';
+
+      let organizationReplyToEmail: string | null = null;
+      if (org?.owner_id) {
+        const { data: ownerAuthIndex } = await supabaseAdmin
+          .from('user_auth_index')
+          .select('email')
+          .eq('user_id', org.owner_id)
+          .maybeSingle();
+        organizationReplyToEmail = ownerAuthIndex?.email || null;
+      }
+
+      const customerDisplayName = `${firstName} ${lastName}`.trim();
+      const emailHtml = await render(
+        WelcomeCustomerEmail({
+          customerName: customerDisplayName,
+          organizationName,
+          organizationSlogan,
+          organizationLogoUrl,
+          headerColor,
+          companyName: companyName || null,
+          contactEmail: organizationReplyToEmail,
+          contactPhone: phone || null,
+        })
+      );
+
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const fromAddress = getResendFromAddress({
+        email: process.env.RESEND_FROM_EMAIL,
+        displayName: organizationName,
+      });
+
+      const subject = `Welcome to ${organizationName}!`;
+      const sendResult = await resend.emails.send({
+        from: fromAddress,
+        to: email.trim(),
+        subject,
+        html: emailHtml,
+        replyTo: organizationReplyToEmail || process.env.RESEND_REPLY_TO_EMAIL || undefined,
+      });
+
+      const customerId = insertedCustomers?.[0]?.id;
+      if (customerId && !sendResult.error) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        const sentByUserId = user?.id || org?.owner_id;
+
+        if (sentByUserId) {
+          await supabaseAdmin.from('customer_email_logs').insert([
+            {
+              organization_id: organizationId,
+              customer_id: customerId,
+              sent_by_user_id: sentByUserId,
+              to_email: email.trim(),
+              subject,
+              body_preview: `Automated welcome email dispatched to ${customerDisplayName}`,
+              context: 'welcome_email',
+            },
+          ]);
+        }
+      }
+    } catch (welcomeEmailErr) {
+      console.error('⚠️ Customer created, but automated welcome email failed:', welcomeEmailErr);
+    }
   }
 
   revalidatePath('/');
