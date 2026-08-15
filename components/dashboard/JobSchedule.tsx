@@ -16,10 +16,11 @@ type TimelineSpan = 7 | 12 | 14;
 interface JobScheduleProps {
   jobs: any[] | null;
   trucks: Array<{ id: string; name: string; plate_number?: string | null }>;
+  teamMembers?: Array<{ email: string; first_name?: string; last_name?: string; role: string }> | null;
   locale?: string;
 }
 
-export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobScheduleProps) {
+export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }: JobScheduleProps) {
   const router = useRouter();
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
@@ -39,6 +40,8 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [editingDate, setEditingDate] = useState('');
   const [editingTruckId, setEditingTruckId] = useState('');
+  const [editingSubcontractorId, setEditingSubcontractorId] = useState('');
+  const [editingSubcontractorPayAmount, setEditingSubcontractorPayAmount] = useState('');
   const [editingIsRecurring, setEditingIsRecurring] = useState(false);
   const [editingRecurrenceIntervalDays, setEditingRecurrenceIntervalDays] = useState('30');
   const [editingAutoChargeEnabled, setEditingAutoChargeEnabled] = useState(false);
@@ -48,6 +51,8 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
     setEditingJobId(job.id);
     setEditingDate((job.scheduled_date || '').slice(0, 10));
     setEditingTruckId(job.truck_id || '');
+    setEditingSubcontractorId(job.subcontractor_id || '');
+    setEditingSubcontractorPayAmount(job.subcontractor_pay_amount ? String(job.subcontractor_pay_amount) : '');
     const isRecurring = Boolean(job.is_recurring);
     setEditingIsRecurring(isRecurring);
     setEditingRecurrenceIntervalDays(isRecurring && Number(job.recurrence_interval_days || 0) > 0 ? String(job.recurrence_interval_days) : '30');
@@ -59,6 +64,8 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
     setEditingJobId(null);
     setEditingDate('');
     setEditingTruckId('');
+    setEditingSubcontractorId('');
+    setEditingSubcontractorPayAmount('');
     setEditingIsRecurring(false);
     setEditingRecurrenceIntervalDays('30');
     setEditingAutoChargeEnabled(false);
@@ -79,6 +86,8 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
       isRecurring: editingIsRecurring,
       recurrenceIntervalDays: editingIsRecurring ? normalizedInterval : null,
       autoChargeEnabled: editingIsRecurring ? editingAutoChargeEnabled : false,
+      subcontractorId: editingSubcontractorId || null,
+      subcontractorPayAmount: parseFloat(editingSubcontractorPayAmount || '0'),
     });
 
     if (result?.error) {
@@ -441,7 +450,14 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                       ? (trucks.find((t) => t.id === job.truck_id)?.name ?? (isEs ? 'Sin asignar' : 'Unassigned'))
                       : (isEs ? 'Sin asignar' : 'Unassigned')}
                   </td>
-                  <td className="px-4 py-3 font-bold text-slate-800">${Number(job.cost_amount || 0).toFixed(2)}</td>
+                  <td className="px-4 py-3 font-bold text-slate-800">
+                    ${Number(job.cost_amount || 0).toFixed(2)}
+                    {Number(job.subcontractor_pay_amount || 0) > 0 ? (
+                      <span className="block text-[10px] text-emerald-700 font-semibold mt-0.5">
+                        {isEs ? 'Margen:' : 'Margin:'} ${(Number(job.cost_amount || 0) - Number(job.subcontractor_pay_amount || 0)).toFixed(2)}
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       {/* MARK DONE ICON TRIGGER */}
@@ -659,6 +675,40 @@ export default function JobSchedule({ jobs, trucks, locale = 'en' }: JobSchedule
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {teamMembers && teamMembers.length > 0 && (
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {isEs ? 'Subcontratista Asignado' : 'Assigned Subcontractor'}
+                  </label>
+                  <select
+                    value={editingSubcontractorId}
+                    onChange={(event) => setEditingSubcontractorId(event.target.value)}
+                    className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
+                  >
+                    <option value="">{isEs ? 'Sin subcontratista...' : 'No subcontractor...'}</option>
+                    {teamMembers.map((member) => (
+                      <option key={member.email} value={member.email}>
+                        {`${member.first_name || ''} ${member.last_name || ''}`.trim() || member.email} ({member.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {isEs ? 'Pago a Subcontratista ($)' : 'Subcontractor Pay ($)'}
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editingSubcontractorPayAmount}
+                  onChange={(event) => setEditingSubcontractorPayAmount(event.target.value)}
+                  placeholder="0.00"
+                  className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
+                />
               </div>
 
               <div className="rounded-lg border border-gray-200 bg-slate-50 p-3 space-y-2">

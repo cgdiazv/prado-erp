@@ -6,6 +6,7 @@ import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { canUseTeamFeatures } from '@/lib/subscriptionAccess';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
+import { getTeamMembers } from '@/app/actions';
 import { getUserOrganization } from '@/lib/organization';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
@@ -39,8 +40,8 @@ export default async function SchedulePage({
     redirect('/dashboard/billing?expired=true');
   }
 
-  // Fetch customer, service, and active truck records for the schedule form
-  const [customersResponse, servicesResponse, trucksResponse] = await Promise.all([
+  // Fetch customer, service, active truck records, and team members for the schedule form
+  const [customersResponse, servicesResponse, trucksResponse, teamMembersResponse] = await Promise.all([
     supabase.from('customers').select('id, first_name, last_name, company_name').eq('organization_id', org.id),
     supabase
       .from('services')
@@ -48,12 +49,14 @@ export default async function SchedulePage({
       .eq('organization_id', org.id)
       .not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`)
       .order('name', { ascending: true }),
-    supabase.from('trucks').select('id, name, plate_number, is_active, status').eq('organization_id', org.id).eq('is_active', true).order('name', { ascending: true })
+    supabase.from('trucks').select('id, name, plate_number, is_active, status').eq('organization_id', org.id).eq('is_active', true).order('name', { ascending: true }),
+    getTeamMembers(org.id),
   ]);
 
   const customers = customersResponse.data || [];
   const services = servicesResponse.data || [];
   const trucks = trucksResponse.data || [];
+  const teamMembers = teamMembersResponse?.members || [];
   const customerIds = customers.map(c => c.id);
 
   const properties = customerIds.length > 0
@@ -80,6 +83,7 @@ export default async function SchedulePage({
                 customers={customers}
                 services={services}
                 trucks={trucks}
+                teamMembers={teamMembers}
                 isIndividualAccount={!canAssignTrucks}
                 locale={locale}
               />
@@ -89,6 +93,7 @@ export default async function SchedulePage({
             <JobSchedule
               jobs={jobs}
               trucks={trucks}
+              teamMembers={teamMembers}
               locale={locale}
             />
 

@@ -34,16 +34,24 @@ interface Truck {
   status: string | null;
 }
 
+interface TeamMember {
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  role: string;
+}
+
 interface ScheduleJobModalProps {
   properties: Property[] | null;
   customers: Customer[] | null;
   services: Service[] | null;
   trucks: Truck[] | null;
+  teamMembers?: TeamMember[] | null;
   isIndividualAccount?: boolean;
   locale?: string;
 }
 
-export default function ScheduleJobModal({ properties, customers, services, trucks, isIndividualAccount = false, locale = 'en' }: ScheduleJobModalProps) {
+export default function ScheduleJobModal({ properties, customers, services, trucks, teamMembers, isIndividualAccount = false, locale = 'en' }: ScheduleJobModalProps) {
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
   const [isOpen, setIsOpen] = useState(false);
@@ -51,6 +59,8 @@ export default function ScheduleJobModal({ properties, customers, services, truc
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [costAmount, setCostAmount] = useState('');
+  const [subcontractorId, setSubcontractorId] = useState('');
+  const [subcontractorPayAmount, setSubcontractorPayAmount] = useState('');
   const [useServiceDefaults, setUseServiceDefaults] = useState(true);
   const [overrideIsRecurring, setOverrideIsRecurring] = useState(false);
   const [overrideRecurrenceIntervalDays, setOverrideRecurrenceIntervalDays] = useState('30');
@@ -89,6 +99,8 @@ export default function ScheduleJobModal({ properties, customers, services, truc
     setSelectedPropertyId('');
     setSelectedServiceId('');
     setCostAmount('');
+    setSubcontractorId('');
+    setSubcontractorPayAmount('');
     setUseServiceDefaults(true);
     setOverrideIsRecurring(false);
     setOverrideRecurrenceIntervalDays('30');
@@ -279,16 +291,69 @@ export default function ScheduleJobModal({ properties, customers, services, truc
                   </select>
                 )}
 
-                <input
-                  type="number"
-                  step="0.01"
-                  name="costAmount"
-                  value={costAmount}
-                  onChange={(event) => setCostAmount(event.target.value)}
-                  placeholder={translations.dashboard.price}
-                  required
-                  className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      {isEs ? 'Precio al Cliente ($)' : 'Customer Price ($)'}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      name="costAmount"
+                      value={costAmount}
+                      onChange={(event) => setCostAmount(event.target.value)}
+                      placeholder="0.00"
+                      required
+                      className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      {isEs ? 'Pago a Subcontratista ($)' : 'Subcontractor Pay ($)'}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      name="subcontractorPayAmount"
+                      value={subcontractorPayAmount}
+                      onChange={(event) => setSubcontractorPayAmount(event.target.value)}
+                      placeholder="0.00"
+                      className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none text-gray-700"
+                    />
+                  </div>
+                </div>
+
+                {teamMembers && teamMembers.length > 0 && (
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-slate-500">
+                      {isEs ? 'Subcontratista / Personal Asignado' : 'Assigned Subcontractor / Staff'}
+                    </label>
+                    <select
+                      name="subcontractorId"
+                      value={subcontractorId}
+                      onChange={(e) => setSubcontractorId(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 p-2 text-xs bg-white outline-none cursor-pointer text-gray-700"
+                    >
+                      <option value="">{isEs ? 'Seleccionar subcontratista (Opcional)...' : 'Select subcontractor (Optional)...'}</option>
+                      {teamMembers.map((member) => (
+                        <option key={member.email} value={member.email}>
+                          {`${member.first_name || ''} ${member.last_name || ''}`.trim() || member.email} ({member.role})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {parseFloat(costAmount || '0') > 0 && parseFloat(subcontractorPayAmount || '0') > 0 && (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2.5 flex items-center justify-between text-xs font-semibold text-emerald-900">
+                    <span>{isEs ? 'Margen Neto Estimado:' : 'Estimated Net Margin:'}</span>
+                    <span>
+                      ${(parseFloat(costAmount) - parseFloat(subcontractorPayAmount)).toFixed(2)} (
+                      {(((parseFloat(costAmount) - parseFloat(subcontractorPayAmount)) / parseFloat(costAmount)) * 100).toFixed(1)}%)
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex gap-2 pt-2">
                   <button

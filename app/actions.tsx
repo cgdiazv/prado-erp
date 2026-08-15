@@ -225,6 +225,9 @@ export async function createJob(formData: FormData) {
   const costAmountInput = parseFloat(formData.get('costAmount') as string || '0');
   const notes = formData.get('notes') as string;
   const truckId = formData.get('truckId') as string || null;
+  const subcontractorId = (formData.get('subcontractorId') as string) || null;
+  const subcontractorPayInput = parseFloat((formData.get('subcontractorPayAmount') as string) || '0');
+  const subcontractorPayAmount = Number.isFinite(subcontractorPayInput) && subcontractorPayInput > 0 ? subcontractorPayInput : 0;
   const formRecurring = (formData.get('isRecurring') as string) === 'true';
   const formRecurrenceIntervalDays = Number.parseInt((formData.get('recurrenceIntervalDays') as string) || '0', 10);
   const formAutoChargeEnabled = (formData.get('autoChargeEnabled') as string) === 'true';
@@ -282,6 +285,8 @@ export async function createJob(formData: FormData) {
         notes: notes,
         status: 'scheduled',
         truck_id: truckId ? truckId : null,
+        subcontractor_id: subcontractorId,
+        subcontractor_pay_amount: subcontractorPayAmount,
         service_id: serviceId,
         is_recurring: resolvedIsRecurring,
         recurrence_interval_days: resolvedRecurrenceIntervalDays,
@@ -418,6 +423,8 @@ export async function updateJobScheduleDetails(
     isRecurring?: boolean;
     recurrenceIntervalDays?: number | null;
     autoChargeEnabled?: boolean;
+    subcontractorId?: string | null;
+    subcontractorPayAmount?: number | null;
   }
 ) {
   if (!jobId || !scheduledDate) return { error: 'Missing scheduling parameters.' };
@@ -483,6 +490,8 @@ export async function updateJobScheduleDetails(
       .update({
         scheduled_date: scheduledDate,
         truck_id: truckId || null,
+        subcontractor_id: options?.subcontractorId !== undefined ? options.subcontractorId : undefined,
+        subcontractor_pay_amount: options?.subcontractorPayAmount !== undefined ? (Number(options.subcontractorPayAmount) >= 0 ? Number(options.subcontractorPayAmount) : 0) : undefined,
         is_recurring: normalizedIsRecurring,
         recurrence_interval_days: normalizedRecurrenceIntervalDays,
         auto_charge_enabled: normalizedAutoChargeEnabled,
@@ -540,6 +549,66 @@ export async function completeJob(jobId: string) {
     .eq('id', jobId);
 
   if (updateError) return { error: updateError.message };
+
+  // 2b. Automatically log Subcontractor Payout expense if applicable
+  if (job.subcontractor_pay_amount && Number(job.subcontractor_pay_amount) > 0) {
+    try {
+      const { data: existingExpense } = await supabase
+        .from('expenses')
+        .select('id')
+        .eq('job_id', job.id)
+        .eq('category', 'Subcontractor Payout')
+        .maybeSingle();
+
+      if (!existingExpense) {
+        let vendorName = 'Subcontractor';
+        if (job.subcontractor_id) {
+          const { data: subProfile } = await supabase
+            .from('user_profiles')
+            .select('first_name, last_name')
+            .eq('user_id', job.subcontractor_id)
+            .maybeSingle();
+
+          if (subProfile?.first_name || subProfile?.last_name) {
+            vendorName = `${subProfile.first_name || ''} ${subProfile.last_name || ''}`.trim();
+          }
+        }
+
+        const expenseDate = new Date().toISOString().split('T')[0];
+        const payAmount = Number(job.subcontractor_pay_amount);
+
+        const { data: expenseRecord } = await supabase
+          .from('expenses')
+          .insert([
+            {
+              expense_date: expenseDate,
+              category: 'Subcontractor Payout',
+              amount: payAmount,
+              vendor: vendorName,
+              description: `Subcontractor payout for Job (${job.job_type})`,
+              job_id: job.id,
+              organization_id: org.id,
+            },
+          ])
+          .select('id')
+          .single();
+
+        if (expenseRecord?.id) {
+          await enqueueXeroExpenseBill({
+            organizationId: org.id,
+            expenseId: expenseRecord.id,
+            vendorName,
+            expenseDate,
+            reference: `Job Payout - ${job.job_type}`,
+            description: `Subcontractor payout for Job (${job.job_type})`,
+            amount: payAmount,
+          });
+        }
+      }
+    } catch (expErr) {
+      console.error('Failed to log automated subcontractor payout expense:', expErr);
+    }
+  }
 
   const recurrenceIntervalDays = Number(job.recurrence_interval_days || 0);
   if (Boolean(job.is_recurring) && recurrenceIntervalDays > 0) {
