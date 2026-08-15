@@ -36,6 +36,7 @@ interface Estimate {
   created_at: string;
   customers: Customer;
   properties: Property | null;
+  payment_terms?: string | null;
 }
 
 interface Service {
@@ -141,6 +142,8 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         approveProcessing: 'Procesando...',
         approveConvertError: 'Cotizacion aprobada, pero fallo la creacion del Job:',
         approveConvertSuccess: 'Cotizacion aprobada y Job agendado con exito!',
+        labelPaymentTerms: 'Términos de Pago',
+        paymentTermsPlaceholder: 'Ej: 50% anticipo al aprobar, 50% al finalizar',
       }
     : {
         loading: 'Loading estimates module...',
@@ -212,6 +215,8 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         approveProcessing: 'Processing...',
         approveConvertError: 'Quote approved, but job creation failed:',
         approveConvertSuccess: 'Quote approved and job scheduled successfully!',
+        labelPaymentTerms: 'Payment Terms',
+        paymentTermsPlaceholder: 'Ex: 50% deposit upon approval, 50% upon completion',
       };
   const [estimates, setEstimates] = useState<Estimate[]>(initialData.estimates as any[] || []);
   const [customers, setCustomers] = useState<Customer[]>(initialData.customers as any[] || []);
@@ -231,6 +236,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [serviceLines, setServiceLines] = useState<ServiceLine[]>([{ id: 1, serviceId: '', price: '' }]);
   const [scopeNotes, setScopeNotes] = useState('');
+  const [paymentTerms, setPaymentTerms] = useState(initialData.defaultPaymentTerms || 'Due on Receipt');
 
   // State for sending email
   const [sendingEstimateId, setSendingEstimateId] = useState<string | null>(null);
@@ -259,6 +265,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
     setSelectedCustomerId('');
     setSelectedPropertyId('');
     setScopeNotes('');
+    setPaymentTerms(initialData.defaultPaymentTerms || 'Due on Receipt');
     setServiceLines([{ id: 1, serviceId: '', price: '' }]);
   };
 
@@ -313,6 +320,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
     setSelectedCustomerId('');
     setSelectedPropertyId('');
     setScopeNotes('');
+    setPaymentTerms(initialData.defaultPaymentTerms || 'Due on Receipt');
     setServiceLines([{ id: 1, serviceId: '', price: '' }]);
     setIsCreateOpen(true);
   };
@@ -323,6 +331,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
     setSelectedCustomerId(estimate.customer_id);
     setSelectedPropertyId(estimate.property_id || '');
     setScopeNotes(parsed.notes);
+    setPaymentTerms(estimate.payment_terms || initialData.defaultPaymentTerms || 'Due on Receipt');
     setServiceLines(parsed.lines);
     setIsCreateOpen(true);
   };
@@ -361,6 +370,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
     formData.set('title', title);
     formData.set('estimatedAmount', estimatedAmount.toFixed(2));
     formData.set('description', description);
+    formData.set('paymentTerms', paymentTerms);
     formData.set('lineItemsJson', JSON.stringify(validServices));
 
     const res = editingEstimateId
@@ -375,6 +385,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
       if (!refreshed?.error) {
         setEstimates((refreshed.estimates || []) as any);
       }
+      router.refresh();
     }
   }
 
@@ -395,6 +406,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         if (!refreshed?.error) {
           setEstimates((refreshed.estimates || []) as any);
         }
+        router.refresh();
       }
     } catch (error) {
       alert(`${t.sendError} ${(error as Error).message}`);
@@ -428,6 +440,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
       if (!refreshed?.error) {
         setEstimates((refreshed.estimates || []) as any);
       }
+      router.refresh();
 
       setApprovingEstimateId(null);
       return;
@@ -441,6 +454,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
       if (!refreshed?.error) {
         setEstimates((refreshed.estimates || []) as any);
       }
+      router.refresh();
     }
   }
 
@@ -754,10 +768,14 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                     </span>
                   </td>
                   <td className="p-4 w-52">
-                    <span className="font-semibold text-slate-800">{estimate.title}</span>
-                    {estimate.description && (
-                      <span className="block text-[10px] text-slate-500 truncate max-w-xs mt-0.5">{estimate.description}</span>
-                    )}
+                    <span className="font-semibold text-slate-900 block truncate" title={estimate.title}>
+                      {estimate.title}
+                    </span>
+                    {estimate.payment_terms ? (
+                      <span className="inline-block mt-1 text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
+                        {estimate.payment_terms}
+                      </span>
+                    ) : null}
                   </td>
                   <td className="p-4 text-right font-bold text-slate-800 whitespace-nowrap">${estimate.estimated_amount.toFixed(2)}</td>
                   <td className="p-4 text-center whitespace-nowrap">
@@ -940,6 +958,35 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                 <div className="rounded-lg border border-gray-200 bg-slate-50 px-3 py-2 text-right">
                   <span className="text-[11px] text-slate-500 font-semibold">{t.summaryTotal}: </span>
                   <span className="text-sm font-bold text-slate-900">${estimateTotal.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-slate-600 font-semibold">{t.labelPaymentTerms}</label>
+                <div className="space-y-1.5">
+                  <select
+                    value={['Due on Receipt', 'Net 15', 'Net 30', 'Net 60', '50% Deposit / 50% Completion'].includes(paymentTerms) ? paymentTerms : 'Custom'}
+                    onChange={(e) => {
+                      if (e.target.value !== 'Custom') {
+                        setPaymentTerms(e.target.value);
+                      }
+                    }}
+                    className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
+                  >
+                    <option value="Due on Receipt">{isEs ? 'Al contado / Al recibir' : 'Due on Receipt'}</option>
+                    <option value="Net 15">Net 15 (15 días)</option>
+                    <option value="Net 30">Net 30 (30 días)</option>
+                    <option value="Net 60">Net 60 (60 días)</option>
+                    <option value="50% Deposit / 50% Completion">{isEs ? '50% Anticipo / 50% Al Finalizar' : '50% Deposit / 50% Completion'}</option>
+                    <option value="Custom">{isEs ? 'Personalizado...' : 'Custom...'}</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={paymentTerms}
+                    onChange={(e) => setPaymentTerms(e.target.value)}
+                    placeholder={t.paymentTermsPlaceholder}
+                    className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
+                  />
                 </div>
               </div>
 

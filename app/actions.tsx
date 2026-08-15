@@ -1479,18 +1479,15 @@ export async function createEstimate(formData: FormData) {
     if (!user) return { error: 'Unauthorized operational execution.' };
 
     // 2. Resolver organización
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
+    const { organization: org } = await getUserOrganization(user.id);
     if (!org) return { error: 'No organizational profile found.' };
 
     const estimateNumber = await reserveDocumentNumber(supabase, org.id, 'estimate');
 
     // 3. Extraer datos
     const customerId = formData.get('customerId') as string;
-    const propertyId = formData.get('propertyId') as string || null;
+    const propertyId = (formData.get('propertyId') as string) || null;
+    const paymentTerms = (formData.get('paymentTerms') as string | null)?.trim() || null;
     let title = formData.get('title') as string;
     let description = formData.get('description') as string || '';
     let estimatedAmount = parseFloat(formData.get('estimatedAmount') as string || '0');
@@ -1542,6 +1539,7 @@ export async function createEstimate(formData: FormData) {
           title,
           description,
           estimated_amount: estimatedAmount,
+          payment_terms: paymentTerms,
           status: 'draft'
         }
       ]);
@@ -1549,6 +1547,8 @@ export async function createEstimate(formData: FormData) {
     if (error) return { error: error.message };
 
     revalidatePath('/dashboard/estimates');
+    revalidatePath('/[lng]/dashboard/estimates');
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (err: unknown) {
     return { error: (err as Error)?.message || 'Failed to create estimate.' };
@@ -1564,15 +1564,12 @@ export async function updateEstimate(estimateId: string, formData: FormData) {
     } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized operational execution.' };
 
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
+    const { organization: org } = await getUserOrganization(user.id);
     if (!org) return { error: 'No organizational profile found.' };
 
     const customerId = formData.get('customerId') as string;
     const propertyId = (formData.get('propertyId') as string) || null;
+    const paymentTerms = (formData.get('paymentTerms') as string | null)?.trim() || null;
     let title = formData.get('title') as string;
     let description = (formData.get('description') as string) || '';
     let estimatedAmount = parseFloat((formData.get('estimatedAmount') as string) || '0');
@@ -1631,6 +1628,7 @@ export async function updateEstimate(estimateId: string, formData: FormData) {
         title,
         description,
         estimated_amount: estimatedAmount,
+        payment_terms: paymentTerms,
       })
       .eq('id', estimateId)
       .eq('organization_id', org.id);
@@ -1638,6 +1636,8 @@ export async function updateEstimate(estimateId: string, formData: FormData) {
     if (error) return { error: error.message };
 
     revalidatePath('/dashboard/estimates');
+    revalidatePath('/[lng]/dashboard/estimates');
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (err: unknown) {
     return { error: (err as Error)?.message || 'Failed to update estimate.' };
@@ -1655,11 +1655,15 @@ export async function sendEstimateByEmail(estimateId: string) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('name, slogan, logo_url, document_email_header_color')
-      .eq('owner_id', user?.id)
-      .single();
+    const supabaseAdmin = createAdminClient();
+    const { organization: userOrg } = user ? await getUserOrganization(user.id) : { organization: null };
+
+    const { data: org } = userOrg
+      ? { data: userOrg }
+      : await supabaseAdmin
+          .from('organizations')
+          .select('name, slogan, logo_url, document_email_header_color')
+          .maybeSingle();
 
     const organizationName = org?.name?.trim() || 'Prado ERP';
     const organizationSlogan = org?.slogan?.trim() || 'Field Service Software';
@@ -1667,7 +1671,7 @@ export async function sendEstimateByEmail(estimateId: string) {
     const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org?.document_email_header_color);
 
     // 1. Fetch Estimate and related Customer data
-    const { data: estimate, error: estimateError } = await supabase
+    const { data: estimate, error: estimateError } = await supabaseAdmin
       .from('estimates')
       .select(
         `
@@ -1731,7 +1735,7 @@ export async function sendEstimateByEmail(estimateId: string) {
     }
 
     // 3. Update estimate status to 'sent'
-    const { error: updateError } = await supabase.from('estimates').update({ status: 'sent' }).eq('id', estimateId);
+    const { error: updateError } = await supabaseAdmin.from('estimates').update({ status: 'sent' }).eq('id', estimateId);
 
     if (updateError) {
       console.error('Supabase update error:', updateError);
@@ -1739,6 +1743,8 @@ export async function sendEstimateByEmail(estimateId: string) {
     }
 
     revalidatePath('/dashboard/estimates');
+    revalidatePath('/[lng]/dashboard/estimates');
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -1818,6 +1824,7 @@ export async function getEstimatesDashboardData() {
       success: true,
       organizationName: org.name || '',
       organizationLogoUrl: org.logo_url || '',
+      defaultPaymentTerms: org.default_payment_terms || 'Due on Receipt',
       subscriptionStatus: org.subscription_status || 'trial',
       canViewImportExport,
       estimates: estimatesData || [],
@@ -1881,9 +1888,9 @@ export async function updateEstimateStatus(estimateId: string, newStatus: 'draft
   if (!estimateId) return { error: 'Missing Estimate ID' };
 
   try {
-    const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('estimates')
       .update({ status: newStatus })
       .eq('id', estimateId);
@@ -1891,6 +1898,8 @@ export async function updateEstimateStatus(estimateId: string, newStatus: 'draft
     if (error) return { error: error.message };
 
     revalidatePath('/dashboard/estimates');
+    revalidatePath('/[lng]/dashboard/estimates');
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (err: unknown) {
     return { error: (err as Error)?.message || 'Failed to update status.' };

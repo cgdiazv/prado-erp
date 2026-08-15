@@ -12,6 +12,7 @@ interface DocumentBrandingSettingsPanelProps {
   initialNextEstimateNumber?: number | null;
   initialNextInvoiceNumber?: number | null;
   initialHeaderColor?: string | null;
+  initialDefaultPaymentTerms?: string | null;
   locale?: string;
 }
 
@@ -19,20 +20,27 @@ export default function DocumentBrandingSettingsPanel({
   initialNextEstimateNumber = 1001,
   initialNextInvoiceNumber = 1001,
   initialHeaderColor = '#009966',
+  initialDefaultPaymentTerms = 'Due on Receipt',
   locale = 'en',
 }: DocumentBrandingSettingsPanelProps) {
   const isEs = locale.toLowerCase().startsWith('es');
   const safeInitialEstimateNumber = normalizeDocumentSequenceNumber(initialNextEstimateNumber);
   const safeInitialInvoiceNumber = normalizeDocumentSequenceNumber(initialNextInvoiceNumber);
   const safeInitialHeaderColor = normalizeDocumentEmailHeaderColor(initialHeaderColor);
+  const safeInitialPaymentTerms = initialDefaultPaymentTerms?.trim() || 'Due on Receipt';
+
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [nextEstimateNumber, setNextEstimateNumber] = useState(String(safeInitialEstimateNumber));
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState(String(safeInitialInvoiceNumber));
   const [headerColor, setHeaderColor] = useState(safeInitialHeaderColor);
+  const [defaultPaymentTerms, setDefaultPaymentTerms] = useState(safeInitialPaymentTerms);
+
   const [currentEstimateNumber, setCurrentEstimateNumber] = useState(safeInitialEstimateNumber);
   const [currentInvoiceNumber, setCurrentInvoiceNumber] = useState(safeInitialInvoiceNumber);
   const [currentHeaderColor, setCurrentHeaderColor] = useState(safeInitialHeaderColor);
+  const [currentPaymentTerms, setCurrentPaymentTerms] = useState(safeInitialPaymentTerms);
+
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -41,11 +49,13 @@ export default function DocumentBrandingSettingsPanel({
       setCurrentEstimateNumber(safeInitialEstimateNumber);
       setCurrentInvoiceNumber(safeInitialInvoiceNumber);
       setCurrentHeaderColor(safeInitialHeaderColor);
+      setCurrentPaymentTerms(safeInitialPaymentTerms);
       setNextEstimateNumber(String(safeInitialEstimateNumber));
       setNextInvoiceNumber(String(safeInitialInvoiceNumber));
       setHeaderColor(safeInitialHeaderColor);
+      setDefaultPaymentTerms(safeInitialPaymentTerms);
     }
-  }, [safeInitialEstimateNumber, safeInitialInvoiceNumber, safeInitialHeaderColor, editing]);
+  }, [safeInitialEstimateNumber, safeInitialInvoiceNumber, safeInitialHeaderColor, safeInitialPaymentTerms, editing]);
 
   const toggleEditing = () => {
     setStatusMessage('');
@@ -55,6 +65,7 @@ export default function DocumentBrandingSettingsPanel({
       setNextEstimateNumber(String(currentEstimateNumber));
       setNextInvoiceNumber(String(currentInvoiceNumber));
       setHeaderColor(currentHeaderColor);
+      setDefaultPaymentTerms(currentPaymentTerms);
     }
   };
 
@@ -69,6 +80,7 @@ export default function DocumentBrandingSettingsPanel({
     formData.set('nextEstimateNumber', nextEstimateNumber);
     formData.set('nextInvoiceNumber', nextInvoiceNumber);
     formData.set('documentEmailHeaderColor', headerColor);
+    formData.set('defaultPaymentTerms', defaultPaymentTerms);
 
     const response = await updateDocumentBrandingSettings(formData);
     setLoading(false);
@@ -81,13 +93,16 @@ export default function DocumentBrandingSettingsPanel({
     const updatedEstimateNumber = normalizeDocumentSequenceNumber(response?.nextEstimateNumber ?? nextEstimateNumber);
     const updatedInvoiceNumber = normalizeDocumentSequenceNumber(response?.nextInvoiceNumber ?? nextInvoiceNumber);
     const updatedHeaderColor = normalizeDocumentEmailHeaderColor(response?.documentEmailHeaderColor ?? headerColor);
+    const updatedPaymentTerms = response?.defaultPaymentTerms ?? defaultPaymentTerms;
 
     setCurrentEstimateNumber(updatedEstimateNumber);
     setCurrentInvoiceNumber(updatedInvoiceNumber);
     setCurrentHeaderColor(updatedHeaderColor);
+    setCurrentPaymentTerms(updatedPaymentTerms);
     setNextEstimateNumber(String(updatedEstimateNumber));
     setNextInvoiceNumber(String(updatedInvoiceNumber));
     setHeaderColor(updatedHeaderColor);
+    setDefaultPaymentTerms(updatedPaymentTerms);
     setEditing(false);
     setStatusMessage(isEs ? 'Preferencias de documentos actualizadas.' : 'Document settings updated.');
   };
@@ -100,8 +115,8 @@ export default function DocumentBrandingSettingsPanel({
         </h3>
         <p className="text-xs text-slate-400">
           {isEs
-            ? 'Controla la numeracion de documentos y el color de sus encabezados.'
-            : 'Control document numbering and header color.'}
+            ? 'Controla la numeracion de documentos, terminos de pago y color de sus encabezados.'
+            : 'Control document numbering, payment terms, and header color.'}
         </p>
       </div>
 
@@ -124,6 +139,12 @@ export default function DocumentBrandingSettingsPanel({
                     {isEs ? 'Siguiente factura' : 'Next invoice'}
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-700">{formatDocumentNumber('invoice', currentInvoiceNumber) || currentInvoiceNumber}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    {isEs ? 'Terminos de pago predeterminados' : 'Default payment terms'}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-slate-700">{currentPaymentTerms}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -183,6 +204,36 @@ export default function DocumentBrandingSettingsPanel({
                   step="1"
                   value={nextInvoiceNumber}
                   onChange={(event) => setNextInvoiceNumber(event.target.value)}
+                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                />
+              </div>
+
+              <div className="space-y-1 md:col-span-2">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="default-payment-terms-input">
+                  {isEs ? 'Terminos de pago predeterminados' : 'Default Payment Terms'}
+                </label>
+                <select
+                  id="default-payment-terms-input"
+                  value={['Due on Receipt', 'Net 15', 'Net 30', 'Net 60', '50% Deposit / 50% Completion'].includes(defaultPaymentTerms) ? defaultPaymentTerms : 'Custom'}
+                  onChange={(event) => {
+                    if (event.target.value !== 'Custom') {
+                      setDefaultPaymentTerms(event.target.value);
+                    }
+                  }}
+                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition mb-2"
+                >
+                  <option value="Due on Receipt">{isEs ? 'Al contado / Al recibir' : 'Due on Receipt'}</option>
+                  <option value="Net 15">Net 15 (15 días)</option>
+                  <option value="Net 30">Net 30 (30 días)</option>
+                  <option value="Net 60">Net 60 (60 días)</option>
+                  <option value="50% Deposit / 50% Completion">{isEs ? '50% Anticipo / 50% Al Finalizar' : '50% Deposit / 50% Completion'}</option>
+                  <option value="Custom">{isEs ? 'Personalizado...' : 'Custom...'}</option>
+                </select>
+                <input
+                  type="text"
+                  value={defaultPaymentTerms}
+                  onChange={(event) => setDefaultPaymentTerms(event.target.value)}
+                  placeholder={isEs ? 'Ej: 50% anticipo al aprobar, saldo al terminar' : 'Ex: 50% deposit upon approval, balance upon completion'}
                   className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
                 />
               </div>

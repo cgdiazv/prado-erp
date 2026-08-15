@@ -7,6 +7,7 @@ type EstimateLike = {
   description?: string | null;
   created_at?: string;
   estimate_number?: number | null;
+  payment_terms?: string | null;
 };
 
 type EstimateEmailProps = {
@@ -16,6 +17,7 @@ type EstimateEmailProps = {
   organizationName?: string;
   organizationLogoUrl?: string;
   headerColor?: string;
+  paymentTerms?: string | null;
 };
 
 export default function EstimateEmail({
@@ -25,6 +27,7 @@ export default function EstimateEmail({
   organizationName = 'Prado Systems',
   organizationLogoUrl = '',
   headerColor = '#009966',
+  paymentTerms = estimate?.payment_terms,
 }: EstimateEmailProps) {
   const amount = Number(estimate?.estimated_amount || 0).toFixed(2);
   const estimateTitle = estimate?.title?.trim() || 'General Service';
@@ -65,6 +68,11 @@ export default function EstimateEmail({
             <p style={{ margin: '0 0 8px 0' }}>
               <strong>Estimate Title:</strong> {estimateTitle}
             </p>
+            {paymentTerms ? (
+              <p style={{ margin: '0 0 8px 0' }}>
+                <strong>Payment Terms:</strong> {paymentTerms}
+              </p>
+            ) : null}
             <p style={{ margin: 0 }}>
               <strong>Total Estimated Cost:</strong>{' '}
               <span style={{ fontSize: 24, fontWeight: 700, color: normalizedHeaderColor }}>{amountStr}</span>

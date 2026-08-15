@@ -347,6 +347,7 @@ export async function updateDocumentBrandingSettings(formData: FormData) {
   const nextEstimateRaw = (formData.get('nextEstimateNumber') as string | null)?.trim() || '';
   const nextInvoiceRaw = (formData.get('nextInvoiceNumber') as string | null)?.trim() || '';
   const headerColorRaw = (formData.get('documentEmailHeaderColor') as string | null)?.trim() || '';
+  const defaultPaymentTermsRaw = (formData.get('defaultPaymentTerms') as string | null)?.trim() || 'Due on Receipt';
 
   const nextEstimateNumber = normalizeDocumentSequenceNumber(nextEstimateRaw);
   const nextInvoiceNumber = normalizeDocumentSequenceNumber(nextInvoiceRaw);
@@ -356,6 +357,7 @@ export async function updateDocumentBrandingSettings(formData: FormData) {
     return { error: 'Header color must be a valid 6-character hex color.' };
   }
   const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(headerColorCandidate);
+  const defaultPaymentTerms = defaultPaymentTermsRaw || 'Due on Receipt';
 
   const supabase = await createClient();
   const {
@@ -407,6 +409,7 @@ export async function updateDocumentBrandingSettings(formData: FormData) {
       next_estimate_number: safeNextEstimateNumber,
       next_invoice_number: safeNextInvoiceNumber,
       document_email_header_color: documentEmailHeaderColor,
+      default_payment_terms: defaultPaymentTerms,
     })
     .eq('id', organization.id);
 
@@ -424,6 +427,7 @@ export async function updateDocumentBrandingSettings(formData: FormData) {
     nextEstimateNumber: safeNextEstimateNumber,
     nextInvoiceNumber: safeNextInvoiceNumber,
     documentEmailHeaderColor,
+    defaultPaymentTerms,
   };
 }
 

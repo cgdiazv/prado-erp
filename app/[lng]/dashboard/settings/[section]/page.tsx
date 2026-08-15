@@ -336,6 +336,7 @@ export default async function SettingsSectionPage({
                     initialNextEstimateNumber={org.next_estimate_number ?? 1001}
                     initialNextInvoiceNumber={org.next_invoice_number ?? 1001}
                     initialHeaderColor={org.document_email_header_color || '#009966'}
+                    initialDefaultPaymentTerms={org.default_payment_terms || 'Due on Receipt'}
                     locale={locale}
                   />
                 </div>
