@@ -102,9 +102,9 @@ export default function DashboardSidebar({
 
       {/* Sidebar Container Panel */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-56 bg-white border-r border-gray-200 flex flex-col p-4 select-none shrink-0 
+        fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col p-4 select-none shrink-0 
         transform transition-transform duration-300 ease-in-out
-        md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:translate-x-0 md:z-auto
+        md:w-56 md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:translate-x-0 md:z-auto
         ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:shadow-none'}
       `}>
         <div className="space-y-0.25 flex-1 overflow-y-auto overflow-x-hidden pt-2 md:pt-0">

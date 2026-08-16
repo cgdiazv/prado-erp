@@ -84,7 +84,7 @@ export default function PradoLogo({
       </div>
 
       {/* Brand Text Stack */}
-      <div className="flex flex-col">
+      <div className="hidden md:flex flex-col">
         <div className="flex items-center gap-1.5 leading-none">
           <span className={`font-sans ${titleSizeClasses} font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
             Prado
