@@ -5,7 +5,7 @@ export const metadata: Metadata = {
     default: "Prado Jobs | Streamlined Operations & Job Management",
     template: "%s | Prado Jobs",
   },
-  description: "The all-in-one workspace built for modern service and landscaping professionals. Schedule jobs, manage team workflows, track customers, and simplify billing seamlessly.",
+  description: "Prado Jobs helps field service businesses quote, schedule, and invoice jobs from the field — in seconds, not spreadsheets.",
 };
 
 export default function LngLayout({

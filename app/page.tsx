@@ -74,7 +74,7 @@ export default async function MarketingHomePage() {
           </h1>
 
           <p className="mt-6 text-base md:text-lg text-slate-400 max-w-xl font-medium leading-relaxed">
-            Prado combines secure tenant multi-occupancy billing, predictive path dispatch optimization, and automated invoicing in one central operational hub.
+            Prado Jobs helps field service businesses quote, schedule, and invoice jobs from the field — in seconds, not spreadsheets.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
