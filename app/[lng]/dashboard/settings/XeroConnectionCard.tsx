@@ -20,8 +20,8 @@ export default function XeroConnectionCard({ organizationId }: XeroConnectionCar
     loading: isSpanish ? 'Cargando integraciones...' : 'Loading integrations...',
     title: isSpanish ? 'Integracion con Xero' : 'Xero Integration',
     description: isSpanish
-      ? 'Sincroniza tus estimaciones y gastos de Prado directamente con tus libros contables.'
-      : 'Sync your Prado estimates and expenses directly with your accounting books.',
+      ? 'Sincroniza tus cotizaciones y gastos de Prado directamente con tus libros contables.'
+      : 'Sync your Prado quotes and expenses directly with your accounting books.',
     success: isSpanish ? 'Conexion establecida con exito!' : 'Connection established successfully!',
     confirmDisconnect: isSpanish
       ? 'Estas seguro de que deseas desconectar Xero de Prado? Se detendra la sincronizacion.'

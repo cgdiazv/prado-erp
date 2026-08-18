@@ -130,7 +130,7 @@ export default function DocumentBrandingSettingsPanel({
               <div className="space-y-2">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    {isEs ? 'Siguiente estimado' : 'Next estimate'}
+                    {isEs ? 'Siguiente cotización' : 'Next quote'}
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-700">{formatDocumentNumber('estimate', currentEstimateNumber) || currentEstimateNumber}</p>
                 </div>
@@ -180,7 +180,7 @@ export default function DocumentBrandingSettingsPanel({
             <form id="document-branding-form" onSubmit={handleSubmit} className={editing ? 'mt-4 grid gap-4 md:grid-cols-2' : 'hidden'}>
               <div className="space-y-1">
                 <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="next-estimate-number-input">
-                  {isEs ? 'Siguiente numero de estimado' : 'Next estimate number'}
+                  {isEs ? 'Siguiente número de cotización' : 'Next quote number'}
                 </label>
                 <input
                   id="next-estimate-number-input"
@@ -210,7 +210,7 @@ export default function DocumentBrandingSettingsPanel({
 
               <div className="space-y-1 md:col-span-2">
                 <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="default-payment-terms-input">
-                  {isEs ? 'Terminos de pago predeterminados' : 'Default Payment Terms'}
+                  {isEs ? 'Terminos de pago predeterminados' : 'Default payment terms'}
                 </label>
                 <select
                   id="default-payment-terms-input"
@@ -264,8 +264,8 @@ export default function DocumentBrandingSettingsPanel({
                 </div>
                 <p className="text-[11px] text-slate-400">
                   {isEs
-                    ? 'Se usa en estimados, facturas y correos de confirmacion de trabajos.'
-                    : 'Used for estimates, invoices, and job confirmation emails.'}
+                    ? 'Se usa en cotizaciones, facturas y correos de confirmación de trabajos.'
+                    : 'Used for quotes, invoices, and job confirmation emails.'}
                 </p>
               </div>
             </form>

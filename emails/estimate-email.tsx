@@ -52,21 +52,21 @@ export default function EstimateEmail({
             />
           ) : null}
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>{headerTitle}</h1>
-          <p style={{ margin: '4px 0 0 0', fontSize: 13, opacity: 0.9 }}>New Estimate Prepared</p>
+          <p style={{ margin: '4px 0 0 0', fontSize: 13, opacity: 0.9 }}>New Quote Prepared</p>
         </div>
 
         <div style={{ padding: '28px' }}>
           <h2 style={{ margin: '0 0 12px 0' }}>Hello {safeCustomerName},</h2>
-          <p style={{ margin: '0 0 16px 0' }}>We have prepared a new estimate for your review:</p>
+          <p style={{ margin: '0 0 16px 0' }}>We have prepared a new quote for your review:</p>
 
           <div style={{ background: '#f1f5f9', borderRadius: 8, padding: '16px', margin: '20px 0' }}>
             {formattedEstimateNumber ? (
               <p style={{ margin: '0 0 8px 0' }}>
-                <strong>Estimate Number:</strong> {formattedEstimateNumber}
+                <strong>Quote Number:</strong> {formattedEstimateNumber}
               </p>
             ) : null}
             <p style={{ margin: '0 0 8px 0' }}>
-              <strong>Estimate Title:</strong> {estimateTitle}
+              <strong>Quote Title:</strong> {estimateTitle}
             </p>
             {paymentTerms ? (
               <p style={{ margin: '0 0 8px 0' }}>
@@ -74,7 +74,7 @@ export default function EstimateEmail({
               </p>
             ) : null}
             <p style={{ margin: 0 }}>
-              <strong>Total Estimated Cost:</strong>{' '}
+              <strong>Total Quote Cost:</strong>{' '}
               <span style={{ fontSize: 24, fontWeight: 700, color: normalizedHeaderColor }}>{amountStr}</span>
             </p>
           </div>

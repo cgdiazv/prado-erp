@@ -45,12 +45,12 @@ export const EstimateEmail = ({ customerName, estimate, organizationSlogan = 'Fi
             <Heading style={heading}>Hola {customerName},</Heading>
             
             <Text style={paragraph}>
-              Gracias por tu confianza e interés en trabajar con nosotros. Hemos generado una propuesta detallada para tu próximo servicio:
+              Gracias por tu confianza e interés en trabajar con nosotros. Hemos generado una cotización detallada para tu próximo servicio:
             </Text>
 
             {/* Caja de Datos de la Cotización */}
             <Section style={estimateBox}>
-              <Text style={estimateTitleLabel}>SERVICIO / PROPUESTA</Text>
+              <Text style={estimateTitleLabel}>SERVICIO / COTIZACIÓN</Text>
               <Text style={estimateTitleValue}>{estimate.title}</Text>
               
               {estimate.description && (
@@ -59,7 +59,7 @@ export const EstimateEmail = ({ customerName, estimate, organizationSlogan = 'Fi
 
               <Hr style={boxDivider} />
 
-              <Text style={priceLabel}>IMPORTE TOTAL ESTIMADO</Text>
+              <Text style={priceLabel}>IMPORTE TOTAL DE LA COTIZACIÓN</Text>
               <Text style={priceValue}>${estimate.estimated_amount.toFixed(2)} USD</Text>
             </Section>
 

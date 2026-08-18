@@ -84,32 +84,32 @@ const HOW_TO_PLAYBOOKS_SEED: HowToPlaybookSeed[] = [
     slug: 'send-estimate-and-convert-to-invoice',
     audience: 'subscriber',
     en: {
-      title: 'Send an estimate and convert it to an invoice',
-      summary: 'Build estimate line items, deliver estimate, and convert accepted work into invoice flow.',
+      title: 'Send a quote and convert it to an invoice',
+      summary: 'Build quote line items, deliver quote, and convert accepted work into invoice flow.',
       keywords: ['estimate', 'invoice', 'send', 'convert', 'billing', 'quote'],
       steps: [
-        'Open Dashboard > Estimates and click Create Estimate.',
+        'Open Dashboard > Quotes and click Create Quote.',
         'Add customer, service details, pricing, and terms.',
-        'Send the estimate to the customer by email from the estimate action menu.',
-        'When approved, open the estimate and use Convert to Invoice.',
+        'Send the quote to the customer by email from the quote action menu.',
+        'When approved, open the quote and use Convert to Invoice.',
         'Review invoice totals and due date, then send the invoice.',
       ],
       quickReply:
-        'Create the estimate in Dashboard > Estimates, send it by email, and once approved use Convert to Invoice from the same estimate record. Then review due date/amount and send the invoice.',
+        'Create the quote in Dashboard > Quotes, send it by email, and once approved use Convert to Invoice from the same quote record. Then review due date/amount and send the invoice.',
     },
     es: {
-      title: 'Envia una estimacion y conviertela en factura',
-      summary: 'Crea lineas de estimacion, enviala al cliente y convierte trabajo aprobado en factura.',
+      title: 'Envía una cotización y conviértela en factura',
+      summary: 'Crea líneas de cotización, envíala al cliente y convierte trabajo aprobado en factura.',
       keywords: ['estimacion', 'factura', 'enviar', 'convertir', 'cobro', 'cotizacion'],
       steps: [
-        'Abre Dashboard > Estimates y haz clic en Create Estimate.',
-        'Agrega cliente, servicios, precios y terminos.',
-        'Envia la estimacion por correo desde el menu de acciones.',
-        'Cuando sea aprobada, abre la estimacion y usa Convert to Invoice.',
-        'Revisa montos y fecha de vencimiento, luego envia la factura.',
+        'Abre Dashboard > Quotes y haz clic en Create Quote.',
+        'Agrega cliente, servicios, precios y términos.',
+        'Envía la cotización por correo desde el menú de acciones.',
+        'Cuando sea aprobada, abre la cotización y usa Convert to Invoice.',
+        'Revisa montos y fecha de vencimiento, luego envía la factura.',
       ],
       quickReply:
-        'Crea la estimacion en Dashboard > Estimates, enviala por correo y cuando sea aprobada usa Convert to Invoice en esa misma estimacion. Luego revisa monto/fecha y envia la factura.',
+        'Crea la cotización en Dashboard > Quotes, envíala por correo y cuando sea aprobada usa Convert to Invoice en esa misma cotización. Luego revisa monto/fecha y envía la factura.',
     },
   },
   {
@@ -117,7 +117,7 @@ const HOW_TO_PLAYBOOKS_SEED: HowToPlaybookSeed[] = [
     audience: 'subscriber',
     en: {
       title: 'Import and export CSV data',
-      summary: 'Use CSV templates and import/export controls for customers, jobs, expenses, and estimates.',
+      summary: 'Use CSV templates and import/export controls for customers, jobs, expenses, and quotes.',
       keywords: ['import', 'export', 'csv', 'template', 'upload', 'download'],
       steps: [
         'Open Dashboard > Import / Export (owner/admin roles only).',

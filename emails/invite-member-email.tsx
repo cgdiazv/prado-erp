@@ -21,7 +21,7 @@ const roleLabels: Record<string, { label: string; description: string }> = {
   },
   supervisor: {
     label: 'Supervisor',
-    description: 'Can edit and create work orders, estimates, and customer data.',
+    description: 'Can edit and create work orders, quotes, and customer data.',
   },
   dispatcher: {
     label: 'Dispatcher',

@@ -203,7 +203,7 @@ export default function WorkspaceIdentityForm({
                       maxLength={160}
                       className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
                     />
-                    <p className="mt-1 text-[11px] text-slate-400">{isEs ? 'Se muestra en correos de estimaciones y facturas.' : 'Shown in estimate and invoice emails.'}</p>
+                    <p className="mt-1 text-[11px] text-slate-400">{isEs ? 'Se muestra en correos de cotizaciones y facturas.' : 'Shown in quote and invoice emails.'}</p>
                   </div>
                 </div>
 

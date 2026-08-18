@@ -281,8 +281,8 @@ export default function AITaskAssistantModal({
               </h2>
               <p className="text-xs text-slate-500">
                 {isEs
-                  ? 'Crea trabajos, clientes, propiedades, vehiculos, servicios o presupuestos con IA.'
-                  : 'Create Jobs, Customers, Properties, Fleet Vehicles, Services, or Estimates via natural language.'}
+                  ? 'Crea trabajos, clientes, propiedades, vehículos, servicios o cotizaciones con IA.'
+                  : 'Create Jobs, Customers, Properties, Fleet Vehicles, Services, or Quotes via natural language.'}
               </p>
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function AITaskAssistantModal({
             className={`inline-flex items-center gap-1.5 px-3 py-2 border-b-2 transition ${activeIntent === 'estimate' ? 'border-emerald-600 text-emerald-700 font-bold' : 'border-transparent hover:text-slate-900'}`}
           >
             <FileText className="h-3.5 w-3.5" />
-            <span>{isEs ? 'Presupuesto' : 'Estimate'}</span>
+            <span>{isEs ? 'Cotización' : 'Quote'}</span>
           </button>
           <button
             type="button"
@@ -393,7 +393,7 @@ export default function AITaskAssistantModal({
                   : activeIntent === 'service'
                   ? (isEs ? 'Agregar servicio Lavado de Fachadas por $220...' : 'Add service Pressure Washing for $220...')
                   : activeIntent === 'estimate'
-                  ? (isEs ? 'Crear presupuesto para Acme Corp por $1200...' : 'Create estimate for Acme Corp for $1,200...')
+                  ? (isEs ? 'Crear cotización para Acme Corp por $1200...' : 'Create quote for Acme Corp for $1,200...')
                   : (isEs ? 'Programar corte de cesped para John Smith mañana por $150...' : 'Schedule lawn maintenance for John Smith tomorrow for $150...')
               }
               className="flex-1 resize-none bg-transparent px-2 py-1 text-sm text-slate-900 focus:outline-none max-h-28 overflow-y-auto leading-normal"
@@ -423,11 +423,11 @@ export default function AITaskAssistantModal({
             <span className="font-semibold text-slate-500 mr-1">{isEs ? 'Ejemplos:' : 'Examples:'}</span>
             <button
               type="button"
-              onClick={() => handleQuickChipClick(isEs ? 'Crear presupuesto para Acme Corp por $1200' : 'Create estimate for Acme Corp for $1200')}
+              onClick={() => handleQuickChipClick(isEs ? 'Crear cotización para Acme Corp por $1200' : 'Create quote for Acme Corp for $1200')}
               className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition"
             >
               <FileText className="h-3 w-3 text-emerald-600" />
-              <span>{isEs ? 'Presupuesto' : 'Estimate'}</span>
+              <span>{isEs ? 'Cotización' : 'Quote'}</span>
             </button>
             <button
               type="button"

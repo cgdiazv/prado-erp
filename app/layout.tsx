@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -14,13 +14,17 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+export const viewport: Viewport = {
+  themeColor: '#10b981',
+};
+
 export const metadata: Metadata = {
   title: {
     default: 'Prado Jobs | Streamlined Operations & Job Management',
     template: '%s | Prado Jobs',
   },
   description:
-    'The all-in-one workspace built for modern service and landscaping professionals. Schedule jobs, manage team workflows, track customers, and simplify billing seamlessly.',
+    'Prado Jobs helps field service businesses quote, schedule, and invoice jobs from the field — in seconds, not spreadsheets.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -28,7 +32,6 @@ export const metadata: Metadata = {
     title: 'Prado Jobs',
   },
   formatDetection: { telephone: false },
-  themeColor: '#10b981',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -74,16 +74,16 @@ export default function OnboardingTour({
       placement: 'bottom',
       title: isEs ? 'Acciones Rápidas' : 'Quick Actions',
       content: isEs
-        ? 'Usa estos accesos para crear presupuestos, programar trabajos, gestionar facturas y registrar gastos en segundos.'
-        : 'Use these shortcuts to open estimates, schedule jobs, manage invoices, and track expenses in seconds.',
+        ? 'Usa estos accesos para crear cotizaciones, programar trabajos, gestionar facturas y registrar gastos en segundos.'
+        : 'Use these shortcuts to create quotes, schedule jobs, manage invoices, and track expenses in seconds.',
     },
     {
       target: '.tour-priority-alerts',
       placement: 'bottom',
       title: isEs ? 'Alertas Prioritarias' : 'Priority Alerts',
       content: isEs
-        ? 'Monitorea tus tareas críticas: facturas vencidas, trabajos sin asignar, presupuestos pendientes y trabajos incompletos.'
-        : 'Monitor your critical tasks: overdue invoices, unassigned jobs, pending estimates, and incomplete work.',
+        ? 'Monitorea tus tareas críticas: facturas vencidas, trabajos sin asignar, cotizaciones pendientes y trabajos incompletos.'
+        : 'Monitor your critical tasks: overdue invoices, unassigned jobs, pending quotes, and incomplete work.',
     },
     {
       target: '.tour-metrics',

@@ -283,7 +283,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
       : {
           owner: 'Full access. Manages billing, team, and all settings.',
           manager: 'Can manage team members, settings, and view all data.',
-          supervisor: 'Can edit and create work orders, estimates, and customer data.',
+          supervisor: 'Can edit and create work orders, quotes, and customer data.',
           dispatcher: 'Can schedule jobs, assign resources, and view related data.',
           billing: 'Can view data and manage billing and financial records.',
           subcontractor: 'External contractor. Can view and update assigned jobs and dispatch orders only.',
@@ -296,7 +296,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
     const labels: Record<string, string> = isEs
       ? {
           customers: 'Módulo de Clientes',
-          estimates: 'Módulo de Estimados',
+          estimates: 'Módulo de Cotizaciones',
           jobs: 'Módulo de Trabajos',
           dispatch: 'Módulo de Despacho',
           invoice: 'Módulo de Facturas',
@@ -305,7 +305,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
         }
       : {
           customers: 'Customers module',
-          estimates: 'Estimates module',
+          estimates: 'Quotes module',
           jobs: 'Jobs module',
           dispatch: 'Dispatch module',
           invoice: 'Invoice module',
