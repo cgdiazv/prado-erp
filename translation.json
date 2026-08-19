@@ -125,10 +125,12 @@
       "passwordLabel": "Password",
       "rememberMeLabel": "Remember me for 30 days",
       "forgotPassword": "Forgot password?",
+      "forgotPasswordPrompt": "Forgot your password?",
+      "forgotPasswordLink": "Reset it",
       "loadingButton": "Verifying Credentials...",
       "submitButton": "Sign In to Dashboard",
-      "registerPrompt": "New tenant?",
-      "registerLink": "Register your organization",
+      "registerPrompt": "Need an account?",
+      "registerLink": "Start free",
       "genericError": "An unexpected network error occurred."
     },
     "privacy": {
@@ -536,10 +538,12 @@
       "passwordLabel": "Contraseña",
       "rememberMeLabel": "Recordarme durante 30 días",
       "forgotPassword": "¿Olvidaste tu contraseña?",
+      "forgotPasswordPrompt": "¿Olvidaste tu contraseña?",
+      "forgotPasswordLink": "Restablécela",
       "loadingButton": "Verificando credenciales...",
       "submitButton": "Entrar al panel",
-      "registerPrompt": "¿Eres un nuevo cliente?",
-      "registerLink": "Registra tu organización",
+      "registerPrompt": "¿Necesitas una cuenta?",
+      "registerLink": "Comienza gratis",
       "genericError": "Ocurrió un error inesperado de red."
     },
     "privacy": {

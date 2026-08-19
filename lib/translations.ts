@@ -126,6 +126,8 @@ type TranslationBundle = {
     passwordLabel: string;
     rememberMeLabel: string;
     forgotPassword: string;
+    forgotPasswordPrompt: string;
+    forgotPasswordLink: string;
     loadingButton: string;
     submitButton: string;
     registerPrompt: string;

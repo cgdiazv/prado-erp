@@ -91,15 +91,7 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-xs font-semibold text-gray-500 uppercase">{translations.login.passwordLabel}</label>
-                <Link
-                  href={`/${locale}/login/forgot-password`}
-                  className="text-[11px] font-semibold text-emerald-600 hover:underline outline-none"
-                >
-                  {translations.login.forgotPassword}
-                </Link>
-              </div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.login.passwordLabel}</label>
               <div className="relative flex items-center">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -150,8 +142,19 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-gray-400 border-t border-gray-100 pt-4">
-            {translations.login.registerPrompt} <Link href={`/${locale}/signup`} className="text-emerald-600 hover:underline font-semibold">{translations.login.registerLink}</Link>
+          <div className="mt-6 text-center text-xs text-gray-500 border-t border-gray-100 pt-4 space-y-1.5">
+            <div>
+              {translations.login.registerPrompt}{' '}
+              <Link href={`/${locale}/signup`} className="text-emerald-600 hover:underline font-semibold">
+                {translations.login.registerLink}
+              </Link>
+            </div>
+            <div>
+              {translations.login.forgotPasswordPrompt}{' '}
+              <Link href={`/${locale}/login/forgot-password`} className="text-emerald-600 hover:underline font-semibold">
+                {translations.login.forgotPasswordLink}
+              </Link>
+            </div>
           </div>
         </div>
       </main>

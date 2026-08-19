@@ -2,10 +2,13 @@
 
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import PublicNavbar from '@/components/PublicNavbar';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function ForgotPasswordPage() {
+  const params = useParams();
+  const locale = (params?.lng as string) || 'en';
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
@@ -26,13 +29,13 @@ export default function ForgotPasswordPage() {
       setMessage(error.message);
     } else {
       setStatus('success');
-      setMessage("Check your email context inbox! We've dispatched a secure password update link.");
+      setMessage("Check your email inbox! We've dispatched a secure password update link.");
     }
   }
 
   return (
     <div className="min-h-screen bg-white flex flex-col selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      <PublicNavbar />
+      <PublicNavbar theme="light" locale={locale} />
       <main className="flex-1 flex items-center justify-center p-6 text-gray-900">
         <div className="w-full max-w-md bg-white p-8 rounded-xl border border-gray-200 shadow-xs">
           <header className="mb-6 text-center">
@@ -45,7 +48,7 @@ export default function ForgotPasswordPage() {
               <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-lg font-medium">
                 {message}
               </div>
-              <Link href="/login" className="inline-block text-sm font-semibold text-emerald-600 hover:underline pt-2">
+              <Link href={`/${locale}/login`} className="inline-block text-sm font-semibold text-emerald-600 hover:underline pt-2">
                 Return to Login
               </Link>
             </div>
