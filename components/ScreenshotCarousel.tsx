@@ -40,7 +40,7 @@ export default function ScreenshotCarousel() {
           style={{ transform: `translateX(-${activeIndex * 100}%)` }}
         >
           {screenshots.map((screenshot) => (
-            <div key={screenshot.alt} className="relative min-w-full aspect-[16/8]">
+            <div key={screenshot.alt} className="relative min-w-full aspect-[1238/765]">
               <Image
                 src={screenshot.src}
                 alt={screenshot.alt}
@@ -53,8 +53,8 @@ export default function ScreenshotCarousel() {
           ))}
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-slate-950/60 to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-950/70 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-slate-950/40 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-950/50 to-transparent" />
 
         <button
           type="button"
