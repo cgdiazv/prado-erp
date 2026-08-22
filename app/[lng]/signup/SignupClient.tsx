@@ -7,6 +7,8 @@ import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import PublicNavbar from '@/components/PublicNavbar';
 import { getTranslations } from '@/lib/translations';
 
+import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
+
 interface SignUpClientProps {
   searchParams: Promise<{ plan?: string; email?: string; org_id?: string; org_name?: string }>;
   locale: string;
@@ -16,6 +18,7 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
   const router = useRouter();
   const translations = getTranslations(locale);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -139,6 +142,12 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
     <div className="min-h-screen bg-white flex flex-col selection:bg-emerald-500 selection:text-slate-950">
       <PublicNavbar theme="light" locale={locale} />
 
+      <WorkspaceSetupModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        locale={locale}
+      />
+
       <main className="flex-1 flex items-center justify-center p-6 text-gray-900 bg-white">
         <div className="w-full max-w-md bg-white p-8 rounded-xl border border-gray-200 shadow-sm transition duration-150">
           <header className="mb-6 text-center">
@@ -148,11 +157,21 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
                 {`Joining: ${orgName}`}
               </p>
             ) : (
-              <p className="text-sm text-gray-500 mt-1">
-                {targetPlan !== 'trial' 
-                  ? translations.signup.subtitlePlan.replace('{plan}', targetPlan)
-                  : translations.signup.subtitleTrial}
-              </p>
+              <div className="mt-2 space-y-2">
+                <p className="text-sm text-gray-500">
+                  {targetPlan !== 'trial' 
+                    ? translations.signup.subtitlePlan.replace('{plan}', targetPlan)
+                    : translations.signup.subtitleTrial}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg transition cursor-pointer"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Customize your workspace (Guided 30-Sec Setup) ➔
+                </button>
+              </div>
             )}
           </header>
 

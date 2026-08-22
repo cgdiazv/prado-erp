@@ -10,6 +10,8 @@ import { getUserOrganization } from '@/lib/organization';
 import { REMEMBER_ME_COOKIE_NAME } from '@/lib/rememberMe';
 import { cookies } from 'next/headers';
 
+import HeroTrialCTA from '@/components/HeroTrialCTA';
+
 export default async function MarketingHomePage({ params }: { params: Promise<{ lng: string }> }) {
   const { lng } = await params;
   const isEs = lng.toLowerCase().startsWith('es');
@@ -90,14 +92,12 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
             {translations.home.heroDescription}
           </p>
 
-          <div className="mt-10 mb-12 flex flex-col sm:flex-row items-center gap-4">
-            <Link href="/signup" className="w-full sm:w-auto text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-6 py-3 rounded-xl transition shadow-xl">
-              {translations.home.viewPricing}
-            </Link>
-            <Link href="/demo" className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-850 text-slate-200 px-6 py-3 rounded-xl transition border border-slate-800">
-              {translations.home.exploreDemo}
-            </Link>
-          </div>
+          <HeroTrialCTA 
+            primaryLabel={translations.home.viewPricing}
+            secondaryLabel={translations.home.exploreDemo}
+            variant="hero"
+            locale={lng}
+          />
         </div>
 
         <section className="bg-slate-950/40 py-24 px-6 relative overflow-hidden w-full">
@@ -249,12 +249,11 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
               {translations.home.ctaDescription}
             </p>
             <div className="pt-4">
-              <Link 
-                href="/signup" 
-                className="inline-block text-sm font-bold bg-white hover:bg-slate-100 text-slate-950 px-8 py-3.5 rounded-xl transition shadow-xl hover:scale-[1.01] active:scale-[0.99]"
-              >
-                {translations.home.ctaButton}
-              </Link>
+              <HeroTrialCTA
+                primaryLabel={translations.home.ctaButton || 'Start 30-Day Free Trial'}
+                variant="section"
+                locale={lng}
+              />
             </div>
           </div>
         </section>

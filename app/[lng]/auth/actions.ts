@@ -6,6 +6,7 @@ import { Resend } from 'resend';
 import { getResendFromAddress } from '@/lib/resend';
 import { findAuthUserIndexByEmail, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 import { issueRememberToken } from '@/lib/rememberMe';
+import { seedTradeSampleData } from '@/lib/sampleData';
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string;
@@ -71,12 +72,27 @@ export async function signup(formData: FormData) {
     const email = formData.get('email') as string;
     const normalizedEmail = normalizeAuthEmail(email);
     const password = formData.get('password') as string;
-    const companyName = formData.get('companyName') as string;
+    const tradeVertical = (formData.get('tradeVertical') as string) || '';
+    const teamSize = (formData.get('teamSize') as string) || '';
+    const painPoint = (formData.get('painPoint') as string) || '';
+    
+    let companyName = (formData.get('companyName') as string) || '';
+    if (!companyName.trim()) {
+      if (tradeVertical) {
+        companyName = `${tradeVertical} Workspace`;
+      } else if (email && email.includes('@')) {
+        const prefix = email.split('@')[0];
+        companyName = `${prefix.charAt(0).toUpperCase() + prefix.slice(1)}'s Workspace`;
+      } else {
+        companyName = 'My Prado Workspace';
+      }
+    }
+    
     const intendedPlan = formData.get('intendedPlan') as string; // 'trial' | 'individual' | 'growth' | 'enterprise'
     const inviteOrgId = formData.get('organization_id') as string; // If present, this is an invite signup
 
-    if (!email || !password || !companyName) {
-      return { error: 'All registration fields are required.' };
+    if (!email || !password) {
+      return { error: 'Email and password are required.' };
     }
 
     const supabase = await createClient();
@@ -90,6 +106,9 @@ export async function signup(formData: FormData) {
         data: {
           needs_profile_completion: true,
           profile_completed: false,
+          trade_vertical: tradeVertical,
+          team_size: teamSize,
+          primary_pain_point: painPoint,
         },
       },
     });
@@ -100,6 +119,14 @@ export async function signup(formData: FormData) {
     }
 
     const userId = authData.user.id;
+
+    // Auto-confirm the user email so registration is never blocked by Supabase Auth default SMTP delays
+    await supabaseAdmin.auth.admin.updateUserById(userId, {
+      email_confirm: true,
+    });
+
+    // Auto-sign in the user to establish an active session immediately
+    await supabase.auth.signInWithPassword({ email, password });
 
     await upsertAuthUserIndex(supabaseAdmin, authData.user);
 
@@ -131,6 +158,9 @@ export async function signup(formData: FormData) {
       
       orgData = newOrgData;
       ownerOrgId = newOrgData.id;
+
+      // Pre-fill realistic sample jobs and data tailored to the chosen Trade Vertical
+      await seedTradeSampleData(supabaseAdmin, newOrgData.id, tradeVertical);
     } else {
       // Invite signup: user joins existing organization, don't create new one
       console.log('Invite signup detected - skipping organization creation');
@@ -165,11 +195,36 @@ export async function signup(formData: FormData) {
       console.log(`User ${email} added to ${pendingInvites.length} organization(s)`);
     }
 
-    // 4. Notify internal inbox for registrations.
+    // 4. Send Welcome email directly to user via Resend & internal admin alert.
     try {
       if (process.env.RESEND_API_KEY) {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const signupType = inviteOrgId ? 'Invite Signup' : 'New Organization';
+        const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || 'https://pradojob.com';
+
+        // 4a. Send User Welcome & Account Confirmation Email directly via Resend API
+        await resend.emails.send({
+          from: getResendFromAddress({ displayName: 'Prado ERP' }),
+          to: email,
+          subject: 'Welcome to Prado ERP - Your Workspace is Ready!',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #0f172a; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <h2 style="color: #059669; font-size: 22px; font-weight: 800; margin-top: 0;">Welcome to Prado ERP!</h2>
+              <p style="font-size: 15px; color: #334155; line-height: 1.6;">Hello,</p>
+              <p style="font-size: 15px; color: #334155; line-height: 1.6;">Your 30-day free trial workspace for <strong>${companyName}</strong> (${tradeVertical || 'Field Operations'}) has been successfully created.</p>
+              <p style="font-size: 15px; color: #334155; line-height: 1.6;">We've pre-filled your dashboard with realistic sample jobs tailored for <strong>${tradeVertical || 'your trade'}</strong> so you can start managing routes, scheduling, and billing right away.</p>
+              <div style="margin: 32px 0;">
+                <a href="${appBaseUrl}/dashboard" style="background-color: #059669; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: 700; display: inline-block; font-size: 15px;">
+                  Launch Your Dashboard ➔
+                </a>
+              </div>
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 28px 0;" />
+              <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">If you have any questions, reply directly to this email to contact our support team.</p>
+            </div>
+          `,
+        });
+
+        // 4b. Send Internal Admin Alert
         await resend.emails.send({
           from: getResendFromAddress({ displayName: 'Prado Commerce' }),
           to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
@@ -178,6 +233,7 @@ export async function signup(formData: FormData) {
             <h2>New User Registration</h2>
             <p><strong>Email:</strong> ${email}</p>
             <p><strong>Company:</strong> ${companyName}</p>
+            <p><strong>Trade Vertical:</strong> ${tradeVertical || 'N/A'}</p>
             <p><strong>Signup Type:</strong> ${signupType}</p>
             <p><strong>Intended Plan:</strong> ${intendedPlan || 'trial'}</p>
             <p><strong>Organization ID:</strong> ${ownerOrgId}</p>
@@ -185,16 +241,15 @@ export async function signup(formData: FormData) {
           `,
         });
       } else {
-        console.warn('Registration admin alert skipped: RESEND_API_KEY is not configured.');
+        console.warn('Registration email alerts skipped: RESEND_API_KEY is not configured.');
       }
     } catch (alertErr) {
-      console.error('Registration created, but admin alert email failed:', alertErr);
+      console.error('Registration created, but email notification failed:', alertErr);
     }
 
-    // 5. Conditional Branch Routing: Instead of throwing redirects, return target destination instructions
-    // For invite signups, skip Stripe checkout and go straight to login/dashboard
+    // 5. Conditional Branch Routing: Instead of sending users to check unconfigured emails, redirect straight to dashboard
     if (inviteOrgId) {
-      return { redirectTo: '/signup/check-email' };
+      return { redirectTo: '/dashboard' };
     }
 
     const queryParams = `prefilled_email=${encodeURIComponent(email)}&client_reference_id=${ownerOrgId}`;
@@ -211,8 +266,8 @@ export async function signup(formData: FormData) {
       return { stripeUrl: `https://pay.delvalletradings.com/b/eVq4gy5i73rS5qKdCZ4Ni05?${queryParams}` };
     }
 
-    // Fallback: Default standard free trial flow routing
-    return { redirectTo: '/signup/check-email' };
+    // Default standard free trial flow: instant entry into active dashboard
+    return { redirectTo: '/dashboard' };
 
   } catch (err: unknown) {
     console.error("Server Action Fatal Crash:", err);

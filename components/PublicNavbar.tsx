@@ -4,6 +4,7 @@ import Link from 'next/link';
 import PradoLogo from '@/components/PradoLogo';
 import { useState } from 'react';
 import { getTranslations } from '@/lib/translations';
+import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
 
 interface PublicNavbarProps {
   theme?: 'dark' | 'light';
@@ -12,16 +13,12 @@ interface PublicNavbarProps {
 
 export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNavbarProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const translations = getTranslations(locale);
 
   const navClasses = {
     dark: 'border-slate-900 bg-slate-950 text-white',
     light: 'border-gray-200 bg-white text-slate-900',
-  };
-
-  const logoTextClasses = {
-    dark: 'text-white',
-    light: 'text-slate-900',
   };
 
   const linkClasses = {
@@ -42,6 +39,12 @@ export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNa
   const drawerLinkClasses = {
     dark: 'text-slate-200 hover:text-emerald-400',
     light: 'text-slate-800 hover:text-emerald-600',
+  };
+
+  const openTrialModal = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDrawerOpen(false);
+    setIsModalOpen(true);
   };
 
   return (
@@ -76,7 +79,12 @@ export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNa
             <Link href="/pricing" className={`text-sm font-medium transition ${linkClasses[theme]}`}>{translations.nav.pricing}</Link>
             <Link href="/demo" className={`text-sm font-medium transition ${linkClasses[theme]}`}>{translations.nav.liveDemo}</Link>
             <Link href="/login" className={`text-sm font-medium transition ${linkClasses[theme]}`}>{translations.nav.signIn}</Link>
-            <Link href="/signup" className="text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg transition">{translations.nav.startFreeTrial}</Link>
+            <button 
+              onClick={openTrialModal} 
+              className="text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg transition shadow-md shadow-emerald-600/20 cursor-pointer"
+            >
+              {translations.nav.startFreeTrial}
+            </button>
           </div>
         </div>
       </nav>
@@ -94,7 +102,6 @@ export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNa
           {/* Main Mobile Sidebar Drawer Content container */}
           <div className={`fixed top-0 right-0 w-72 h-screen max-h-screen p-6 flex flex-col justify-between z-[1000] ${drawerBgClasses[theme]}`}>
             <div>
-              {/* Header Row: Replaced text string layout with authentic brand mark components */}
               <div className="flex justify-between items-center mb-10">
                 <Link 
                   href="/" 
@@ -129,18 +136,23 @@ export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNa
             </div>
 
             <div className="pt-6 border-t border-gray-700/20">
-              <Link 
-                href="/signup" 
-                className="block w-full text-center text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-lg transition"
-                onClick={() => setIsDrawerOpen(false)}
+              <button 
+                onClick={openTrialModal} 
+                className="w-full text-center text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-lg transition shadow-md cursor-pointer"
               >
                 {translations.nav.startFreeTrial}
-              </Link>
+              </button>
             </div>
           </div>
 
         </div>
       )}
+
+      <WorkspaceSetupModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        locale={locale}
+      />
     </>
   );
 }

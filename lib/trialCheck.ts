@@ -12,11 +12,8 @@ export function checkTrialExpiry(trialStartsAt: string | Date | null, status: st
     return { isExpired: false, daysRemaining: 0 };
   }
 
-  if (!trialStartsAt) {
-    return { isExpired: true, daysRemaining: 0 };
-  }
-
-  const startDate = new Date(trialStartsAt);
+  // Default start date to now if missing for trial status so trial is active
+  const startDate = trialStartsAt ? new Date(trialStartsAt) : new Date();
   const expiryDate = new Date(startDate.getTime() + TRIAL_DURATION_MS);
   const now = new Date();
 

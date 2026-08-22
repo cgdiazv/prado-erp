@@ -1,16 +1,17 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Footer from '@/components/Footer';
 import PublicNavbar from '@/components/PublicNavbar';
 import { getTranslations } from '@/lib/translations';
+import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
 
 export default function PricingPage() {
-  const router = useRouter();
   const params = useParams<{ lng?: string }>();
   const locale = params?.lng ?? 'en';
   const translations = getTranslations(locale);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [leadName, setLeadName] = useState('');
   const [leadEmail, setLeadEmail] = useState('');
   const [leadCompany, setLeadCompany] = useState('');
@@ -18,9 +19,8 @@ export default function PricingPage() {
   const [leadSuccess, setLeadSuccess] = useState<string | null>(null);
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
 
-  const handlePlanSelection = (planType: 'individual' | 'growth' | 'enterprise') => {
-    // Intercepts anonymous checkout and forces registration step while preserving tier intent
-    router.push(`/signup?plan=${planType}`);
+  const handlePlanSelection = (_planType: 'individual' | 'growth' | 'enterprise') => {
+    setIsModalOpen(true);
   };
 
   const handleManualLead = async (event: FormEvent<HTMLFormElement>) => {
@@ -246,6 +246,12 @@ export default function PricingPage() {
       </main>
 
       <Footer locale={locale} />
+
+      <WorkspaceSetupModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        locale={locale}
+      />
     </div>
   );
 }

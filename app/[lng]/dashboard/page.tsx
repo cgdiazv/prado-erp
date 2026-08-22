@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
+import { seedTradeSampleData } from '@/lib/sampleData';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import DashboardViewToggle from '@/components/dashboard/DashboardViewToggle';
@@ -115,6 +117,22 @@ export default async function DashboardHome({
   if (!org) redirect(`/${locale}/auth/access-pending`);
   const canAccessExpenseLedger = canUseExpenseLedger(org.subscription_status);
 
+  // Auto-initialize trial_starts_at in Supabase if missing for trial organization
+  if ((!org.subscription_status || org.subscription_status === 'trial') && !org.trial_starts_at) {
+    try {
+      const supabaseAdmin = createAdminClient();
+      const nowIso = new Date().toISOString();
+      await supabaseAdmin
+        .from('organizations')
+        .update({ trial_starts_at: nowIso, subscription_status: 'trial' })
+        .eq('id', org.id);
+      org.trial_starts_at = nowIso;
+      org.subscription_status = 'trial';
+    } catch (e) {
+      console.error('Failed to auto-set trial_starts_at:', e);
+    }
+  }
+
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
 
@@ -132,8 +150,29 @@ export default async function DashboardHome({
   ]);
 
   const expenses = expensesResponse.data || [];
-  const customers = customersResponse.data || [];
+  let customers = customersResponse.data || [];
   const estimates = estimatesResponse.data || [];
+
+  // Auto-heal / pre-fill sample data if account has no customers yet
+  if (customers.length === 0) {
+    try {
+      const supabaseAdmin = createAdminClient();
+      const userTrade = user.user_metadata?.trade_vertical || 'Lawn Care & Landscaping';
+      await seedTradeSampleData(supabaseAdmin, org.id, userTrade);
+
+      const { data: reloadedCustomers } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('organization_id', org.id);
+
+      if (reloadedCustomers && reloadedCustomers.length > 0) {
+        customers = reloadedCustomers;
+      }
+    } catch (autoSeedErr) {
+      console.error('Auto-seeding sample data error:', autoSeedErr);
+    }
+  }
+
   const customerIds = customers.map(c => c.id);
 
   const [invoicesResponse, propertiesResponse] = customerIds.length > 0
