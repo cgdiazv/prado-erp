@@ -1,4 +1,7 @@
 import Link from 'next/link';
+import { createClient } from '@/lib/supabaseServer';
+import { getUserOrganization } from '@/lib/organization';
+import { redirect } from 'next/navigation';
 
 interface AccessPendingPageProps {
   params: Promise<{ lng?: string }>;
@@ -8,6 +11,16 @@ export default async function AccessPendingPage({ params }: AccessPendingPagePro
   const resolvedParams = await params;
   const locale = resolvedParams.lng ?? 'en';
   const isEs = locale.toLowerCase().startsWith('es');
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    const { organization } = await getUserOrganization(user.id);
+    if (organization) {
+      redirect('/dashboard');
+    }
+  }
 
   return (
     <main className="min-h-screen bg-white flex items-center justify-center p-6">

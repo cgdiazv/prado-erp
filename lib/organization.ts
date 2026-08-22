@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabaseAdmin';
+import { seedTradeSampleData } from '@/lib/sampleData';
 
 export type UserOrganization = {
   id: string;
@@ -145,6 +146,43 @@ export async function getUserOrganization(userId: string): Promise<UserOrganizat
   }
 
   if (candidates.length === 0) {
+    try {
+      // Look up user in Supabase Auth to resolve email and user_metadata
+      const { data: authUserData } = await supabase.auth.admin.getUserById(userId);
+      const user = authUserData?.user;
+
+      if (user) {
+        const email = user.email || '';
+        const prefix = email ? email.split('@')[0] : 'My';
+        const companyName = `${prefix.charAt(0).toUpperCase() + prefix.slice(1)}'s Workspace`;
+        const tradeVertical = user.user_metadata?.trade_vertical || 'Lawn Care & Landscaping';
+
+        const { data: newOrg, error: createErr } = await supabase
+          .from('organizations')
+          .insert([
+            {
+              name: companyName,
+              owner_id: userId,
+              subscription_status: 'trial',
+              trial_starts_at: new Date().toISOString(),
+              auto_optimize_drive_routes: false,
+            },
+          ])
+          .select()
+          .single();
+
+        if (newOrg && !createErr) {
+          await seedTradeSampleData(supabase, newOrg.id, tradeVertical);
+          return {
+            organization: normalizeOrganizationRow(newOrg),
+            role: 'owner',
+          };
+        }
+      }
+    } catch (fallbackErr) {
+      console.error('Fallback organization creation failed:', fallbackErr);
+    }
+
     return { organization: null, role: null };
   }
 

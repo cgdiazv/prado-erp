@@ -70,7 +70,7 @@ export async function verifyWorkspacePassword(formData: FormData) {
 export async function signup(formData: FormData) {
   try {
     const email = formData.get('email') as string;
-    const normalizedEmail = normalizeAuthEmail(email);
+    const normalizedEmail = normalizeAuthEmail(email) || email || '';
     const password = formData.get('password') as string;
     const tradeVertical = (formData.get('tradeVertical') as string) || '';
     const teamSize = (formData.get('teamSize') as string) || '';
@@ -113,12 +113,36 @@ export async function signup(formData: FormData) {
       },
     });
 
-    if (authError || !authData.user) {
-      console.error("Full Supabase Auth Error Object:", JSON.stringify(authError, null, 2));
-      return { error: authError?.message || 'Authentication signup failed.' };
+    let userId = authData?.user?.id;
+
+    if (authError || !userId) {
+      // Handle user already registered in Supabase Auth
+      const targetEmail = normalizedEmail || email || '';
+      const { data: existingUserIndex } = await findAuthUserIndexByEmail(supabaseAdmin, targetEmail);
+      if (existingUserIndex?.user_id) {
+        const existingUserId = existingUserIndex.user_id;
+        userId = existingUserId;
+        // Update password and metadata for existing user
+        await supabaseAdmin.auth.admin.updateUserById(existingUserId, {
+          password,
+          email_confirm: true,
+          user_metadata: {
+            needs_profile_completion: true,
+            profile_completed: false,
+            trade_vertical: tradeVertical,
+            team_size: teamSize,
+            primary_pain_point: painPoint,
+          },
+        });
+      } else {
+        console.error("Full Supabase Auth Error Object:", JSON.stringify(authError, null, 2));
+        return { error: authError?.message || 'Authentication signup failed.' };
+      }
     }
 
-    const userId = authData.user.id;
+    if (!userId) {
+      return { error: 'Authentication signup failed.' };
+    }
 
     // Auto-confirm the user email so registration is never blocked by Supabase Auth default SMTP delays
     await supabaseAdmin.auth.admin.updateUserById(userId, {
@@ -128,7 +152,7 @@ export async function signup(formData: FormData) {
     // Auto-sign in the user to establish an active session immediately
     await supabase.auth.signInWithPassword({ email, password });
 
-    await upsertAuthUserIndex(supabaseAdmin, authData.user);
+    await upsertAuthUserIndex(supabaseAdmin, { id: userId, email });
 
     // 2. Determine signup type: invite vs regular
     let ownerOrgId = inviteOrgId; // If invite signup, we'll use the inviting org
@@ -204,12 +228,12 @@ export async function signup(formData: FormData) {
 
         // 4a. Send User Welcome & Account Confirmation Email directly via Resend API
         await resend.emails.send({
-          from: getResendFromAddress({ displayName: 'Prado ERP' }),
+          from: getResendFromAddress({ displayName: 'Prado Jobs' }),
           to: email,
-          subject: 'Welcome to Prado ERP - Your Workspace is Ready!',
+          subject: 'Welcome to Prado Jobs - Your Workspace is Ready!',
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #0f172a; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
-              <h2 style="color: #059669; font-size: 22px; font-weight: 800; margin-top: 0;">Welcome to Prado ERP!</h2>
+              <h2 style="color: #059669; font-size: 22px; font-weight: 800; margin-top: 0;">Welcome to Prado Jobs!</h2>
               <p style="font-size: 15px; color: #334155; line-height: 1.6;">Hello,</p>
               <p style="font-size: 15px; color: #334155; line-height: 1.6;">Your 30-day free trial workspace for <strong>${companyName}</strong> (${tradeVertical || 'Field Operations'}) has been successfully created.</p>
               <p style="font-size: 15px; color: #334155; line-height: 1.6;">We've pre-filled your dashboard with realistic sample jobs tailored for <strong>${tradeVertical || 'your trade'}</strong> so you can start managing routes, scheduling, and billing right away.</p>
