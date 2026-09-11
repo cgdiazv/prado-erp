@@ -7,6 +7,8 @@ import { getResendFromAddress } from '@/lib/resend';
 import { findAuthUserIndexByEmail, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 import { issueRememberToken } from '@/lib/rememberMe';
 import { seedTradeSampleData } from '@/lib/sampleData';
+import { sendWelcomeEmail } from '@/lib/welcomeEmail';
+import { scheduleOnboardingSequence } from '@/lib/onboardingEmails';
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string;
@@ -219,36 +221,34 @@ export async function signup(formData: FormData) {
       console.log(`User ${email} added to ${pendingInvites.length} organization(s)`);
     }
 
-    // 4. Send Welcome email directly to user via Resend & internal admin alert.
+    // 4. Send Welcome email + onboarding sequence + internal admin alert.
     try {
       if (process.env.RESEND_API_KEY) {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const signupType = inviteOrgId ? 'Invite Signup' : 'New Organization';
         const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || 'https://pradojob.com';
 
-        // 4a. Send User Welcome & Account Confirmation Email directly via Resend API
-        await resend.emails.send({
-          from: getResendFromAddress({ displayName: 'Prado Jobs' }),
+        // 4a. Send premium welcome email
+        await sendWelcomeEmail({
           to: email,
-          subject: 'Welcome to Prado Jobs - Your Workspace is Ready!',
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #0f172a; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
-              <h2 style="color: #059669; font-size: 22px; font-weight: 800; margin-top: 0;">Welcome to Prado Jobs!</h2>
-              <p style="font-size: 15px; color: #334155; line-height: 1.6;">Hello,</p>
-              <p style="font-size: 15px; color: #334155; line-height: 1.6;">Your 30-day free trial workspace for <strong>${companyName}</strong> (${tradeVertical || 'Field Operations'}) has been successfully created.</p>
-              <p style="font-size: 15px; color: #334155; line-height: 1.6;">We've pre-filled your dashboard with realistic sample jobs tailored for <strong>${tradeVertical || 'your trade'}</strong> so you can start managing routes, scheduling, and billing right away.</p>
-              <div style="margin: 32px 0;">
-                <a href="${appBaseUrl}/dashboard" style="background-color: #059669; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: 700; display: inline-block; font-size: 15px;">
-                  Launch Your Dashboard ➔
-                </a>
-              </div>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 28px 0;" />
-              <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">If you have any questions, reply directly to this email to contact our support team.</p>
-            </div>
-          `,
+          companyName,
+          tradeVertical: tradeVertical || undefined,
+          appBaseUrl,
         });
 
-        // 4b. Send Internal Admin Alert
+        // 4b. Schedule 3-email onboarding drip (Day 1, Day 3, Day 7) — only for new org signups
+        if (!inviteOrgId) {
+          scheduleOnboardingSequence({
+            to: email,
+            companyName,
+            tradeVertical: tradeVertical || undefined,
+            appBaseUrl,
+          }).catch((err) => {
+            console.error('[Onboarding Sequence] Failed to schedule:', err);
+          });
+        }
+
+        // 4c. Send Internal Admin Alert
         await resend.emails.send({
           from: getResendFromAddress({ displayName: 'Prado Commerce' }),
           to: process.env.ADMIN_ALERT_EMAIL || 'info@pradojob.com',
