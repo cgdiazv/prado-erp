@@ -295,7 +295,7 @@ export default async function SettingsSectionPage({
                     initialState={normalizedState}
                     initialZipCode={normalizedZipCode}
                     locale={locale}
-                    showOwnerFields={isOwnerRole}
+                    showOwnerFields={isOwnerRole || normalizedRole === 'admin'}
                   />
                 </div>
               </>

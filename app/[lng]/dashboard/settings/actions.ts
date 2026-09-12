@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { revalidatePath } from 'next/cache';
 import Stripe from 'stripe';
 import { Resend } from 'resend';
@@ -92,6 +93,7 @@ export async function signOutOtherActiveDevices(formData: FormData) {
 }
 
 export async function updateWorkspaceIdentity(formData: FormData) {
+  const companyName = (formData.get('companyName') as string | null)?.trim() || '';
   const slogan = (formData.get('slogan') as string | null)?.trim() || '';
   const phone = (formData.get('phone') as string | null)?.trim() || '';
   const streetAddress = (formData.get('streetAddress') as string | null)?.trim() || '';
@@ -101,6 +103,10 @@ export async function updateWorkspaceIdentity(formData: FormData) {
   const locale = (formData.get('locale') as string | null)?.trim() || 'en';
   const logoFile = formData.get('logoFile');
   const removeLogo = (formData.get('removeLogo') as string | null) === 'true';
+
+  if (companyName && companyName.length > 120) {
+    return { error: 'Company name must be 120 characters or fewer.' };
+  }
 
   if (phone.length > 50) {
     return { error: 'Phone must be 50 characters or fewer.' };
@@ -133,21 +139,18 @@ export async function updateWorkspaceIdentity(formData: FormData) {
     return { error: 'You must be signed in to update workspace identity.' };
   }
 
-  const { data: org, error: orgError } = await supabase
-    .from('organizations')
-    .select('id, logo_url')
-    .eq('owner_id', user.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (orgError) {
-    return { error: `Failed to load workspace: ${orgError.message}` };
-  }
+  const { organization: org, role } = await getUserOrganization(user.id);
 
   if (!org) {
-    return { error: 'Only the workspace owner can update workspace identity.' };
+    return { error: 'Workspace not found.' };
   }
 
+  const normalizedRole = (role || '').toLowerCase();
+  if (normalizedRole !== 'owner' && normalizedRole !== 'admin') {
+    return { error: 'Only the workspace owner or admin can update workspace identity.' };
+  }
+
+  const adminClient = createAdminClient();
   let nextLogoUrl = org.logo_url || null;
   const bucket = process.env.SUPABASE_ORG_LOGOS_BUCKET || 'organization-logos';
 
@@ -189,7 +192,7 @@ export async function updateWorkspaceIdentity(formData: FormData) {
     const extension = logoFile.name.split('.').pop()?.toLowerCase() || extensionFromType;
     const objectPath = `${org.id}/logo-${Date.now()}.${extension}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await adminClient.storage
       .from(bucket)
       .upload(objectPath, logoFile, {
         cacheControl: '3600',
@@ -201,39 +204,44 @@ export async function updateWorkspaceIdentity(formData: FormData) {
       return { error: `Failed to upload logo: ${uploadError.message}` };
     }
 
-    const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(objectPath);
+    const { data: publicUrlData } = adminClient.storage.from(bucket).getPublicUrl(objectPath);
     nextLogoUrl = publicUrlData.publicUrl || null;
 
     if (previousLogoPath && previousLogoPath !== objectPath) {
-      await supabase.storage.from(bucket).remove([previousLogoPath]);
+      await adminClient.storage.from(bucket).remove([previousLogoPath]);
     }
   } else if (removeLogo && previousLogoPath) {
-    await supabase.storage.from(bucket).remove([previousLogoPath]);
+    await adminClient.storage.from(bucket).remove([previousLogoPath]);
     nextLogoUrl = null;
   } else if (removeLogo) {
     nextLogoUrl = null;
   }
 
-  const { error } = await supabase
+  const updatePayload: Record<string, any> = {
+    slogan,
+    phone,
+    street_address: streetAddress,
+    city,
+    state,
+    zip_code: zipCode,
+    logo_url: nextLogoUrl,
+  };
+
+  if (companyName) {
+    updatePayload.name = companyName;
+  }
+
+  const { error } = await adminClient
     .from('organizations')
-    .update({
-      slogan,
-      phone,
-      street_address: streetAddress,
-      city,
-      state,
-      zip_code: zipCode,
-      logo_url: nextLogoUrl,
-    })
+    .update(updatePayload)
     .eq('id', org.id);
 
   if (error) {
     return { error: error.message };
   }
 
-  revalidatePath('/dashboard/settings');
-  revalidatePath(`/${locale}/dashboard/settings`);
-  return { success: true, logoUrl: nextLogoUrl };
+  revalidatePath(`/${locale}/dashboard/settings/account-settings`);
+  return { success: true, logoUrl: nextLogoUrl, companyName: updatePayload.name || org.name };
 }
 
 export async function updateDispatchSettings(formData: FormData): Promise<void> {
@@ -255,22 +263,18 @@ export async function updateDispatchSettings(formData: FormData): Promise<void> 
     return;
   }
 
-  const { data: org, error: orgError } = await supabase
-    .from('organizations')
-    .select('id')
-    .eq('owner_id', user.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (orgError) {
-    return;
-  }
-
+  const { organization: org, role } = await getUserOrganization(user.id);
   if (!org) {
     return;
   }
 
-  const { error } = await supabase
+  const normalizedRole = (role || '').toLowerCase();
+  if (normalizedRole !== 'owner' && normalizedRole !== 'admin') {
+    return;
+  }
+
+  const adminClient = createAdminClient();
+  const { error } = await adminClient
     .from('organizations')
     .update({
       max_jobs_per_truck: maxJobsPerTruck,
@@ -282,9 +286,7 @@ export async function updateDispatchSettings(formData: FormData): Promise<void> 
     return;
   }
 
-  revalidatePath('/dashboard/settings');
-  revalidatePath(`/${locale}/dashboard/settings`);
-  revalidatePath('/dashboard/routing');
+  revalidatePath(`/${locale}/dashboard/settings/dispatch-settings`);
   revalidatePath(`/${locale}/dashboard/routing`);
 }
 
@@ -320,7 +322,8 @@ export async function updateInvoiceTaxRate(formData: FormData) {
   const normalizedTaxRate = normalizeInvoiceTaxRatePercent(parsedTaxRate);
   const normalizedCurrencyCode = normalizeCurrencyCode(currencyRaw);
 
-  const { error } = await supabase
+  const adminClient = createAdminClient();
+  const { error } = await adminClient
     .from('organizations')
     .update({
       invoice_tax_rate_percent: normalizedTaxRate,
@@ -332,8 +335,7 @@ export async function updateInvoiceTaxRate(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath('/dashboard/settings');
-  revalidatePath(`/${locale}/dashboard/settings`);
+  revalidatePath(`/${locale}/dashboard/settings/document-settings`);
 
   return {
     success: true,
@@ -403,7 +405,8 @@ export async function updateDocumentBrandingSettings(formData: FormData) {
   const safeNextEstimateNumber = Math.max(nextEstimateNumber, maxEstimateNumber + 1);
   const safeNextInvoiceNumber = Math.max(nextInvoiceNumber, maxInvoiceNumber + 1);
 
-  const { error } = await supabase
+  const adminClient = createAdminClient();
+  const { error } = await adminClient
     .from('organizations')
     .update({
       next_estimate_number: safeNextEstimateNumber,
@@ -417,10 +420,8 @@ export async function updateDocumentBrandingSettings(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath('/dashboard/settings');
-  revalidatePath(`/${locale}/dashboard/settings`);
-  revalidatePath('/dashboard/estimates');
-  revalidatePath(`/${locale}/dashboard/estimates`);
+  revalidatePath(`/${locale}/dashboard/settings/document-settings`);
+  revalidatePath(`/${locale}/dashboard/quotes`);
 
   return {
     success: true,
@@ -809,7 +810,8 @@ export async function cancelSubscription(reasons: string[] = []) {
     }
 
     // Update the database
-    const { error: dbError } = await supabase
+    const adminClient = createAdminClient();
+    const { error: dbError } = await adminClient
       .from('organizations')
       .update({ subscription_status: 'trial', stripe_subscription_id: null })
       .eq('id', org.id);

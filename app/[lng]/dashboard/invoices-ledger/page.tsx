@@ -9,6 +9,7 @@ import { getUserOrganization } from '@/lib/organization';
 interface InvoiceRow {
   id: string;
   customer_id: string;
+  invoice_number?: number | null;
   due_date: string;
   tax_amount: number;
   total_amount: number;
@@ -61,7 +62,7 @@ export default async function InvoicesLedgerPage({
   const { data: invoices } = customerIds.length > 0
     ? await supabase
         .from('invoices')
-        .select('id, customer_id, due_date, tax_amount, total_amount, currency_code, status, stripe_payment_url, customers(first_name, last_name, company_name)')
+        .select('id, customer_id, invoice_number, due_date, tax_amount, total_amount, currency_code, status, stripe_payment_url, customers(first_name, last_name, company_name)')
         .in('customer_id', customerIds)
         .order('created_at', { ascending: false })
     : { data: [] as InvoiceRow[] };

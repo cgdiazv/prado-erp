@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { markInvoiceAsPaid } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
+import { Printer } from 'lucide-react';
 
 type FilterType = 'all' | 'unpaid' | 'paid';
 type SortColumn = 'customer' | 'date' | 'tax' | 'total' | 'status';
@@ -12,6 +13,7 @@ type SortDirection = 'asc' | 'desc';
 interface InvoiceRow {
   id: string;
   customer_id: string;
+  invoice_number?: number | null;
   due_date: string;
   tax_amount: number;
   total_amount: number;
@@ -255,6 +257,9 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                     {renderSortIndicator('status')}
                   </button>
                 </th>
+                <th className="px-4 py-3 text-right">
+                  <span>{isEs ? 'Acciones' : 'Actions'}</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
@@ -310,6 +315,19 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                           </button>
                         </form>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => window.open(`/api/invoices/${inv.id}/pdf?lng=${locale}`, '_blank', 'noopener,noreferrer')}
+                          title={isEs ? 'Imprimir factura' : 'Print invoice'}
+                          aria-label={isEs ? 'Imprimir factura' : 'Print invoice'}
+                          className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition duration-150 cursor-pointer border border-transparent hover:border-gray-200"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

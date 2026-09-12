@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { markInvoiceAsPaid } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
+import { Printer } from 'lucide-react';
 
 interface InvoiceRow {
   id: string;
@@ -161,6 +162,7 @@ export default function CustomerInvoicesTable({ invoices, customerId, locale = '
                     <th className="p-4 text-right">{translations.dashboard.totalOwed}</th>
                     <th className="p-4 text-right">{isEs ? 'Pago' : 'Payment'}</th>
                     <th className="p-4 text-right">{translations.dashboard.paymentStatus}</th>
+                    <th className="p-4 text-right">{isEs ? 'Acciones' : 'Actions'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -201,6 +203,19 @@ export default function CustomerInvoicesTable({ invoices, customerId, locale = '
                             {translations.dashboard.unpaid}
                           </button>
                         )}
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => window.open(`/api/invoices/${inv.id}/pdf?lng=${locale}`, '_blank', 'noopener,noreferrer')}
+                            title={isEs ? 'Imprimir factura' : 'Print invoice'}
+                            aria-label={isEs ? 'Imprimir factura' : 'Print invoice'}
+                            className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition duration-150 cursor-pointer border border-transparent hover:border-gray-200"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

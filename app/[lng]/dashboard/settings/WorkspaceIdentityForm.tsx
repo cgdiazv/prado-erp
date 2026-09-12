@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, useTransition } from 'react';
 import { updateWorkspaceIdentity } from './actions';
 import { getTranslations } from '@/lib/translations';
 import { US_STATES } from '@/lib/usStates';
@@ -35,10 +35,11 @@ export default function WorkspaceIdentityForm({
 }: WorkspaceIdentityFormProps) {
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [editingField, setEditingField] = useState<'slogan' | 'logo' | 'phone' | 'streetAddress' | 'city' | 'state' | 'zipCode' | null>(null);
+  const [editingField, setEditingField] = useState<'companyName' | 'slogan' | 'logo' | 'phone' | 'streetAddress' | 'city' | 'state' | 'zipCode' | null>(null);
+  const [companyNameValue, setCompanyNameValue] = useState(companyName);
   const [slogan, setSlogan] = useState(initialSlogan);
   const [phone, setPhone] = useState(initialPhone);
   const [streetAddress, setStreetAddress] = useState(initialStreetAddress);
@@ -50,6 +51,38 @@ export default function WorkspaceIdentityForm({
   const [removeLogoRequested, setRemoveLogoRequested] = useState(false);
   const logoInputId = useId();
   const logoInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    setCompanyNameValue(companyName);
+  }, [companyName]);
+
+  useEffect(() => {
+    setSlogan(initialSlogan);
+  }, [initialSlogan]);
+
+  useEffect(() => {
+    setPhone(initialPhone);
+  }, [initialPhone]);
+
+  useEffect(() => {
+    setStreetAddress(initialStreetAddress);
+  }, [initialStreetAddress]);
+
+  useEffect(() => {
+    setCity(initialCity);
+  }, [initialCity]);
+
+  useEffect(() => {
+    setStateValue(initialState);
+  }, [initialState]);
+
+  useEffect(() => {
+    setZipCode(initialZipCode);
+  }, [initialZipCode]);
+
+  useEffect(() => {
+    setLogoPreviewUrl(initialLogoUrl);
+  }, [initialLogoUrl]);
   const normalizedState = (() => {
     const value = initialState.trim();
     if (!value) return '';
@@ -77,21 +110,21 @@ export default function WorkspaceIdentityForm({
           {isEditing ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
         </button>
         {isEditing ? (
-          <button type="submit" disabled={loading} className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400">
-            {loading ? (isEs ? 'Guardando...' : 'Saving...') : (isEs ? 'Actualizar' : 'Update')}
+          <button type="submit" disabled={isPending} className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400">
+            {isPending ? (isEs ? 'Guardando...' : 'Saving...') : (isEs ? 'Actualizar' : 'Update')}
           </button>
         ) : null}
       </div>
     );
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
     const formData = new FormData(event.currentTarget);
+    formData.set('companyName', companyNameValue);
     formData.set('slogan', slogan);
     formData.set('phone', phone);
     formData.set('streetAddress', streetAddress);
@@ -101,27 +134,35 @@ export default function WorkspaceIdentityForm({
     formData.set('locale', locale);
     formData.set('removeLogo', removeLogoRequested ? 'true' : 'false');
 
-    const response = await updateWorkspaceIdentity(formData);
+    startTransition(async () => {
+      try {
+        const response = await updateWorkspaceIdentity(formData);
 
-    setLoading(false);
+        if (response?.error) {
+          setErrorMsg(response.error);
+          return;
+        }
 
-    if (response?.error) {
-      setErrorMsg(response.error);
-      return;
-    }
+        if (response?.companyName) {
+          setCompanyNameValue(response.companyName);
+        }
 
-    if (response?.logoUrl) {
-      setLogoPreviewUrl(response.logoUrl);
-      setRemoveLogoRequested(false);
-    }
+        if (response?.logoUrl) {
+          setLogoPreviewUrl(response.logoUrl);
+          setRemoveLogoRequested(false);
+        }
 
-    if (response?.logoUrl === null) {
-      setLogoPreviewUrl('');
-      setRemoveLogoRequested(false);
-    }
+        if (response?.logoUrl === null) {
+          setLogoPreviewUrl('');
+          setRemoveLogoRequested(false);
+        }
 
-    setEditingField(null);
-    setSuccessMsg(translations.dashboard.workspaceIdentityUpdatedSuccess);
+        setEditingField(null);
+        setSuccessMsg(translations.dashboard.workspaceIdentityUpdatedSuccess);
+      } catch (err: any) {
+        setErrorMsg(err?.message || 'Failed to update workspace identity');
+      }
+    });
   }
 
   function handleLogoFileChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -169,9 +210,24 @@ export default function WorkspaceIdentityForm({
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.companyName}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-700">{companyName || (isEs ? 'Sin nombre' : 'No company name')}</p>
+                  <p className="mt-1 text-sm font-medium text-slate-700">{companyNameValue.trim() || (isEs ? 'Sin nombre' : 'No company name')}</p>
                 </div>
+                {showOwnerFields ? renderFieldActions('companyName') : null}
               </div>
+              {showOwnerFields ? (
+                <div className={editingField === 'companyName' ? 'mt-3' : 'hidden'}>
+                  <input
+                    type="text"
+                    name="companyName"
+                    value={companyNameValue}
+                    onChange={(event) => setCompanyNameValue(event.target.value)}
+                    placeholder={translations.dashboard.companyName}
+                    maxLength={120}
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-400">{isEs ? 'Nombre principal de la empresa mostrado en facturas y cotizaciones.' : 'Primary company name displayed on invoices and quotes.'}</p>
+                </div>
+              ) : null}
             </div>
 
             <div className="px-6 md:px-8 py-4">
