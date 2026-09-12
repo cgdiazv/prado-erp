@@ -142,7 +142,7 @@ export default function DashboardNavbar({
         {/* Left Side: Logo Branding */}
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="hover:opacity-95 transition">
-            <PradoLogo theme="light" iconType="layers" badgeText="Dashboard" subtitle="Job & Field Operations" />
+            <PradoLogo theme="light" iconType="layers" />
           </Link>
         </div>
 

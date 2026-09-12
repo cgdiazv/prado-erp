@@ -328,8 +328,8 @@ async function createGuide(locale) {
   y -= 6;
   const noteTitle = isEs ? 'Nota de Eficiencia & Control Operativo:' : 'Efficiency & Operational Control Note:';
   const noteBody = isEs
-    ? 'Toda la información financiera, estado de Jobs, cobranzas por Stripe y margen de subcontratistas se consolidan en tiempo real en el Overview Terminal de Prado, permitiendo un análisis inmediato del rendimiento corporativo.'
-    : 'All financial metrics, Job progress, Stripe payment statuses, and subcontractor margins consolidated across these workflows are aggregated instantly inside the Prado Overview Terminal, providing high-level performance insights at a single glance.';
+    ? 'Toda la información financiera, estado de Jobs, cobranzas por Stripe y margen de subcontratistas se consolidan en tiempo real en el Dashboard de Prado, permitiendo un análisis inmediato del rendimiento corporativo.'
+    : 'All financial metrics, Job progress, Stripe payment statuses, and subcontractor margins consolidated across these workflows are aggregated instantly inside the Prado Dashboard, providing high-level performance insights at a single glance.';
   drawCallout(noteTitle, noteBody);
 
   // SECTION 2
