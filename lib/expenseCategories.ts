@@ -108,6 +108,16 @@ export function archiveExpenseCategory(category: string) {
   return getStoredExpenseCategories();
 }
 
+export function getArchivedExpenseCategories(): string[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  return getRawStoredExpenseCategories()
+    .filter((category) => category.startsWith(ARCHIVED_EXPENSE_CATEGORY_PREFIX))
+    .map((category) => category.slice(ARCHIVED_EXPENSE_CATEGORY_PREFIX.length));
+}
+
 export function emitExpenseCategoriesUpdated() {
   if (typeof window === 'undefined') {
     return;

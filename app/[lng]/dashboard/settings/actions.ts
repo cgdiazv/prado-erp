@@ -539,11 +539,7 @@ export async function createService({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'You must be signed in to manage services.' };
 
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
+    const { organization: org } = await getUserOrganization(user.id);
 
     if (!org) return { error: 'Workspace not found.' };
 
@@ -616,11 +612,7 @@ export async function deleteService(serviceId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'You must be signed in to manage services.' };
 
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
+    const { organization: org } = await getUserOrganization(user.id);
 
     if (!org) return { error: 'Workspace not found.' };
 
@@ -654,6 +646,49 @@ export async function deleteService(serviceId: string) {
   }
 }
 
+export async function restoreService(serviceId: string) {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage services.' };
+
+    const { organization: org } = await getUserOrganization(user.id);
+
+    if (!org) return { error: 'Workspace not found.' };
+
+    const { data: existingService, error: existingServiceError } = await supabase
+      .from('services')
+      .select('id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
+      .eq('id', serviceId)
+      .eq('organization_id', org.id)
+      .single();
+
+    if (existingServiceError || !existingService) {
+      return { error: existingServiceError?.message || 'Service not found.' };
+    }
+
+    const unarchivedName = existingService.name.startsWith(ARCHIVED_SERVICE_PREFIX)
+      ? existingService.name.slice(ARCHIVED_SERVICE_PREFIX.length)
+      : existingService.name;
+
+    const { data, error } = await supabase
+      .from('services')
+      .update({ name: unarchivedName })
+      .eq('id', serviceId)
+      .eq('organization_id', org.id)
+      .select('id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
+      .single();
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard/settings');
+    return { success: true, service: data };
+  } catch (error: unknown) {
+    return { error: (error as Error)?.message || 'Failed to restore service.' };
+  }
+}
+
 export async function createTruck(name: string, plateNumber: string | null) {
   try {
     const normalizedName = name.trim().replace(/\s+/g, ' ');
@@ -666,13 +701,9 @@ export async function createTruck(name: string, plateNumber: string | null) {
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: 'You must be signed in to manage trucks.' };
+    if (!user) return { error: 'You must be signed in to manage vehicles.' };
 
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
+    const { organization: org } = await getUserOrganization(user.id);
 
     if (!org) return { error: 'Workspace not found.' };
 
@@ -688,7 +719,7 @@ export async function createTruck(name: string, plateNumber: string | null) {
     if (existingTruckError) return { error: existingTruckError.message };
 
     if (existingTruck?.is_active) {
-      return { error: 'That truck already exists.' };
+      return { error: 'That vehicle already exists.' };
     }
 
     if (existingTruck && existingTruck.is_active === false) {
@@ -730,7 +761,7 @@ export async function createTruck(name: string, plateNumber: string | null) {
     revalidatePath('/dashboard/settings');
     return { success: true, truck: data };
   } catch (error: unknown) {
-    return { error: (error as Error)?.message || 'Failed to create truck.' };
+    return { error: (error as Error)?.message || 'Failed to create vehicle.' };
   }
 }
 
@@ -739,13 +770,9 @@ export async function deactivateTruck(truckId: string) {
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: 'You must be signed in to manage trucks.' };
+    if (!user) return { error: 'You must be signed in to manage vehicles.' };
 
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
+    const { organization: org } = await getUserOrganization(user.id);
 
     if (!org) return { error: 'Workspace not found.' };
 
@@ -760,7 +787,35 @@ export async function deactivateTruck(truckId: string) {
     revalidatePath('/dashboard/settings');
     return { success: true };
   } catch (error: unknown) {
-    return { error: (error as Error)?.message || 'Failed to deactivate truck.' };
+    return { error: (error as Error)?.message || 'Failed to deactivate vehicle.' };
+  }
+}
+
+export async function reactivateTruck(truckId: string) {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage vehicles.' };
+
+    const { organization: org } = await getUserOrganization(user.id);
+
+    if (!org) return { error: 'Workspace not found.' };
+
+    const { data, error } = await supabase
+      .from('trucks')
+      .update({ is_active: true, status: 'active' })
+      .eq('id', truckId)
+      .eq('organization_id', org.id)
+      .select('id, name, plate_number, is_active, status')
+      .single();
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard/settings');
+    return { success: true, truck: data };
+  } catch (error: unknown) {
+    return { error: (error as Error)?.message || 'Failed to reactivate vehicle.' };
   }
 }
 

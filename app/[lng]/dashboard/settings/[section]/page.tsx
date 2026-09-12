@@ -177,7 +177,7 @@ export default async function SettingsSectionPage({
     recurrence_interval_days: number | null;
     auto_charge_default: boolean | null;
   }> = [];
-  let trucks: Array<{ id: string; name: string; plate_number: string | null; is_active: boolean; status: string | null }> = [];
+  let trucks: Array<{ id: string; name: string; plate_number: string | null; is_active: boolean | null; status: string | null }> = [];
   const initialRolePermissions = canAccessTeamFeatures ? await getOrganizationRolePermissions(org.id) : null;
 
   if (section === 'operations-settings') {
@@ -186,13 +186,11 @@ export default async function SettingsSectionPage({
         .from('services')
         .select('id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
         .eq('organization_id', org.id)
-        .not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`)
         .order('name', { ascending: true }),
       supabase
         .from('trucks')
         .select('id, name, plate_number, is_active, status')
         .eq('organization_id', org.id)
-        .eq('is_active', true)
         .order('name', { ascending: true }),
     ]);
 
