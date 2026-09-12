@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 interface HeroTrialCTAProps {
   primaryLabel?: string;
@@ -40,9 +40,8 @@ export default function HeroTrialCTA({
           </button>
           <Link
             href="/demo"
-            className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 px-6 py-3.5 rounded-xl transition border border-slate-800 flex items-center justify-center gap-2"
+            className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 px-6 py-3.5 rounded-xl transition border border-slate-800 flex items-center justify-center"
           >
-            <Sparkles className="w-4 h-4 text-emerald-400" />
             <span>{secondaryLabel}</span>
           </Link>
         </div>
