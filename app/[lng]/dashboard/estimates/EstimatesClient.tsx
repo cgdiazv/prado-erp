@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   createEstimate,
   updateEstimate,
@@ -56,6 +57,7 @@ interface Truck {
 interface ServiceLine {
   id: number;
   serviceId: string;
+  customName?: string;
   price: string;
 }
 
@@ -119,6 +121,10 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         removeServiceLine: 'Quitar',
         selectService: 'Selecciona un servicio...',
         noServicesSaved: 'No hay servicios guardados en Settings.',
+        noServicesSavedHint: 'No hay servicios guardados en Ajustes. Puedes escribir el servicio manualmente abajo o configurarlos en Ajustes.',
+        configureServicesLink: 'Configurar servicios en Ajustes →',
+        customServiceOption: '+ Servicio personalizado...',
+        selectFromCatalog: 'Seleccionar del catálogo',
         serviceNamePlaceholder: 'Ej: Reparación de fuga',
         linePricePlaceholder: '0.00',
         linePriceLabel: 'Precio',
@@ -192,6 +198,10 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         removeServiceLine: 'Remove',
         selectService: 'Select a service...',
         noServicesSaved: 'No saved services found in Settings.',
+        noServicesSavedHint: 'No saved services found in Settings. You can enter service names manually below or configure them in Settings.',
+        configureServicesLink: 'Configure services in Settings →',
+        customServiceOption: '+ Custom service...',
+        selectFromCatalog: 'Select from catalog',
         serviceNamePlaceholder: 'Ex: Leak repair',
         linePricePlaceholder: '0.00',
         linePriceLabel: 'Price',
@@ -234,7 +244,14 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortColumn, setSortColumn] = useState<SortColumn>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [serviceLines, setServiceLines] = useState<ServiceLine[]>([{ id: 1, serviceId: '', price: '' }]);
+  const [serviceLines, setServiceLines] = useState<ServiceLine[]>([
+    {
+      id: 1,
+      serviceId: (initialData.services as any[] || []).length > 0 ? '' : '__custom__',
+      customName: '',
+      price: '',
+    },
+  ]);
   const [scopeNotes, setScopeNotes] = useState('');
   const [paymentTerms, setPaymentTerms] = useState(initialData.defaultPaymentTerms || 'Due on Receipt');
 
@@ -266,7 +283,14 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
     setSelectedPropertyId('');
     setScopeNotes('');
     setPaymentTerms(initialData.defaultPaymentTerms || 'Due on Receipt');
-    setServiceLines([{ id: 1, serviceId: '', price: '' }]);
+    setServiceLines([
+      {
+        id: 1,
+        serviceId: services.length > 0 ? '' : '__custom__',
+        customName: '',
+        price: '',
+      },
+    ]);
   };
 
   const parseEstimateForEdit = (estimate: Estimate) => {
@@ -296,7 +320,8 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
 
         return {
           id: Date.now() + index,
-          serviceId: matchedService?.id || services[0]?.id || '',
+          serviceId: matchedService ? matchedService.id : '__custom__',
+          customName: matchedService ? '' : serviceName,
           price: servicePrice,
         };
       })
@@ -309,9 +334,17 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
       };
     }
 
+    const matchedService = services.find((service) => service.name.trim().toLowerCase() === (estimate.title || '').trim().toLowerCase());
     return {
       notes: rawDescription,
-      lines: [{ id: 1, serviceId: '', price: estimate.estimated_amount.toFixed(2) }],
+      lines: [
+        {
+          id: 1,
+          serviceId: matchedService ? matchedService.id : (services.length > 0 ? '' : '__custom__'),
+          customName: matchedService ? '' : (estimate.title || ''),
+          price: estimate.estimated_amount.toFixed(2),
+        },
+      ],
     };
   };
 
@@ -321,7 +354,14 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
     setSelectedPropertyId('');
     setScopeNotes('');
     setPaymentTerms(initialData.defaultPaymentTerms || 'Due on Receipt');
-    setServiceLines([{ id: 1, serviceId: '', price: '' }]);
+    setServiceLines([
+      {
+        id: 1,
+        serviceId: services.length > 0 ? '' : '__custom__',
+        customName: '',
+        price: '',
+      },
+    ]);
     setIsCreateOpen(true);
   };
 
@@ -341,12 +381,17 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const validServices = serviceLines
-      .map((line) => ({
-        serviceId: line.serviceId,
-        name: (services.find((service) => service.id === line.serviceId)?.name || '').trim(),
-        price: Number.parseFloat(line.price || '0'),
-      }))
-      .filter((line) => line.serviceId && line.name && line.price > 0);
+      .map((line) => {
+        const isCustom = line.serviceId === '__custom__' || services.length === 0;
+        const matchedService = services.find((service) => service.id === line.serviceId);
+        const name = (isCustom ? (line.customName || '') : (matchedService?.name || '')).trim();
+        return {
+          serviceId: isCustom ? null : (matchedService?.id || null),
+          name,
+          price: Number.parseFloat(line.price || '0'),
+        };
+      })
+      .filter((line) => line.name && line.price > 0);
 
     if (validServices.length === 0) {
       alert(t.validationServiceRequired);
@@ -384,6 +429,9 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
       const refreshed = await getEstimatesDashboardData();
       if (!refreshed?.error) {
         setEstimates((refreshed.estimates || []) as any);
+        if (refreshed.services) {
+          setServices((refreshed.services || []) as Service[]);
+        }
       }
       router.refresh();
     }
@@ -531,12 +579,13 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
   }, 0);
 
   const addServiceLine = () => {
-    const defaultService = services[0];
+    const defaultService = services.length > 0 ? services[0] : null;
     setServiceLines((prev) => [
       ...prev,
       {
-        id: Date.now(),
-        serviceId: defaultService?.id || '',
+        id: Date.now() + Math.random(),
+        serviceId: defaultService ? defaultService.id : '__custom__',
+        customName: '',
         price: defaultService ? Number(defaultService.base_price || 0).toFixed(2) : '',
       },
     ]);
@@ -546,7 +595,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
     setServiceLines((prev) => (prev.length > 1 ? prev.filter((line) => line.id !== id) : prev));
   };
 
-  const updateServiceLine = (id: number, field: 'serviceId' | 'price', value: string) => {
+  const updateServiceLine = (id: number, field: 'serviceId' | 'customName' | 'price', value: string) => {
     setServiceLines((prev) =>
       prev.map((line) => (line.id === id ? { ...line, [field]: value } : line))
     );
@@ -895,64 +944,117 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                   <button
                     type="button"
                     onClick={addServiceLine}
-                    disabled={services.length === 0}
-                    className="text-[11px] font-semibold text-emerald-700 border border-emerald-200 hover:bg-emerald-50 px-2.5 py-1 rounded-md"
+                    className="cursor-pointer text-[11px] font-semibold text-emerald-700 border border-emerald-200 hover:bg-emerald-50 px-2.5 py-1 rounded-md transition"
                   >
                     + {t.addServiceLine}
                   </button>
                 </div>
 
                 {services.length === 0 && (
-                  <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-2">
-                    {t.noServicesSaved}
-                  </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2.5">
+                    <span>{t.noServicesSavedHint}</span>
+                    <Link
+                      href={`/${locale}/dashboard/settings/operations-settings`}
+                      target="_blank"
+                      className="font-semibold text-emerald-700 hover:text-emerald-800 underline underline-offset-2 shrink-0"
+                    >
+                      {t.configureServicesLink}
+                    </Link>
+                  </div>
                 )}
 
                 <div className="space-y-2">
-                  {serviceLines.map((line) => (
-                    <div key={line.id} className="grid grid-cols-1 sm:grid-cols-[1fr_160px_auto] gap-2 items-center">
-                      <select
-                        value={line.serviceId}
-                        onChange={(e) => {
-                          const nextServiceId = e.target.value;
-                          const selectedService = services.find((service) => service.id === nextServiceId);
-                          updateServiceLine(line.id, 'serviceId', nextServiceId);
-                          if (selectedService) {
-                            updateServiceLine(line.id, 'price', Number(selectedService.base_price || 0).toFixed(2));
-                          }
-                        }}
-                        className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
-                      >
-                        <option value="">{t.selectService}</option>
-                        {services.map((service) => (
-                          <option key={service.id} value={service.id}>
-                            {service.name}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-slate-500 text-xs">$</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={line.price}
-                          onChange={(e) => updateServiceLine(line.id, 'price', e.target.value)}
-                          placeholder={t.linePricePlaceholder}
-                          className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
-                          aria-label={t.linePriceLabel}
-                        />
+                  {serviceLines.map((line) => {
+                    const isCustom = line.serviceId === '__custom__' || services.length === 0;
+
+                    return (
+                      <div key={line.id} className="grid grid-cols-1 sm:grid-cols-[1fr_160px_auto] gap-2 items-center">
+                        {services.length === 0 ? (
+                          <input
+                            type="text"
+                            value={line.customName || ''}
+                            onChange={(e) => updateServiceLine(line.id, 'customName', e.target.value)}
+                            placeholder={t.serviceNamePlaceholder}
+                            className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
+                            aria-label={t.labelServiceTitle}
+                          />
+                        ) : isCustom ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={line.customName || ''}
+                              onChange={(e) => updateServiceLine(line.id, 'customName', e.target.value)}
+                              placeholder={t.serviceNamePlaceholder}
+                              className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
+                              aria-label={t.labelServiceTitle}
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateServiceLine(line.id, 'serviceId', services[0]?.id || '');
+                                updateServiceLine(line.id, 'customName', '');
+                                if (services[0]) {
+                                  updateServiceLine(line.id, 'price', Number(services[0].base_price || 0).toFixed(2));
+                                }
+                              }}
+                              title={t.selectFromCatalog}
+                              className="cursor-pointer text-xs text-slate-500 hover:text-slate-700 px-2 py-2 border border-gray-300 rounded-lg bg-slate-50 hover:bg-slate-100 whitespace-nowrap transition"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <select
+                            value={line.serviceId}
+                            onChange={(e) => {
+                              const nextServiceId = e.target.value;
+                              if (nextServiceId === '__custom__') {
+                                updateServiceLine(line.id, 'serviceId', '__custom__');
+                                updateServiceLine(line.id, 'customName', '');
+                                return;
+                              }
+                              const selectedService = services.find((service) => service.id === nextServiceId);
+                              updateServiceLine(line.id, 'serviceId', nextServiceId);
+                              if (selectedService) {
+                                updateServiceLine(line.id, 'price', Number(selectedService.base_price || 0).toFixed(2));
+                              }
+                            }}
+                            className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
+                          >
+                            <option value="">{t.selectService}</option>
+                            {services.map((service) => (
+                              <option key={service.id} value={service.id}>
+                                {service.name}
+                              </option>
+                            ))}
+                            <option value="__custom__">{t.customServiceOption}</option>
+                          </select>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-500 text-xs">$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={line.price}
+                            onChange={(e) => updateServiceLine(line.id, 'price', e.target.value)}
+                            placeholder={t.linePricePlaceholder}
+                            className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
+                            aria-label={t.linePriceLabel}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeServiceLine(line.id)}
+                          disabled={serviceLines.length === 1}
+                          className="cursor-pointer text-[11px] font-semibold text-red-700 border border-red-200 hover:bg-red-50 px-2.5 py-1.5 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                          {t.removeServiceLine}
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeServiceLine(line.id)}
-                        disabled={serviceLines.length === 1}
-                        className="text-[11px] font-semibold text-red-700 border border-red-200 hover:bg-red-50 px-2.5 py-1.5 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {t.removeServiceLine}
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="rounded-lg border border-gray-200 bg-slate-50 px-3 py-2 text-right">
