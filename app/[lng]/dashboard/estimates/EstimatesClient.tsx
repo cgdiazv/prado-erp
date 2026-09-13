@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Printer } from 'lucide-react';
 import {
   createEstimate,
   updateEstimate,
@@ -103,6 +104,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         actionMarkSent: 'Enviar',
         actionApproveSchedule: 'Aprobar',
         actionDecline: 'Rechazar',
+        actionPrint: 'Imprimir cotización',
         convertedToJob: 'Enviado a Job',
         declined: 'Rechazado',
         sendingEmail: 'Enviando...',
@@ -180,6 +182,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         actionMarkSent: 'Send',
         actionApproveSchedule: 'Approve',
         actionDecline: 'Decline',
+        actionPrint: 'Print quote',
         convertedToJob: 'Sent to Job',
         declined: 'Declined',
         sendingEmail: 'Sending...',
@@ -782,7 +785,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                         </span>
                       </button>
                     </th>
-                    <th className="p-4 text-right w-44">
+                    <th className="p-4 text-right w-52">
                       <button
                         type="button"
                         onClick={() => handleSort('actions')}
@@ -837,47 +840,58 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                       {estimate.status === 'draft' ? t.filterDraft : estimate.status === 'sent' ? t.filterSent : estimate.status === 'approved' ? t.filterApproved : t.filterDeclined}
                     </span>
                   </td>
-                  <td className="p-4 text-right space-x-2 w-44">
-                    {estimate.status === 'draft' && (
-                      <>
-                        <button
-                          onClick={() => handleEditEstimate(estimate)}
-                          className="text-[10px] font-bold text-slate-700 hover:text-slate-800 hover:bg-slate-50 border border-slate-200 px-2 py-1 rounded transition cursor-pointer"
-                        >
-                          {t.actionEdit}
-                        </button>
-                        <button
-                          onClick={() => handleSendEstimate(estimate.id)}
-                          disabled={sendingEstimateId === estimate.id}
-                          className="text-[10px] font-bold text-amber-700 hover:text-amber-800 hover:bg-amber-50 border border-amber-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                        >
-                          {sendingEstimateId === estimate.id ? t.sendingEmail : t.actionMarkSent}
-                        </button>
-                      </>
-                    )}
-                    {estimate.status === 'sent' && (
-                      <>
-                        <button
-                          onClick={() => handleStatusChange(estimate.id, 'approved')}
-                          disabled={approvingEstimateId === estimate.id}
-                          className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                        >
-                          {approvingEstimateId === estimate.id ? t.approveProcessing : t.actionApproveSchedule}
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(estimate.id, 'declined')}
-                          className="text-[10px] font-bold text-red-700 hover:text-red-800 hover:bg-red-50 border border-red-200 px-2 py-1 rounded transition cursor-pointer"
-                        >
-                          {t.actionDecline}
-                        </button>
-                      </>
-                    )}
-                    {estimate.status === 'approved' && (
-                      <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">{t.convertedToJob}</span>
-                    )}
-                    {estimate.status === 'declined' && (
-                      <span className="text-[10px] text-red-500 font-bold">{t.declined}</span>
-                    )}
+                  <td className="p-4 text-right w-52">
+                    <div className="inline-flex items-center justify-end gap-1.5 flex-wrap">
+                      {estimate.status === 'draft' && (
+                        <>
+                          <button
+                            onClick={() => handleEditEstimate(estimate)}
+                            className="text-[10px] font-bold text-slate-700 hover:text-slate-800 hover:bg-slate-50 border border-slate-200 px-2 py-1 rounded transition cursor-pointer"
+                          >
+                            {t.actionEdit}
+                          </button>
+                          <button
+                            onClick={() => handleSendEstimate(estimate.id)}
+                            disabled={sendingEstimateId === estimate.id}
+                            className="text-[10px] font-bold text-amber-700 hover:text-amber-800 hover:bg-amber-50 border border-amber-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                          >
+                            {sendingEstimateId === estimate.id ? t.sendingEmail : t.actionMarkSent}
+                          </button>
+                        </>
+                      )}
+                      {estimate.status === 'sent' && (
+                        <>
+                          <button
+                            onClick={() => handleStatusChange(estimate.id, 'approved')}
+                            disabled={approvingEstimateId === estimate.id}
+                            className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                          >
+                            {approvingEstimateId === estimate.id ? t.approveProcessing : t.actionApproveSchedule}
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(estimate.id, 'declined')}
+                            className="text-[10px] font-bold text-red-700 hover:text-red-800 hover:bg-red-50 border border-red-200 px-2 py-1 rounded transition cursor-pointer"
+                          >
+                            {t.actionDecline}
+                          </button>
+                        </>
+                      )}
+                      {estimate.status === 'approved' && (
+                        <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">{t.convertedToJob}</span>
+                      )}
+                      {estimate.status === 'declined' && (
+                        <span className="text-[10px] text-red-500 font-bold">{t.declined}</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => window.open(`/api/estimates/${estimate.id}/pdf?lng=${locale}`, '_blank', 'noopener,noreferrer')}
+                        title={t.actionPrint}
+                        aria-label={t.actionPrint}
+                        className="inline-flex items-center justify-center p-1 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition duration-150 cursor-pointer border border-transparent hover:border-gray-200"
+                      >
+                        <Printer className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
