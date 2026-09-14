@@ -404,7 +404,10 @@ export async function updateLaborMarkupSettings(formData: FormData) {
   }
 
   revalidatePath(`/${locale}/dashboard/settings/document-settings`);
+  revalidatePath('/[lng]/dashboard/settings/[section]', 'page');
+  revalidatePath('/dashboard/settings', 'layout');
   revalidatePath(`/${locale}/dashboard/estimates`);
+  revalidatePath(`/${locale}/dashboard/estimates/new`);
 
   return {
     success: true,

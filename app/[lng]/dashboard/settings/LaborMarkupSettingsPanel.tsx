@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { updateLaborMarkupSettings } from './actions';
 import { DollarSign, Percent, ShieldCheck } from 'lucide-react';
 
@@ -41,6 +41,18 @@ export default function LaborMarkupSettingsPanel({
 
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    const rate = normalizeMoney(initialLaborRate, 95.0);
+    const cost = normalizeMoney(initialLaborCost, 45.0);
+    const markup = normalizeMoney(initialMaterialsMarkup, 30.0);
+    setLaborRate(rate);
+    setLaborRateInput(rate.toFixed(2));
+    setLaborCost(cost);
+    setLaborCostInput(cost.toFixed(2));
+    setMaterialsMarkup(markup);
+    setMaterialsMarkupInput(markup.toFixed(2));
+  }, [initialLaborRate, initialLaborCost, initialMaterialsMarkup]);
 
   const toggleEditing = () => {
     setStatusMessage('');
