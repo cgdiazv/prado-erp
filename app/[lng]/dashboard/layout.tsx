@@ -11,6 +11,7 @@ import { isPradoManagementUser } from '@/lib/pradoManagement';
 import { REMEMBER_ME_COOKIE_NAME } from '@/lib/rememberMe';
 import InactivityLockScreen from '@/components/dashboard/InactivityLockScreen';
 import SupportChatModal from '@/components/dashboard/SupportChatModal';
+import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
 import { cookies } from 'next/headers';
 
 export default async function DashboardLayout({
@@ -145,6 +146,7 @@ export default async function DashboardLayout({
           <SupportChatModal locale={locale} currentUserId={user.id} />
         </div>
       </DashboardNotificationProvider>
+      <PwaInstallPrompt />
     </div>
   );
 }
