@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Printer } from 'lucide-react';
+import { Printer, Plus } from 'lucide-react';
 import {
-  createEstimate,
-  updateEstimate,
   updateEstimateStatus,
   convertEstimateToJob,
   getEstimatesDashboardData,
-  getEstimateCustomerProperties,
   sendEstimateByEmail,
+  deleteEstimate,
 } from '@/app/actions';
 import { useRouter, useParams } from 'next/navigation';
 
@@ -55,11 +53,19 @@ interface Truck {
   status: string | null;
 }
 
-interface ServiceLine {
+export type LineItemType = 'service' | 'labor' | 'material';
+
+export interface ServiceLine {
   id: number;
+  type: LineItemType;
   serviceId: string;
   customName?: string;
   price: string;
+  hours?: string;
+  laborRate?: string;
+  laborCost?: string;
+  materialCost?: string;
+  materialMarkup?: string;
 }
 
 type SortColumn = 'customer' | 'proposal' | 'date' | 'amount' | 'status' | 'actions';
@@ -101,10 +107,14 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         noRecords: 'No se encontraron cotizaciones en esta categoría.',
         noProperty: 'Sin propiedad vinculada',
         actionEdit: 'Editar',
+        actionDelete: 'Eliminar',
         actionMarkSent: 'Enviar',
         actionApproveSchedule: 'Aprobar',
         actionDecline: 'Rechazar',
         actionPrint: 'Imprimir cotización',
+        confirmDeleteDraft: '¿Estás seguro de que deseas eliminar este borrador de cotización?',
+        deleteError: 'Error al eliminar cotización:',
+        deleting: 'Eliminando...',
         convertedToJob: 'Enviado a Job',
         declined: 'Rechazado',
         sendingEmail: 'Enviando...',
@@ -152,6 +162,23 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         approveConvertSuccess: 'Cotización aprobada y Job agendado con éxito!',
         labelPaymentTerms: 'Términos de Pago',
         paymentTermsPlaceholder: 'Ej: 50% anticipo al aprobar, 50% al finalizar',
+        addLaborLine: '+ Mano de Obra',
+        addMaterialLine: '+ Materiales',
+        lineTypeService: 'Servicio',
+        lineTypeLabor: 'Mano de Obra',
+        lineTypeMaterial: 'Materiales',
+        labelHours: 'Horas',
+        labelRatePerHour: 'Tarifa $/hr',
+        labelCostPerHour: 'Costo $/hr',
+        labelMaterialCost: 'Costo contratista ($)',
+        labelMarkup: 'Margen / Markup (%)',
+        profitabilityTitle: 'Rentabilidad Estimada',
+        profitabilityAdminOnly: 'Privado para Admin',
+        totalQuoted: 'Total Cotizado',
+        estCost: 'Costo Est.',
+        estMargin: 'Margen Est.',
+        laborSummaryHint: 'Mano de obra calculada con tarifa predeterminada.',
+        materialsSummaryHint: 'Precio con markup predeterminado de materiales.',
       }
     : {
         loading: 'Loading quotes module...',
@@ -179,10 +206,14 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         noRecords: 'No quotes were found in this category.',
         noProperty: 'No linked property',
         actionEdit: 'Edit',
+        actionDelete: 'Delete',
         actionMarkSent: 'Send',
         actionApproveSchedule: 'Approve',
         actionDecline: 'Decline',
         actionPrint: 'Print quote',
+        confirmDeleteDraft: 'Are you sure you want to delete this draft quote?',
+        deleteError: 'Error deleting quote:',
+        deleting: 'Deleting...',
         convertedToJob: 'Sent to Job',
         declined: 'Declined',
         sendingEmail: 'Sending...',
@@ -230,6 +261,23 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         approveConvertSuccess: 'Quote approved and job scheduled successfully!',
         labelPaymentTerms: 'Payment Terms',
         paymentTermsPlaceholder: 'Ex: 50% deposit upon approval, 50% upon completion',
+        addLaborLine: '+ Labor',
+        addMaterialLine: '+ Materials',
+        lineTypeService: 'Service',
+        lineTypeLabor: 'Labor',
+        lineTypeMaterial: 'Materials',
+        labelHours: 'Hours',
+        labelRatePerHour: 'Rate $/hr',
+        labelCostPerHour: 'Cost $/hr',
+        labelMaterialCost: 'Cost to you ($)',
+        labelMarkup: 'Markup (%)',
+        profitabilityTitle: 'Internal Profitability',
+        profitabilityAdminOnly: 'Admin Only',
+        totalQuoted: 'Total Quoted',
+        estCost: 'Est. Cost',
+        estMargin: 'Est. Margin',
+        laborSummaryHint: 'Labor auto-calculated with your default hourly rate.',
+        materialsSummaryHint: 'Price with default materials markup.',
       };
   const [estimates, setEstimates] = useState<Estimate[]>(initialData.estimates as any[] || []);
   const [customers, setCustomers] = useState<Customer[]>(initialData.customers as any[] || []);
@@ -238,205 +286,33 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
   const [trucks, setTrucks] = useState<Truck[]>(initialData.trucks as any[] || []);
   
   // States de UI
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingEstimateId, setEditingEstimateId] = useState<string | null>(null);
-  const [selectedCustomerId, setSelectedCustomerId] = useState('');
-  const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [pageSize, setPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortColumn, setSortColumn] = useState<SortColumn>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [serviceLines, setServiceLines] = useState<ServiceLine[]>([
-    {
-      id: 1,
-      serviceId: (initialData.services as any[] || []).length > 0 ? '' : '__custom__',
-      customName: '',
-      price: '',
-    },
-  ]);
-  const [scopeNotes, setScopeNotes] = useState('');
-  const [paymentTerms, setPaymentTerms] = useState(initialData.defaultPaymentTerms || 'Due on Receipt');
 
-  // State for sending email
+  // State for sending email and deleting
   const [sendingEstimateId, setSendingEstimateId] = useState<string | null>(null);
   const [approvingEstimateId, setApprovingEstimateId] = useState<string | null>(null);
+  const [deletingEstimateId, setDeletingEstimateId] = useState<string | null>(null);
 
-  // Cargar propiedades del cliente seleccionado en el formulario
-  useEffect(() => {
-    if (!selectedCustomerId) {
-      setProperties([]);
-      return;
-    }
-    async function fetchProperties() {
-      const result = await getEstimateCustomerProperties(selectedCustomerId);
-      if (!result?.error && result.properties) {
-        setProperties(result.properties as any);
+  async function handleDeleteEstimate(estimateId: string) {
+    if (!confirm(t.confirmDeleteDraft)) return;
+
+    setDeletingEstimateId(estimateId);
+    try {
+      const res = await deleteEstimate(estimateId);
+      if (res.error) {
+        alert(`${t.deleteError} ${res.error}`);
       } else {
-        setProperties([]);
+        setEstimates((prev) => prev.filter((e) => e.id !== estimateId));
+        router.refresh();
       }
-    }
-    fetchProperties();
-  }, [selectedCustomerId]);
-
-  const closeEstimateModal = () => {
-    setIsCreateOpen(false);
-    setEditingEstimateId(null);
-    setSelectedCustomerId('');
-    setSelectedPropertyId('');
-    setScopeNotes('');
-    setPaymentTerms(initialData.defaultPaymentTerms || 'Due on Receipt');
-    setServiceLines([
-      {
-        id: 1,
-        serviceId: services.length > 0 ? '' : '__custom__',
-        customName: '',
-        price: '',
-      },
-    ]);
-  };
-
-  const parseEstimateForEdit = (estimate: Estimate) => {
-    const rawDescription = (estimate.description || '').trim();
-    const breakdownLabels = [isEs ? 'Detalle de servicios:' : 'Service breakdown:', 'Service breakdown:', 'Detalle de servicios:'];
-    const breakdownLabel = breakdownLabels.find((label) => rawDescription.includes(label));
-
-    let notes = rawDescription;
-    let breakdownText = '';
-
-    if (breakdownLabel) {
-      const parts = rawDescription.split(breakdownLabel);
-      notes = (parts[0] || '').trim();
-      breakdownText = (parts.slice(1).join(breakdownLabel) || '').trim();
-    }
-
-    const parsedLines = breakdownText
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.startsWith('- '))
-      .map((line, index) => {
-        const cleaned = line.replace(/^-\s*/, '');
-        const match = cleaned.match(/^(.*):\s*\$?([0-9]+(?:\.[0-9]+)?)$/);
-        const serviceName = (match?.[1] || '').trim();
-        const servicePrice = match?.[2] || '';
-        const matchedService = services.find((service) => service.name.trim().toLowerCase() === serviceName.toLowerCase());
-
-        return {
-          id: Date.now() + index,
-          serviceId: matchedService ? matchedService.id : '__custom__',
-          customName: matchedService ? '' : serviceName,
-          price: servicePrice,
-        };
-      })
-      .filter((line) => line.price);
-
-    if (parsedLines.length > 0) {
-      return {
-        notes,
-        lines: parsedLines,
-      };
-    }
-
-    const matchedService = services.find((service) => service.name.trim().toLowerCase() === (estimate.title || '').trim().toLowerCase());
-    return {
-      notes: rawDescription,
-      lines: [
-        {
-          id: 1,
-          serviceId: matchedService ? matchedService.id : (services.length > 0 ? '' : '__custom__'),
-          customName: matchedService ? '' : (estimate.title || ''),
-          price: estimate.estimated_amount.toFixed(2),
-        },
-      ],
-    };
-  };
-
-  const openCreateModal = () => {
-    setEditingEstimateId(null);
-    setSelectedCustomerId('');
-    setSelectedPropertyId('');
-    setScopeNotes('');
-    setPaymentTerms(initialData.defaultPaymentTerms || 'Due on Receipt');
-    setServiceLines([
-      {
-        id: 1,
-        serviceId: services.length > 0 ? '' : '__custom__',
-        customName: '',
-        price: '',
-      },
-    ]);
-    setIsCreateOpen(true);
-  };
-
-  const handleEditEstimate = (estimate: Estimate) => {
-    const parsed = parseEstimateForEdit(estimate);
-    setEditingEstimateId(estimate.id);
-    setSelectedCustomerId(estimate.customer_id);
-    setSelectedPropertyId(estimate.property_id || '');
-    setScopeNotes(parsed.notes);
-    setPaymentTerms(estimate.payment_terms || initialData.defaultPaymentTerms || 'Due on Receipt');
-    setServiceLines(parsed.lines);
-    setIsCreateOpen(true);
-  };
-
-  // Manejar creación/edición de cotización
-  async function handleSaveEstimate(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const validServices = serviceLines
-      .map((line) => {
-        const isCustom = line.serviceId === '__custom__' || services.length === 0;
-        const matchedService = services.find((service) => service.id === line.serviceId);
-        const name = (isCustom ? (line.customName || '') : (matchedService?.name || '')).trim();
-        return {
-          serviceId: isCustom ? null : (matchedService?.id || null),
-          name,
-          price: Number.parseFloat(line.price || '0'),
-        };
-      })
-      .filter((line) => line.name && line.price > 0);
-
-    if (validServices.length === 0) {
-      alert(t.validationServiceRequired);
-      return;
-    }
-
-    const estimatedAmount = validServices.reduce((sum, line) => sum + line.price, 0);
-    const title =
-      validServices.length === 1
-        ? validServices[0].name
-        : isEs
-          ? `Presupuesto con ${validServices.length} servicios`
-          : `Estimate with ${validServices.length} services`;
-
-    const servicesSummary = validServices
-      .map((line) => `- ${line.name}: $${line.price.toFixed(2)}`)
-      .join('\n');
-
-    const description = `${scopeNotes.trim() ? `${scopeNotes.trim()}\n\n` : ''}${isEs ? 'Detalle de servicios:' : 'Service breakdown:'}\n${servicesSummary}`;
-
-    formData.set('title', title);
-    formData.set('estimatedAmount', estimatedAmount.toFixed(2));
-    formData.set('description', description);
-    formData.set('paymentTerms', paymentTerms);
-    formData.set('lineItemsJson', JSON.stringify(validServices));
-
-    const res = editingEstimateId
-      ? await updateEstimate(editingEstimateId, formData)
-      : await createEstimate(formData);
-
-    if (res.error) {
-      alert(`Error: ${res.error}`);
-    } else {
-      closeEstimateModal();
-      const refreshed = await getEstimatesDashboardData();
-      if (!refreshed?.error) {
-        setEstimates((refreshed.estimates || []) as any);
-        if (refreshed.services) {
-          setServices((refreshed.services || []) as Service[]);
-        }
-      }
-      router.refresh();
+    } catch (err: any) {
+      alert(`${t.deleteError} ${err?.message || 'Failed to delete'}`);
+    } finally {
+      setDeletingEstimateId(null);
     }
   }
 
@@ -576,51 +452,23 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
     }
   }, [currentPage, totalPages]);
 
-  const estimateTotal = serviceLines.reduce((sum, line) => {
-    const price = Number.parseFloat(line.price || '0');
-    return sum + (Number.isFinite(price) ? price : 0);
-  }, 0);
-
-  const addServiceLine = () => {
-    const defaultService = services.length > 0 ? services[0] : null;
-    setServiceLines((prev) => [
-      ...prev,
-      {
-        id: Date.now() + Math.random(),
-        serviceId: defaultService ? defaultService.id : '__custom__',
-        customName: '',
-        price: defaultService ? Number(defaultService.base_price || 0).toFixed(2) : '',
-      },
-    ]);
-  };
-
-  const removeServiceLine = (id: number) => {
-    setServiceLines((prev) => (prev.length > 1 ? prev.filter((line) => line.id !== id) : prev));
-  };
-
-  const updateServiceLine = (id: number, field: 'serviceId' | 'customName' | 'price', value: string) => {
-    setServiceLines((prev) =>
-      prev.map((line) => (line.id === id ? { ...line, [field]: value } : line))
-    );
-  };
-
   return (
-        <main className="flex-1 overflow-y-auto">
-          <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
-
-            {/* Cabecera */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.pageTitle}</h1>
-                <p className="text-xs text-slate-500 mt-1">{t.pageSubtitle}</p>
-              </div>
-              <button
-                onClick={openCreateModal}
-                className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm"
-              >
-                {t.newEstimate}
-              </button>
-            </div>
+    <main className="flex-1 overflow-y-auto">
+      <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
+        {/* Cabecera */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.pageTitle}</h1>
+            <p className="text-xs text-slate-500 mt-1">{t.pageSubtitle}</p>
+          </div>
+          <Link
+            href={`/${locale}/dashboard/estimates/new`}
+            className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm inline-flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{t.newEstimate}</span>
+          </Link>
+        </div>
 
             {/* Tarjetas de Resumen Rapido */}
             <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
@@ -844,18 +692,26 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                     <div className="inline-flex items-center justify-end gap-1.5 flex-wrap">
                       {estimate.status === 'draft' && (
                         <>
-                          <button
-                            onClick={() => handleEditEstimate(estimate)}
-                            className="text-[10px] font-bold text-slate-700 hover:text-slate-800 hover:bg-slate-50 border border-slate-200 px-2 py-1 rounded transition cursor-pointer"
+                          <Link
+                            href={`/${locale}/dashboard/estimates/${estimate.id}/edit`}
+                            className="text-[10px] font-bold text-slate-700 hover:text-slate-800 hover:bg-slate-50 border border-slate-200 px-2 py-1 rounded transition cursor-pointer inline-block"
                           >
                             {t.actionEdit}
-                          </button>
+                          </Link>
                           <button
                             onClick={() => handleSendEstimate(estimate.id)}
-                            disabled={sendingEstimateId === estimate.id}
+                            disabled={sendingEstimateId === estimate.id || deletingEstimateId === estimate.id}
                             className="text-[10px] font-bold text-amber-700 hover:text-amber-800 hover:bg-amber-50 border border-amber-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                           >
                             {sendingEstimateId === estimate.id ? t.sendingEmail : t.actionMarkSent}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEstimate(estimate.id)}
+                            disabled={deletingEstimateId === estimate.id || sendingEstimateId === estimate.id}
+                            className="text-[10px] font-bold text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50"
+                            title={t.actionDelete}
+                          >
+                            {deletingEstimateId === estimate.id ? t.deleting : t.actionDelete}
                           </button>
                         </>
                       )}
@@ -899,244 +755,6 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                 </tbody>
               </table>
             </div>
-
-      {/* MODAL 1: CREAR ESTIMACION */}
-      {isCreateOpen && (
-        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white border border-gray-200 w-full max-w-3xl rounded-2xl overflow-hidden shadow-xl p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between mb-4">
-              <h2 className="text-lg font-bold text-slate-900">{editingEstimateId ? t.modalEditTitle : t.modalCreateTitle}</h2>
-              <button
-                type="button"
-                onClick={closeEstimateModal}
-                className="cursor-pointer text-gray-500 hover:text-gray-700 text-2xl leading-none"
-                aria-label="Close modal"
-              >
-                ×
-              </button>
-            </div>
-            
-            <form onSubmit={handleSaveEstimate} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="block text-slate-600 font-semibold">{t.labelCustomer}</label>
-                <select
-                  name="customerId"
-                  required
-                  value={selectedCustomerId}
-                  onChange={(e) => {
-                    setSelectedCustomerId(e.target.value);
-                    setSelectedPropertyId('');
-                  }}
-                  className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
-                >
-                  <option value="">{t.optionSelectCustomer}</option>
-                  {customers.map(c => (
-                    <option key={c.id} value={c.id}>{`${c.first_name} ${c.last_name}`.trim()}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-slate-600 font-semibold">{t.labelProperty}</label>
-                <select
-                  name="propertyId"
-                  disabled={!selectedCustomerId}
-                  value={selectedPropertyId}
-                  onChange={(e) => setSelectedPropertyId(e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900 disabled:opacity-50"
-                >
-                  <option value="">{selectedCustomerId ? t.optionSelectProperty : t.optionSelectCustomerFirst}</option>
-                  {properties.map(p => (
-                    <option key={p.id} value={p.id}>{p.street_address}, {p.city}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-slate-600 font-semibold">{t.servicesList}</label>
-                  <button
-                    type="button"
-                    onClick={addServiceLine}
-                    className="cursor-pointer text-[11px] font-semibold text-emerald-700 border border-emerald-200 hover:bg-emerald-50 px-2.5 py-1 rounded-md transition"
-                  >
-                    + {t.addServiceLine}
-                  </button>
-                </div>
-
-                {services.length === 0 && (
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2.5">
-                    <span>{t.noServicesSavedHint}</span>
-                    <Link
-                      href={`/${locale}/dashboard/settings/operations-settings`}
-                      target="_blank"
-                      className="font-semibold text-emerald-700 hover:text-emerald-800 underline underline-offset-2 shrink-0"
-                    >
-                      {t.configureServicesLink}
-                    </Link>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  {serviceLines.map((line) => {
-                    const isCustom = line.serviceId === '__custom__' || services.length === 0;
-
-                    return (
-                      <div key={line.id} className="grid grid-cols-1 sm:grid-cols-[1fr_160px_auto] gap-2 items-center">
-                        {services.length === 0 ? (
-                          <input
-                            type="text"
-                            value={line.customName || ''}
-                            onChange={(e) => updateServiceLine(line.id, 'customName', e.target.value)}
-                            placeholder={t.serviceNamePlaceholder}
-                            className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
-                            aria-label={t.labelServiceTitle}
-                          />
-                        ) : isCustom ? (
-                          <div className="flex items-center gap-1.5">
-                            <input
-                              type="text"
-                              value={line.customName || ''}
-                              onChange={(e) => updateServiceLine(line.id, 'customName', e.target.value)}
-                              placeholder={t.serviceNamePlaceholder}
-                              className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
-                              aria-label={t.labelServiceTitle}
-                              autoFocus
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                updateServiceLine(line.id, 'serviceId', services[0]?.id || '');
-                                updateServiceLine(line.id, 'customName', '');
-                                if (services[0]) {
-                                  updateServiceLine(line.id, 'price', Number(services[0].base_price || 0).toFixed(2));
-                                }
-                              }}
-                              title={t.selectFromCatalog}
-                              className="cursor-pointer text-xs text-slate-500 hover:text-slate-700 px-2 py-2 border border-gray-300 rounded-lg bg-slate-50 hover:bg-slate-100 whitespace-nowrap transition"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <select
-                            value={line.serviceId}
-                            onChange={(e) => {
-                              const nextServiceId = e.target.value;
-                              if (nextServiceId === '__custom__') {
-                                updateServiceLine(line.id, 'serviceId', '__custom__');
-                                updateServiceLine(line.id, 'customName', '');
-                                return;
-                              }
-                              const selectedService = services.find((service) => service.id === nextServiceId);
-                              updateServiceLine(line.id, 'serviceId', nextServiceId);
-                              if (selectedService) {
-                                updateServiceLine(line.id, 'price', Number(selectedService.base_price || 0).toFixed(2));
-                              }
-                            }}
-                            className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
-                          >
-                            <option value="">{t.selectService}</option>
-                            {services.map((service) => (
-                              <option key={service.id} value={service.id}>
-                                {service.name}
-                              </option>
-                            ))}
-                            <option value="__custom__">{t.customServiceOption}</option>
-                          </select>
-                        )}
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-slate-500 text-xs">$</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={line.price}
-                            onChange={(e) => updateServiceLine(line.id, 'price', e.target.value)}
-                            placeholder={t.linePricePlaceholder}
-                            className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
-                            aria-label={t.linePriceLabel}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeServiceLine(line.id)}
-                          disabled={serviceLines.length === 1}
-                          className="cursor-pointer text-[11px] font-semibold text-red-700 border border-red-200 hover:bg-red-50 px-2.5 py-1.5 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        >
-                          {t.removeServiceLine}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="rounded-lg border border-gray-200 bg-slate-50 px-3 py-2 text-right">
-                  <span className="text-[11px] text-slate-500 font-semibold">{t.summaryTotal}: </span>
-                  <span className="text-sm font-bold text-slate-900">${estimateTotal.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-slate-600 font-semibold">{t.labelPaymentTerms}</label>
-                <div className="space-y-1.5">
-                  <select
-                    value={['Due on Receipt', 'Net 15', 'Net 30', 'Net 60', '50% Deposit / 50% Completion'].includes(paymentTerms) ? paymentTerms : 'Custom'}
-                    onChange={(e) => {
-                      if (e.target.value !== 'Custom') {
-                        setPaymentTerms(e.target.value);
-                      }
-                    }}
-                    className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
-                  >
-                    <option value="Due on Receipt">{isEs ? 'Al contado / Al recibir' : 'Due on Receipt'}</option>
-                    <option value="Net 15">Net 15 (15 días)</option>
-                    <option value="Net 30">Net 30 (30 días)</option>
-                    <option value="Net 60">Net 60 (60 días)</option>
-                    <option value="50% Deposit / 50% Completion">{isEs ? '50% Anticipo / 50% Al Finalizar' : '50% Deposit / 50% Completion'}</option>
-                    <option value="Custom">{isEs ? 'Personalizado...' : 'Custom...'}</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={paymentTerms}
-                    onChange={(e) => setPaymentTerms(e.target.value)}
-                    placeholder={t.paymentTermsPlaceholder}
-                    className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-slate-600 font-semibold">{t.labelNotes}</label>
-                <textarea
-                  name="description"
-                  value={scopeNotes}
-                  onChange={(e) => setScopeNotes(e.target.value)}
-                  placeholder={t.notesPlaceholder}
-                  rows={3}
-                  className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-slate-900 resize-none"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="submit"
-                  className="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-lg transition font-bold"
-                >
-                  {editingEstimateId ? t.updateProposal : t.saveProposal}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeEstimateModal}
-                  className="w-1/2 border border-gray-300 hover:bg-gray-50 p-2.5 rounded-lg transition font-bold text-slate-700"
-                >
-                  {t.cancel}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
           </div>
     </main>

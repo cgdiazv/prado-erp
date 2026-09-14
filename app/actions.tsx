@@ -1597,7 +1597,7 @@ export async function createEstimate(formData: FormData) {
     }
 
     // 4. Insertar en base de datos
-    const { error } = await supabase
+    const { data: insertedData, error } = await supabase
       .from('estimates')
       .insert([
         {
@@ -1611,14 +1611,16 @@ export async function createEstimate(formData: FormData) {
           payment_terms: paymentTerms,
           status: 'draft'
         }
-      ]);
+      ])
+      .select('id')
+      .single();
 
     if (error) return { error: error.message };
 
     revalidatePath('/dashboard/estimates');
     revalidatePath('/[lng]/dashboard/estimates');
     revalidatePath('/', 'layout');
-    return { success: true };
+    return { success: true, estimateId: insertedData?.id };
   } catch (err: unknown) {
     return { error: (err as Error)?.message || 'Failed to create estimate.' };
   }
@@ -1896,6 +1898,10 @@ export async function getEstimatesDashboardData() {
       defaultPaymentTerms: org.default_payment_terms || 'Due on Receipt',
       subscriptionStatus: org.subscription_status || 'trial',
       canViewImportExport,
+      defaultLaborRate: org.default_labor_rate != null ? Number(org.default_labor_rate) : 95,
+      defaultLaborCost: org.default_labor_cost != null ? Number(org.default_labor_cost) : 45,
+      defaultMaterialsMarkup: org.default_materials_markup != null ? Number(org.default_materials_markup) : 30,
+      currentUserRole: normalizedRole,
       estimates: estimatesData || [],
       customers: customersData || [],
       services: servicesData || [],
@@ -1917,14 +1923,10 @@ export async function getEstimateCustomerProperties(customerId: string) {
 
     if (!user) return { error: 'Unauthorized', properties: [] };
 
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
+    const { organization: org } = await getUserOrganization(user.id);
 
-    if (orgError || !org) {
-      return { error: orgError?.message || 'Organization not found.', properties: [] };
+    if (!org) {
+      return { error: 'Organization not found.', properties: [] };
     }
 
     // Validate the selected customer belongs to this organization before loading properties.
@@ -1951,6 +1953,106 @@ export async function getEstimateCustomerProperties(customerId: string) {
     return { error: (err as Error)?.message || 'Failed to fetch customer properties.', properties: [] };
   }
 }
+
+export async function getEstimateForEdit(estimateId: string) {
+  try {
+    if (!estimateId) return { error: 'Estimate ID required' };
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: 'Unauthorized' };
+
+    const { organization: org, role } = await getUserOrganization(user.id);
+    if (!org) return { error: 'Organization not found.' };
+
+    const canAccessEstimates = await hasDashboardModuleAccess(org.id, role, 'estimates');
+    if (!canAccessEstimates) return { error: 'Access denied for estimates module.' };
+
+    const { data: estimate, error: estimateError } = await supabase
+      .from('estimates')
+      .select('*, customers(id, first_name, last_name, company_name), properties(id, street_address, city)')
+      .eq('id', estimateId)
+      .eq('organization_id', org.id)
+      .single();
+
+    if (estimateError || !estimate) {
+      return { error: estimateError?.message || 'Estimate not found.' };
+    }
+
+    let customerProperties: Array<{ id: string; street_address: string; city: string }> = [];
+    if (estimate.customer_id) {
+      const { data: props } = await supabase
+        .from('properties')
+        .select('id, street_address, city')
+        .eq('customer_id', estimate.customer_id);
+      customerProperties = props || [];
+    }
+
+    return {
+      success: true,
+      estimate,
+      customerProperties,
+    };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to fetch estimate for edit.' };
+  }
+}
+
+export async function deleteEstimate(estimateId: string) {
+  try {
+    if (!estimateId) return { error: 'Estimate ID required' };
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: 'Unauthorized operational execution.' };
+
+    const { organization: org, role } = await getUserOrganization(user.id);
+    if (!org) return { error: 'Organization not found.' };
+
+    const canAccessEstimates = await hasDashboardModuleAccess(org.id, role, 'estimates');
+    if (!canAccessEstimates) return { error: 'Access denied for estimates module.' };
+
+    // Verify the quote exists and is in draft status
+    const { data: existing, error: findError } = await supabase
+      .from('estimates')
+      .select('id, status')
+      .eq('id', estimateId)
+      .eq('organization_id', org.id)
+      .single();
+
+    if (findError || !existing) {
+      return { error: 'Quote not found.' };
+    }
+
+    if (existing.status !== 'draft') {
+      return { error: 'Only draft quotes can be deleted.' };
+    }
+
+    const { error: deleteError } = await supabase
+      .from('estimates')
+      .delete()
+      .eq('id', estimateId)
+      .eq('organization_id', org.id)
+      .eq('status', 'draft');
+
+    if (deleteError) return { error: deleteError.message };
+
+    revalidatePath('/dashboard/estimates');
+    revalidatePath('/[lng]/dashboard/estimates');
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to delete estimate.' };
+  }
+}
+
+
 
 // Cambiar estado de la estimación (draft -> sent -> approved/declined)
 export async function updateEstimateStatus(estimateId: string, newStatus: 'draft' | 'sent' | 'approved' | 'declined') {

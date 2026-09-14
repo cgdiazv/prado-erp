@@ -18,6 +18,9 @@ export type UserOrganization = {
   zip_code: string | null;
   invoice_tax_rate_percent: number | null;
   invoice_currency_code: string | null;
+  default_labor_rate: number | null;
+  default_labor_cost: number | null;
+  default_materials_markup: number | null;
   last_qbo_sync_warning: string | null;
   last_qbo_sync_warning_at: string | null;
   last_xero_sync_warning: string | null;
@@ -35,6 +38,7 @@ export type UserOrganizationResult = {
   role: string | null;
 };
 
+const ORG_SELECT_WITH_LABOR_MARKUP = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, default_labor_rate, default_labor_cost, default_materials_markup, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, created_at';
 const ORG_SELECT_WITH_STRIPE = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, created_at';
 const ORG_SELECT_WITH_MAX = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, created_at';
 const ORG_SELECT_LEGACY = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, created_at';
@@ -56,6 +60,18 @@ function normalizeOrganizationRow(row: any): UserOrganization {
       typeof row?.invoice_tax_rate_percent === 'number' ? row.invoice_tax_rate_percent : 8.25,
     invoice_currency_code:
       typeof row?.invoice_currency_code === 'string' ? row.invoice_currency_code : 'USD',
+    default_labor_rate:
+      typeof row?.default_labor_rate === 'number'
+        ? row.default_labor_rate
+        : (row?.default_labor_rate != null ? Number(row.default_labor_rate) : 95),
+    default_labor_cost:
+      typeof row?.default_labor_cost === 'number'
+        ? row.default_labor_cost
+        : (row?.default_labor_cost != null ? Number(row.default_labor_cost) : 45),
+    default_materials_markup:
+      typeof row?.default_materials_markup === 'number'
+        ? row.default_materials_markup
+        : (row?.default_materials_markup != null ? Number(row.default_materials_markup) : 30),
     max_jobs_per_truck:
       typeof row?.max_jobs_per_truck === 'number' ? row.max_jobs_per_truck : null,
     auto_optimize_drive_routes:
@@ -137,7 +153,7 @@ export async function getUserOrganization(userId: string): Promise<UserOrganizat
 
   let candidates: OrganizationCandidate[] = [];
 
-  for (const select of [ORG_SELECT_WITH_STRIPE, ORG_SELECT_WITH_MAX, ORG_SELECT_LEGACY]) {
+  for (const select of [ORG_SELECT_WITH_LABOR_MARKUP, ORG_SELECT_WITH_STRIPE, ORG_SELECT_WITH_MAX, ORG_SELECT_LEGACY]) {
     const result = await collectCandidatesForSelect(supabase, userId, select);
     if (!result.error) {
       candidates = result.candidates;

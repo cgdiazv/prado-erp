@@ -9,6 +9,7 @@ import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
 import DeleteAccountSurveyCard from '../DeleteAccountSurveyCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
 import InvoiceTaxSettingsPanel from '../InvoiceTaxSettingsPanel';
+import LaborMarkupSettingsPanel from '../LaborMarkupSettingsPanel';
 import DocumentBrandingSettingsPanel from '../DocumentBrandingSettingsPanel';
 import XeroConnectionCard from '../XeroConnectionCard';
 import QBOConnectionCard from '../QBOConnectionCard';
@@ -325,6 +326,15 @@ export default async function SettingsSectionPage({
                   <InvoiceTaxSettingsPanel
                     initialTaxRatePercent={org.invoice_tax_rate_percent ?? 8.25}
                     initialCurrencyCode={org.invoice_currency_code || 'USD'}
+                    locale={locale}
+                  />
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                  <LaborMarkupSettingsPanel
+                    initialLaborRate={org.default_labor_rate ?? 95}
+                    initialLaborCost={org.default_labor_cost ?? 45}
+                    initialMaterialsMarkup={org.default_materials_markup ?? 30}
                     locale={locale}
                   />
                 </div>

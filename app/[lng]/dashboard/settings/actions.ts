@@ -344,6 +344,76 @@ export async function updateInvoiceTaxRate(formData: FormData) {
   };
 }
 
+export async function updateLaborMarkupSettings(formData: FormData) {
+  const locale = (formData.get('locale') as string | null)?.trim() || 'en';
+  const laborRateRaw = (formData.get('defaultLaborRate') as string | null)?.trim() || '';
+  const laborCostRaw = (formData.get('defaultLaborCost') as string | null)?.trim() || '';
+  const markupRaw = (formData.get('defaultMaterialsMarkup') as string | null)?.trim() || '';
+
+  const parsedLaborRate = Number.parseFloat(laborRateRaw);
+  const parsedLaborCost = Number.parseFloat(laborCostRaw);
+  const parsedMarkup = Number.parseFloat(markupRaw);
+
+  if (!Number.isFinite(parsedLaborRate) || parsedLaborRate < 0) {
+    return { error: 'Default labor rate must be a valid non-negative number.' };
+  }
+
+  if (!Number.isFinite(parsedLaborCost) || parsedLaborCost < 0) {
+    return { error: 'Default labor cost must be a valid non-negative number.' };
+  }
+
+  if (!Number.isFinite(parsedMarkup) || parsedMarkup < 0 || parsedMarkup > 500) {
+    return { error: 'Default materials markup must be between 0% and 500%.' };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be signed in to update labor & markup settings.' };
+  }
+
+  const { organization, role } = await getUserOrganization(user.id);
+  if (!organization) {
+    return { error: 'Workspace not found.' };
+  }
+
+  const normalizedRole = (role || '').toLowerCase();
+  if (normalizedRole !== 'owner' && normalizedRole !== 'admin') {
+    return { error: 'Only owners and admins can update labor & markup settings.' };
+  }
+
+  const normalizedLaborRate = Math.round(parsedLaborRate * 100) / 100;
+  const normalizedLaborCost = Math.round(parsedLaborCost * 100) / 100;
+  const normalizedMarkup = Math.round(parsedMarkup * 100) / 100;
+
+  const adminClient = createAdminClient();
+  const { error } = await adminClient
+    .from('organizations')
+    .update({
+      default_labor_rate: normalizedLaborRate,
+      default_labor_cost: normalizedLaborCost,
+      default_materials_markup: normalizedMarkup,
+    })
+    .eq('id', organization.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/${locale}/dashboard/settings/document-settings`);
+  revalidatePath(`/${locale}/dashboard/estimates`);
+
+  return {
+    success: true,
+    laborRate: normalizedLaborRate,
+    laborCost: normalizedLaborCost,
+    materialsMarkup: normalizedMarkup,
+  };
+}
+
 export async function updateDocumentBrandingSettings(formData: FormData) {
   const locale = (formData.get('locale') as string | null)?.trim() || 'en';
   const nextEstimateRaw = (formData.get('nextEstimateNumber') as string | null)?.trim() || '';
