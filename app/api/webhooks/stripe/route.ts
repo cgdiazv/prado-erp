@@ -75,6 +75,155 @@ function getTierWelcomeDetails(tier: string) {
   };
 }
 
+async function applyReferralRewardIfEligible(newSubscriberOrgId: string, newSubscriberOrgName: string) {
+  try {
+    const { data: referralRecord, error: referralErr } = await supabaseAdmin
+      .from('referrals')
+      .select('id, referrer_org_id, status')
+      .eq('referred_org_id', newSubscriberOrgId)
+      .maybeSingle();
+
+    if (referralErr || !referralRecord) {
+      return;
+    }
+
+    const referrerOrgId = referralRecord.referrer_org_id;
+    if (!referrerOrgId) {
+      return;
+    }
+
+    // Retrieve referrer organization details
+    const { data: referrerOrg, error: refOrgErr } = await supabaseAdmin
+      .from('organizations')
+      .select('id, name, owner_id, stripe_subscription_id, referral_discount_active')
+      .eq('id', referrerOrgId)
+      .maybeSingle();
+
+    if (refOrgErr || !referrerOrg) {
+      return;
+    }
+
+    const REFERRAL_COUPON_ID = 'referral_50_1year';
+
+    // 1. Ensure coupon exists in Stripe
+    try {
+      await stripe.coupons.retrieve(REFERRAL_COUPON_ID);
+    } catch (couponErr: any) {
+      if (
+        couponErr?.statusCode === 404 ||
+        couponErr?.code === 'resource_missing' ||
+        couponErr?.message?.includes('No such coupon')
+      ) {
+        try {
+          await stripe.coupons.create({
+            id: REFERRAL_COUPON_ID,
+            name: 'Prado Referral Reward - 50% Off (1 Year)',
+            percent_off: 50,
+            duration: 'repeating',
+            duration_in_months: 12,
+          });
+          console.log(`Created Stripe coupon: ${REFERRAL_COUPON_ID}`);
+        } catch (createCouponErr: any) {
+          console.warn('Coupon creation error:', createCouponErr?.message);
+        }
+      } else {
+        console.warn('Coupon lookup warning:', couponErr?.message);
+      }
+    }
+
+    // 2. Apply coupon to referrer subscription if subscription ID is known
+    if (referrerOrg.stripe_subscription_id) {
+      try {
+        await stripe.subscriptions.update(referrerOrg.stripe_subscription_id, {
+          discounts: [{ coupon: REFERRAL_COUPON_ID }],
+        });
+        console.log(`Successfully applied 50% discount to referrer subscription ${referrerOrg.stripe_subscription_id}`);
+      } catch (subErr: any) {
+        try {
+          await stripe.subscriptions.update(referrerOrg.stripe_subscription_id, {
+            coupon: REFERRAL_COUPON_ID,
+          } as any);
+          console.log(`Successfully applied 50% discount (legacy format) to referrer subscription ${referrerOrg.stripe_subscription_id}`);
+        } catch (subErr2: any) {
+          console.error('Failed applying discount to referrer Stripe subscription:', subErr2?.message || subErr?.message);
+        }
+      }
+    }
+
+    // 3. Update organizations referrer discount status
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+    const discountEndsAt = oneYearFromNow.toISOString();
+
+    try {
+      await supabaseAdmin
+        .from('organizations')
+        .update({
+          referral_discount_active: true,
+          referral_discount_ends_at: discountEndsAt,
+        })
+        .eq('id', referrerOrgId);
+    } catch (updateOrgErr: any) {
+      console.error('Failed to update referrer discount flags:', updateOrgErr.message);
+    }
+
+    // 4. Update referrals record status
+    try {
+      await supabaseAdmin
+        .from('referrals')
+        .update({
+          status: 'rewarded',
+          rewarded_at: new Date().toISOString(),
+          discount_applied: true,
+          discount_months: 12,
+        })
+        .eq('id', referralRecord.id);
+    } catch (updateRefErr: any) {
+      console.error('Failed to update referrals table row:', updateRefErr.message);
+    }
+
+    // 5. Send reward celebration email to the referring user
+    if (referrerOrg.owner_id) {
+      try {
+        const { data: ownerUser } = await supabaseAdmin.auth.admin.getUserById(referrerOrg.owner_id);
+        const referrerEmail = ownerUser?.user?.email;
+        const dashboardUrl = `${(process.env.NEXT_PUBLIC_APP_URL || 'https://pradojob.com').replace(/\/$/, '')}/en/dashboard`;
+
+        if (referrerEmail) {
+          await resend.emails.send({
+            from: getResendFromAddress({ displayName: 'Prado Rewards' }),
+            to: referrerEmail,
+            subject: `🎉 You unlocked 50% off Prado for 1 year!`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">
+                <h2 style="color: #10b981; margin-top: 0;">🎉 Congratulations! 50% Discount Applied</h2>
+                <p>A contractor you referred (<strong>${newSubscriberOrgName || 'Your friend'}</strong>) just subscribed to Prado!</p>
+                <div style="margin: 20px 0; padding: 16px; background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+                  <p style="margin: 0; font-size: 16px; font-weight: 700; color: #15803d;">
+                    Your 50% subscription discount is now active for the next 12 months!
+                  </p>
+                  <p style="margin: 8px 0 0 0; font-size: 14px; color: #166534;">
+                    Your upcoming monthly renewal invoices will automatically receive a 50% discount.
+                  </p>
+                </div>
+                <p>Keep sharing your referral link with fellow contractors to help them streamline their operations.</p>
+                <div style="text-align: center; margin-top: 24px;">
+                  <a href="${dashboardUrl}/settings/manage-subscription" style="display: inline-block; background-color: #10b981; color: #ffffff; font-weight: 700; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View Subscription & Referrals</a>
+                </div>
+              </div>
+            `,
+          });
+          console.log(`✉️ Referral reward celebration email sent to ${referrerEmail}`);
+        }
+      } catch (emailErr: any) {
+        console.error('Failed to send referral reward email:', emailErr.message);
+      }
+    }
+  } catch (err: any) {
+    console.error('Error in applyReferralRewardIfEligible:', err.message);
+  }
+}
+
 async function handleInvoiceCheckoutPaid(session: Stripe.Checkout.Session) {
   const invoiceId = getInvoiceIdFromSession(session);
   if (!invoiceId) {
@@ -273,14 +422,26 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, ignored: true, reason: 'non-prado-session' }, { status: 200 });
       }
 
-      const { data: orgContext, error: orgContextError } = await supabaseAdmin
+      let orgContext: { id: string; name: string; referred_by_org_id?: string | null } | null = null;
+      const { data: orgDataWithReferral, error: orgRefError } = await supabaseAdmin
         .from('organizations')
-        .select('id, name')
+        .select('id, name, referred_by_org_id')
         .eq('id', organizationId)
         .maybeSingle();
 
-      if (orgContextError || !orgContext) {
-        return NextResponse.json({ received: true, ignored: true, reason: 'organization-not-found' }, { status: 200 });
+      if (!orgRefError && orgDataWithReferral) {
+        orgContext = orgDataWithReferral;
+      } else {
+        const { data: fallbackOrg, error: fallbackError } = await supabaseAdmin
+          .from('organizations')
+          .select('id, name')
+          .eq('id', organizationId)
+          .maybeSingle();
+
+        if (fallbackError || !fallbackOrg) {
+          return NextResponse.json({ received: true, ignored: true, reason: 'organization-not-found' }, { status: 200 });
+        }
+        orgContext = fallbackOrg;
       }
 
       const isExplicitPradoSession = session.metadata?.platform === 'prado' || session.metadata?.source === 'prado_subscription';
@@ -304,19 +465,49 @@ export async function POST(request: Request) {
         assignedStatus = 'enterprise';
       }
 
+      const stripeSubscriptionId = typeof session.subscription === 'string' 
+        ? session.subscription 
+        : ((session.subscription as any)?.id || null);
+      const stripeCustomerId = typeof session.customer === 'string'
+        ? session.customer
+        : ((session.customer as any)?.id || null);
+
       // 4. Update Database: Activate the organization's subscription status in Supabase
-      const { data: updatedOrg, error: dbError } = await supabaseAdmin
+      const orgUpdatePayload: Record<string, any> = {
+        subscription_status: assignedStatus,
+      };
+      if (stripeSubscriptionId) orgUpdatePayload.stripe_subscription_id = stripeSubscriptionId;
+      if (stripeCustomerId) orgUpdatePayload.stripe_customer_id = stripeCustomerId;
+
+      let updatedOrg: { id: string } | null = null;
+      const { data: fullUpdateData, error: dbError } = await supabaseAdmin
         .from('organizations')
-        .update({ subscription_status: assignedStatus }) // Upgrades to 'individual', 'growth', or 'enterprise'
+        .update(orgUpdatePayload) // Upgrades status and saves stripe references
         .eq('id', organizationId)
         .select('id')
         .maybeSingle();
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.warn('Subscription columns update fallback triggered:', dbError.message);
+        const { data: fallbackUpdateData, error: fallbackDbError } = await supabaseAdmin
+          .from('organizations')
+          .update({ subscription_status: assignedStatus })
+          .eq('id', organizationId)
+          .select('id')
+          .maybeSingle();
+        if (fallbackDbError) throw fallbackDbError;
+        updatedOrg = fallbackUpdateData;
+      } else {
+        updatedOrg = fullUpdateData;
+      }
+
       if (!updatedOrg) {
         return NextResponse.json({ received: true, ignored: true, reason: 'organization-update-skipped' }, { status: 200 });
       }
       console.log(`Supabase Synced: ✅ Organization ${organizationId} successfully upgraded to (${assignedStatus}) status.`);
+
+      // 5. Referral Program: If this subscribing org was referred by someone, reward the referring workspace with 50% off for 1 year!
+      await applyReferralRewardIfEligible(organizationId, orgContext.name);
 
       // Send Custom Branding Receipt HTML Email via Resend
       const customerName = session.customer_details?.name || 'Valued Operator';

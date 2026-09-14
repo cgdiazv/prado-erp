@@ -31,6 +31,12 @@ export type UserOrganization = {
   next_invoice_number: number | null;
   document_email_header_color: string | null;
   default_payment_terms: string | null;
+  referral_code: string | null;
+  referred_by_org_id: string | null;
+  stripe_subscription_id: string | null;
+  stripe_customer_id: string | null;
+  referral_discount_active: boolean;
+  referral_discount_ends_at: string | null;
 };
 
 export type UserOrganizationResult = {
@@ -38,7 +44,8 @@ export type UserOrganizationResult = {
   role: string | null;
 };
 
-const ORG_SELECT_FULL = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, default_labor_rate, default_labor_cost, default_materials_markup, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, created_at';
+const ORG_SELECT_FULL = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, default_labor_rate, default_labor_cost, default_materials_markup, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, referral_code, referred_by_org_id, stripe_subscription_id, stripe_customer_id, referral_discount_active, referral_discount_ends_at, created_at';
+const ORG_SELECT_WITH_REFERRALS = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, default_labor_rate, default_labor_cost, default_materials_markup, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, referral_code, referred_by_org_id, stripe_subscription_id, stripe_customer_id, referral_discount_active, referral_discount_ends_at, created_at';
 const ORG_SELECT_WITH_LABOR_MARKUP = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, default_labor_rate, default_labor_cost, default_materials_markup, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, created_at';
 const ORG_SELECT_WITH_STRIPE = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, created_at';
 const ORG_SELECT_WITH_MAX = 'id, name, logo_url, trial_starts_at, subscription_status, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, created_at';
@@ -76,7 +83,7 @@ function normalizeOrganizationRow(row: any): UserOrganization {
     max_jobs_per_truck:
       typeof row?.max_jobs_per_truck === 'number' ? row.max_jobs_per_truck : null,
     auto_optimize_drive_routes:
-      typeof row?.auto_optimize_drive_routes === 'boolean' ? row.auto_optimize_drive_routes : true,
+      typeof row?.auto_optimize_drive_routes === 'boolean' ? row.auto_optimize_drive_routes : false,
     next_estimate_number:
       typeof row?.next_estimate_number === 'number' ? row.next_estimate_number : 1001,
     next_invoice_number:
@@ -85,6 +92,12 @@ function normalizeOrganizationRow(row: any): UserOrganization {
       typeof row?.document_email_header_color === 'string' ? row.document_email_header_color : '#009966',
     default_payment_terms:
       typeof row?.default_payment_terms === 'string' ? row.default_payment_terms : 'Due on Receipt',
+    referral_code: typeof row?.referral_code === 'string' ? row.referral_code : null,
+    referred_by_org_id: typeof row?.referred_by_org_id === 'string' ? row.referred_by_org_id : null,
+    stripe_subscription_id: typeof row?.stripe_subscription_id === 'string' ? row.stripe_subscription_id : null,
+    stripe_customer_id: typeof row?.stripe_customer_id === 'string' ? row.stripe_customer_id : null,
+    referral_discount_active: Boolean(row?.referral_discount_active),
+    referral_discount_ends_at: typeof row?.referral_discount_ends_at === 'string' ? row.referral_discount_ends_at : null,
   } as UserOrganization;
 }
 
@@ -154,7 +167,7 @@ export async function getUserOrganization(userId: string): Promise<UserOrganizat
 
   let candidates: OrganizationCandidate[] = [];
 
-  for (const select of [ORG_SELECT_FULL, ORG_SELECT_WITH_LABOR_MARKUP, ORG_SELECT_WITH_STRIPE, ORG_SELECT_WITH_MAX, ORG_SELECT_LEGACY]) {
+  for (const select of [ORG_SELECT_FULL, ORG_SELECT_WITH_REFERRALS, ORG_SELECT_WITH_LABOR_MARKUP, ORG_SELECT_WITH_STRIPE, ORG_SELECT_WITH_MAX, ORG_SELECT_LEGACY]) {
     const result = await collectCandidatesForSelect(supabase, userId, select);
     if (!result.error) {
       candidates = result.candidates;
@@ -270,8 +283,17 @@ export async function getUserOrganization(userId: string): Promise<UserOrganizat
           })
           .eq('id', winner.organization.id);
       }
+
+      if (!winner.organization.referral_code) {
+        const generatedCode = `PRD${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+        winner.organization.referral_code = generatedCode;
+        await supabase
+          .from('organizations')
+          .update({ referral_code: generatedCode })
+          .eq('id', winner.organization.id);
+      }
     } catch {
-      // Ignore query errors during sequence reconciliation fallback.
+      // Ignore query errors during sequence or referral reconciliation fallback.
     }
   }
 

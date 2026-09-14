@@ -215,6 +215,20 @@ export default function DashboardSidebar({
                   </svg>
                   {isEs ? 'Ayuda' : 'Help'}
                 </Link>
+
+                <Link
+                  href={localizedHref('/dashboard/settings/manage-subscription')}
+                  onClick={closeSidebar}
+                  className="mt-2 group flex items-center justify-between gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border border-emerald-200/80 transition shadow-2xs"
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-sm shrink-0">🎁</span>
+                    <span className="truncate">{isEs ? 'Obtén 50% de Descuento' : 'Get 50% Off Prado'}</span>
+                  </div>
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-sm bg-emerald-600 text-white uppercase tracking-wider shrink-0">
+                    50% OFF
+                  </span>
+                </Link>
               </div>
             </div>
           </div>

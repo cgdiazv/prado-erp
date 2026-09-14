@@ -996,3 +996,84 @@ export async function cancelSubscription(reasons: string[] = []) {
     return { error: 'There was an error canceling your subscription. Please contact support.' };
   }
 }
+
+export async function getOrganizationReferralData() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Not authenticated' };
+  }
+
+  const { organization: org } = await getUserOrganization(user.id);
+  if (!org) {
+    return { error: 'Organization not found' };
+  }
+
+  const adminClient = createAdminClient();
+
+  let referralsList: Array<{
+    id: string;
+    createdAt: string;
+    status: 'pending' | 'rewarded' | 'expired';
+    rewardedAt: string | null;
+    discountApplied: boolean;
+    discountMonths: number;
+    referredOrgName: string;
+  }> = [];
+
+  try {
+    const { data: refRows, error: refErr } = await adminClient
+      .from('referrals')
+      .select('id, created_at, status, rewarded_at, discount_applied, discount_months, referred_org_id, organizations!referred_org_id(name)')
+      .eq('referrer_org_id', org.id)
+      .order('created_at', { ascending: false });
+
+    if (!refErr && refRows) {
+      referralsList = refRows.map((row: any) => ({
+        id: row.id,
+        createdAt: row.created_at,
+        status: row.status,
+        rewardedAt: row.rewarded_at,
+        discountApplied: Boolean(row.discount_applied),
+        discountMonths: Number(row.discount_months || 0),
+        referredOrgName: row.organizations?.name || 'Contractor Workspace',
+      }));
+    } else {
+      // Fallback query without foreign key relation in case migration was partially applied
+      const { data: plainRows } = await adminClient
+        .from('referrals')
+        .select('id, created_at, status, rewarded_at, discount_applied, discount_months')
+        .eq('referrer_org_id', org.id)
+        .order('created_at', { ascending: false });
+
+      if (plainRows) {
+        referralsList = plainRows.map((row: any) => ({
+          id: row.id,
+          createdAt: row.created_at,
+          status: row.status,
+          rewardedAt: row.rewarded_at,
+          discountApplied: Boolean(row.discount_applied),
+          discountMonths: Number(row.discount_months || 0),
+          referredOrgName: 'Contractor Workspace',
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn('Error fetching referrals list:', err);
+  }
+
+  return {
+    success: true,
+    data: {
+      referralCode: org.referral_code || '',
+      referralDiscountActive: Boolean(org.referral_discount_active),
+      referralDiscountEndsAt: org.referral_discount_ends_at || null,
+      referrals: referralsList,
+      totalInvited: referralsList.length,
+      totalRewarded: referralsList.filter((r) => r.status === 'rewarded').length,
+    },
+  };
+}

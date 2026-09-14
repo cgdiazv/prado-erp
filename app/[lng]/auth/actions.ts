@@ -92,6 +92,7 @@ export async function signup(formData: FormData) {
     
     const intendedPlan = formData.get('intendedPlan') as string; // 'trial' | 'individual' | 'growth' | 'enterprise'
     const inviteOrgId = formData.get('organization_id') as string; // If present, this is an invite signup
+    const referralCode = (formData.get('referralCode') as string | null)?.trim().toUpperCase() || '';
 
     if (!email || !password) {
       return { error: 'Email and password are required.' };
@@ -157,23 +158,46 @@ export async function signup(formData: FormData) {
     await upsertAuthUserIndex(supabaseAdmin, { id: userId, email });
 
     // 2. Determine signup type: invite vs regular
-    let ownerOrgId = inviteOrgId; // If invite signup, we'll use the inviting org
-    let orgData = null;
+    let orgData: any = null;
+    let ownerOrgId: string | null = inviteOrgId; // If invite signup, we'll use the inviting org
 
     // Only create a new organization if this is NOT an invite signup
     if (!inviteOrgId) {
+      let referrerOrgId: string | null = null;
+      if (referralCode) {
+        try {
+          const { data: refOrg } = await supabaseAdmin
+            .from('organizations')
+            .select('id')
+            .eq('referral_code', referralCode)
+            .maybeSingle();
+          if (refOrg?.id) {
+            referrerOrgId = refOrg.id;
+          }
+        } catch (refLookupErr) {
+          console.warn('Referral code lookup warning:', refLookupErr);
+        }
+      }
+
+      const newOrgReferralCode = `PRD${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
       // Regular signup: create a new organization for this user
+      const orgPayload: Record<string, any> = {
+        name: companyName,
+        owner_id: userId,
+        subscription_status: 'trial',
+        trial_starts_at: new Date().toISOString(),
+        auto_optimize_drive_routes: false,
+        referral_code: newOrgReferralCode,
+      };
+
+      if (referrerOrgId) {
+        orgPayload.referred_by_org_id = referrerOrgId;
+      }
+
       const { data: newOrgData, error: orgError } = await supabaseAdmin
         .from('organizations')
-        .insert([
-          {
-            name: companyName,
-            owner_id: userId,
-            subscription_status: 'trial',
-            trial_starts_at: new Date().toISOString(),
-            auto_optimize_drive_routes: false,
-          }
-        ])
+        .insert([orgPayload])
         .select()
         .single();
 
@@ -184,6 +208,21 @@ export async function signup(formData: FormData) {
       
       orgData = newOrgData;
       ownerOrgId = newOrgData.id;
+
+      if (referrerOrgId) {
+        try {
+          await supabaseAdmin
+            .from('referrals')
+            .insert({
+              referrer_org_id: referrerOrgId,
+              referred_org_id: newOrgData.id,
+              referred_company_name: companyName,
+              status: 'pending',
+            });
+        } catch (insertRefErr) {
+          console.warn('Failed to insert referral tracking record:', insertRefErr);
+        }
+      }
 
       // Pre-fill realistic sample jobs and data tailored to the chosen Trade Vertical
       await seedTradeSampleData(supabaseAdmin, newOrgData.id, tradeVertical);

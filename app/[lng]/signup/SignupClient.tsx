@@ -27,6 +27,7 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
   const [orgId, setOrgId] = useState('');
   const [orgName, setOrgName] = useState('');
   const [targetPlan, setTargetPlan] = useState('trial');
+  const [referralCode, setReferralCode] = useState('');
   
   // States for Email Validation Checking
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
@@ -43,11 +44,15 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
       const invEmail = resolvedParams.email || '';
       const orgIDValue = resolvedParams.org_id || '';
       const orgNameValue = resolvedParams.org_name || '';
+      const refValue = (resolvedParams as any).ref || (resolvedParams as any).referral || '';
 
       setTargetPlan(plan);
       setInviteEmail(invEmail);
       setOrgId(orgIDValue);
       setOrgName(orgNameValue);
+      if (refValue) {
+        setReferralCode(refValue);
+      }
 
       // Pre-fill email if present
       if (invEmail) {
@@ -186,6 +191,14 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
             <input type="hidden" name="intendedPlan" value={targetPlan} />
             {orgId && <input type="hidden" name="organization_id" value={orgId} />}
             {orgName && <input type="hidden" name="organization_name" value={orgName} />}
+            {referralCode && <input type="hidden" name="referralCode" value={referralCode} />}
+
+            {referralCode && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-medium">
+                <span>🎁</span>
+                <span>{locale.startsWith('es') ? 'Invitado por un colega contratista' : 'Invited by a fellow contractor'}</span>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.signup.companyNameLabel}</label>

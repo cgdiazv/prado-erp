@@ -7,6 +7,7 @@ import ExpenseCategoriesPanel from '../ExpenseCategoriesPanel';
 import TeamsPanel from '../TeamsPanel';
 import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
 import DeleteAccountSurveyCard from '../DeleteAccountSurveyCard';
+import ReferralProgramCard from '../ReferralProgramCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
 import InvoiceTaxSettingsPanel from '../InvoiceTaxSettingsPanel';
 import LaborMarkupSettingsPanel from '../LaborMarkupSettingsPanel';
@@ -451,6 +452,15 @@ export default async function SettingsSectionPage({
 
             {section === 'manage-subscription' && canManageSubscription && (
               <>
+                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                  <ReferralProgramCard
+                    referralCode={org.referral_code}
+                    referralDiscountActive={Boolean(org.referral_discount_active)}
+                    referralDiscountEndsAt={org.referral_discount_ends_at}
+                    locale={locale}
+                  />
+                </div>
+
                 <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                   <SubscriptionCancellationCard currentSubscriptionStatus={org.subscription_status} locale={locale} />
                 </div>
