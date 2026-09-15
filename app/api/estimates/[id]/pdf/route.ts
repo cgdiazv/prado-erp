@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { getUserOrganization } from '@/lib/organization';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 import { formatDocumentNumber, normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
+import { embedOrganizationLogo } from '@/lib/pdfLogo';
 
 function hexToRgb(hex: string) {
   const cleanHex = hex.replace('#', '').trim();
@@ -226,9 +227,22 @@ export async function GET(
     let currentY = PAGE_HEIGHT - MARGIN;
 
     // Header Left: Organization Identity
+    const embeddedLogo = await embedOrganizationLogo(pdfDoc, org.logo_url, 60, 48);
+    const logoX = MARGIN;
+    const textX = embeddedLogo ? MARGIN + embeddedLogo.width + 12 : MARGIN;
+
+    if (embeddedLogo) {
+      page.drawImage(embeddedLogo.image, {
+        x: logoX,
+        y: currentY - embeddedLogo.height,
+        width: embeddedLogo.width,
+        height: embeddedLogo.height,
+      });
+    }
+
     const orgName = org.name || 'Prado ERP';
-    page.drawText(truncateText(orgName, 34), {
-      x: MARGIN,
+    page.drawText(truncateText(orgName, embeddedLogo ? 26 : 34), {
+      x: textX,
       y: currentY - 14,
       size: 20,
       font: boldFont,
@@ -237,8 +251,8 @@ export async function GET(
 
     let orgY = currentY - 30;
     if (org.slogan) {
-      page.drawText(truncateText(org.slogan, 50), {
-        x: MARGIN,
+      page.drawText(truncateText(org.slogan, embeddedLogo ? 40 : 50), {
+        x: textX,
         y: orgY,
         size: 9,
         font: regularFont,
@@ -253,8 +267,8 @@ export async function GET(
     ].filter(Boolean);
 
     if (orgAddressParts.length > 0) {
-      page.drawText(truncateText(orgAddressParts.join(' • '), 60), {
-        x: MARGIN,
+      page.drawText(truncateText(orgAddressParts.join(' • '), embeddedLogo ? 45 : 60), {
+        x: textX,
         y: orgY,
         size: 8.5,
         font: regularFont,
@@ -265,7 +279,7 @@ export async function GET(
 
     if (org.phone) {
       page.drawText(`Tel: ${org.phone}`, {
-        x: MARGIN,
+        x: textX,
         y: orgY,
         size: 8.5,
         font: regularFont,
@@ -273,6 +287,8 @@ export async function GET(
       });
       orgY -= 12;
     }
+
+    const logoBottomY = embeddedLogo ? currentY - embeddedLogo.height : currentY;
 
     // Header Right: "QUOTE" Document Title & Number
     const quoteTitle = isEs ? 'COTIZACIÓN' : 'QUOTE';
@@ -342,7 +358,7 @@ export async function GET(
     });
 
     // Divider Line
-    currentY = Math.min(orgY, badgeY) - 16;
+    currentY = Math.min(orgY, badgeY, logoBottomY) - 16;
     page.drawLine({
       start: { x: MARGIN, y: currentY },
       end: { x: PAGE_WIDTH - MARGIN, y: currentY },

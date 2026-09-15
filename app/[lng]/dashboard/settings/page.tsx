@@ -7,5 +7,5 @@ export default async function SettingsPage({
 }) {
   const resolvedParams = await params;
   const locale = resolvedParams.lng ?? 'en';
-  redirect(`/${locale}/dashboard/settings/profile-settings`);
+  redirect(`/${locale}/dashboard/settings/account-settings`);
 }
