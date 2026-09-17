@@ -8,9 +8,9 @@ export default function manifest(): MetadataRoute.Manifest {
       'The all-in-one workspace built for modern service and landscaping professionals. Schedule jobs, manage team workflows, track customers, and simplify billing seamlessly.',
     start_url: '/dashboard',
     display: 'standalone',
-    background_color: '#f8fafc',
-    theme_color: '#10b981',
-    orientation: 'landscape-primary',
+    background_color: '#0a9d73',
+    theme_color: '#0a9d73',
+    orientation: 'any',
     categories: ['business', 'productivity'],
     icons: [
       {
