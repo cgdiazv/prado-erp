@@ -1145,28 +1145,134 @@ export async function updateCustomer(customerId: string, formData: FormData) {
 }
 
 export async function deleteCustomer(customerId: string) {
+  if (!customerId) return { error: 'Customer ID required' };
+
   try {
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized operational execution.' };
 
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
+    const { organization: org, role } = await getUserOrganization(user.id);
     if (!org) return { error: 'No organizational profile found.' };
 
-    const { error } = await supabase
+    const canAccessCustomers = await hasDashboardModuleAccess(org.id, role, 'customers');
+    if (!canAccessCustomers) return { error: 'Access denied for customers module.' };
+
+    const supabaseAdmin = createAdminClient();
+
+    // Verify customer exists and belongs to this organization
+    const { data: customer, error: customerFetchErr } = await supabaseAdmin
+      .from('customers')
+      .select('id, organization_id')
+      .eq('id', customerId)
+      .eq('organization_id', org.id)
+      .single();
+
+    if (customerFetchErr || !customer) {
+      return { error: 'Customer not found or unauthorized.' };
+    }
+
+    // 1. Identify all properties (service sites) belonging to this customer
+    const { data: properties } = await supabaseAdmin
+      .from('properties')
+      .select('id')
+      .eq('customer_id', customerId);
+
+    const propertyIds = (properties || []).map((p) => p.id);
+
+    // 2. Identify all jobs linked to these properties
+    if (propertyIds.length > 0) {
+      const { data: jobs } = await supabaseAdmin
+        .from('jobs')
+        .select('id')
+        .in('property_id', propertyIds);
+
+      const jobIds = (jobs || []).map((j) => j.id);
+
+      if (jobIds.length > 0) {
+        // Break any recurring job circular references before deleting
+        await supabaseAdmin
+          .from('jobs')
+          .update({ recurring_source_job_id: null })
+          .in('recurring_source_job_id', jobIds);
+
+        // Detach job from expenses so expense records are preserved
+        await supabaseAdmin
+          .from('expenses')
+          .update({ job_id: null })
+          .in('job_id', jobIds);
+
+        // Delete jobs
+        const { error: deleteJobsErr } = await supabaseAdmin
+          .from('jobs')
+          .delete()
+          .in('id', jobIds);
+
+        if (deleteJobsErr) {
+          return { error: `Failed to delete associated jobs: ${deleteJobsErr.message}` };
+        }
+      }
+
+      // Delete properties (service sites)
+      const { error: deletePropsErr } = await supabaseAdmin
+        .from('properties')
+        .delete()
+        .in('id', propertyIds);
+
+      if (deletePropsErr) {
+        return { error: `Failed to delete customer service sites: ${deletePropsErr.message}` };
+      }
+    }
+
+    // 3. Delete estimates (quotes)
+    const { error: deleteEstimatesErr } = await supabaseAdmin
+      .from('estimates')
+      .delete()
+      .eq('customer_id', customerId);
+
+    if (deleteEstimatesErr) {
+      return { error: `Failed to delete customer quotes: ${deleteEstimatesErr.message}` };
+    }
+
+    // 4. Delete invoices
+    const { error: deleteInvoicesErr } = await supabaseAdmin
+      .from('invoices')
+      .delete()
+      .eq('customer_id', customerId);
+
+    if (deleteInvoicesErr) {
+      return { error: `Failed to delete customer invoices: ${deleteInvoicesErr.message}` };
+    }
+
+    // 5. Delete customer email logs
+    await supabaseAdmin
+      .from('customer_email_logs')
+      .delete()
+      .eq('customer_id', customerId);
+
+    // 6. Delete the customer
+    const { error: deleteCustomerErr } = await supabaseAdmin
       .from('customers')
       .delete()
       .eq('id', customerId)
       .eq('organization_id', org.id);
 
-    if (error) return { error: error.message };
+    if (deleteCustomerErr) {
+      return { error: `Failed to delete customer: ${deleteCustomerErr.message}` };
+    }
 
-    revalidatePath('/');
+    revalidatePath('/dashboard/customers');
+    revalidatePath('/[lng]/dashboard/customers');
+    revalidatePath('/dashboard/invoices-ledger');
+    revalidatePath('/[lng]/dashboard/invoices-ledger');
+    revalidatePath('/dashboard/estimates');
+    revalidatePath('/[lng]/dashboard/estimates');
+    revalidatePath('/dashboard/schedule');
+    revalidatePath('/[lng]/dashboard/schedule');
+    revalidatePath('/dashboard');
+    revalidatePath('/', 'layout');
+
     return { success: true };
   } catch (err: unknown) {
     return { error: (err as Error)?.message || 'Failed to delete customer.' };

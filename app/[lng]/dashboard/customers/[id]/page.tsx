@@ -6,7 +6,7 @@ import CustomerInvoicesTable from '@/components/dashboard/CustomerInvoicesTable'
 import CustomerJobLogTable from '@/components/dashboard/CustomerJobLogTable';
 import ServiceSitesSection from '@/components/dashboard/ServiceSitesSection';
 import CustomerEmailModal from '@/components/dashboard/CustomerEmailModal';
-import { deleteCustomer } from '../../../../actions';
+import DeleteCustomerModal from '@/components/dashboard/DeleteCustomerModal';
 import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
@@ -85,18 +85,11 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                 </Link>
               </div>
 
-              <form action={async () => {
-                'use server';
-                await deleteCustomer(customerId);
-                redirect('/dashboard/customers');
-              }}>
-                <button 
-                  type="submit"
-                  className="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-semibold py-1.5 px-3.5 rounded-lg transition shadow-xs cursor-pointer"
-                >
-                  {translations.dashboard.deleteClientProfile}
-                </button>
-              </form>
+              <DeleteCustomerModal
+                customerId={customerId}
+                customerName={`${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.company_name || 'Customer'}
+                locale={locale}
+              />
             </div>
 
             {/* Client Master Profile Banner Section */}
