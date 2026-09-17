@@ -92,7 +92,7 @@ export default function HelpdeskHowToAssistant({ locale }: HelpdeskHowToAssistan
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             rows={1}
-            className="mt-1 min-h-[40px] max-h-[140px] w-full resize-none overflow-y-auto rounded-full border border-slate-300 px-4 py-2.5 text-sm leading-5"
+            className="mt-1 min-h-[40px] max-h-[140px] w-full resize-none overflow-y-auto rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm leading-5 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
             placeholder={isEs ? 'Ejemplo: Como programo un trabajo y asigno un camion?' : 'Example: How do I schedule a job and assign a truck?'}
             required
           />

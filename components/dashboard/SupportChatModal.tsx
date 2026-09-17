@@ -300,7 +300,7 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
                 onKeyDown={handleComposerKeyDown}
                 rows={1}
                 placeholder={isEs ? 'Escribe tu mensaje...' : 'Write your message...'}
-                className="support-chat-composer min-h-[40px] max-h-[140px] flex-1 resize-none rounded-full border border-slate-300 px-4 py-2.5 text-sm leading-5"
+                className="support-chat-composer min-h-[40px] max-h-[140px] flex-1 resize-none rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm leading-5 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
                 disabled={isSending}
               />
               <button

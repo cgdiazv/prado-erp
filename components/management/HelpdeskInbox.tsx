@@ -666,7 +666,7 @@ export default function HelpdeskInbox({
                     }}
                     rows={1}
                     placeholder={isEs ? 'Escribe una respuesta...' : 'Write a reply...'}
-                    className="min-h-[40px] max-h-[140px] flex-1 resize-none overflow-y-auto rounded-full border border-slate-300 px-4 py-2.5 text-sm leading-5"
+                    className="min-h-[40px] max-h-[140px] flex-1 resize-none overflow-y-auto rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm leading-5 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
                     disabled={isPending}
                   />
                   <button
