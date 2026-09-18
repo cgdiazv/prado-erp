@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { createClient } from '@/lib/supabaseServer';
-import { getUserOrganization } from '@/lib/organization';
+import { createAdminClient } from '@/lib/supabaseAdmin';
+import { getUserOrganization, verifyUserOrganizationAccess } from '@/lib/organization';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 import { formatDocumentNumber, normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
 import { embedOrganizationLogo } from '@/lib/pdfLogo';
@@ -56,10 +57,7 @@ export async function GET(
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { organization: org } = await getUserOrganization(user.id);
-    if (!org) {
-      return new NextResponse('Organization not found', { status: 404 });
-    }
+    const { organization: defaultOrg } = await getUserOrganization(user.id);
 
     const { data: estimate, error: estimateError } = await supabase
       .from('estimates')
@@ -81,7 +79,8 @@ export async function GET(
           last_name,
           company_name,
           email,
-          phone
+          phone,
+          organization_id
         ),
         properties (
           id,
@@ -96,11 +95,6 @@ export async function GET(
       return new NextResponse('Quote not found', { status: 404 });
     }
 
-    // Verify organization ownership
-    if (estimate.organization_id && estimate.organization_id !== org.id) {
-      return new NextResponse('Forbidden', { status: 403 });
-    }
-
     const customer = estimate.customers as {
       id?: string;
       first_name?: string | null;
@@ -108,7 +102,39 @@ export async function GET(
       company_name?: string | null;
       email?: string | null;
       phone?: string | null;
+      organization_id?: string | null;
     } | null;
+
+    // Resolve the authoritative organization ID for this quote
+    const targetOrgId = customer?.organization_id || estimate.organization_id || defaultOrg?.id;
+
+    if (!targetOrgId) {
+      return new NextResponse('Organization not found', { status: 404 });
+    }
+
+    let org = defaultOrg;
+
+    // Verify organization ownership or active membership
+    if (org?.id !== targetOrgId) {
+      const access = await verifyUserOrganizationAccess(user.id, targetOrgId);
+      if (!access.authorized) {
+        return new NextResponse('Forbidden', { status: 403 });
+      }
+      org = access.organization || defaultOrg;
+    }
+
+    if (!org) {
+      return new NextResponse('Organization not found', { status: 404 });
+    }
+
+    // Auto-heal quote record in background if organization_id is missing or out of sync with customer
+    if (targetOrgId && estimate.organization_id !== targetOrgId) {
+      const adminClient = createAdminClient();
+      void adminClient
+        .from('estimates')
+        .update({ organization_id: targetOrgId })
+        .eq('id', estimate.id);
+    }
 
     const property = estimate.properties as {
       id?: string;

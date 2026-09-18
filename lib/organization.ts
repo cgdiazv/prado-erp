@@ -302,3 +302,63 @@ export async function getUserOrganization(userId: string): Promise<UserOrganizat
     role: winner?.role || null,
   };
 }
+
+export async function getOrganizationById(orgId: string): Promise<UserOrganization | null> {
+  const supabase = createAdminClient();
+
+  for (const select of [
+    ORG_SELECT_FULL,
+    ORG_SELECT_WITH_REFERRALS,
+    ORG_SELECT_WITH_LABOR_MARKUP,
+    ORG_SELECT_WITH_STRIPE,
+    ORG_SELECT_WITH_MAX,
+    ORG_SELECT_LEGACY,
+  ]) {
+    const { data, error } = await supabase
+      .from('organizations')
+      .select(select)
+      .eq('id', orgId)
+      .maybeSingle();
+
+    if (!error && data) {
+      return normalizeOrganizationRow(data);
+    }
+  }
+
+  return null;
+}
+
+export async function verifyUserOrganizationAccess(
+  userId: string,
+  orgId: string
+): Promise<{ authorized: boolean; organization: UserOrganization | null; role: string | null }> {
+  const supabase = createAdminClient();
+
+  // 1. Check if user is the organization owner
+  const { data: orgAsOwner, error: ownerError } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('id', orgId)
+    .eq('owner_id', userId)
+    .maybeSingle();
+
+  if (!ownerError && orgAsOwner) {
+    const organization = await getOrganizationById(orgId);
+    return { authorized: true, organization, role: 'owner' };
+  }
+
+  // 2. Check if user is an active member of the organization
+  const { data: membership, error: memberError } = await supabase
+    .from('organization_users')
+    .select('role')
+    .eq('organization_id', orgId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!memberError && membership) {
+    const organization = await getOrganizationById(orgId);
+    return { authorized: true, organization, role: membership.role || 'member' };
+  }
+
+  return { authorized: false, organization: null, role: null };
+}
