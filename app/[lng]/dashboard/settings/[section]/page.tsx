@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import ServicesPanel from '../ServicesPanel';
 import TrucksPanel from '../TrucksPanel';
 import ExpenseCategoriesPanel from '../ExpenseCategoriesPanel';
@@ -40,12 +39,6 @@ const SECTION_IDS = [
 ] as const;
 
 type SectionId = (typeof SECTION_IDS)[number];
-
-interface SectionLink {
-  id: SectionId;
-  label: string;
-  href: string;
-}
 
 function isSectionId(value: string): value is SectionId {
   return SECTION_IDS.includes(value as SectionId);
@@ -120,56 +113,6 @@ export default async function SettingsSectionPage({
     redirect(`/${locale}/dashboard/settings/account-settings`);
   }
 
-  const sectionLinks: SectionLink[] = [
-    {
-      id: 'account-settings',
-      label: locale.toLowerCase().startsWith('es') ? 'Configuracion de cuenta' : 'Account Settings',
-      href: `/${locale}/dashboard/settings/account-settings`,
-    },
-    {
-      id: 'operations-settings',
-      label: locale.toLowerCase().startsWith('es') ? 'Configuracion de operaciones' : 'Operations Settings',
-      href: `/${locale}/dashboard/settings/operations-settings`,
-    },
-    {
-      id: 'document-settings',
-      label: locale.toLowerCase().startsWith('es') ? 'Documentos y correos' : 'Documents & Emails',
-      href: `/${locale}/dashboard/settings/document-settings`,
-    },
-  ];
-
-  if (canAccessTeamFeatures) {
-    sectionLinks.push({
-      id: 'team-settings',
-      label: locale.toLowerCase().startsWith('es') ? 'Configuracion de equipo' : 'Team Settings',
-      href: `/${locale}/dashboard/settings/team-settings`,
-    });
-  }
-
-  if (canManageIntegrations) {
-    sectionLinks.push({
-      id: 'integrations',
-      label: locale.toLowerCase().startsWith('es') ? 'Integraciones' : 'Integrations',
-      href: `/${locale}/dashboard/settings/integrations`,
-    });
-  }
-
-  if (canAccessDispatchSettings) {
-    sectionLinks.push({
-      id: 'dispatch-settings',
-      label: locale.toLowerCase().startsWith('es') ? 'Despacho' : 'Dispatch',
-      href: `/${locale}/dashboard/settings/dispatch-settings`,
-    });
-  }
-
-  if (canManageSubscription) {
-    sectionLinks.push({
-      id: 'manage-subscription',
-      label: locale.toLowerCase().startsWith('es') ? 'Administrar suscripcion' : 'Manage Subscription',
-      href: `/${locale}/dashboard/settings/manage-subscription`,
-    });
-  }
-
   let services: Array<{
     id: string;
     name: string;
@@ -226,61 +169,7 @@ export default async function SettingsSectionPage({
   const normalizedZipCode = hasShiftedIdentityValues ? rawState : rawZip;
 
   return (
-        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
-          <div className="w-full px-6 md:px-10 pt-10 pb-8 space-y-8 text-left">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
-              <div className="flex flex-col gap-1">
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.accountWorkspaceSettings}</h1>
-                <p className="text-xs text-slate-500 font-medium">{translations.dashboard.accountWorkspaceSettingsDescription}</p>
-              </div>
-            </div>
-
-            <nav className="overflow-x-auto pb-1 lg:hidden">
-              <div className="flex min-w-max items-center gap-2">
-                {sectionLinks.map((link) => {
-                  const isActive = link.id === section;
-                  return (
-                    <Link
-                      key={link.id}
-                      href={link.href}
-                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                        isActive
-                          ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                          : 'border-gray-300 bg-white text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </nav>
-
-            <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8 lg:items-start">
-              <aside className="hidden lg:block lg:sticky lg:top-8">
-                <div className="rounded-2xl border border-gray-200 bg-white py-3 shadow-xs">
-                  <nav>
-                    {sectionLinks.map((link) => {
-                      const isActive = link.id === section;
-                      return (
-                        <Link
-                          key={link.id}
-                          href={link.href}
-                          className={`flex px-2 py-3 text-sm font-medium transition ${
-                            isActive
-                              ? 'rounded-none bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                              : 'rounded-md text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          <span>{link.label}</span>
-                        </Link>
-                      );
-                    })}
-                  </nav>
-                </div>
-              </aside>
-
-              <div className="space-y-6 min-w-0">
+    <div className="space-y-6 min-w-0">
             {section === 'account-settings' && (
               <>
                 <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
@@ -481,9 +370,6 @@ export default async function SettingsSectionPage({
                 </div>
               </>
             )}
-              </div>
-            </div>
-          </div>
-    </main>
+    </div>
   );
 }
