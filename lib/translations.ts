@@ -395,6 +395,7 @@ type TranslationBundle = {
     dispatchSettingsDescription: string;
     autoOptimizeDriveRoutes: string;
     autoOptimizeDescription: string;
+    reports: string;
     printReports: string;
     importExport: string;
     subscriptionManagement: string;

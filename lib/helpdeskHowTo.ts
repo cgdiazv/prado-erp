@@ -120,28 +120,28 @@ const HOW_TO_PLAYBOOKS_SEED: HowToPlaybookSeed[] = [
       summary: 'Use CSV templates and import/export controls for customers, jobs, expenses, and quotes.',
       keywords: ['import', 'export', 'csv', 'template', 'upload', 'download'],
       steps: [
-        'Open Dashboard > Import / Export (owner/admin roles only).',
+        'Open Dashboard > System Settings > Import / Export (owner/admin roles only).',
         'Download the matching CSV template for the data type.',
         'Populate required columns exactly as template headers.',
         'Upload the file using Import Data and wait for completion message.',
         'Use Export Data buttons to download current records for backup/audit.',
       ],
       quickReply:
-        'Go to Dashboard > Import / Export, download the right template, keep header names unchanged, upload through Import Data, and confirm success before proceeding with additional files.',
+        'Go to Dashboard > System Settings > Import / Export, download the right template, keep header names unchanged, upload through Import Data, and confirm success before proceeding with additional files.',
     },
     es: {
       title: 'Importa y exporta datos CSV',
-      summary: 'Usa plantillas CSV y controles de importacion/exportacion para clientes, trabajos, gastos y estimaciones.',
+      summary: 'Usa plantillas CSV y controles de importación/exportación para clientes, jobs, gastos y cotizaciones.',
       keywords: ['importar', 'exportar', 'csv', 'plantilla', 'subir', 'descargar'],
       steps: [
-        'Abre Dashboard > Import / Export (solo owner/admin).',
+        'Abre Dashboard > Configuración > Importar / Exportar (solo owner/admin).',
         'Descarga la plantilla CSV del tipo de dato que necesitas.',
         'Completa columnas requeridas respetando encabezados de plantilla.',
-        'Sube el archivo en Import Data y espera confirmacion.',
-        'Usa Export Data para descargar registros actuales de respaldo/auditoria.',
+        'Sube el archivo en Import Data y espera confirmación.',
+        'Usa Export Data para descargar registros actuales de respaldo/auditoría.',
       ],
       quickReply:
-        'Ve a Dashboard > Import / Export, descarga la plantilla correcta, no cambies encabezados, sube el archivo en Import Data y confirma el resultado antes de seguir con otros archivos.',
+        'Ve a Dashboard > Configuración > Importar / Exportar, descarga la plantilla correcta, no cambies encabezados, sube el archivo en Import Data y confirma el resultado antes de seguir con otros archivos.',
     },
   },
   {

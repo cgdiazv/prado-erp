@@ -14,6 +14,7 @@ import DocumentBrandingSettingsPanel from '../DocumentBrandingSettingsPanel';
 import XeroConnectionCard from '../XeroConnectionCard';
 import QBOConnectionCard from '../QBOConnectionCard';
 import StripeConnectSettings from '@/components/dashboard/StripeConnectSettings';
+import ImportExportPanel from '../ImportExportPanel';
 import { updateDispatchSettings } from '../actions';
 import { getOrganizationRolePermissions, hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import {
@@ -35,6 +36,7 @@ const SECTION_IDS = [
   'team-settings',
   'integrations',
   'dispatch-settings',
+  'import-export',
   'manage-subscription',
 ] as const;
 
@@ -88,12 +90,12 @@ export default async function SettingsSectionPage({
   const tier = normalizeSubscriptionStatus(org.subscription_status);
   const isIndividualAccount = tier === 'individual';
   const canAccessTeamFeatures = canUseTeamFeatures(tier);
-  const canAccessDispatchSettings = canUseDispatchEngine(tier);
-  const canAccessStripeSettings = canUseOnlineInvoicePayments(tier);
-  const canAccessXeroSettings = canUseAccountingIntegrations(tier);
   const normalizedRole = (role || '').toLowerCase();
   const isOwnerRole = normalizedRole === 'owner';
   const canViewImportExport = normalizedRole === 'owner' || normalizedRole === 'admin';
+  const canAccessDispatchSettings = canUseDispatchEngine(tier);
+  const canAccessStripeSettings = canUseOnlineInvoicePayments(tier);
+  const canAccessXeroSettings = canUseAccountingIntegrations(tier);
   const canManageIntegrations = canAccessStripeSettings && (normalizedRole === 'owner' || normalizedRole === 'admin');
   const canManageSubscription = isOwnerRole;
 
@@ -102,6 +104,10 @@ export default async function SettingsSectionPage({
   }
 
   if (section === 'dispatch-settings' && !canAccessDispatchSettings) {
+    redirect(`/${locale}/dashboard/settings/account-settings`);
+  }
+
+  if (section === 'import-export' && !canViewImportExport) {
     redirect(`/${locale}/dashboard/settings/account-settings`);
   }
 
@@ -330,12 +336,18 @@ export default async function SettingsSectionPage({
                       </div>
                       <p className="text-xs text-slate-400">
                         {locale.toLowerCase().startsWith('es')
-                          ? 'Define el umbral de sobrecarga para alertas y planificacion de rutas por camion.'
-                          : 'Defines the overload threshold for route planning and truck capacity alerts.'}
+                          ? 'Define el umbral de sobrecarga para alertas y planificación de rutas por vehículo.'
+                          : 'Defines the overload threshold for route planning and vehicle capacity alerts.'}
                       </p>
                     </div>
                   </form>
                 </div>
+              </div>
+            )}
+
+            {section === 'import-export' && canViewImportExport && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                <ImportExportPanel locale={locale} />
               </div>
             )}
 

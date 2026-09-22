@@ -118,7 +118,7 @@ export default async function PrintReportsPage({
 
   const t = isEs
     ? {
-        title: 'Imprimir Reportes',
+        title: 'Reportes',
         subtitle: 'Genera reportes listos para imprimir y compartir con tu equipo o contabilidad.',
         sectionTitle: 'Reportes Disponibles',
         sectionDescription: 'Selecciona un reporte y genera una vista optimizada para impresion en papel o PDF.',
@@ -172,7 +172,7 @@ export default async function PrintReportsPage({
         noData: 'No hay datos en el periodo seleccionado.',
       }
     : {
-        title: 'Print Reports',
+        title: 'Reports',
         subtitle: 'Generate print-ready reports to share with your team or accounting workflow.',
         sectionTitle: 'Available Reports',
         sectionDescription: 'Select a report and generate a print-optimized view for paper or PDF.',

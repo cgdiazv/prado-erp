@@ -169,25 +169,15 @@ export default function DashboardSidebar({
           </Link>
           ) : null}
 
-          <div className="pt-4 border-t border-gray-100 mt-4">
-            {canViewImportExport ? (
-              <Link href={localizedHref('/dashboard/import-export')} onClick={closeSidebar} className={linkStyle('/dashboard/import-export')}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-emerald-600 shrink-0">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3m-4.5 6L12 4.5 16.5 9" />
-                </svg>
-                {translations.dashboard.importExport}
-              </Link>
-            ) : null}
+          <Link href={localizedHref('/dashboard/print-reports')} onClick={closeSidebar} className={linkStyle('/dashboard/print-reports')}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-emerald-600 shrink-0">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+            </svg>
+            {translations.dashboard.reports}
+          </Link>
 
-            <Link href={localizedHref('/dashboard/print-reports')} onClick={closeSidebar} className={linkStyle('/dashboard/print-reports')}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-emerald-600 shrink-0">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V3.75A.75.75 0 016.75 3h10.5a.75.75 0 01.75.75V9M6 18h12m-12 0H5.25A2.25 2.25 0 013 15.75v-4.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v4.5A2.25 2.25 0 0118.75 18H18m-12 0v2.25c0 .414.336.75.75.75h10.5a.75.75 0 00.75-.75V18m-9 0h6" />
-              </svg>
-              {translations.dashboard.printReports}
-            </Link>
-
-            <div className="pt-2 mt-2 border-t border-gray-100">
-              <Link href={localizedHref('/dashboard/profile-settings')} onClick={closeSidebar} className={linkStyle('/dashboard/profile-settings')}>
+          <div className="pt-4 border-t border-gray-100 mt-4 space-y-1">
+            <Link href={localizedHref('/dashboard/profile-settings')} onClick={closeSidebar} className={linkStyle('/dashboard/profile-settings')}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-emerald-600 shrink-0">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0ZM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                 </svg>
@@ -232,7 +222,6 @@ export default function DashboardSidebar({
               </div>
             </div>
           </div>
-        </div>
 
         <div className="pt-2">
           {canAccessPradoManagement ? (

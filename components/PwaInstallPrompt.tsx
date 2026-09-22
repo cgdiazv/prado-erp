@@ -24,11 +24,19 @@ export function PwaInstallPrompt() {
       (navigator as unknown as { standalone?: boolean }).standalone === true;
     setIsStandalone(inStandaloneMode);
 
-    // Register the service worker for all environments
+    // Only register the service worker in production to prevent corrupting Turbopack dev streams
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch((err) => {
-        console.warn("[PWA] Service Worker registration error:", err);
-      });
+      if (process.env.NODE_ENV === "development") {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const registration of registrations) {
+            registration.unregister();
+          }
+        });
+      } else {
+        navigator.serviceWorker.register("/sw.js").catch((err) => {
+          console.warn("[PWA] Service Worker registration error:", err);
+        });
+      }
     }
 
     // Detect iOS Safari (no native install prompt)

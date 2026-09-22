@@ -44,9 +44,10 @@ export default async function SettingsLayout({
 
   const tier = normalizeSubscriptionStatus(org.subscription_status);
   const canAccessTeamFeatures = canUseTeamFeatures(tier);
+  const normalizedRole = (role || '').toLowerCase();
+  const canViewImportExport = normalizedRole === 'owner' || normalizedRole === 'admin';
   const canAccessDispatchSettings = canUseDispatchEngine(tier);
   const canAccessStripeSettings = canUseOnlineInvoicePayments(tier);
-  const normalizedRole = (role || '').toLowerCase();
   const isOwnerRole = normalizedRole === 'owner';
   const canManageIntegrations = canAccessStripeSettings && (normalizedRole === 'owner' || normalizedRole === 'admin');
   const canManageSubscription = isOwnerRole;
@@ -90,6 +91,14 @@ export default async function SettingsLayout({
       id: 'dispatch-settings',
       label: locale.toLowerCase().startsWith('es') ? 'Despacho' : 'Dispatch',
       href: `/${locale}/dashboard/settings/dispatch-settings`,
+    });
+  }
+
+  if (canViewImportExport) {
+    sectionLinks.push({
+      id: 'import-export',
+      label: locale.toLowerCase().startsWith('es') ? 'Importar / Exportar' : 'Import / Export',
+      href: `/${locale}/dashboard/settings/import-export`,
     });
   }
 
