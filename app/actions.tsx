@@ -1839,13 +1839,14 @@ export async function sendEstimateByEmail(estimateId: string) {
       ? { data: userOrg }
       : await supabaseAdmin
           .from('organizations')
-          .select('name, slogan, logo_url, document_email_header_color')
+          .select('name, slogan, logo_url, document_email_header_color, invoice_currency_code')
           .maybeSingle();
 
     const organizationName = org?.name?.trim() || 'Prado ERP';
     const organizationSlogan = org?.slogan?.trim() || 'Field Service Software';
     const organizationLogoUrl = org?.logo_url?.trim() || '';
     const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org?.document_email_header_color);
+    const invoiceCurrencyCode = (org as any)?.invoice_currency_code || 'USD';
 
     // 1. Fetch Estimate and related Customer data
     const { data: estimate, error: estimateError } = await supabaseAdmin
@@ -1874,6 +1875,7 @@ export async function sendEstimateByEmail(estimateId: string) {
       description?: string | null;
       created_at?: string;
       estimate_number?: number | null;
+      payment_terms?: string | null;
     };
     if (!customer || !customer.email) {
       throw new Error('Customer email not found for this estimate.');
@@ -1891,6 +1893,8 @@ export async function sendEstimateByEmail(estimateId: string) {
         organizationName,
         organizationLogoUrl,
         headerColor: documentEmailHeaderColor,
+        paymentTerms: estimateForEmail.payment_terms,
+        currencyCode: invoiceCurrencyCode,
       })
     );
 
@@ -1901,8 +1905,8 @@ export async function sendEstimateByEmail(estimateId: string) {
       to: [customer.email],
       replyTo: replyToAddress,
       subject: formattedEstimateNumber
-        ? `${organizationName} Estimate ${formattedEstimateNumber}: ${estimate.title}`
-        : `${organizationName} Estimate: ${estimate.title}`,
+        ? `${organizationName} Quote ${formattedEstimateNumber}: ${estimate.title}`
+        : `${organizationName} Quote: ${estimate.title}`,
       html: emailHtml,
     });
 

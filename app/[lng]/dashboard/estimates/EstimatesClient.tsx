@@ -109,6 +109,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         actionEdit: 'Editar',
         actionDelete: 'Eliminar',
         actionMarkSent: 'Enviar',
+        actionResend: 'Reenviar',
         actionApproveSchedule: 'Aprobar',
         actionDecline: 'Rechazar',
         actionPrint: 'Imprimir cotización',
@@ -118,7 +119,9 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         convertedToJob: 'Enviado a Job',
         declined: 'Rechazado',
         sendingEmail: 'Enviando...',
+        resendingEmail: 'Reenviando...',
         sendSuccess: 'Cotización enviada exitosamente.',
+        resendSuccess: 'Cotización reenviada exitosamente.',
         sendError: 'Error al enviar cotización:',
         modalCreateTitle: 'Nueva Cotización',
         modalEditTitle: 'Editar Cotización',
@@ -208,6 +211,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         actionEdit: 'Edit',
         actionDelete: 'Delete',
         actionMarkSent: 'Send',
+        actionResend: 'Resend',
         actionApproveSchedule: 'Approve',
         actionDecline: 'Decline',
         actionPrint: 'Print quote',
@@ -217,7 +221,9 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         convertedToJob: 'Sent to Job',
         declined: 'Declined',
         sendingEmail: 'Sending...',
+        resendingEmail: 'Resending...',
         sendSuccess: 'Quote sent successfully.',
+        resendSuccess: 'Quote resent successfully.',
         sendError: 'Error sending quote:',
         modalCreateTitle: 'New Quote',
         modalEditTitle: 'Edit Quote',
@@ -316,8 +322,8 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
     }
   }
 
-  // Handle sending estimate via email
-  async function handleSendEstimate(estimateId: string) {
+  // Handle sending / resending estimate via email
+  async function handleSendEstimate(estimateId: string, isResend = false) {
     if (sendingEstimateId) return; // Prevent double-clicks
 
     setSendingEstimateId(estimateId);
@@ -327,7 +333,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
       if (result.error) {
         alert(`${t.sendError} ${result.error}`);
       } else {
-        alert(t.sendSuccess);
+        alert(isResend ? t.resendSuccess : t.sendSuccess);
         // Refresh data to show the new 'sent' status
         const refreshed = await getEstimatesDashboardData();
         if (!refreshed?.error) {
@@ -633,7 +639,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                         </span>
                       </button>
                     </th>
-                    <th className="p-4 text-right w-52">
+                    <th className="p-4 text-right min-w-[240px]">
                       <button
                         type="button"
                         onClick={() => handleSort('actions')}
@@ -688,7 +694,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                       {estimate.status === 'draft' ? t.filterDraft : estimate.status === 'sent' ? t.filterSent : estimate.status === 'approved' ? t.filterApproved : t.filterDeclined}
                     </span>
                   </td>
-                  <td className="p-4 text-right w-52">
+                  <td className="p-4 text-right min-w-[240px]">
                     <div className="inline-flex items-center justify-end gap-1.5 flex-wrap">
                       {estimate.status === 'draft' && (
                         <>
@@ -718,6 +724,14 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                       {estimate.status === 'sent' && (
                         <>
                           <button
+                            onClick={() => handleSendEstimate(estimate.id, true)}
+                            disabled={sendingEstimateId === estimate.id}
+                            className="text-[10px] font-bold text-blue-700 hover:text-blue-800 hover:bg-blue-50 border border-blue-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                            title={t.actionResend}
+                          >
+                            {sendingEstimateId === estimate.id ? t.resendingEmail : t.actionResend}
+                          </button>
+                          <button
                             onClick={() => handleStatusChange(estimate.id, 'approved')}
                             disabled={approvingEstimateId === estimate.id}
                             className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
@@ -733,10 +747,30 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                         </>
                       )}
                       {estimate.status === 'approved' && (
-                        <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">{t.convertedToJob}</span>
+                        <>
+                          <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">{t.convertedToJob}</span>
+                          <button
+                            onClick={() => handleSendEstimate(estimate.id, true)}
+                            disabled={sendingEstimateId === estimate.id}
+                            className="text-[10px] font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                            title={t.actionResend}
+                          >
+                            {sendingEstimateId === estimate.id ? t.resendingEmail : t.actionResend}
+                          </button>
+                        </>
                       )}
                       {estimate.status === 'declined' && (
-                        <span className="text-[10px] text-red-500 font-bold">{t.declined}</span>
+                        <>
+                          <span className="text-[10px] text-red-500 font-bold">{t.declined}</span>
+                          <button
+                            onClick={() => handleSendEstimate(estimate.id, true)}
+                            disabled={sendingEstimateId === estimate.id}
+                            className="text-[10px] font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 px-2 py-1 rounded transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                            title={t.actionResend}
+                          >
+                            {sendingEstimateId === estimate.id ? t.resendingEmail : t.actionResend}
+                          </button>
+                        </>
                       )}
                       <button
                         type="button"
