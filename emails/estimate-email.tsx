@@ -138,12 +138,10 @@ export default function EstimateEmail({
   const formattedDate = formatDate(estimate?.created_at) || formatDate(new Date().toISOString());
 
   // Parse items from description if not explicitly provided
-  const parsed = React.useMemo(() => {
-    if (explicitLineItems && explicitLineItems.length > 0) {
-      return { lineItems: explicitLineItems, notes: explicitNotes || '' };
-    }
-    return parseEstimateDescription(estimate?.description);
-  }, [explicitLineItems, explicitNotes, estimate?.description]);
+  const parsed =
+    explicitLineItems && explicitLineItems.length > 0
+      ? { lineItems: explicitLineItems, notes: explicitNotes || '' }
+      : parseEstimateDescription(estimate?.description);
 
   const activeLineItems: LineItem[] =
     parsed.lineItems.length > 0
