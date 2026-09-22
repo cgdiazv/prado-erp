@@ -49,7 +49,7 @@ export default async function InvoicesLedgerPage({
 
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
   if (trial.isExpired) {
-    redirect('/dashboard/billing?expired=true');
+    redirect(`/${locale}/dashboard?expired=true`);
   }
 
   const { data: customers } = await supabase

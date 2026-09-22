@@ -6,10 +6,24 @@ export interface TrialStatus {
 export const TRIAL_DAYS = 30;
 export const TRIAL_DURATION_MS = TRIAL_DAYS * 24 * 60 * 60 * 1000;
 
+const ACTIVE_PAID_STATUSES = new Set([
+  'active',
+  'individual',
+  'growth',
+  'enterprise',
+]);
+
 export function checkTrialExpiry(trialStartsAt: string | Date | null, status: string | null): TrialStatus {
-  // If their Stripe subscription status is already active, they are good to go
-  if (status === 'active') {
-    return { isExpired: false, daysRemaining: 0 };
+  const normalized = String(status || '').trim().toLowerCase();
+
+  // If their subscription status is already active or a paid tier, they are good to go
+  if (ACTIVE_PAID_STATUSES.has(normalized)) {
+    return { isExpired: false, daysRemaining: 30 };
+  }
+
+  // If their status is explicitly cancelled or past_due, their subscription has ended
+  if (normalized === 'cancelled' || normalized === 'past_due' || normalized === 'expired') {
+    return { isExpired: true, daysRemaining: 0 };
   }
 
   // Default start date to now if missing for trial status so trial is active

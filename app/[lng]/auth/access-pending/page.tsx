@@ -18,7 +18,7 @@ export default async function AccessPendingPage({ params }: AccessPendingPagePro
   if (user) {
     const { organization } = await getUserOrganization(user.id);
     if (organization) {
-      redirect('/dashboard');
+      redirect(`/${locale}/dashboard`);
     }
   }
 

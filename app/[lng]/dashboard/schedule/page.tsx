@@ -37,7 +37,7 @@ export default async function SchedulePage({
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
   if (trial.isExpired) {
-    redirect('/dashboard/billing?expired=true');
+    redirect(`/${locale}/dashboard?expired=true`);
   }
 
   // Fetch customer, service, active truck records, and team members for the schedule form

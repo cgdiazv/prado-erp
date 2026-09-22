@@ -31,13 +31,13 @@ export default async function RoutingPage({
   }
 
   if (!canUseDispatchEngine(org.subscription_status)) {
-    redirect('/dashboard?restricted=true');
+    redirect(`/${locale}/dashboard?restricted=true`);
   }
 
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
   if (trial.isExpired) {
-    redirect('/dashboard/billing?expired=true');
+    redirect(`/${locale}/dashboard?expired=true`);
   }
 
   // Fetch customer assets and active fleet vehicles in parallel

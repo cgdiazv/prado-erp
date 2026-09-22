@@ -28,7 +28,7 @@ export default async function DashboardHome({
   searchParams,
 }: {
   params: Promise<{ lng?: string }>;
-  searchParams: Promise<{ view?: string; tour?: string }>;
+  searchParams: Promise<{ view?: string; tour?: string; expired?: string }>;
 }) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
@@ -38,6 +38,7 @@ export default async function DashboardHome({
   const translations = getTranslations(locale);
   const requestedView = resolvedSearchParams.view;
   const requestedTour = resolvedSearchParams.tour;
+  const requestedExpired = resolvedSearchParams.expired;
   const activeView: DashboardView = requestedView === 'financials' ? 'financials' : 'operations';
   const forceStartTour = requestedTour === '1';
 
@@ -136,10 +137,10 @@ export default async function DashboardHome({
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
 
-  if (trial.isExpired) {
+  if (trial.isExpired && requestedExpired !== 'true') {
     // Instead of moving routes, we append the query parameter to the current view.
     // The parent layout will instantly pick this up and lock down the screen with your modal!
-    redirect('/dashboard?expired=true');
+    redirect(`/${locale}/dashboard?expired=true`);
   }
 
   // Fetch headline metrics and customer scope.

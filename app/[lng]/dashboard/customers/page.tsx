@@ -32,8 +32,8 @@ export default async function CustomersPage({
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
 
   if (trial.isExpired) {
-    // Redirect them to a dedicated internal billing page to pay
-    redirect('/dashboard/billing?expired=true');
+    // Redirect them to the dashboard with expired modal active
+    redirect(`/${locale}/dashboard?expired=true`);
   }
 
   const { data: customers } = await supabase.from('customers').select('*').eq('organization_id', org.id);

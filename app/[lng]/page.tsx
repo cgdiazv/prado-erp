@@ -58,7 +58,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
     const { organization: org } = await getUserOrganization(user.id);
 
     if (org) {
-      redirect('/dashboard');
+      redirect(`/${lng}/dashboard`);
     } else {
       redirect(`/${lng}/auth/access-pending`);
     }
