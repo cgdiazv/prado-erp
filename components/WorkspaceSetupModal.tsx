@@ -49,6 +49,7 @@ export default function WorkspaceSetupModal({
   const [tradeVertical, setTradeVertical] = useState<string>('');
   const [teamSize, setTeamSize] = useState<string>('');
   const [painPoint, setPainPoint] = useState<string>('');
+  const [companyName, setCompanyName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -97,6 +98,7 @@ export default function WorkspaceSetupModal({
     formData.set('tradeVertical', tradeVertical);
     formData.set('teamSize', teamSize);
     formData.set('painPoint', painPoint);
+    formData.set('companyName', companyName);
     formData.set('intendedPlan', 'trial');
 
     try {
@@ -151,11 +153,11 @@ export default function WorkspaceSetupModal({
 
       {/* Foreground White Modal Card Container */}
       <div 
-        className="relative z-10 w-full max-w-xl bg-white border border-slate-200/90 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 transform scale-100"
+        className="relative z-10 w-full max-w-xl max-h-[92vh] bg-white border border-slate-200/90 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 transform scale-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Subtle Top Header & Progress Indicator */}
-        <div className="w-full bg-slate-50/90 border-b border-slate-100 px-6 py-3.5 flex items-center justify-between">
+        <div className="w-full bg-slate-50/90 border-b border-slate-100 px-6 py-3.5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             {step > 1 ? (
               <button
@@ -189,7 +191,7 @@ export default function WorkspaceSetupModal({
         </div>
 
         {/* Dynamic Emerald Progress Fill Line */}
-        <div className="w-full h-1 bg-slate-100 overflow-hidden">
+        <div className="w-full h-1 bg-slate-100 overflow-hidden shrink-0">
           <div 
             className="h-full bg-emerald-600 transition-all duration-500 ease-out" 
             style={{ width: progress.width }}
@@ -197,7 +199,7 @@ export default function WorkspaceSetupModal({
         </div>
 
         {/* Modal Body Container (White Theme) */}
-        <div className="p-6 md:p-8 flex-1 flex flex-col justify-between bg-white text-slate-900">
+        <div className="p-6 md:p-8 flex-1 flex flex-col justify-between bg-white text-slate-900 overflow-y-auto">
           {/* STEP 1: Trade Vertical */}
           {step === 1 && (
             <div className="space-y-6 animate-fadeIn">
@@ -459,6 +461,24 @@ export default function WorkspaceSetupModal({
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+                    Company Name
+                  </label>
+                  <div className="relative flex items-center">
+                    <Building2 className="absolute left-3.5 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      name="companyName"
+                      required
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="e.g., Green Clean Lawn Care"
+                      className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 transition placeholder:text-slate-400 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
                     Work Email
                   </label>
                   <div className="relative flex items-center">
@@ -503,7 +523,7 @@ export default function WorkspaceSetupModal({
                 <div className="pt-2">
                   <button
                     type="submit"
-                    disabled={loading || !email || !password}
+                    disabled={loading || !companyName.trim() || !email || !password}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold py-3.5 px-6 rounded-xl transition duration-200 shadow-md shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm cursor-pointer"
                   >
                     {loading ? (
