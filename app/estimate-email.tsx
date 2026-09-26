@@ -25,7 +25,7 @@ interface EstimateEmailProps {
   organizationSlogan?: string;
 }
 
-export const EstimateEmail = ({ customerName, estimate, organizationSlogan = 'Field Service Software' }: EstimateEmailProps) => {
+export const EstimateEmail = ({ customerName, estimate, organizationSlogan = '' }: EstimateEmailProps) => {
   const previewText = `Tu propuesta para "${estimate.title}" está lista para revisión.`;
 
   return (
@@ -87,7 +87,7 @@ export const EstimateEmail = ({ customerName, estimate, organizationSlogan = 'Fi
           {/* Pie de Página */}
           <Section style={footerSection}>
             <Text style={footerText}>
-              &copy; {new Date().getFullYear()} Prado Systems. {organizationSlogan}
+              &copy; {new Date().getFullYear()} Prado Systems.{organizationSlogan?.trim() ? ` ${organizationSlogan.trim()}` : ''}
             </Text>
           </Section>
         </Container>

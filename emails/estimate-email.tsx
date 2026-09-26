@@ -118,7 +118,7 @@ function formatDate(value: string | null | undefined, locale = 'en-US') {
 export default function EstimateEmail({
   customerName,
   estimate,
-  organizationSlogan = 'Field Service Software',
+  organizationSlogan = '',
   organizationName = 'Prado Systems',
   organizationLogoUrl = '',
   headerColor = '#009966',
@@ -189,8 +189,8 @@ export default function EstimateEmail({
                   ) : null}
                   <div style={{ display: 'inline-block', verticalAlign: 'middle' }}>
                     <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.02em' }}>{headerTitle}</h1>
-                    {organizationSlogan ? (
-                      <p style={{ margin: '2px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan}</p>
+                    {organizationSlogan?.trim() ? (
+                      <p style={{ margin: '2px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan.trim()}</p>
                     ) : null}
                   </div>
                 </td>

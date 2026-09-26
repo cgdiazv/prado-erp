@@ -1835,19 +1835,6 @@ export async function sendEstimateByEmail(estimateId: string) {
     const supabaseAdmin = createAdminClient();
     const { organization: userOrg } = user ? await getUserOrganization(user.id) : { organization: null };
 
-    const { data: org } = userOrg
-      ? { data: userOrg }
-      : await supabaseAdmin
-          .from('organizations')
-          .select('name, slogan, logo_url, document_email_header_color, invoice_currency_code')
-          .maybeSingle();
-
-    const organizationName = org?.name?.trim() || 'Prado ERP';
-    const organizationSlogan = org?.slogan?.trim() || 'Field Service Software';
-    const organizationLogoUrl = org?.logo_url?.trim() || '';
-    const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org?.document_email_header_color);
-    const invoiceCurrencyCode = (org as any)?.invoice_currency_code || 'USD';
-
     // 1. Fetch Estimate and related Customer data
     const { data: estimate, error: estimateError } = await supabaseAdmin
       .from('estimates')
@@ -1867,6 +1854,30 @@ export async function sendEstimateByEmail(estimateId: string) {
     if (estimateError || !estimate) {
       throw new Error('Estimate not found.');
     }
+
+    let org = userOrg;
+    if (estimate?.organization_id && org?.id !== estimate.organization_id) {
+      const { data: estOrg } = await supabaseAdmin
+        .from('organizations')
+        .select('name, slogan, logo_url, document_email_header_color, invoice_currency_code')
+        .eq('id', estimate.organization_id)
+        .maybeSingle();
+      if (estOrg) {
+        org = estOrg as any;
+      }
+    } else if (!org) {
+      const { data: fallbackOrg } = await supabaseAdmin
+        .from('organizations')
+        .select('name, slogan, logo_url, document_email_header_color, invoice_currency_code')
+        .maybeSingle();
+      org = fallbackOrg as any;
+    }
+
+    const organizationName = org?.name?.trim() || 'Prado ERP';
+    const organizationSlogan = org?.slogan?.trim() || '';
+    const organizationLogoUrl = org?.logo_url?.trim() || '';
+    const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org?.document_email_header_color);
+    const invoiceCurrencyCode = (org as any)?.invoice_currency_code || 'USD';
 
     const customer = estimate.customers as { email: string; first_name: string; last_name: string };
     const estimateForEmail = estimate as {
@@ -2274,7 +2285,7 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
         .maybeSingle();
 
       const organizationName = org?.name?.trim() || 'Prado ERP';
-      const organizationSlogan = org?.slogan?.trim() || 'Field Service Software';
+      const organizationSlogan = org?.slogan?.trim() || '';
 
       const parseDescriptionItems = (desc: string | null | undefined) => {
         if (!desc) return [] as Array<{ name: string; cost: string }>;
@@ -2360,7 +2371,7 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
                   ${serviceItems.length > 0 ? `<p style="margin: 0 0 10px 0;"><strong>Service Breakdown:</strong></p>${servicesHtml}` : ''}
                   <p style="margin: 16px 0 0 0;">Our team will arrive as scheduled. If you need to make any changes, feel free to reply to this email.</p>
                   <p style="margin: 12px 0 0 0;">Best regards,<br/><strong>${organizationName} Operations</strong></p>
-                  <p style="margin: 12px 0 0 0; font-size: 12px; color: #64748b;">${organizationSlogan}</p>
+                  ${organizationSlogan ? `<p style="margin: 12px 0 0 0; font-size: 12px; color: #64748b;">${organizationSlogan}</p>` : ''}
                 </div>
                 <div style="background: #f8fafc; padding: 16px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
                   &copy; ${footerYear} ${organizationName}. All rights reserved.

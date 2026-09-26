@@ -276,8 +276,8 @@ export async function GET(
     });
 
     let orgY = currentY - 30;
-    if (org.slogan) {
-      page.drawText(truncateText(org.slogan, embeddedLogo ? 40 : 50), {
+    if (org.slogan?.trim()) {
+      page.drawText(truncateText(org.slogan.trim(), embeddedLogo ? 40 : 50), {
         x: textX,
         y: orgY,
         size: 9,
