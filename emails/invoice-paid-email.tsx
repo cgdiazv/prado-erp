@@ -19,7 +19,7 @@ export default function InvoicePaidEmail({
   totalPaid,
   currencyCode = 'USD',
   organizationName = 'Prado Systems',
-  organizationSlogan = 'Field Service Software',
+  organizationSlogan = '',
   organizationLogoUrl = '',
 }: InvoicePaidEmailProps) {
   const normalizedCurrency = normalizeCurrencyCode(currencyCode);
@@ -62,7 +62,9 @@ export default function InvoicePaidEmail({
 
           <p style={{ margin: '0 0 12px 0' }}>Your account balance for this invoice is now settled. Thank you for your business.</p>
           <p style={{ margin: 0 }}>Best regards,<br /><strong>{organizationName} Team</strong></p>
-          <p style={{ margin: '12px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan}</p>
+          {organizationSlogan?.trim() ? (
+            <p style={{ margin: '12px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan.trim()}</p>
+          ) : null}
         </div>
 
         <div style={{ background: '#f8fafc', padding: '16px', textAlign: 'center', fontSize: 12, color: '#64748b', borderTop: '1px solid #e2e8f0' }}>

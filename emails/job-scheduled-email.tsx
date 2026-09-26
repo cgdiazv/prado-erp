@@ -24,7 +24,7 @@ export default function JobScheduledEmail({
   truckName,
   calendarUrl,
   organizationName = 'Prado Systems',
-  organizationSlogan = 'Field Service Software',
+  organizationSlogan = '',
   organizationLogoUrl = '',
   headerColor = '#009966',
 }: JobScheduledEmailProps) {
@@ -61,7 +61,9 @@ export default function JobScheduledEmail({
                   )}
                   <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.025em', color: '#ffffff' }}>{organizationName}</span>
                 </div>
-                <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#ffffff' }}>{organizationSlogan}</p>
+                {organizationSlogan?.trim() ? (
+                  <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#ffffff' }}>{organizationSlogan.trim()}</p>
+                ) : null}
               </td>
             </tr>
             <tr>

@@ -357,7 +357,7 @@ export async function createJob(formData: FormData) {
           truckName,
           calendarUrl,
           organizationName,
-          organizationSlogan: org.slogan?.trim() || 'Field Service Software',
+          organizationSlogan: org.slogan?.trim() || '',
           organizationLogoUrl: org.logo_url?.trim() || '',
           headerColor: normalizeDocumentEmailHeaderColor(org.document_email_header_color),
         })
@@ -523,7 +523,7 @@ export async function completeJob(jobId: string) {
     .single();
 
   const organizationName = org?.name?.trim() || 'Prado ERP';
-  const organizationSlogan = org?.slogan?.trim() || 'Field Service Software';
+  const organizationSlogan = org?.slogan?.trim() || '';
   const organizationLogoUrl = org?.logo_url?.trim() || '';
   const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org?.document_email_header_color);
 
@@ -1027,7 +1027,7 @@ export async function createCustomer(formData: FormData) {
         .maybeSingle();
 
       const organizationName = org?.name?.trim() || 'Prado Systems';
-      const organizationSlogan = org?.slogan?.trim() || 'Field Service Software';
+      const organizationSlogan = org?.slogan?.trim() || '';
       const organizationLogoUrl = org?.logo_url?.trim() || '';
       const headerColor = org?.document_email_header_color || '#009966';
 
@@ -1448,7 +1448,7 @@ export async function markInvoiceAsPaid(invoiceId: string, customerId: string) {
         : { data: null as { name?: string | null; slogan?: string | null; logo_url?: string | null } | null };
 
       const organizationName = org?.name?.trim() || 'Prado ERP';
-      const organizationSlogan = org?.slogan?.trim() || 'Field Service Software';
+      const organizationSlogan = org?.slogan?.trim() || '';
       const organizationLogoUrl = org?.logo_url?.trim() || '';
       const customerDisplayName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.company_name || 'Valued Customer';
       const paidDate = new Date().toLocaleDateString('en-US', {

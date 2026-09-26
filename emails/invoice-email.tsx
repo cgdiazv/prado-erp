@@ -31,7 +31,7 @@ export default function InvoiceEmail({
   invoiceNumber,
   paymentUrl,
   organizationName = 'Prado Systems',
-  organizationSlogan = 'Field Service Software',
+  organizationSlogan = '',
   organizationLogoUrl = '',
   headerColor = '#009966',
 }: InvoiceEmailProps) {
@@ -122,7 +122,9 @@ export default function InvoiceEmail({
             </div>
           ) : null}
 
-          <p style={{ margin: '12px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan}</p>
+          {organizationSlogan?.trim() ? (
+            <p style={{ margin: '12px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan.trim()}</p>
+          ) : null}
         </div>
 
         <div style={{ background: '#f8fafc', padding: '16px', textAlign: 'center', fontSize: 12, color: '#64748b', borderTop: '1px solid #e2e8f0' }}>

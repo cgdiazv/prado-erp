@@ -29,7 +29,7 @@ export default function JobCompletedEmail({
   currencyCode = 'USD',
   totalAmount,
   organizationName = 'Prado Systems',
-  organizationSlogan = 'Field Service Software',
+  organizationSlogan = '',
   organizationLogoUrl = '',
   headerColor = '#009966',
 }: JobCompletedEmailProps) {
@@ -89,7 +89,9 @@ export default function JobCompletedEmail({
           <p style={{ margin: 0 }}>
             Best regards,<br /><strong>{organizationName} Team</strong>
           </p>
-          <p style={{ margin: '12px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan}</p>
+          {organizationSlogan?.trim() ? (
+            <p style={{ margin: '12px 0 0 0', fontSize: 12, color: '#64748b' }}>{organizationSlogan.trim()}</p>
+          ) : null}
           <p style={{ margin: '8px 0 0 0', fontSize: 11, color: '#94a3b8' }}>Reference tax rate: {safeTaxRatePercent.toFixed(2)}%</p>
         </div>
 

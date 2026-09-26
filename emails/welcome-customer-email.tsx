@@ -15,7 +15,7 @@ type WelcomeCustomerEmailProps = {
 export default function WelcomeCustomerEmail({
   customerName,
   organizationName = 'Prado Systems',
-  organizationSlogan = 'Field Service Software',
+  organizationSlogan = '',
   organizationLogoUrl = '',
   headerColor = '#009966',
   companyName,
@@ -48,8 +48,8 @@ export default function WelcomeCustomerEmail({
             </div>
           )}
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-0.025em' }}>{headerTitle}</h1>
-          {organizationSlogan ? (
-            <p style={{ margin: '4px 0 0 0', fontSize: 13, opacity: 0.9 }}>{organizationSlogan}</p>
+          {organizationSlogan?.trim() ? (
+            <p style={{ margin: '4px 0 0 0', fontSize: 13, opacity: 0.9 }}>{organizationSlogan.trim()}</p>
           ) : null}
           <div style={{ display: 'inline-block', background: '#ffffff', color: normalizedHeaderColor, fontWeight: 'bold', padding: '5px 14px', borderRadius: 20, fontSize: 11, marginTop: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Welcome to Our Family
