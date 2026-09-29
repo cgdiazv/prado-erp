@@ -383,7 +383,7 @@ export async function createJob(formData: FormData) {
   return { success: true };
 }
 
-export async function updateJobTruckAssignment(jobId: string, truckId: string | null) {
+export async function updateJobTruckAssignment(jobId: string, truckId: string | null, routeOrder?: number | null) {
   if (!jobId) return { error: 'Missing Job ID' };
 
   try {
@@ -392,18 +392,26 @@ export async function updateJobTruckAssignment(jobId: string, truckId: string | 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized operational execution.' };
 
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
-
+    const { organization: org } = await getUserOrganization(user.id);
     if (!org) return { error: 'No organizational profile found.' };
 
-    const { error } = await supabase
+    const updatePayload: { truck_id: string | null; route_order?: number | null } = { truck_id: truckId };
+    if (routeOrder !== undefined) {
+      updatePayload.route_order = routeOrder;
+    }
+
+    let { error } = await supabase
       .from('jobs')
-      .update({ truck_id: truckId })
+      .update(updatePayload)
       .eq('id', jobId);
+
+    if (error && routeOrder !== undefined && error.message?.includes('route_order')) {
+      const fallback = await supabase
+        .from('jobs')
+        .update({ truck_id: truckId })
+        .eq('id', jobId);
+      error = fallback.error;
+    }
 
     if (error) return { error: error.message };
 
@@ -412,6 +420,75 @@ export async function updateJobTruckAssignment(jobId: string, truckId: string | 
     return { success: true };
   } catch (err: unknown) {
     return { error: (err as Error)?.message || 'Failed to update job assignment.' };
+  }
+}
+
+export async function syncVehicleRouteOrder(
+  truckRoutes: Record<string, string[]>,
+  unassignedJobIds?: string[]
+) {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Unauthorized operational execution.' };
+
+    const { organization: org } = await getUserOrganization(user.id);
+    if (!org) return { error: 'No organizational profile found.' };
+
+    const updatePromises: Promise<any>[] = [];
+
+    Object.entries(truckRoutes).forEach(([truckId, jobIds]) => {
+      jobIds.forEach((jobId, index) => {
+        updatePromises.push(
+          (async () => {
+            const { error } = await supabase
+              .from('jobs')
+              .update({
+                truck_id: truckId,
+                route_order: index + 1,
+              })
+              .eq('id', jobId);
+
+            if (error && error.message?.includes('route_order')) {
+              await supabase
+                .from('jobs')
+                .update({ truck_id: truckId })
+                .eq('id', jobId);
+            }
+          })()
+        );
+      });
+    });
+
+    if (unassignedJobIds && unassignedJobIds.length > 0) {
+      updatePromises.push(
+        (async () => {
+          const { error } = await supabase
+            .from('jobs')
+            .update({
+              truck_id: null,
+              route_order: null,
+            })
+            .in('id', unassignedJobIds);
+
+          if (error && error.message?.includes('route_order')) {
+            await supabase
+              .from('jobs')
+              .update({ truck_id: null })
+              .in('id', unassignedJobIds);
+          }
+        })()
+      );
+    }
+
+    await Promise.all(updatePromises);
+
+    revalidatePath('/dashboard/routing');
+    revalidatePath('/dashboard/schedule');
+    return { success: true };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to sync route order.' };
   }
 }
 

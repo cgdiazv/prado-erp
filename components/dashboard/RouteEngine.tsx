@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DispatchMap from '@/components/DispatchMap';
-import { updateJobTruckAssignment } from '@/app/actions';
+import { updateJobTruckAssignment, syncVehicleRouteOrder } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 
 interface CustomerSummary {
@@ -23,6 +23,7 @@ interface JobProperty {
 interface Job {
   id: string;
   truck_id: string | null;
+  route_order?: number | null;
   properties?: JobProperty | null;
   job_type: string;
   status: string;
@@ -99,6 +100,11 @@ function routeCentroid(jobs: Job[]) {
 
 function sortJobs(jobs: Job[]) {
   return [...jobs].sort((left, right) => {
+    if (left.route_order !== null && left.route_order !== undefined && right.route_order !== null && right.route_order !== undefined) {
+      return left.route_order - right.route_order;
+    }
+    if (left.route_order !== null && left.route_order !== undefined) return -1;
+    if (right.route_order !== null && right.route_order !== undefined) return 1;
     const leftTime = left.scheduled_date ? new Date(left.scheduled_date).getTime() : 0;
     const rightTime = right.scheduled_date ? new Date(right.scheduled_date).getTime() : 0;
     return leftTime - rightTime;
@@ -128,6 +134,11 @@ function buildBaseRouteState(jobs: Job[], trucks: Truck[]): RouteState {
 function normalizeStoredState(stored: SerializedRouteState | null, jobs: Job[], trucks: Truck[]): RouteState {
   const base = buildBaseRouteState(jobs, trucks);
   if (!stored) return base;
+
+  const hasAnyDbRouteOrder = jobs.some((job) => job.route_order !== null && job.route_order !== undefined);
+  if (hasAnyDbRouteOrder) {
+    return base;
+  }
 
   const jobIdSet = new Set(jobs.map((job) => job.id));
   const usedIds = new Set<string>();
@@ -304,6 +315,21 @@ export default function RouteEngine({
     setRouteState((previous) => buildOptimizedState(previous, jobMap));
   }, [isHydrated, autoOptimizeDriveRoutes, jobMap]);
 
+  const syncRouteChanges = async (nextState: RouteState, activeJobId?: string | null) => {
+    if (activeJobId) {
+      setSyncingJobId(activeJobId);
+    }
+    const result = await syncVehicleRouteOrder(nextState.truckRoutes, nextState.unassignedIds);
+    if (result?.error) {
+      console.error(result.error);
+    } else {
+      router.refresh();
+    }
+    if (activeJobId) {
+      setSyncingJobId(null);
+    }
+  };
+
   const persistAssignment = async (jobId: string, truckId: string | null) => {
     setSyncingJobId(jobId);
     const result = await updateJobTruckAssignment(jobId, truckId);
@@ -469,15 +495,32 @@ export default function RouteEngine({
   };
 
   const assignJobToTruck = async (jobId: string, truckId: string | null, beforeJobId?: string | null) => {
-    moveJob(jobId, { truckId, beforeJobId });
+    let nextState: RouteState = routeState;
+    setRouteState((previous) => {
+      const job = jobMap.get(jobId);
+      if (!job) return previous;
+
+      const cleaned = removeJobFromState(previous, jobId);
+
+      if (typeof truckId === 'string') {
+        nextState = {
+          ...cleaned,
+          truckRoutes: {
+            ...cleaned.truckRoutes,
+            [truckId]: insertJobId(cleaned.truckRoutes[truckId] || [], jobId, beforeJobId),
+          },
+        };
+      } else {
+        nextState = {
+          ...cleaned,
+          unassignedIds: insertJobId(cleaned.unassignedIds, jobId, beforeJobId),
+        };
+      }
+      return nextState;
+    });
+
     setDraggingJob(null);
-
-    const currentJob = jobMap.get(jobId);
-    if (!currentJob) return;
-
-    if (truckId !== currentJob.truck_id) {
-      await persistAssignment(jobId, truckId);
-    }
+    await syncRouteChanges(nextState, jobId);
   };
 
   const handleDropToTruck = async (truckId: string, beforeJobId?: string | null) => {
@@ -506,21 +549,25 @@ export default function RouteEngine({
 
   const optimizeAllRoutes = async () => {
     setOptimizing(true);
-    setRouteState((previous) => buildOptimizedState(previous, jobMap));
+    const optimized = buildOptimizedState(routeState, jobMap);
+    setRouteState(optimized);
+    await syncRouteChanges(optimized);
     setOptimizing(false);
   };
 
-  const optimizeTruckRoute = (truckId: string) => {
+  const optimizeTruckRoute = async (truckId: string) => {
+    let nextState: RouteState = routeState;
     setRouteState((previous) => {
-      const next = {
+      nextState = {
         ...previous,
         truckRoutes: {
           ...previous.truckRoutes,
           [truckId]: optimizeJobOrder(previous.truckRoutes[truckId] || [], jobMap),
         },
       } satisfies RouteState;
-      return next;
+      return nextState;
     });
+    await syncRouteChanges(nextState);
   };
 
   const renderJobCard = (jobId: string, sourceTruckId: string | null, beforeJobId?: string | null) => {
@@ -584,14 +631,18 @@ export default function RouteEngine({
   const missingGeoCount = routeJobs.filter((job) => !hasCoordinates(job)).length;
 
   return (
-    <section className="space-y-4">
-      {/* Top Header Card */}
-      <div className="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">{translations.dashboard.googleMapsRouteDispatch}</h2>
-          <p className="text-xs text-slate-400 mt-0.5">{translations.dashboard.visualStopOptimization}</p>
+    <section className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-3 border-b border-gray-200 pb-5">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            {translations.dashboard.dispatchRoutingOptimization}
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            {translations.dashboard.dispatchRoutingDescription}
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           {/* Route Capacity Warning Button */}
           <button
             type="button"
@@ -696,7 +747,8 @@ export default function RouteEngine({
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
                 {translations.dashboard.routeRoutes}
               </span>
-              <span className="text-[10px] text-slate-400">
+              <span className="text-[10px] text-emerald-600 font-medium inline-flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                 {translations.dashboard.routeSavedLocally}
               </span>
             </div>
@@ -779,7 +831,7 @@ export default function RouteEngine({
                     routeState.unassignedIds.map((jobId, index) => renderJobCard(jobId, null, routeState.unassignedIds[index]))
                   ) : (
                     <div className="flex items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white py-4 px-3 text-center">
-                      <p className="text-xs text-slate-400">{translations.dashboard.routeSavedLocally}</p>
+                      <p className="text-xs text-slate-400">{locale.toLowerCase().startsWith('es') ? 'No hay trabajos sin asignar' : 'No unassigned jobs'}</p>
                     </div>
                   )}
                 </div>
@@ -943,8 +995,7 @@ export default function RouteEngine({
                                         <button
                                           type="button"
                                           onClick={() => {
-                                            moveJob(job.id, { truckId: null });
-                                            void persistAssignment(job.id, null);
+                                            void assignJobToTruck(job.id, null);
                                           }}
                                           title={removeLabel}
                                           className="shrink-0 text-[10px] font-semibold text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded px-1.5 py-0.5 transition"

@@ -128,24 +128,32 @@ export default async function RoutingPage({
           },
         };
       })
+      .sort((a, b) => {
+        const aOrder = (a as any).route_order;
+        const bOrder = (b as any).route_order;
+        if (aOrder !== null && aOrder !== undefined && bOrder !== null && bOrder !== undefined) {
+          return aOrder - bOrder;
+        }
+        if (aOrder !== null && aOrder !== undefined) return -1;
+        if (bOrder !== null && bOrder !== undefined) return 1;
+        const aTime = a.scheduled_date ? new Date(a.scheduled_date).getTime() : 0;
+        const bTime = b.scheduled_date ? new Date(b.scheduled_date).getTime() : 0;
+        return aTime - bTime;
+      })
     : [];
 
   return (
-        <main className="flex-1 overflow-y-auto">
-          <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
-            <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.dispatchRoutingOptimization}</h1>
-              <p className="text-xs text-slate-400 mt-1">{translations.dashboard.dispatchRoutingDescription}</p>
-            </div>
-              <RouteEngine
-                orgId={org.id}
-                jobs={jobs || []}
-                trucks={trucks}
-                locale={locale}
-                maxStopsPerTruck={org.max_jobs_per_truck ?? 4}
-                autoOptimizeDriveRoutes={org.auto_optimize_drive_routes ?? true}
-              />
-          </div>
+    <main className="flex-1 overflow-y-auto">
+      <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
+        <RouteEngine
+          orgId={org.id}
+          jobs={jobs || []}
+          trucks={trucks}
+          locale={locale}
+          maxStopsPerTruck={org.max_jobs_per_truck ?? 4}
+          autoOptimizeDriveRoutes={org.auto_optimize_drive_routes ?? true}
+        />
+      </div>
     </main>
   );
 }
