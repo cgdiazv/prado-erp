@@ -188,154 +188,11 @@ export default function LiveMeetingPage() {
           </div>
         </section>
 
-        {/* Content Layout: Left = Agenda & Details, Right = Registration Form */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Main Content Area: Form First, Details Below */}
+        <div className="max-w-2xl mx-auto space-y-8">
           
-          {/* Left Column: Agenda & Event Metadata */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            {/* Quick Metadata Card */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center shrink-0 text-emerald-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{isEs ? 'Fecha' : 'Date'}</h4>
-                  <p className="text-sm font-semibold text-white">{isEs ? 'Lunes, 5 de octubre' : 'Monday, October 5th'}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center shrink-0 text-emerald-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{isEs ? 'Hora' : 'Time'}</h4>
-                  <p className="text-sm font-semibold text-white">7:00 PM CT (Hora Centro US)</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center shrink-0 text-emerald-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{isEs ? 'Lugar' : 'Location'}</h4>
-                  <p className="text-sm font-semibold text-white">{isEs ? 'Transmisión en vivo por YouTube' : 'YouTube Live Stream'}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center shrink-0 text-emerald-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{isEs ? 'Duración' : 'Duration'}</h4>
-                  <p className="text-sm font-semibold text-white">{isEs ? '45 min prácticos + Q&A' : '45 min practical + Q&A'}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Agenda Card */}
-            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 shadow-xl space-y-4">
-              <h3 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
-                <span className="text-emerald-400">⚡</span>
-                {isEs ? 'En esta sesión práctica de 45 minutos veremos en tiempo real:' : 'In this 45-minute practical session, we will see in real time:'}
-              </h3>
-
-              <div className="space-y-4 pt-1">
-                {/* Point 1 */}
-                <div className="flex items-start gap-3.5 bg-slate-950/50 border border-slate-800/60 p-3.5 rounded-xl">
-                  <span className="text-2xl shrink-0">📄</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-100">
-                      {isEs ? 'Cotizaciones en segundos' : 'Quotes in seconds'}
-                    </h4>
-                    <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                      {isEs
-                        ? 'Cómo generar presupuestos formales desde el teléfono antes de subirte a la camioneta y enviarlos con aprobación digital inmediata.'
-                        : 'How to create formal quotes directly from your mobile before getting in the vehicle, with instant customer approval.'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Point 2 */}
-                <div className="flex items-start gap-3.5 bg-slate-950/50 border border-slate-800/60 p-3.5 rounded-xl">
-                  <span className="text-2xl shrink-0">🗺️</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-100">
-                      {isEs ? 'Despacho y rutas eficientes' : 'Efficient dispatch & routing'}
-                    </h4>
-                    <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                      {isEs
-                        ? 'Cómo organizar el día de tus técnicos en el mapa con Google Maps para ahorrar gasolina, reducir tiempos de traslado y evitar paradas vacías.'
-                        : 'How to organize technician days on Google Maps to save fuel, reduce travel times, and optimize stop sequences.'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Point 3 */}
-                <div className="flex items-start gap-3.5 bg-slate-950/50 border border-slate-800/60 p-3.5 rounded-xl">
-                  <span className="text-2xl shrink-0">💳</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-100">
-                      {isEs ? 'Cobros inmediatos y términos de pago' : 'Instant payments & payment terms'}
-                    </h4>
-                    <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                      {isEs
-                        ? 'Cómo facturar al momento de terminar el trabajo y aplicar condiciones claras (Due Upon Receipt, Net 15, Net 30) para cobrar más rápido.'
-                        : 'How to invoice as soon as the job is completed and apply clear conditions (Due Upon Receipt, Net 15, Net 30) to get paid faster.'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Point 4 */}
-                <div className="flex items-start gap-3.5 bg-slate-950/50 border border-slate-800/60 p-3.5 rounded-xl">
-                  <span className="text-2xl shrink-0">⚙️</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-100">
-                      {isEs ? 'Preguntas y respuestas en vivo' : 'Live Q&A session'}
-                    </h4>
-                    <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                      {isEs
-                        ? 'Resolveré dudas de configuración y operación directamente sobre el panel de control en tiempo real.'
-                        : 'I will resolve setup questions and workflows directly on the live dashboard in real time.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Target Audience Notice */}
-            <div className="bg-emerald-950/30 border border-emerald-800/40 rounded-2xl p-5 text-emerald-200/90 text-xs sm:text-sm leading-relaxed flex items-start gap-3">
-              <span className="text-emerald-400 text-lg shrink-0">💡</span>
-              <p>
-                {isEs ? (
-                  <>
-                    <strong className="text-white font-semibold">¿Para quién es esta sesión?</strong> Si tienes un negocio de servicios en campo (plomería, HVAC, jardinería, electricidad, limpieza o contratistas independientes) y quieres pasar de las hojas de cálculo y notas en papel a un flujo ágil y profesional, esta sesión es 100% para ti.
-                  </>
-                ) : (
-                  <>
-                    <strong className="text-white font-semibold">Who is this for?</strong> If you run a field service business (plumbing, HVAC, lawn care, electrical, cleaning, or independent contracting) and want to move from spreadsheets and paper to a streamlined, professional workflow, this session is for you.
-                  </>
-                )}
-              </p>
-            </div>
-          </div>
-
-          {/* Right Column: Registration / Subscription Card */}
-          <div className="lg:col-span-5 sticky top-24">
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-7 shadow-2xl shadow-emerald-500/5 backdrop-blur-md space-y-6">
+          {/* Registration / Subscription Card */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-emerald-500/5 backdrop-blur-md space-y-6">
               
               {status === 'success' ? (
                 /* Success State */
@@ -520,8 +377,10 @@ export default function LiveMeetingPage() {
                 </form>
               )}
             </div>
+
+            {/* Event Details & Agenda Cards (Below the Form) */}
+            <EventAgendaDetails isEs={isEs} />
           </div>
-        </div>
 
         {/* Free trial footer banner */}
         <section className="bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-3xl p-8 md:p-10 text-center space-y-4 shadow-xl">
@@ -559,6 +418,150 @@ export default function LiveMeetingPage() {
       </main>
 
       <Footer locale={locale} />
+    </div>
+  );
+}
+
+function EventAgendaDetails({ isEs }: { isEs: boolean }) {
+  return (
+    <div className="space-y-6">
+      {/* Quick Metadata Card */}
+      <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center shrink-0 text-emerald-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+            </svg>
+          </div>
+          <div>
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{isEs ? 'Fecha' : 'Date'}</h4>
+            <p className="text-sm font-semibold text-white">{isEs ? 'Lunes, 5 de octubre' : 'Monday, October 5th'}</p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center shrink-0 text-emerald-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{isEs ? 'Hora' : 'Time'}</h4>
+            <p className="text-sm font-semibold text-white">7:00 PM CT (Hora Centro US)</p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center shrink-0 text-emerald-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+            </svg>
+          </div>
+          <div>
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{isEs ? 'Lugar' : 'Location'}</h4>
+            <p className="text-sm font-semibold text-white">{isEs ? 'Transmisión en vivo por YouTube' : 'YouTube Live Stream'}</p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center shrink-0 text-emerald-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+          </div>
+          <div>
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{isEs ? 'Duración' : 'Duration'}</h4>
+            <p className="text-sm font-semibold text-white">{isEs ? '45 min prácticos + Q&A' : '45 min practical + Q&A'}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Agenda Card */}
+      <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 shadow-xl space-y-4">
+        <h3 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
+          <span className="text-emerald-400">⚡</span>
+          {isEs ? 'En esta sesión práctica de 45 minutos veremos en tiempo real:' : 'In this 45-minute practical session, we will see in real time:'}
+        </h3>
+
+        <div className="space-y-4 pt-1">
+          {/* Point 1 */}
+          <div className="flex items-start gap-3.5 bg-slate-950/50 border border-slate-800/60 p-3.5 rounded-xl">
+            <span className="text-2xl shrink-0">📄</span>
+            <div>
+              <h4 className="text-sm font-bold text-slate-100">
+                {isEs ? 'Cotizaciones en segundos' : 'Quotes in seconds'}
+              </h4>
+              <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                {isEs
+                  ? 'Cómo crear cotizaciones formales directamente desde tu móvil antes de subirte al vehículo, con aprobación inmediata del cliente.'
+                  : 'How to create formal quotes directly from your mobile before getting in the vehicle, with instant customer approval.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Point 2 */}
+          <div className="flex items-start gap-3.5 bg-slate-950/50 border border-slate-800/60 p-3.5 rounded-xl">
+            <span className="text-2xl shrink-0">🗺️</span>
+            <div>
+              <h4 className="text-sm font-bold text-slate-100">
+                {isEs ? 'Despacho y rutas eficientes' : 'Efficient dispatch & routing'}
+              </h4>
+              <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                {isEs
+                  ? 'Cómo organizar el día de tus técnicos en Google Maps para ahorrar gasolina, reducir tiempos de traslado y optimizar el orden de paradas.'
+                  : 'How to organize technician days on Google Maps to save fuel, reduce travel times, and optimize stop sequences.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Point 3 */}
+          <div className="flex items-start gap-3.5 bg-slate-950/50 border border-slate-800/60 p-3.5 rounded-xl">
+            <span className="text-2xl shrink-0">💳</span>
+            <div>
+              <h4 className="text-sm font-bold text-slate-100">
+                {isEs ? 'Cobros inmediatos y condiciones de pago' : 'Instant payments & payment terms'}
+              </h4>
+              <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                {isEs
+                  ? 'Cómo facturar al terminar el trabajo y aplicar condiciones claras (Due Upon Receipt, Net 15, Net 30) para cobrar más rápido.'
+                  : 'How to invoice as soon as the job is completed and apply clear conditions (Due Upon Receipt, Net 15, Net 30) to get paid faster.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Point 4 */}
+          <div className="flex items-start gap-3.5 bg-slate-950/50 border border-slate-800/60 p-3.5 rounded-xl">
+            <span className="text-2xl shrink-0">⚙️</span>
+            <div>
+              <h4 className="text-sm font-bold text-slate-100">
+                {isEs ? 'Sesión de preguntas y respuestas en vivo' : 'Live Q&A session'}
+              </h4>
+              <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                {isEs
+                  ? 'Resolveré dudas de configuración y flujos de trabajo directamente en el panel en tiempo real.'
+                  : 'I will resolve setup questions and workflows directly on the live dashboard in real time.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Target Audience Notice */}
+      <div className="bg-emerald-950/30 border border-emerald-800/40 rounded-2xl p-5 text-emerald-200/90 text-xs sm:text-sm leading-relaxed flex items-start gap-3">
+        <span className="text-emerald-400 text-lg shrink-0">💡</span>
+        <p>
+          {isEs ? (
+            <>
+              <strong className="text-white font-semibold">¿Para quién es esta sesión?</strong> Si tienes un negocio de servicios en campo (plomería, HVAC, jardinería, electricidad, limpieza o contratistas independientes) y quieres pasar de las hojas de cálculo y notas en papel a un flujo ágil y profesional, esta sesión es 100% para ti.
+            </>
+          ) : (
+            <>
+              <strong className="text-white font-semibold">Who is this for?</strong> If you run a field service business (plumbing, HVAC, lawn care, electrical, cleaning, or independent contracting) and want to move from spreadsheets and paper to a streamlined, professional workflow, this session is for you.
+            </>
+          )}
+        </p>
+      </div>
     </div>
   );
 }
