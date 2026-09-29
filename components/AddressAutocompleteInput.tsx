@@ -13,12 +13,14 @@ interface AddressAutocompleteInputProps {
   className?: string;
 }
 
-interface ResolvedAddress {
+export interface ResolvedAddress {
   streetAddress: string;
   city: string;
   state: string;
   zipCode: string;
   formattedAddress: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface PlaceSuggestion {
@@ -63,7 +65,7 @@ async function fetchPlaceDetails(apiKey: string, placeId: string): Promise<Resol
       method: 'GET',
       headers: {
         'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'formattedAddress,addressComponents',
+        'X-Goog-FieldMask': 'formattedAddress,addressComponents,location',
       },
     });
 
@@ -85,12 +87,16 @@ async function fetchPlaceDetails(apiKey: string, placeId: string): Promise<Resol
     const streetAddress = `${streetNumber} ${route}`.trim();
     const city = locality || subLocality || adminAreaLevel2;
 
+    const loc = payload?.location;
+
     return {
       streetAddress,
       city,
       state,
       zipCode,
       formattedAddress: payload?.formattedAddress || '',
+      latitude: typeof loc?.latitude === 'number' ? loc.latitude : null,
+      longitude: typeof loc?.longitude === 'number' ? loc.longitude : null,
     };
   } catch {
     return null;

@@ -67,7 +67,13 @@ function MapBoundsUpdater({ stops }: { stops: MapStop[] }) {
   return null;
 }
 
-export default function DispatchMap({ stops }: { stops: MapStop[] }) {
+export default function DispatchMap({
+  stops,
+  className,
+}: {
+  stops: MapStop[];
+  className?: string;
+}) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
   const defaultCenter = { lat: 29.7604, lng: -95.3698 };
   const validStops = stops.filter(stop => stop.latitude !== null && stop.longitude !== null);
@@ -75,7 +81,7 @@ export default function DispatchMap({ stops }: { stops: MapStop[] }) {
 
   return (
     <APIProvider apiKey={apiKey}>
-      <div className="w-full h-64 md:h-80 lg:h-[460px] rounded-xl overflow-hidden border border-gray-200 shadow-inner bg-gray-100">
+      <div className={className || "w-full h-64 md:h-80 lg:h-[460px] rounded-xl overflow-hidden border border-gray-200 shadow-inner bg-gray-100"}>
         {apiKey ? (
           <Map
             defaultCenter={validStops[0] ? { lat: Number(validStops[0].latitude), lng: Number(validStops[0].longitude) } : defaultCenter}

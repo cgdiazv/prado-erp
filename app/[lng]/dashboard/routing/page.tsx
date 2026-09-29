@@ -59,7 +59,7 @@ export default async function RoutingPage({
   const { data: rawJobs } = propertyIds.length > 0
     ? await supabase
         .from('jobs')
-        .select('*, truck_id, properties(street_address, latitude, longitude, customer_id, customers(first_name, last_name, company_name))')
+        .select('*, truck_id, properties(street_address, city, state, zip_code, latitude, longitude, customer_id, customers(first_name, last_name, company_name))')
         .in('property_id', propertyIds)
         .order('scheduled_date', { ascending: true })
     : { data: [] };
@@ -74,7 +74,17 @@ export default async function RoutingPage({
             const hasCoordinates = job.properties?.latitude !== null && job.properties?.longitude !== null;
             return !hasCoordinates && !!job.property_id && !!job.properties?.street_address;
           })
-          .map((job) => [job.property_id as string, job.properties?.street_address as string])
+          .map((job) => {
+            const fullAddress = [
+              job.properties?.street_address,
+              job.properties?.city,
+              job.properties?.state,
+              job.properties?.zip_code,
+            ]
+              .filter(Boolean)
+              .join(', ');
+            return [job.property_id as string, fullAddress];
+          })
       ).entries()
     );
 

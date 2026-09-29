@@ -1296,13 +1296,20 @@ export async function createProperty(customerId: string, formData: FormData) {
       return { error: 'Missing required address fields.' };
     }
 
-    let latitude: number | null = null;
-    let longitude: number | null = null;
+    const rawLat = formData.get('latitude') as string | null;
+    const rawLng = formData.get('longitude') as string | null;
+    const parsedLat = rawLat ? Number(rawLat) : null;
+    const parsedLng = rawLng ? Number(rawLng) : null;
 
-    const fullAddressString = `${streetAddress}, ${city}, ${state} ${zipCode}`;
-    const geocoded = await geocodeAddressServer(fullAddressString);
-    latitude = geocoded.latitude;
-    longitude = geocoded.longitude;
+    let latitude: number | null = (parsedLat !== null && !isNaN(parsedLat)) ? parsedLat : null;
+    let longitude: number | null = (parsedLng !== null && !isNaN(parsedLng)) ? parsedLng : null;
+
+    if (latitude === null || longitude === null) {
+      const fullAddressString = `${streetAddress}, ${city}, ${state} ${zipCode}`;
+      const geocoded = await geocodeAddressServer(fullAddressString);
+      latitude = geocoded.latitude;
+      longitude = geocoded.longitude;
+    }
 
     const supabaseAdmin = createAdminClient();
     const { error: insertError } = await supabaseAdmin

@@ -35,6 +35,8 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
   const [stateValue, setStateValue] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [serviceNotes, setServiceNotes] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
 
   const resolveStateName = (value: string) => {
     const normalized = value.trim().toLowerCase();
@@ -70,6 +72,8 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
     setStateValue('');
     setZipCode('');
     setServiceNotes('');
+    setLatitude(null);
+    setLongitude(null);
     setEditingCreate(false);
     setSuccessMsg(isEs ? 'Sitio de servicio vinculado.' : 'Service site linked.');
   }
@@ -135,11 +139,15 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
                       if (resolved.city) setCity(resolved.city);
                       if (resolved.state) setStateValue(resolveStateName(resolved.state));
                       if (resolved.zipCode) setZipCode(resolved.zipCode);
+                      if (typeof resolved.latitude === 'number') setLatitude(resolved.latitude);
+                      if (typeof resolved.longitude === 'number') setLongitude(resolved.longitude);
                     }}
                     placeholder={translations.dashboard.streetAddress}
                     required
                     className="md:col-span-2 rounded-lg border border-gray-200 p-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900 font-medium"
                   />
+                  <input type="hidden" name="latitude" value={latitude ?? ''} />
+                  <input type="hidden" name="longitude" value={longitude ?? ''} />
                   <input
                     type="text"
                     name="city"
