@@ -1709,6 +1709,61 @@ export async function submitDemoRequest(formData: FormData) {
   }
 }
 
+export async function registerLiveMeetingAttendee(formData: FormData) {
+  const name = (formData.get('name') as string | null)?.trim() || '';
+  const email = (formData.get('email') as string | null)?.trim() || '';
+  const companyName = (formData.get('companyName') as string | null)?.trim() || '';
+  const phone = (formData.get('phone') as string | null)?.trim() || '';
+  const trade = (formData.get('trade') as string | null)?.trim() || '';
+  const question = (formData.get('question') as string | null)?.trim() || '';
+  const locale = (formData.get('locale') as string | null)?.trim() || 'es';
+
+  if (!name || !email) {
+    return { error: locale === 'es' ? 'Por favor ingresa tu nombre y correo electrónico.' : 'Please provide your name and email address.' };
+  }
+
+  try {
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const supabaseAdmin = createAdminClient();
+      await supabaseAdmin.from('leads').insert([
+        {
+          full_name: name,
+          email,
+          company_name: companyName || trade || 'Field Service Pro',
+          phone: phone || null,
+          locale,
+          source: 'live-meeting-oct-5',
+        },
+      ]);
+    }
+
+    if (process.env.RESEND_API_KEY) {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: getResendFromAddress({ displayName: 'Prado Jobs Live Meeting' }),
+        to: 'info@pradojob.com',
+        replyTo: email,
+        subject: `[LIVE MEETING REGISTRO] ${name} - ${trade || companyName || 'Servicios en campo'}`,
+        html: `
+          <h2>Nuevo Registro para Live Meeting (Octubre 5, 7:00 PM CT)</h2>
+          <p><strong>Nombre:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Teléfono / WhatsApp:</strong> ${phone || 'No especificado'}</p>
+          <p><strong>Empresa / Negocio:</strong> ${companyName || 'No especificado'}</p>
+          <p><strong>Oficio / Industria:</strong> ${trade || 'No especificado'}</p>
+          ${question ? `<p><strong>Pregunta o duda para el vivo:</strong> ${question}</p>` : ''}
+          <hr />
+          <p><small>Enviado desde la página de Live Meeting en Prado Jobs</small></p>
+        `,
+      });
+    }
+
+    return { success: true };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'No se pudo completar el registro. Intenta de nuevo.' };
+  }
+}
+
 export async function hideDemoRecord(recordId: string, returnPath: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
