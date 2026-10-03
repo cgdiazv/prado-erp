@@ -1,11 +1,11 @@
-// Minimal service worker for production PWA behavior.
-// It caches only static assets (icons, images) to avoid interfering with dynamic SSR and RSC streaming.
+// Service worker for Prado ERP PWA with Caching and Web Push Notifications support.
 
-const CACHE_NAME = 'prado-v2';
+const CACHE_NAME = 'prado-v3';
 
 const APP_SHELL = [
   '/icon.png',
-  '/apple-icon.png',
+  '/icon-192.png',
+  '/icon-512.png',
   '/manifest.webmanifest',
 ];
 
@@ -27,7 +27,6 @@ self.addEventListener('activate', (event) => {
 
 // Network-first strategy for static files only.
 self.addEventListener('fetch', (event) => {
-  // Only handle same-origin GET requests.
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
@@ -67,5 +66,95 @@ self.addEventListener('fetch', (event) => {
 
       return cached || networkFetch;
     })
+  );
+});
+
+// ==========================================
+// Web Push Notifications
+// ==========================================
+
+self.addEventListener('push', (event) => {
+  let payload = {
+    title: 'Prado ERP',
+    body: 'You have a new update.',
+    url: '/dashboard',
+    badgeCount: 1,
+  };
+
+  if (event.data) {
+    try {
+      const parsed = event.data.json();
+      payload = { ...payload, ...parsed };
+    } catch {
+      payload.body = event.data.text() || payload.body;
+    }
+  }
+
+  const title = payload.title || 'Prado ERP';
+  const options = {
+    body: payload.body,
+    icon: payload.icon || '/icon-192.png',
+    badge: payload.badge || '/icon-192.png',
+    data: {
+      url: payload.url || '/dashboard',
+    },
+    tag: payload.tag || 'prado-update',
+    renotify: true,
+    vibrate: [100, 50, 100],
+  };
+
+  event.waitUntil(
+    (async () => {
+      await self.registration.showNotification(title, options);
+
+      // Update home screen app badge if supported by browser/OS
+      if ('setAppBadge' in navigator) {
+        try {
+          if (typeof payload.badgeCount === 'number') {
+            await navigator.setAppBadge(payload.badgeCount);
+          } else {
+            await navigator.setAppBadge();
+          }
+        } catch {
+          // Ignore badging errors
+        }
+      }
+    })()
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/dashboard';
+
+  event.waitUntil(
+    (async () => {
+      // Clear or decrement badge count
+      if ('clearAppBadge' in navigator) {
+        try {
+          await navigator.clearAppBadge();
+        } catch {
+          // Ignore
+        }
+      }
+
+      const windowClients = await clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+
+      // Find matching client or any active dashboard window
+      for (const client of windowClients) {
+        if (client.url && 'focus' in client) {
+          await client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+
+      // If no window is open, open a new standalone window
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })()
   );
 });
