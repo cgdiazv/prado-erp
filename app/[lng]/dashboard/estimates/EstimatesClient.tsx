@@ -469,7 +469,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
           </div>
           <Link
             href={`/${locale}/dashboard/estimates/new`}
-            className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm inline-flex items-center gap-1.5"
+            className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm inline-flex items-center justify-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{t.newEstimate}</span>
