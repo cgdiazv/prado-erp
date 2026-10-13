@@ -6,6 +6,7 @@ import DeleteJobButton from '@/components/DeleteJobButton';
 import { completeJob, updateJobScheduleDetails } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { downloadICS } from '@/lib/icsExport';
+import { Clock, Calendar, Check } from 'lucide-react';
 
 type FilterType = 'all' | 'scheduled' | 'completed' | 'archived';
 type SortColumn = 'date' | 'address' | 'type' | 'truck' | 'cost' | 'action';
@@ -429,7 +430,7 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
                     {renderSortIndicator('cost')}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-4 py-3 text-right min-w-[170px]">
                   <button type="button" onClick={() => handleSort('action')} className="inline-flex items-center gap-1 justify-end">
                     <span>{translations.dashboard.action}</span>
                     {renderSortIndicator('action')}
@@ -458,8 +459,8 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
                       </span>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-2">
+                  <td className="px-4 py-3 text-right min-w-[170px]">
+                    <div className="inline-flex items-center justify-end gap-1.5 flex-wrap">
                       {/* MARK DONE ICON TRIGGER */}
                       {job.status === 'scheduled' ? (
                         <>
@@ -467,11 +468,10 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
                             type="button"
                             onClick={() => openScheduleDetails(job)}
                             title={translations.dashboard.scheduleDetails}
-                            className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 rounded-lg transition duration-200 border border-amber-200 shadow-xs"
+                            aria-label={translations.dashboard.scheduleDetails}
+                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200 hover:border-amber-300 transition duration-150 cursor-pointer"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
-                            </svg>
+                            <Clock className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
@@ -484,11 +484,10 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
                               truck_name: job.truck_id ? (trucks.find((t) => t.id === job.truck_id)?.name ?? null) : null,
                             })}
                             title={isEs ? 'Exportar al calendario' : 'Export to calendar'}
-                            className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 rounded-lg transition duration-200 border border-blue-200 shadow-xs"
+                            aria-label={isEs ? 'Exportar al calendario' : 'Export to calendar'}
+                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-blue-600 hover:text-blue-700 hover:bg-blue-50 border border-blue-200 hover:border-blue-300 transition duration-150 cursor-pointer"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-                            </svg>
+                            <Calendar className="w-3.5 h-3.5" />
                           </button>
                           <form
                             action={async () => {
@@ -498,11 +497,10 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
                             <button
                               type="submit"
                               title={translations.dashboard.markDone}
-                              className="p-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-lg transition duration-200 border border-emerald-200 shadow-xs"
+                              aria-label={translations.dashboard.markDone}
+                              className="w-7 h-7 inline-flex items-center justify-center rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 transition duration-150 cursor-pointer"
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                              </svg>
+                              <Check className="w-3.5 h-3.5" />
                             </button>
                           </form>
                         </>
