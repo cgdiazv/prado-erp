@@ -23,7 +23,7 @@ import {
   isDashboardModule,
   isEditableDashboardRole,
 } from '@/lib/dashboardRolePermissions';
-import { getUserOrganization } from '@/lib/organization';
+import { getUserOrganization, verifyUserOrganizationAccess } from '@/lib/organization';
 import { findAuthUserIndexByEmail, findAuthUserIndexByUserIds, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 import { normalizeCurrencyCode, toStripeCurrency } from '@/lib/currency';
 import { formatDocumentNumber, normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
@@ -745,21 +745,49 @@ export async function completeJob(
   }
 
   // 3. Bookkeeping Automation: Auto-generate the customer invoice
-  const cost = Number(job.cost_amount || 0);
+  const jobTotalCost = Number(job.cost_amount || 0);
   const taxRatePercent = normalizeInvoiceTaxRatePercent(org?.invoice_tax_rate_percent);
   const invoiceCurrencyCode = normalizeCurrencyCode(org?.invoice_currency_code);
-  const estimatedTax = parseFloat((cost * (taxRatePercent / 100)).toFixed(2));
-  const total = parseFloat((cost + estimatedTax).toFixed(2));
-  
+
   if (!job.properties) {
     return { error: 'Job properties not found' };
   }
   const customerId = job.properties.customer_id;
-  const customerMeta = (job.properties as any).customers; 
-  
+  const customerMeta = (job.properties as any).customers;
+
+  // Check if prior invoices (such as deposit invoice) exist for this job
+  const { data: priorInvoices } = await supabase
+    .from('invoices')
+    .select('id, total_amount, tax_amount, status, invoice_type')
+    .eq('job_id', job.id);
+
+  const totalPriorInvoicedBase = (priorInvoices || []).reduce((sum, inv) => {
+    const invTotal = Number(inv.total_amount || 0);
+    const invTax = Number(inv.tax_amount || 0);
+    return sum + Math.max(0, invTotal - invTax);
+  }, 0);
+
+  const hasPriorInvoices = Boolean(priorInvoices && priorInvoices.length > 0 && totalPriorInvoicedBase > 0);
+  const cost = hasPriorInvoices
+    ? Math.max(0, parseFloat((jobTotalCost - totalPriorInvoicedBase).toFixed(2)))
+    : jobTotalCost;
+
+  const estimatedTax = parseFloat((cost * (taxRatePercent / 100)).toFixed(2));
+  const total = parseFloat((cost + estimatedTax).toFixed(2));
+
+  // If the job was already 100% invoiced beforehand (e.g. 100% deposit), skip creating duplicate invoice
+  if (hasPriorInvoices && total <= 0) {
+    revalidatePath('/dashboard/jobs');
+    revalidatePath('/dashboard/invoices-ledger');
+    return { success: true };
+  }
+
   // Set the invoice due date to today (due immediately upon completion)
   const todayStr = new Date().toISOString().split('T')[0];
   const invoiceNumber = await reserveDocumentNumber(supabase, org.id, 'invoice');
+
+  const invoiceType = hasPriorInvoices ? 'final' : 'standard';
+  const invoiceNotes = hasPriorInvoices ? `Saldo Final - ${job.job_type}` : null;
 
   const { data: invoiceRecord, error: invoiceError } = await supabase
     .from('invoices')
@@ -767,12 +795,15 @@ export async function completeJob(
       {
         organization_id: org.id,
         customer_id: customerId,
+        job_id: job.id,
         invoice_number: invoiceNumber,
         due_date: todayStr,
         status: 'unpaid',
         total_amount: total,
         tax_amount: estimatedTax,
         currency_code: invoiceCurrencyCode,
+        invoice_type: invoiceType,
+        notes: invoiceNotes,
       },
     ])
     .select('id, invoice_number')
@@ -1691,6 +1722,554 @@ export async function markInvoiceAsPaid(invoiceId: string, customerId: string) {
   }
 }
 
+export async function updateInvoice(
+  invoiceId: string,
+  payload: {
+    dueDate: string;
+    totalAmount: number;
+    taxAmount: number;
+    notes?: string | null;
+    invoiceType?: 'standard' | 'deposit' | 'final' | string;
+    sendUpdatedEmail?: boolean;
+  }
+) {
+  if (!invoiceId) return { error: 'Missing Invoice ID.' };
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: 'Unauthorized operational execution.' };
+
+    const { organization: defaultOrg } = await getUserOrganization(user.id);
+    const adminClient = createAdminClient();
+
+    const { data: invoice, error: invoiceFetchError } = await adminClient
+      .from('invoices')
+      .select(`
+        id,
+        organization_id,
+        customer_id,
+        job_id,
+        invoice_number,
+        due_date,
+        tax_amount,
+        total_amount,
+        currency_code,
+        status,
+        stripe_payment_url,
+        stripe_checkout_session_id,
+        notes,
+        invoice_type,
+        customers (
+          id,
+          first_name,
+          last_name,
+          company_name,
+          email,
+          organization_id
+        ),
+        jobs (
+          id,
+          job_type,
+          cost_amount
+        )
+      `)
+      .eq('id', invoiceId)
+      .maybeSingle();
+
+    if (invoiceFetchError || !invoice) {
+      return { error: 'Invoice not found.' };
+    }
+
+    const customerMeta = invoice.customers as {
+      id?: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      company_name?: string | null;
+      email?: string | null;
+      organization_id?: string | null;
+    } | null;
+
+    const targetOrgId = invoice.organization_id || customerMeta?.organization_id || defaultOrg?.id;
+    let org = defaultOrg;
+
+    if (targetOrgId && org?.id !== targetOrgId) {
+      const access = await verifyUserOrganizationAccess(user.id, targetOrgId);
+      if (!access.authorized) {
+        return { error: 'Forbidden.' };
+      }
+      org = access.organization || defaultOrg;
+    }
+
+    if ((invoice.status || '').toLowerCase() === 'paid') {
+      return { error: 'Paid invoices cannot be edited directly.' };
+    }
+
+    const totalAmount = Number(payload.totalAmount || 0);
+    const taxAmount = Number(payload.taxAmount || 0);
+    const baseAmount = Math.max(0, parseFloat((totalAmount - taxAmount).toFixed(2)));
+    const dueDate = payload.dueDate || invoice.due_date;
+    const notes = payload.notes !== undefined ? payload.notes : invoice.notes;
+    const invoiceType = payload.invoiceType || invoice.invoice_type || 'standard';
+    const invoiceCurrencyCode = normalizeCurrencyCode(invoice.currency_code || org?.invoice_currency_code);
+    const taxRatePercent = normalizeInvoiceTaxRatePercent(org?.invoice_tax_rate_percent);
+
+    const customerDisplayName =
+      `${customerMeta?.first_name || ''} ${customerMeta?.last_name || ''}`.trim() ||
+      customerMeta?.company_name ||
+      'Prado Customer';
+    const serviceName = (invoice.jobs as any)?.job_type || notes || 'Service Invoice';
+
+    let paymentUrl = invoice.stripe_payment_url;
+    let stripeCheckoutSessionId = invoice.stripe_checkout_session_id;
+
+    if (
+      org?.id &&
+      canUseOnlineInvoicePayments(org?.subscription_status) &&
+      org?.stripe_account_id &&
+      org?.stripe_account_charges_enabled &&
+      org?.stripe_account_payouts_enabled &&
+      customerMeta?.email
+    ) {
+      try {
+        if (stripeCheckoutSessionId && process.env.STRIPE_SECRET_KEY) {
+          try {
+            const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+            await stripe.checkout.sessions.expire(stripeCheckoutSessionId);
+          } catch {
+            // Ignore if already expired
+          }
+        }
+
+        const paymentSession = await createInvoiceCheckoutSession({
+          invoiceId: invoice.id,
+          organizationId: org.id,
+          customerId: invoice.customer_id,
+          stripeAccountId: org.stripe_account_id,
+          customerEmail: customerMeta.email,
+          customerName: customerDisplayName,
+          serviceName,
+          baseAmount,
+          taxAmount,
+          taxRatePercent,
+          currencyCode: invoiceCurrencyCode,
+          totalAmount,
+          enableAutopayIfPossible: false,
+        });
+
+        paymentUrl = paymentSession?.paymentUrl || null;
+        stripeCheckoutSessionId = paymentSession?.sessionId || null;
+      } catch (paymentErr) {
+        console.error('Failed to regenerate Stripe link for updated invoice:', paymentErr);
+      }
+    }
+
+    const { error: updateError } = await adminClient
+      .from('invoices')
+      .update({
+        due_date: dueDate,
+        total_amount: totalAmount,
+        tax_amount: taxAmount,
+        notes: notes || null,
+        invoice_type: invoiceType,
+        stripe_payment_url: paymentUrl,
+        stripe_checkout_session_id: stripeCheckoutSessionId,
+      })
+      .eq('id', invoice.id);
+
+    if (updateError) {
+      return { error: updateError.message };
+    }
+
+    // Optional: send updated email notification to customer
+    if (payload.sendUpdatedEmail && customerMeta?.email) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const organizationName = org?.name?.trim() || 'Prado ERP';
+        const organizationSlogan = org?.slogan?.trim() || '';
+        const organizationLogoUrl = org?.logo_url?.trim() || '';
+        const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org?.document_email_header_color);
+        const fromAddress = getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName });
+        const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
+        const formattedInvoiceNumber = formatDocumentNumber('invoice', invoice.invoice_number);
+
+        const invoiceHtml = await render(
+          InvoiceEmail({
+            customerName: customerDisplayName,
+            serviceName,
+            dueDate,
+            baseAmount,
+            taxAmount,
+            taxRatePercent,
+            currencyCode: invoiceCurrencyCode,
+            totalAmount,
+            invoiceNumber: invoice.invoice_number,
+            paymentUrl: paymentUrl || undefined,
+            organizationName,
+            organizationSlogan,
+            organizationLogoUrl,
+            headerColor: documentEmailHeaderColor,
+          })
+        );
+
+        await resend.emails.send({
+          from: fromAddress,
+          to: customerMeta.email,
+          replyTo: replyToAddress,
+          subject: formattedInvoiceNumber
+            ? `${organizationName} Invoice ${formattedInvoiceNumber} (Updated)`
+            : `Updated Invoice - ${serviceName}`,
+          html: invoiceHtml,
+        });
+      } catch (emailErr) {
+        console.error('Invoice updated, but re-sending email failed:', emailErr);
+      }
+    }
+
+    revalidatePath('/dashboard/invoices-ledger');
+    revalidatePath(`/dashboard/customers/${invoice.customer_id}`);
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      invoice: {
+        id: invoice.id,
+        due_date: dueDate,
+        total_amount: totalAmount,
+        tax_amount: taxAmount,
+        notes: notes || null,
+        invoice_type: invoiceType,
+        stripe_payment_url: paymentUrl,
+      },
+    };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to update invoice.' };
+  }
+}
+
+export async function resendInvoiceEmail(invoiceId: string) {
+  if (!invoiceId) return { error: 'Missing Invoice ID.' };
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: 'Unauthorized operational execution.' };
+
+    const { organization: defaultOrg } = await getUserOrganization(user.id);
+    const adminClient = createAdminClient();
+
+    const { data: invoice, error: invoiceFetchError } = await adminClient
+      .from('invoices')
+      .select(`
+        id,
+        organization_id,
+        customer_id,
+        job_id,
+        invoice_number,
+        due_date,
+        tax_amount,
+        total_amount,
+        currency_code,
+        status,
+        stripe_payment_url,
+        notes,
+        customers (
+          id,
+          first_name,
+          last_name,
+          company_name,
+          email,
+          organization_id
+        ),
+        jobs (
+          id,
+          job_type
+        )
+      `)
+      .eq('id', invoiceId)
+      .maybeSingle();
+
+    if (invoiceFetchError || !invoice) {
+      return { error: 'Invoice not found.' };
+    }
+
+    const customerMeta = invoice.customers as {
+      id?: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      company_name?: string | null;
+      email?: string | null;
+      organization_id?: string | null;
+    } | null;
+
+    if (!customerMeta?.email) {
+      return { error: 'Customer does not have an email address configured.' };
+    }
+
+    const targetOrgId = invoice.organization_id || customerMeta?.organization_id || defaultOrg?.id;
+    let org = defaultOrg;
+
+    if (targetOrgId && org?.id !== targetOrgId) {
+      const access = await verifyUserOrganizationAccess(user.id, targetOrgId);
+      if (!access.authorized) {
+        return { error: 'Forbidden.' };
+      }
+      org = access.organization || defaultOrg;
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const organizationName = org?.name?.trim() || 'Prado ERP';
+    const organizationSlogan = org?.slogan?.trim() || '';
+    const organizationLogoUrl = org?.logo_url?.trim() || '';
+    const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org?.document_email_header_color);
+    const fromAddress = getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName });
+    const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
+    const customerDisplayName =
+      `${customerMeta.first_name || ''} ${customerMeta.last_name || ''}`.trim() ||
+      customerMeta.company_name ||
+      'Valued Customer';
+    const formattedInvoiceNumber = formatDocumentNumber('invoice', invoice.invoice_number);
+    const totalAmount = Number(invoice.total_amount || 0);
+    const taxAmount = Number(invoice.tax_amount || 0);
+    const baseAmount = Math.max(0, parseFloat((totalAmount - taxAmount).toFixed(2)));
+    const taxRatePercent = normalizeInvoiceTaxRatePercent(org?.invoice_tax_rate_percent);
+    const serviceName = (invoice.jobs as any)?.job_type || invoice.notes || 'Service Invoice';
+
+    const invoiceHtml = await render(
+      InvoiceEmail({
+        customerName: customerDisplayName,
+        serviceName,
+        dueDate: invoice.due_date,
+        baseAmount,
+        taxAmount,
+        taxRatePercent,
+        currencyCode: normalizeCurrencyCode(invoice.currency_code || org?.invoice_currency_code),
+        totalAmount,
+        invoiceNumber: invoice.invoice_number,
+        paymentUrl: invoice.stripe_payment_url || undefined,
+        organizationName,
+        organizationSlogan,
+        organizationLogoUrl,
+        headerColor: documentEmailHeaderColor,
+      })
+    );
+
+    await resend.emails.send({
+      from: fromAddress,
+      to: customerMeta.email,
+      replyTo: replyToAddress,
+      subject: formattedInvoiceNumber
+        ? `${organizationName} Invoice ${formattedInvoiceNumber}`
+        : `Invoice for Service - ${serviceName}`,
+      html: invoiceHtml,
+    });
+
+    return { success: true };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to send invoice email.' };
+  }
+}
+
+export async function createDepositInvoiceForJob(
+  jobId: string,
+  depositPercentage: number = 50
+) {
+  if (!jobId) return { error: 'Missing Job ID.' };
+  if (depositPercentage <= 0 || depositPercentage >= 100) {
+    return { error: 'Deposit percentage must be between 1 and 99%.' };
+  }
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'Unauthorized operational execution.' };
+
+    const { organization: defaultOrg } = await getUserOrganization(user.id);
+    const adminClient = createAdminClient();
+
+    const { data: job, error: jobError } = await supabase
+      .from('jobs')
+      .select('id, job_type, cost_amount, property_id, properties(customer_id, customers(id, first_name, last_name, company_name, email, organization_id))')
+      .eq('id', jobId)
+      .maybeSingle();
+
+    if (jobError || !job) {
+      return { error: 'Job not found.' };
+    }
+
+    const customerMeta = (job.properties as any)?.customers;
+    const customerId = (job.properties as any)?.customer_id;
+    if (!customerId) {
+      return { error: 'Customer not found for this job.' };
+    }
+
+    // Check if deposit invoice already exists
+    const { data: existingDeposits } = await adminClient
+      .from('invoices')
+      .select('id')
+      .eq('job_id', jobId)
+      .eq('invoice_type', 'deposit');
+
+    if (existingDeposits && existingDeposits.length > 0) {
+      return { error: 'A deposit invoice already exists for this job.' };
+    }
+
+    const targetOrgId = (customerMeta as any)?.organization_id || defaultOrg?.id;
+    let org = defaultOrg;
+    if (targetOrgId && org?.id !== targetOrgId) {
+      const access = await verifyUserOrganizationAccess(user.id, targetOrgId);
+      if (!access.authorized) {
+        return { error: 'Forbidden.' };
+      }
+      org = access.organization || defaultOrg;
+    }
+
+    if (!org) return { error: 'Organization not found.' };
+
+    const jobCost = Number(job.cost_amount || 0);
+    const depositBase = parseFloat((jobCost * (depositPercentage / 100)).toFixed(2));
+    const taxRatePercent = normalizeInvoiceTaxRatePercent(org.invoice_tax_rate_percent);
+    const depositTax = parseFloat((depositBase * (taxRatePercent / 100)).toFixed(2));
+    const depositTotal = parseFloat((depositBase + depositTax).toFixed(2));
+    const currencyCode = normalizeCurrencyCode(org.invoice_currency_code);
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const invoiceNumber = await reserveDocumentNumber(supabase, org.id, 'invoice');
+
+    const { data: invoiceRecord, error: invError } = await adminClient
+      .from('invoices')
+      .insert([
+        {
+          organization_id: org.id,
+          customer_id: customerId,
+          job_id: job.id,
+          invoice_number: invoiceNumber,
+          due_date: todayStr,
+          status: 'unpaid',
+          total_amount: depositTotal,
+          tax_amount: depositTax,
+          currency_code: currencyCode,
+          invoice_type: 'deposit',
+          notes: `Anticipo ${depositPercentage}% - ${job.job_type}`,
+        },
+      ])
+      .select('id, invoice_number')
+      .single();
+
+    if (invError || !invoiceRecord) {
+      return { error: invError?.message || 'Failed to create deposit invoice.' };
+    }
+
+    // Generate Stripe payment link if enabled
+    let paymentUrl: string | null = null;
+    let stripeSessionId: string | null = null;
+    const customerDisplayName =
+      `${customerMeta?.first_name || ''} ${customerMeta?.last_name || ''}`.trim() ||
+      customerMeta?.company_name ||
+      'Prado Customer';
+
+    if (
+      org.id &&
+      canUseOnlineInvoicePayments(org.subscription_status) &&
+      org.stripe_account_id &&
+      org.stripe_account_charges_enabled &&
+      org.stripe_account_payouts_enabled &&
+      customerMeta?.email
+    ) {
+      try {
+        const session = await createInvoiceCheckoutSession({
+          invoiceId: invoiceRecord.id,
+          organizationId: org.id,
+          customerId,
+          stripeAccountId: org.stripe_account_id,
+          customerEmail: customerMeta.email,
+          customerName: customerDisplayName,
+          serviceName: `Anticipo ${depositPercentage}% - ${job.job_type}`,
+          baseAmount: depositBase,
+          taxAmount: depositTax,
+          taxRatePercent,
+          currencyCode,
+          totalAmount: depositTotal,
+          enableAutopayIfPossible: false,
+        });
+
+        paymentUrl = session?.paymentUrl || null;
+        stripeSessionId = session?.sessionId || null;
+
+        if (paymentUrl || stripeSessionId) {
+          await adminClient
+            .from('invoices')
+            .update({
+              stripe_payment_url: paymentUrl,
+              stripe_checkout_session_id: stripeSessionId,
+              stripe_payment_status: 'open',
+            })
+            .eq('id', invoiceRecord.id);
+        }
+      } catch (stripeErr) {
+        console.error('Failed to create Stripe link for deposit invoice:', stripeErr);
+      }
+    }
+
+    // Send email to customer
+    if (customerMeta?.email) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const organizationName = org.name?.trim() || 'Prado ERP';
+        const fromAddress = getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName });
+        const replyToAddress = user.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
+        const formattedInvNum = formatDocumentNumber('invoice', invoiceRecord.invoice_number);
+
+        const html = await render(
+          InvoiceEmail({
+            customerName: customerDisplayName,
+            serviceName: `Anticipo (${depositPercentage}%) - ${job.job_type}`,
+            dueDate: todayStr,
+            baseAmount: depositBase,
+            taxAmount: depositTax,
+            taxRatePercent,
+            currencyCode,
+            totalAmount: depositTotal,
+            invoiceNumber: invoiceRecord.invoice_number,
+            paymentUrl: paymentUrl || undefined,
+            organizationName,
+            organizationSlogan: org.slogan?.trim() || '',
+            organizationLogoUrl: org.logo_url?.trim() || '',
+            headerColor: normalizeDocumentEmailHeaderColor(org.document_email_header_color),
+          })
+        );
+
+        await resend.emails.send({
+          from: fromAddress,
+          to: customerMeta.email,
+          replyTo: replyToAddress,
+          subject: formattedInvNum
+            ? `${organizationName} Factura de Anticipo ${formattedInvNum} (${depositPercentage}%)`
+            : `Factura de Anticipo (${depositPercentage}%) - ${job.job_type}`,
+          html,
+        });
+      } catch (emailErr) {
+        console.error('Failed to send deposit invoice email:', emailErr);
+      }
+    }
+
+    revalidatePath('/dashboard/jobs');
+    revalidatePath('/dashboard/invoices-ledger');
+    revalidatePath(`/dashboard/customers/${customerId}`);
+    return { success: true, invoiceId: invoiceRecord.id };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to create deposit invoice.' };
+  }
+}
+
 export async function submitSupportTicket(formData: FormData) {
   const name = formData.get('name') as string;
   const email = formData.get('email') as string;
@@ -2532,7 +3111,7 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
     }
 
     // 2. Insertar el nuevo Job basado en los datos de la estimación
-    const { error: jobError } = await supabase
+    const { data: insertedJob, error: jobError } = await supabase
       .from('jobs')
       .insert([
         {
@@ -2544,9 +3123,31 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
           status: 'scheduled',
           truck_id: truckId || null
         }
-      ]);
+      ])
+      .select('id')
+      .single();
 
     if (jobError) return { error: jobError.message };
+
+    // Automatización: Si el Quote tiene condición de anticipo (ej. 50% Deposit), generar factura de anticipo
+    const parseDepositPct = (terms: string | null | undefined): number | null => {
+      if (!terms) return null;
+      const m = terms.match(/(\d+)%\s*Deposit/i) || terms.match(/(\d+)%\s*Anticipo/i);
+      if (m && m[1]) {
+        const val = parseInt(m[1], 10);
+        if (val > 0 && val < 100) return val;
+      }
+      return null;
+    };
+
+    const depositPct = parseDepositPct(estimate.payment_terms);
+    if (depositPct && insertedJob?.id) {
+      try {
+        await createDepositInvoiceForJob(insertedJob.id, depositPct);
+      } catch (depErr) {
+        console.error('Failed to auto-generate deposit invoice on quote conversion:', depErr);
+      }
+    }
 
     // 3. Notificar al cliente por email sobre la fecha agendada y los servicios incluidos
     const { data: customer } = await supabase

@@ -158,7 +158,13 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                 <CustomerJobLogTable jobs={customerJobs} locale={locale} />
               </div>
 
-              <CustomerInvoicesTable invoices={invoices || []} customerId={customerId} locale={locale} />
+              <CustomerInvoicesTable
+                invoices={invoices || []}
+                customerId={customerId}
+                customerName={`${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || customer?.company_name || 'Customer'}
+                customerEmail={customer?.email || null}
+                locale={locale}
+              />
 
             </div>
           </div>

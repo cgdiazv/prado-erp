@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { markInvoiceAsPaid } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
-import { Printer } from 'lucide-react';
+import { Printer, Pencil } from 'lucide-react';
+import EditInvoiceModal from './EditInvoiceModal';
 
 type FilterType = 'all' | 'unpaid' | 'paid';
 type SortColumn = 'customer' | 'date' | 'tax' | 'total' | 'status';
@@ -20,10 +21,14 @@ interface InvoiceRow {
   currency_code?: string | null;
   status: 'paid' | 'unpaid';
   stripe_payment_url?: string | null;
+  job_id?: string | null;
+  invoice_type?: string | null;
+  notes?: string | null;
   customers?: {
     first_name?: string | null;
     last_name?: string | null;
     company_name?: string | null;
+    email?: string | null;
   } | null;
 }
 
@@ -35,14 +40,20 @@ interface InvoicesLedgerTableProps {
 export default function InvoicesLedgerTable({ invoices, locale = 'en' }: InvoicesLedgerTableProps) {
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
+  const [invoiceRows, setInvoiceRows] = useState<InvoiceRow[]>(invoices);
+  const [editingInvoice, setEditingInvoice] = useState<InvoiceRow | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
   const [pageSize, setPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortColumn, setSortColumn] = useState<SortColumn>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
+  useEffect(() => {
+    setInvoiceRows(invoices);
+  }, [invoices]);
+
   const filteredInvoices =
-    filter === 'all' ? invoices : invoices.filter((inv) => inv.status === filter);
+    filter === 'all' ? invoiceRows : invoiceRows.filter((inv) => inv.status === filter);
 
   const sortedInvoices = useMemo(() => {
     const getCustomerName = (inv: InvoiceRow) => {
@@ -114,14 +125,14 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
     { key: 'paid', label: translations.dashboard.filterPaid },
   ];
 
-  const unpaidTotal = invoices
+  const unpaidTotal = invoiceRows
     .filter((invoice) => invoice.status === 'unpaid')
     .reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
-  const paidTotal = invoices
+  const paidTotal = invoiceRows
     .filter((invoice) => invoice.status === 'paid')
     .reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
-  const summaryCurrency = normalizeCurrencyCode(invoices[0]?.currency_code);
-  const totalInvoices = invoices.length;
+  const summaryCurrency = normalizeCurrencyCode(invoiceRows[0]?.currency_code);
+  const totalInvoices = invoiceRows.length;
 
   return (
     <>
@@ -275,7 +286,28 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                     <td className="px-4 py-3 text-slate-700 whitespace-nowrap table-date-column">
                       {new Date(inv.due_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-700">{customerName}</td>
+                    <td className="px-4 py-3 font-medium text-gray-700">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span>{customerName}</span>
+                          {inv.invoice_type === 'deposit' && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
+                              {isEs ? 'Anticipo' : 'Deposit'}
+                            </span>
+                          )}
+                          {inv.invoice_type === 'final' && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-purple-50 text-purple-700 border border-purple-200">
+                              {isEs ? 'Saldo' : 'Final'}
+                            </span>
+                          )}
+                        </div>
+                        {inv.notes && (
+                          <span className="text-[11px] text-slate-400 font-normal truncate max-w-xs">
+                            {inv.notes}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-gray-500 font-mono">{formatCurrency(Number(inv.tax_amount || 0), rowCurrency)}</td>
                     <td className="px-4 py-3 text-right font-bold text-slate-800">{formatCurrency(Number(inv.total_amount || 0), rowCurrency)}</td>
                     <td className="px-4 py-3 text-right">
@@ -303,6 +335,9 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                         <form
                           action={async () => {
                             await markInvoiceAsPaid(inv.id, inv.customer_id);
+                            setInvoiceRows((prev) =>
+                              prev.map((r) => (r.id === inv.id ? { ...r, status: 'paid' } : r))
+                            );
                           }}
                           className="inline-block"
                         >
@@ -318,6 +353,15 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="inline-flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingInvoice(inv)}
+                          title={isEs ? 'Editar factura' : 'Edit invoice'}
+                          aria-label={isEs ? 'Editar factura' : 'Edit invoice'}
+                          className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition duration-150 cursor-pointer border border-transparent hover:border-sky-100"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
                         <button
                           type="button"
                           onClick={() => window.open(`/api/invoices/${inv.id}/pdf?lng=${locale}`, '_blank', 'noopener,noreferrer')}
@@ -338,6 +382,30 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
       ) : (
         <p className="text-gray-400 text-xs italic text-center py-4">{translations.dashboard.noStatements}</p>
       )}
+
+      <EditInvoiceModal
+        isOpen={!!editingInvoice}
+        onClose={() => setEditingInvoice(null)}
+        invoice={
+          editingInvoice
+            ? {
+                ...editingInvoice,
+                customerName: (
+                  `${editingInvoice.customers?.first_name || ''} ${editingInvoice.customers?.last_name || ''}`.trim() ||
+                  editingInvoice.customers?.company_name ||
+                  'Customer'
+                ),
+                customerEmail: editingInvoice.customers?.email || null,
+              }
+            : null
+        }
+        onSuccess={(updated) => {
+          setInvoiceRows((prev) =>
+            prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item))
+          );
+        }}
+        locale={locale}
+      />
     </>
   );
 }

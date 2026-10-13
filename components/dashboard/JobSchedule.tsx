@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DeleteJobButton from '@/components/DeleteJobButton';
-import { completeJob, updateJobScheduleDetails } from '@/app/actions';
+import { completeJob, updateJobScheduleDetails, createDepositInvoiceForJob } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { downloadICS } from '@/lib/icsExport';
-import { Clock, Calendar, Check } from 'lucide-react';
+import { Clock, Calendar, Check, DollarSign, Loader2 } from 'lucide-react';
 import CompleteJobModal from '@/components/dashboard/CompleteJobModal';
 
 type FilterType = 'all' | 'scheduled' | 'completed' | 'archived';
@@ -49,6 +49,28 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
   const [editingAutoChargeEnabled, setEditingAutoChargeEnabled] = useState(false);
   const [isUpdatingSchedule, setIsUpdatingSchedule] = useState(false);
   const [completingJob, setCompletingJob] = useState<any | null>(null);
+  const [creatingDepositJobId, setCreatingDepositJobId] = useState<string | null>(null);
+
+  const handleCreateDeposit = async (job: any) => {
+    const confirmMsg = isEs
+      ? `¿Deseas generar la Factura de Anticipo (50%) para "${job.job_type}"?`
+      : `Generate a 50% Deposit Invoice for "${job.job_type}"?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setCreatingDepositJobId(job.id);
+    try {
+      const res = await createDepositInvoiceForJob(job.id, 50);
+      if (res.error) {
+        alert(res.error);
+      } else {
+        router.refresh();
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error creating deposit invoice.');
+    } finally {
+      setCreatingDepositJobId(null);
+    }
+  };
 
   const openScheduleDetails = (job: any) => {
     setEditingJobId(job.id);
@@ -490,6 +512,20 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
                             className="w-7 h-7 inline-flex items-center justify-center rounded-md text-blue-600 hover:text-blue-700 hover:bg-blue-50 border border-blue-200 hover:border-blue-300 transition duration-150 cursor-pointer"
                           >
                             <Calendar className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCreateDeposit(job)}
+                            disabled={creatingDepositJobId === job.id}
+                            title={isEs ? 'Generar factura de anticipo (50%)' : 'Create 50% deposit invoice'}
+                            aria-label={isEs ? 'Generar factura de anticipo' : 'Create deposit invoice'}
+                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200 hover:border-amber-300 transition duration-150 cursor-pointer disabled:opacity-50"
+                          >
+                            {creatingDepositJobId === job.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <DollarSign className="w-3.5 h-3.5" />
+                            )}
                           </button>
                           <button
                             type="button"

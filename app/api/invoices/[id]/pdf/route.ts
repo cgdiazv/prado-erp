@@ -74,6 +74,9 @@ export async function GET(
         created_at,
         customer_id,
         organization_id,
+        job_id,
+        invoice_type,
+        notes,
         customers (
           id,
           first_name,
@@ -146,8 +149,17 @@ export async function GET(
     }
 
     // Attempt to identify service/job description
-    let serviceDescription = isEs ? 'Servicio General Completado' : 'General Service Completed';
-    if (customer?.id) {
+    let serviceDescription = invoice.notes?.trim() || (isEs ? 'Servicio General Completado' : 'General Service Completed');
+    if (!invoice.notes?.trim() && invoice.job_id) {
+      const { data: linkedJob } = await supabase
+        .from('jobs')
+        .select('job_type')
+        .eq('id', invoice.job_id)
+        .maybeSingle();
+      if (linkedJob?.job_type) {
+        serviceDescription = linkedJob.job_type;
+      }
+    } else if (!invoice.notes?.trim() && customer?.id) {
       const { data: jobs } = await supabase
         .from('jobs')
         .select('job_type, cost_amount, scheduled_date')
@@ -277,15 +289,22 @@ export async function GET(
 
     const logoBottomY = embeddedLogo ? currentY - embeddedLogo.height : currentY;
 
-    // Header Right: "INVOICE" Document Title & Number
-    const invoiceTitle = isEs ? 'FACTURA' : 'INVOICE';
-    const invoiceTitleWidth = boldFont.widthOfTextAtSize(invoiceTitle, 24);
+    // Header Right: Document Title & Number
+    const invoiceTitle = isPaid
+      ? (isEs ? 'RECIBO DE PAGO' : 'PAYMENT RECEIPT')
+      : invoice.invoice_type === 'deposit'
+      ? (isEs ? 'FACTURA DE ANTICIPO' : 'DEPOSIT INVOICE')
+      : invoice.invoice_type === 'final'
+      ? (isEs ? 'FACTURA DE SALDO' : 'BALANCE INVOICE')
+      : (isEs ? 'FACTURA' : 'INVOICE');
+    const invoiceTitleFontSize = invoiceTitle.length > 14 ? 17 : 22;
+    const invoiceTitleWidth = boldFont.widthOfTextAtSize(invoiceTitle, invoiceTitleFontSize);
     page.drawText(invoiceTitle, {
       x: PAGE_WIDTH - MARGIN - invoiceTitleWidth,
       y: currentY - 16,
-      size: 24,
+      size: invoiceTitleFontSize,
       font: boldFont,
-      color: brandColorRgb,
+      color: isPaid ? rgb(0.05, 0.55, 0.3) : brandColorRgb,
     });
 
     const invNumText = `# ${formattedInvNumber}`;
@@ -300,9 +319,7 @@ export async function GET(
 
     // Status Badge Pill
     const badgeText = isPaid
-      ? isEs
-        ? 'PAGADA'
-        : 'PAID'
+      ? (isEs ? 'PAGADA • RECIBO OFICIAL' : 'PAID • OFFICIAL RECEIPT')
       : isEs
       ? 'PENDIENTE DE PAGO'
       : 'PAYMENT DUE';

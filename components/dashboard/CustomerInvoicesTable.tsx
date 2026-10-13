@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { markInvoiceAsPaid } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
-import { Printer } from 'lucide-react';
+import { Printer, Pencil } from 'lucide-react';
+import EditInvoiceModal from './EditInvoiceModal';
 
 interface InvoiceRow {
   id: string;
@@ -14,24 +15,41 @@ interface InvoiceRow {
   currency_code?: string | null;
   status: string | null;
   stripe_payment_url?: string | null;
+  invoice_number?: number | null;
+  job_id?: string | null;
+  invoice_type?: string | null;
+  notes?: string | null;
 }
 
 interface CustomerInvoicesTableProps {
   invoices: InvoiceRow[];
   customerId: string;
+  customerName?: string;
+  customerEmail?: string | null;
   locale?: string;
 }
 
 type StatusFilter = 'all' | 'paid' | 'unpaid';
 
-export default function CustomerInvoicesTable({ invoices, customerId, locale = 'en' }: CustomerInvoicesTableProps) {
+export default function CustomerInvoicesTable({
+  invoices,
+  customerId,
+  customerName,
+  customerEmail,
+  locale = 'en',
+}: CustomerInvoicesTableProps) {
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
   const [rows, setRows] = useState(invoices);
+  const [editingInvoice, setEditingInvoice] = useState<InvoiceRow | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setRows(invoices);
+  }, [invoices]);
 
   const filteredRows = useMemo(() => {
     if (statusFilter === 'all') return rows;
@@ -113,17 +131,19 @@ export default function CustomerInvoicesTable({ invoices, customerId, locale = '
           </select>
 
           <div className="flex items-center gap-2 sm:ml-auto">
-            <label htmlFor="invoice-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+            <label htmlFor="customer-invoices-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
               {rowsPerPageLabel}
             </label>
             <select
-              id="invoice-page-size"
+              id="customer-invoices-page-size"
               value={pageSize}
               onChange={(event) => setPageSize(Number(event.target.value))}
               className="text-xs bg-white border border-gray-300 rounded-md px-2 py-1.5 text-slate-700"
             >
               {[25, 50, 100].map((size) => (
-                <option key={size} value={size}>{size}</option>
+                <option key={size} value={size}>
+                  {size}
+                </option>
               ))}
             </select>
 
@@ -169,7 +189,26 @@ export default function CustomerInvoicesTable({ invoices, customerId, locale = '
                   {paginatedRows.map((inv) => (
                     <tr key={inv.id} className="hover:bg-slate-50 transition">
                       <td className="p-4 text-slate-700 whitespace-nowrap table-date-column">
-                        {new Date(`${inv.due_date}T00:00:00`).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span>{new Date(`${inv.due_date}T00:00:00`).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}</span>
+                            {inv.invoice_type === 'deposit' && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
+                                {isEs ? 'Anticipo' : 'Deposit'}
+                              </span>
+                            )}
+                            {inv.invoice_type === 'final' && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-purple-50 text-purple-700 border border-purple-200">
+                                {isEs ? 'Saldo' : 'Final'}
+                              </span>
+                            )}
+                          </div>
+                          {inv.notes && (
+                            <span className="text-[10px] text-slate-400 font-normal truncate max-w-[180px]">
+                              {inv.notes}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4 text-slate-700">{formatCurrency(Number(inv.tax_amount || 0), normalizeCurrencyCode(inv.currency_code))}</td>
                       <td className="p-4 text-right font-bold text-slate-800">{formatCurrency(Number(inv.total_amount || 0), normalizeCurrencyCode(inv.currency_code))}</td>
@@ -208,6 +247,15 @@ export default function CustomerInvoicesTable({ invoices, customerId, locale = '
                         <div className="inline-flex items-center justify-end gap-1">
                           <button
                             type="button"
+                            onClick={() => setEditingInvoice(inv)}
+                            title={isEs ? 'Editar factura' : 'Edit invoice'}
+                            aria-label={isEs ? 'Editar factura' : 'Edit invoice'}
+                            className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition duration-150 cursor-pointer border border-transparent hover:border-sky-100"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => window.open(`/api/invoices/${inv.id}/pdf?lng=${locale}`, '_blank', 'noopener,noreferrer')}
                             title={isEs ? 'Imprimir factura' : 'Print invoice'}
                             aria-label={isEs ? 'Imprimir factura' : 'Print invoice'}
@@ -227,6 +275,26 @@ export default function CustomerInvoicesTable({ invoices, customerId, locale = '
           )}
         </section>
       </div>
+
+      <EditInvoiceModal
+        isOpen={!!editingInvoice}
+        onClose={() => setEditingInvoice(null)}
+        invoice={
+          editingInvoice
+            ? {
+                ...editingInvoice,
+                customerName: customerName || 'Customer',
+                customerEmail: customerEmail || null,
+              }
+            : null
+        }
+        onSuccess={(updated) => {
+          setRows((prev) =>
+            prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item))
+          );
+        }}
+        locale={locale}
+      />
     </div>
   );
 }
