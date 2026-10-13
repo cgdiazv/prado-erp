@@ -250,7 +250,7 @@ export default function CustomerInvoicesTable({
                             onClick={() => setEditingInvoice(inv)}
                             title={isEs ? 'Editar factura' : 'Edit invoice'}
                             aria-label={isEs ? 'Editar factura' : 'Edit invoice'}
-                            className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition duration-150 cursor-pointer border border-transparent hover:border-sky-100"
+                            className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition duration-150 cursor-pointer border border-transparent hover:border-emerald-100"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>

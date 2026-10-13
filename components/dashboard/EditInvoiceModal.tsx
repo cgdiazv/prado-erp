@@ -207,7 +207,7 @@ export default function EditInvoiceModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-700">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700">
               <FileEdit className="w-5 h-5" />
             </div>
             <div>
@@ -293,7 +293,7 @@ export default function EditInvoiceModal({
                       onClick={() => setInvoiceType(type.id as any)}
                       className={`py-2 px-3 text-xs font-semibold rounded-xl border text-center transition ${
                         invoiceType === type.id
-                          ? 'border-sky-500 bg-sky-50 text-sky-800 shadow-xs'
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-xs'
                           : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                       }`}
                     >
@@ -326,7 +326,7 @@ export default function EditInvoiceModal({
                       value={baseAmount}
                       onChange={(e) => handleBaseAmountChange(e.target.value)}
                       required
-                      className="w-full pl-7 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition font-mono font-medium text-slate-800"
+                      className="w-full pl-7 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-mono font-medium text-slate-800"
                     />
                   </div>
                 </div>
@@ -351,7 +351,7 @@ export default function EditInvoiceModal({
                       min="0"
                       value={taxAmount}
                       onChange={(e) => setTaxAmount(e.target.value)}
-                      className="w-full pl-7 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition font-mono font-medium text-slate-800"
+                      className="w-full pl-7 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-mono font-medium text-slate-800"
                     />
                   </div>
                 </div>
@@ -396,7 +396,7 @@ export default function EditInvoiceModal({
                   </p>
                 </div>
                 {invoice.stripe_payment_url && (
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md bg-sky-100 text-sky-800 border border-sky-200">
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
                     {isEs ? 'Stripe Activo' : 'Stripe Active'}
                   </span>
                 )}
@@ -416,7 +416,7 @@ export default function EditInvoiceModal({
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     required
-                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition text-slate-800"
+                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition text-slate-800"
                   />
                 </div>
               </div>
@@ -435,7 +435,7 @@ export default function EditInvoiceModal({
                       ? 'Ej: Anticipo del 50% para compra de materiales...'
                       : 'E.g., 50% deposit for materials and scheduling...'
                   }
-                  className="w-full p-3 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition text-slate-800 resize-none"
+                  className="w-full p-3 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition text-slate-800 resize-none"
                 />
               </div>
 
@@ -446,7 +446,7 @@ export default function EditInvoiceModal({
                     type="checkbox"
                     checked={sendUpdatedEmail}
                     onChange={(e) => setSendUpdatedEmail(e.target.checked)}
-                    className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300"
+                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 accent-emerald-600"
                   />
                   <div className="flex-1 text-xs">
                     <span className="font-semibold text-slate-800">
@@ -463,8 +463,8 @@ export default function EditInvoiceModal({
 
               {/* Stripe Regeneration Note */}
               {invoice.stripe_payment_url && (
-                <div className="flex items-start gap-2 p-3 bg-sky-50/70 border border-sky-100 rounded-xl text-[11px] text-sky-800">
-                  <HelpCircle className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl text-[11px] text-emerald-800">
+                  <HelpCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <span>
                     {isEs
                       ? 'Al guardar cambios, el enlace de pago de Stripe se regenerará automáticamente con el nuevo monto.'
@@ -506,7 +506,7 @@ export default function EditInvoiceModal({
                 type="submit"
                 form="edit-invoice-form"
                 disabled={isLoading}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-xs shadow-sky-600/20 transition disabled:opacity-50 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs shadow-emerald-600/20 transition disabled:opacity-50 cursor-pointer"
               >
                 {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {isEs ? 'Guardar Cambios' : 'Save Changes'}
