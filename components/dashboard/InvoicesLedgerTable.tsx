@@ -296,7 +296,7 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                             </span>
                           )}
                           {inv.invoice_type === 'final' && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-purple-50 text-purple-700 border border-purple-200">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200">
                               {isEs ? 'Saldo' : 'Final'}
                             </span>
                           )}
