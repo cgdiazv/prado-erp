@@ -88,11 +88,12 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         newEstimate: 'Nueva Cotización',
         totalDraft: 'Total en Borrador',
         totalSent: 'Total Enviado',
-        totalApproved: 'Total Aprobado',
+        totalApproved: 'Total Enviado a Job',
         filterAll: 'Todos',
         filterDraft: 'Borrador',
         filterSent: 'Enviados',
-        filterApproved: 'Aprobados',
+        filterApproved: 'Enviados a Job',
+        statusSentToJob: 'Enviado a Job',
         filterDeclined: 'Rechazados',
         rowsPerPage: 'Registros por página',
         pageLabel: 'Página',
@@ -190,11 +191,12 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         newEstimate: 'New Quote',
         totalDraft: 'Total in Draft',
         totalSent: 'Total Sent',
-        totalApproved: 'Total Approved',
+        totalApproved: 'Total Sent to Job',
         filterAll: 'All',
         filterDraft: 'Draft',
         filterSent: 'Sent',
-        filterApproved: 'Approved',
+        filterApproved: 'Sent to Job',
+        statusSentToJob: 'Sent to Job',
         filterDeclined: 'Declined',
         rowsPerPage: 'Rows per page',
         pageLabel: 'Page',
@@ -685,13 +687,13 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                   </td>
                   <td className="p-4 text-right font-bold text-slate-800 whitespace-nowrap">${estimate.estimated_amount.toFixed(2)}</td>
                   <td className="p-4 text-center whitespace-nowrap">
-                    <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                    <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
                       estimate.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
                       estimate.status === 'sent' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
                       estimate.status === 'declined' ? 'bg-red-100 text-red-700 border border-red-200' :
                       'bg-slate-100 text-slate-600 border border-slate-200'
                     }`}>
-                      {estimate.status === 'draft' ? t.filterDraft : estimate.status === 'sent' ? t.filterSent : estimate.status === 'approved' ? t.filterApproved : t.filterDeclined}
+                      {estimate.status === 'draft' ? t.filterDraft : estimate.status === 'sent' ? t.filterSent : estimate.status === 'approved' ? t.statusSentToJob : t.filterDeclined}
                     </span>
                   </td>
                   <td className="p-4 text-right min-w-[185px]">
@@ -787,7 +789,6 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                       )}
                       {estimate.status === 'approved' && (
                         <>
-                          <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">{t.convertedToJob}</span>
                           <Link
                             href={`/${locale}/dashboard/estimates/${estimate.id}/edit`}
                             title={t.actionEdit}
