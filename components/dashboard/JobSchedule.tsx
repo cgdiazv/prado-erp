@@ -7,6 +7,7 @@ import { completeJob, updateJobScheduleDetails } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { downloadICS } from '@/lib/icsExport';
 import { Clock, Calendar, Check } from 'lucide-react';
+import CompleteJobModal from '@/components/dashboard/CompleteJobModal';
 
 type FilterType = 'all' | 'scheduled' | 'completed' | 'archived';
 type SortColumn = 'date' | 'address' | 'type' | 'truck' | 'cost' | 'action';
@@ -47,6 +48,7 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
   const [editingRecurrenceIntervalDays, setEditingRecurrenceIntervalDays] = useState('30');
   const [editingAutoChargeEnabled, setEditingAutoChargeEnabled] = useState(false);
   const [isUpdatingSchedule, setIsUpdatingSchedule] = useState(false);
+  const [completingJob, setCompletingJob] = useState<any | null>(null);
 
   const openScheduleDetails = (job: any) => {
     setEditingJobId(job.id);
@@ -489,28 +491,28 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
                           >
                             <Calendar className="w-3.5 h-3.5" />
                           </button>
-                          <form
-                            action={async () => {
-                              await completeJob(job.id);
-                            }}
+                          <button
+                            type="button"
+                            onClick={() => setCompletingJob(job)}
+                            title={translations.dashboard.markDone}
+                            aria-label={translations.dashboard.markDone}
+                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 transition duration-150 cursor-pointer"
                           >
-                            <button
-                              type="submit"
-                              title={translations.dashboard.markDone}
-                              aria-label={translations.dashboard.markDone}
-                              className="w-7 h-7 inline-flex items-center justify-center rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 transition duration-150 cursor-pointer"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-                          </form>
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
                         </>
                       ) : job.status === 'archived' ? (
                         <span className="text-[10px] uppercase tracking-wider font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200 shadow-xs select-none">
                           {translations.dashboard.archived}
                         </span>
                       ) : (
-                        <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">
-                          {translations.dashboard.completed}
+                        <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">
+                          <span>{translations.dashboard.completed}</span>
+                          {job.completion_photos && job.completion_photos.length > 0 ? (
+                            <span className="text-emerald-600 font-semibold" title={`${job.completion_photos.length} photos`}>
+                              📷 {job.completion_photos.length}
+                            </span>
+                          ) : null}
                         </span>
                       )}
 
@@ -781,6 +783,19 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
             </form>
           </div>
         </div>
+      )}
+
+      {completingJob && (
+        <CompleteJobModal
+          job={completingJob}
+          isOpen={Boolean(completingJob)}
+          onClose={() => setCompletingJob(null)}
+          locale={locale}
+          onSuccess={() => {
+            setCompletingJob(null);
+            router.refresh();
+          }}
+        />
       )}
     </>
   );

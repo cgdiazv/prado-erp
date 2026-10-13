@@ -16,6 +16,8 @@ type JobCompletedEmailProps = {
   organizationSlogan?: string;
   organizationLogoUrl?: string;
   headerColor?: string;
+  photos?: string[];
+  completionNotes?: string | null;
 };
 
 export default function JobCompletedEmail({
@@ -32,6 +34,8 @@ export default function JobCompletedEmail({
   organizationSlogan = '',
   organizationLogoUrl = '',
   headerColor = '#009966',
+  photos = [],
+  completionNotes = '',
 }: JobCompletedEmailProps) {
   const normalizedHeaderColor = normalizeDocumentEmailHeaderColor(headerColor);
   const normalizedCurrency = normalizeCurrencyCode(currencyCode);
@@ -82,6 +86,50 @@ export default function JobCompletedEmail({
             <p style={{ margin: '0 0 8px 0' }}><strong>Service Location:</strong> {safeAddress}</p>
             <p style={{ margin: 0 }}><strong>Total Service Amount:</strong> {amountStr}</p>
           </div>
+
+          {completionNotes?.trim() ? (
+            <div style={{ background: '#f8fafc', borderLeft: `4px solid ${normalizedHeaderColor}`, padding: '12px 16px', margin: '16px 0', borderRadius: '0 8px 8px 0' }}>
+              <p style={{ margin: 0, fontSize: 13, color: '#334155', lineHeight: 1.5 }}>
+                <strong style={{ color: '#0f172a' }}>Technician Notes:</strong> {completionNotes.trim()}
+              </p>
+            </div>
+          ) : null}
+
+          {photos && photos.length > 0 ? (
+            <div style={{ margin: '24px 0' }}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: 13, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Completed Work Photos ({photos.length})
+              </h3>
+              <table role="presentation" border={0} cellPadding={0} cellSpacing={0} width="100%">
+                <tbody>
+                  <tr>
+                    <td>
+                      <div style={{ display: 'grid', gridTemplateColumns: photos.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+                        {photos.map((url, idx) => (
+                          <a
+                            key={idx}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ display: 'block', borderRadius: 8, overflow: 'hidden', border: '1px solid #cbd5e1', textDecoration: 'none' }}
+                          >
+                            <img
+                              src={url}
+                              alt={`Completed work photo ${idx + 1}`}
+                              style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }}
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p style={{ margin: '8px 0 0 0', fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>
+                Click any image to view full resolution. Photos are also attached to this email.
+              </p>
+            </div>
+          ) : null}
 
           <p style={{ margin: '0 0 12px 0' }}>
             Your corresponding invoice is attached in a separate email. Thank you for your business!

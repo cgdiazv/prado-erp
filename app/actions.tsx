@@ -585,7 +585,14 @@ export async function updateJobScheduleDetails(
   }
 }
 
-export async function completeJob(jobId: string) {
+export async function completeJob(
+  jobId: string,
+  completionData?: {
+    photoUrls?: string[];
+    notes?: string;
+    attachments?: Array<{ filename: string; content: Buffer }>;
+  }
+) {
   if (!jobId) return { error: 'Missing Job ID' };
 
   const supabase = await createClient();
@@ -619,13 +626,28 @@ export async function completeJob(jobId: string) {
     return { error: fetchError?.message || 'Job not found' };
   }
 
-  // 2. Update the job status to 'completed'
+  // 2. Update the job status to 'completed' with optional photos and notes
+  const updatePayload: Record<string, any> = { status: 'completed' };
+  if (completionData?.photoUrls && completionData.photoUrls.length > 0) {
+    updatePayload.completion_photos = completionData.photoUrls;
+  }
+  if (completionData?.notes) {
+    updatePayload.completion_notes = completionData.notes;
+  }
+
   const { error: updateError } = await supabase
     .from('jobs')
-    .update({ status: 'completed' })
+    .update(updatePayload)
     .eq('id', jobId);
 
-  if (updateError) return { error: updateError.message };
+  if (updateError) {
+    // If completion_photos column is not yet migrated, fall back to basic status update
+    const { error: retryError } = await supabase
+      .from('jobs')
+      .update({ status: 'completed' })
+      .eq('id', jobId);
+    if (retryError) return { error: retryError.message };
+  }
 
   // 2b. Automatically log Subcontractor Payout expense if applicable
   if (job.subcontractor_pay_amount && Number(job.subcontractor_pay_amount) > 0) {
@@ -943,6 +965,8 @@ export async function completeJob(jobId: string) {
           organizationSlogan,
           organizationLogoUrl,
           headerColor: documentEmailHeaderColor,
+          photos: completionData?.photoUrls,
+          completionNotes: completionData?.notes,
         })
       );
       await resend.emails.send({
@@ -951,6 +975,10 @@ export async function completeJob(jobId: string) {
         replyTo: replyToAddress,
         subject: `Service Completed: ${job.job_type}`,
         html: completedHtml,
+        attachments:
+          completionData?.attachments && completionData.attachments.length > 0
+            ? completionData.attachments
+            : undefined,
       });
     } catch (emailErr) {
       console.error('⚠️ Invoice recorded in database, but Resend pipe failed to deliver message:', emailErr);
@@ -963,6 +991,91 @@ export async function completeJob(jobId: string) {
   revalidatePath('/dashboard/routing');
   revalidatePath('/dashboard/print-reports');
   return { success: true };
+}
+
+export async function completeJobWithPhotos(formData: FormData) {
+  const jobId = formData.get('jobId') as string;
+  if (!jobId) return { error: 'Missing Job ID' };
+
+  const notes = (formData.get('notes') as string) || '';
+  const photoFiles = formData.getAll('photos') as File[];
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('owner_id', user.id)
+    .single();
+
+  const orgId = org?.id;
+  const adminClient = createAdminClient();
+  const bucket = process.env.SUPABASE_JOB_PHOTOS_BUCKET || 'job-photos';
+
+  // Ensure storage bucket exists
+  try {
+    const { data: buckets } = await adminClient.storage.listBuckets();
+    const bucketExists = buckets?.some((b) => b.name === bucket);
+    if (!bucketExists) {
+      await adminClient.storage.createBucket(bucket, {
+        public: true,
+        fileSizeLimit: 10485760, // 10MB
+      });
+    }
+  } catch (bucketErr) {
+    console.warn('Storage bucket check notice:', bucketErr);
+  }
+
+  const photoUrls: string[] = [];
+  const attachments: Array<{ filename: string; content: Buffer }> = [];
+
+  for (let i = 0; i < photoFiles.length; i++) {
+    const file = photoFiles[i];
+    if (!(file instanceof File) || file.size === 0) continue;
+
+    const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const cleanFileName = `completion-${Date.now()}-${i + 1}.${extension}`;
+    const objectPath = `${orgId || 'org'}/${jobId}/${cleanFileName}`;
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      const { error: uploadError } = await adminClient.storage
+        .from(bucket)
+        .upload(objectPath, buffer, {
+          contentType: file.type || 'image/jpeg',
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (!uploadError) {
+        const { data: publicData } = adminClient.storage.from(bucket).getPublicUrl(objectPath);
+        if (publicData?.publicUrl) {
+          photoUrls.push(publicData.publicUrl);
+        }
+        attachments.push({
+          filename: `Completed-Job-${cleanFileName}`,
+          content: buffer,
+        });
+      } else {
+        console.error(`Upload error for photo ${i}:`, uploadError.message);
+      }
+    } catch (err) {
+      console.error(`Error processing photo ${i}:`, err);
+    }
+  }
+
+  return await completeJob(jobId, {
+    photoUrls,
+    notes,
+    attachments,
+  });
 }
 
 export async function createExpense(formData: FormData) {
