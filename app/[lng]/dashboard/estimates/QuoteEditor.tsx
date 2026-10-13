@@ -567,6 +567,24 @@ export default function QuoteEditor({
           </div>
         )}
 
+        {initialEstimate?.status === 'approved' && (
+          <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50/80 p-4 text-xs font-medium text-blue-900 flex items-start gap-3 shadow-xs">
+            <div className="w-6 h-6 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">
+              ℹ
+            </div>
+            <div>
+              <p className="font-bold text-blue-950">
+                {isEs ? 'Cotización Aprobada en Proceso' : 'Approved Quote in Progress'}
+              </p>
+              <p className="text-[11px] text-blue-800 mt-0.5 leading-relaxed">
+                {isEs
+                  ? 'Esta cotización ya fue aprobada y tiene un Job programado. Puedes eliminar o modificar los servicios que no se hayan realizado; al guardar, el Job en el calendario se actualizará automáticamente con el nuevo monto.'
+                  : 'This quote has been approved and has a scheduled Job. You can remove or modify any services that were not performed; upon saving, the scheduled Job will automatically sync with the new billable amount.'}
+              </p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT COLUMN: The Builder (7 of 12 columns ~ 60%) */}
           <div className="lg:col-span-7 space-y-6">

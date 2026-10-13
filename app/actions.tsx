@@ -2040,7 +2040,7 @@ export async function updateEstimate(estimateId: string, formData: FormData) {
 
     const { data: existingEstimate, error: existingEstimateError } = await supabase
       .from('estimates')
-      .select('id')
+      .select('id, status')
       .eq('id', estimateId)
       .eq('organization_id', org.id)
       .single();
@@ -2064,8 +2064,36 @@ export async function updateEstimate(estimateId: string, formData: FormData) {
 
     if (error) return { error: error.message };
 
+    // If estimate was already approved, synchronize the linked scheduled job in the calendar
+    if (existingEstimate.status === 'approved') {
+      const conversionMarker = `[ESTIMATE_CONVERSION_ID:${estimateId}]`;
+      const { data: linkedJob } = await supabase
+        .from('jobs')
+        .select('id, notes')
+        .ilike('notes', `%${conversionMarker}%`)
+        .maybeSingle();
+
+      if (linkedJob?.id) {
+        const updatedNotes = `${conversionMarker}\nConvertido automáticamente desde Cotización. Notas originales:\n${description || 'Ninguna.'}`;
+        await supabase
+          .from('jobs')
+          .update({
+            job_type: title,
+            cost_amount: estimatedAmount,
+            property_id: propertyId,
+            notes: updatedNotes,
+          })
+          .eq('id', linkedJob.id);
+
+        revalidatePath('/dashboard/schedule');
+        revalidatePath('/[lng]/dashboard/schedule');
+      }
+    }
+
     revalidatePath('/dashboard/estimates');
     revalidatePath('/[lng]/dashboard/estimates');
+    revalidatePath('/dashboard/schedule');
+    revalidatePath('/[lng]/dashboard/schedule');
     revalidatePath('/', 'layout');
     return { success: true };
   } catch (err: unknown) {

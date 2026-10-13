@@ -788,6 +788,14 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                       {estimate.status === 'approved' && (
                         <>
                           <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">{t.convertedToJob}</span>
+                          <Link
+                            href={`/${locale}/dashboard/estimates/${estimate.id}/edit`}
+                            title={t.actionEdit}
+                            aria-label={t.actionEdit}
+                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 transition duration-150 cursor-pointer"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Link>
                           <button
                             type="button"
                             onClick={() => handleSendEstimate(estimate.id, true)}
