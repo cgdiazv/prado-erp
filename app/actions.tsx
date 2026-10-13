@@ -756,10 +756,18 @@ export async function completeJob(
   const customerMeta = (job.properties as any).customers;
 
   // Check if prior invoices (such as deposit invoice) exist for this job
-  const { data: priorInvoices } = await supabase
-    .from('invoices')
-    .select('id, total_amount, tax_amount, status, invoice_type')
-    .eq('job_id', job.id);
+  let priorInvoices: any[] | null = null;
+  try {
+    const { data: pInvoices, error: pInvErr } = await supabase
+      .from('invoices')
+      .select('id, total_amount, tax_amount, status')
+      .eq('job_id', job.id);
+    if (!pInvErr && pInvoices) {
+      priorInvoices = pInvoices;
+    }
+  } catch {
+    // job_id column might be pending migration
+  }
 
   const totalPriorInvoicedBase = (priorInvoices || []).reduce((sum, inv) => {
     const invTotal = Number(inv.total_amount || 0);
@@ -789,27 +797,40 @@ export async function completeJob(
   const invoiceType = hasPriorInvoices ? 'final' : 'standard';
   const invoiceNotes = hasPriorInvoices ? `Saldo Final - ${job.job_type}` : null;
 
-  const { data: invoiceRecord, error: invoiceError } = await supabase
+  const invoiceInsertPayload: Record<string, any> = {
+    organization_id: org.id,
+    customer_id: customerId,
+    invoice_number: invoiceNumber,
+    due_date: todayStr,
+    status: 'unpaid',
+    total_amount: total,
+    tax_amount: estimatedTax,
+    currency_code: invoiceCurrencyCode,
+    job_id: job.id,
+    invoice_type: invoiceType,
+    notes: invoiceNotes,
+  };
+
+  let { data: invoiceRecord, error: invoiceError } = await supabase
     .from('invoices')
-    .insert([
-      {
-        organization_id: org.id,
-        customer_id: customerId,
-        job_id: job.id,
-        invoice_number: invoiceNumber,
-        due_date: todayStr,
-        status: 'unpaid',
-        total_amount: total,
-        tax_amount: estimatedTax,
-        currency_code: invoiceCurrencyCode,
-        invoice_type: invoiceType,
-        notes: invoiceNotes,
-      },
-    ])
+    .insert([invoiceInsertPayload])
     .select('id, invoice_number')
     .single();
 
-  if (invoiceError) return { error: invoiceError.message };
+  if (invoiceError && (invoiceError.message?.includes('schema cache') || invoiceError.message?.includes('column'))) {
+    delete invoiceInsertPayload.job_id;
+    delete invoiceInsertPayload.invoice_type;
+    delete invoiceInsertPayload.notes;
+    const retry = await supabase
+      .from('invoices')
+      .insert([invoiceInsertPayload])
+      .select('id, invoice_number')
+      .single();
+    invoiceRecord = retry.data;
+    invoiceError = retry.error;
+  }
+
+  if (invoiceError || !invoiceRecord) return { error: invoiceError?.message || 'Failed to create invoice.' };
 
   const customerDisplayName = `${customerMeta?.first_name || ''} ${customerMeta?.last_name || ''}`.trim() || customerMeta?.company_name || 'Prado Customer';
 
@@ -1749,20 +1770,7 @@ export async function updateInvoice(
     const { data: invoice, error: invoiceFetchError } = await adminClient
       .from('invoices')
       .select(`
-        id,
-        organization_id,
-        customer_id,
-        job_id,
-        invoice_number,
-        due_date,
-        tax_amount,
-        total_amount,
-        currency_code,
-        status,
-        stripe_payment_url,
-        stripe_checkout_session_id,
-        notes,
-        invoice_type,
+        *,
         customers (
           id,
           first_name,
@@ -1867,18 +1875,30 @@ export async function updateInvoice(
       }
     }
 
-    const { error: updateError } = await adminClient
+    const updateInvoiceData: Record<string, any> = {
+      due_date: dueDate,
+      total_amount: totalAmount,
+      tax_amount: taxAmount,
+      stripe_payment_url: paymentUrl,
+      stripe_checkout_session_id: stripeCheckoutSessionId,
+    };
+    if (notes !== undefined) updateInvoiceData.notes = notes || null;
+    if (invoiceType) updateInvoiceData.invoice_type = invoiceType;
+
+    let { error: updateError } = await adminClient
       .from('invoices')
-      .update({
-        due_date: dueDate,
-        total_amount: totalAmount,
-        tax_amount: taxAmount,
-        notes: notes || null,
-        invoice_type: invoiceType,
-        stripe_payment_url: paymentUrl,
-        stripe_checkout_session_id: stripeCheckoutSessionId,
-      })
+      .update(updateInvoiceData)
       .eq('id', invoice.id);
+
+    if (updateError && (updateError.message?.includes('schema cache') || updateError.message?.includes('column'))) {
+      delete updateInvoiceData.notes;
+      delete updateInvoiceData.invoice_type;
+      const retry = await adminClient
+        .from('invoices')
+        .update(updateInvoiceData)
+        .eq('id', invoice.id);
+      updateError = retry.error;
+    }
 
     if (updateError) {
       return { error: updateError.message };
@@ -2144,25 +2164,38 @@ export async function createDepositInvoiceForJob(
 
     const invoiceNumber = await reserveDocumentNumber(supabase, org.id, 'invoice');
 
-    const { data: invoiceRecord, error: invError } = await adminClient
+    const depositInsertPayload: Record<string, any> = {
+      organization_id: org.id,
+      customer_id: customerId,
+      invoice_number: invoiceNumber,
+      due_date: todayStr,
+      status: 'unpaid',
+      total_amount: depositTotal,
+      tax_amount: depositTax,
+      currency_code: currencyCode,
+      job_id: job.id,
+      invoice_type: 'deposit',
+      notes: `Anticipo ${depositPercentage}% - ${job.job_type}`,
+    };
+
+    let { data: invoiceRecord, error: invError } = await adminClient
       .from('invoices')
-      .insert([
-        {
-          organization_id: org.id,
-          customer_id: customerId,
-          job_id: job.id,
-          invoice_number: invoiceNumber,
-          due_date: todayStr,
-          status: 'unpaid',
-          total_amount: depositTotal,
-          tax_amount: depositTax,
-          currency_code: currencyCode,
-          invoice_type: 'deposit',
-          notes: `Anticipo ${depositPercentage}% - ${job.job_type}`,
-        },
-      ])
+      .insert([depositInsertPayload])
       .select('id, invoice_number')
       .single();
+
+    if (invError && (invError.message?.includes('schema cache') || invError.message?.includes('column'))) {
+      delete depositInsertPayload.job_id;
+      delete depositInsertPayload.invoice_type;
+      delete depositInsertPayload.notes;
+      const retry = await adminClient
+        .from('invoices')
+        .insert([depositInsertPayload])
+        .select('id, invoice_number')
+        .single();
+      invoiceRecord = retry.data;
+      invError = retry.error;
+    }
 
     if (invError || !invoiceRecord) {
       return { error: invError?.message || 'Failed to create deposit invoice.' };

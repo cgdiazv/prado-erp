@@ -62,21 +62,7 @@ export async function GET(
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
       .select(`
-        id,
-        invoice_number,
-        due_date,
-        tax_amount,
-        total_amount,
-        currency_code,
-        status,
-        stripe_payment_url,
-        paid_at,
-        created_at,
-        customer_id,
-        organization_id,
-        job_id,
-        invoice_type,
-        notes,
+        *,
         customers (
           id,
           first_name,
