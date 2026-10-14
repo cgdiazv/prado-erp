@@ -162,7 +162,7 @@ export default function LaborMarkupSettingsPanel({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-2xl">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    {isEs ? 'Tarifa al Cliente ($/hr)' : 'Billable Labor Rate ($/hr)'}
+                    {isEs ? 'Tarifa al Cliente ($/hr)' : 'Labor Rate ($/hr)'}
                   </p>
                   <p className="mt-1 text-base font-bold text-slate-800 flex items-center gap-1">
                     <DollarSign className="w-4 h-4 text-emerald-600" />
@@ -231,7 +231,7 @@ export default function LaborMarkupSettingsPanel({
                   className="block text-xs font-semibold uppercase tracking-wide text-slate-600"
                   htmlFor="default-labor-rate-input"
                 >
-                  {isEs ? 'Tarifa al Cliente ($/hr)' : 'Default Labor Rate ($/hr)'}
+                  {isEs ? 'Tarifa al Cliente ($/hr)' : 'Labor Rate ($/hr)'}
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
@@ -256,7 +256,7 @@ export default function LaborMarkupSettingsPanel({
                   className="block text-xs font-semibold uppercase tracking-wide text-slate-600"
                   htmlFor="default-labor-cost-input"
                 >
-                  {isEs ? 'Costo Privado ($/hr)' : 'Default Labor Cost ($/hr - Private)'}
+                  {isEs ? 'Costo Privado ($/hr)' : 'Labor Cost ($/hr - Private)'}
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
@@ -281,7 +281,7 @@ export default function LaborMarkupSettingsPanel({
                   className="block text-xs font-semibold uppercase tracking-wide text-slate-600"
                   htmlFor="default-materials-markup-input"
                 >
-                  {isEs ? 'Margen de Materiales (%)' : 'Default Materials Markup (%)'}
+                  {isEs ? 'Margen de Materiales (%)' : 'Materials Markup (%)'}
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 text-xs">%</span>

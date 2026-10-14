@@ -2096,6 +2096,81 @@ export async function resendInvoiceEmail(invoiceId: string) {
   }
 }
 
+export async function sendInvoiceOverdueReminderAction(invoiceId: string) {
+  if (!invoiceId) return { error: 'Missing Invoice ID.' };
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: 'Unauthorized operational execution.' };
+
+    const { organization: defaultOrg } = await getUserOrganization(user.id);
+    const adminClient = createAdminClient();
+
+    const { data: invoice } = await adminClient
+      .from('invoices')
+      .select('organization_id')
+      .eq('id', invoiceId)
+      .maybeSingle();
+
+    if (!invoice) return { error: 'Invoice not found.' };
+
+    if (invoice.organization_id && defaultOrg?.id !== invoice.organization_id) {
+      const access = await verifyUserOrganizationAccess(user.id, invoice.organization_id);
+      if (!access.authorized) {
+        return { error: 'Forbidden.' };
+      }
+    }
+
+    const { sendInvoiceOverdueReminder } = await import('@/lib/invoiceReminders');
+    const result = await sendInvoiceOverdueReminder(invoiceId, { force: true });
+
+    if (!result.success) {
+      return { error: result.error || 'Failed to send reminder.' };
+    }
+
+    revalidatePath('/dashboard/invoices-ledger');
+    return { success: true };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to send invoice reminder.' };
+  }
+}
+
+export async function triggerOverdueRemindersForWorkspaceAction() {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: 'Unauthorized operational execution.' };
+
+    const { organization: org } = await getUserOrganization(user.id);
+    if (!org) return { error: 'Organization not found.' };
+
+    const { processOverdueInvoiceReminders } = await import('@/lib/invoiceReminders');
+    const result = await processOverdueInvoiceReminders({
+      organizationId: org.id,
+      minDaysBetweenReminders: 1,
+    });
+
+    revalidatePath('/dashboard/invoices-ledger');
+    return {
+      success: true,
+      totalOverdue: result.totalOverdue,
+      remindersSent: result.remindersSent,
+      skippedRecentlyReminded: result.skippedRecentlyReminded,
+      skippedNoEmail: result.skippedNoEmail,
+      errors: result.errors,
+    };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to trigger overdue reminders.' };
+  }
+}
+
 export async function createDepositInvoiceForJob(
   jobId: string,
   depositPercentage: number = 50

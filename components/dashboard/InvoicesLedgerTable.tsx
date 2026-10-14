@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { markInvoiceAsPaid } from '@/app/actions';
+import { markInvoiceAsPaid, sendInvoiceOverdueReminderAction, triggerOverdueRemindersForWorkspaceAction } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
-import { Printer, Pencil } from 'lucide-react';
+import { Printer, Pencil, BellRing, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import EditInvoiceModal from './EditInvoiceModal';
 
 type FilterType = 'all' | 'unpaid' | 'paid';
@@ -47,10 +47,65 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortColumn, setSortColumn] = useState<SortColumn>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
+  const [isProcessingBatchReminders, setIsProcessingBatchReminders] = useState(false);
+  const [reminderNotification, setReminderNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     setInvoiceRows(invoices);
   }, [invoices]);
+
+  const overdueCount = useMemo(() => {
+    const today = new Date();
+    return invoiceRows.filter(
+      (inv) => inv.status === 'unpaid' && inv.due_date && new Date(inv.due_date) < today
+    ).length;
+  }, [invoiceRows]);
+
+  const handleSendRowReminder = async (invoiceId: string) => {
+    setSendingReminderId(invoiceId);
+    setReminderNotification(null);
+    try {
+      const res = await sendInvoiceOverdueReminderAction(invoiceId);
+      if (res.error) {
+        setReminderNotification({ type: 'error', text: res.error });
+      } else {
+        setReminderNotification({
+          type: 'success',
+          text: isEs
+            ? 'Recordatorio de pago enviado exitosamente al cliente.'
+            : 'Payment reminder email sent successfully to customer.',
+        });
+      }
+    } catch (err: any) {
+      setReminderNotification({ type: 'error', text: err?.message || 'Error sending reminder.' });
+    } finally {
+      setSendingReminderId(null);
+    }
+  };
+
+  const handleTriggerBatchReminders = async () => {
+    setIsProcessingBatchReminders(true);
+    setReminderNotification(null);
+    try {
+      const res = await triggerOverdueRemindersForWorkspaceAction();
+      if (res.error) {
+        setReminderNotification({ type: 'error', text: res.error });
+      } else {
+        const count = res.remindersSent ?? 0;
+        setReminderNotification({
+          type: 'success',
+          text: isEs
+            ? `Se enviaron ${count} recordatorio(s) de facturas vencidas.`
+            : `Successfully sent ${count} overdue invoice reminder(s).`,
+        });
+      }
+    } catch (err: any) {
+      setReminderNotification({ type: 'error', text: err?.message || 'Error processing reminders.' });
+    } finally {
+      setIsProcessingBatchReminders(false);
+    }
+  };
 
   const filteredInvoices =
     filter === 'all' ? invoiceRows : invoiceRows.filter((inv) => inv.status === filter);
@@ -159,6 +214,30 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
         </div>
       </div>
 
+      {reminderNotification && (
+        <div className={`mb-3 p-3 rounded-xl border flex items-center justify-between text-xs font-semibold ${
+          reminderNotification.type === 'success'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <div className="flex items-center gap-2">
+            {reminderNotification.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            )}
+            <span>{reminderNotification.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReminderNotification(null)}
+            className="text-slate-400 hover:text-slate-600 font-bold ml-2 cursor-pointer"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
       {/* Filter tabs + pagination */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-6 md:mb-3">
         {/* Desktop filter buttons */}
@@ -192,6 +271,24 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
         </select>
 
         <div className="flex items-center gap-2 sm:ml-auto">
+          {overdueCount > 0 && (
+            <button
+              type="button"
+              onClick={handleTriggerBatchReminders}
+              disabled={isProcessingBatchReminders}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/80 hover:bg-amber-100 transition shadow-2xs cursor-pointer disabled:opacity-50"
+            >
+              {isProcessingBatchReminders ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <BellRing className="w-3.5 h-3.5 text-amber-600" />
+              )}
+              <span>
+                {isEs ? `Recordar vencidas (${overdueCount})` : `Remind Overdue (${overdueCount})`}
+              </span>
+            </button>
+          )}
+
           <label htmlFor="invoices-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
             {isEs ? 'Registros por pagina' : 'Rows per page'}
           </label>
@@ -353,6 +450,22 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="inline-flex items-center justify-end gap-1">
+                        {inv.status !== 'paid' && inv.due_date && new Date(inv.due_date) < new Date() && (
+                          <button
+                            type="button"
+                            onClick={() => handleSendRowReminder(inv.id)}
+                            disabled={sendingReminderId === inv.id}
+                            title={isEs ? 'Enviar recordatorio de pago' : 'Send payment reminder'}
+                            aria-label={isEs ? 'Enviar recordatorio de pago' : 'Send payment reminder'}
+                            className="inline-flex items-center justify-center p-1.5 rounded-md text-amber-600 hover:text-amber-800 hover:bg-amber-50 transition duration-150 cursor-pointer border border-transparent hover:border-amber-200 disabled:opacity-50"
+                          >
+                            {sendingReminderId === inv.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                            ) : (
+                              <BellRing className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => setEditingInvoice(inv)}

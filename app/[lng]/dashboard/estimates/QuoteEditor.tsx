@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -19,6 +19,9 @@ import {
   AlertCircle,
   Loader2,
   Check,
+  Search,
+  X,
+  ChevronsUpDown,
 } from 'lucide-react';
 import {
   createEstimate,
@@ -104,6 +107,8 @@ export default function QuoteEditor({
     cancel: isEs ? 'Cancelar' : 'Cancel',
     customerSectionTitle: isEs ? '1. Cliente y Propiedad' : '1. Customer & Property',
     selectCustomer: isEs ? 'Seleccionar Cliente...' : 'Select Customer...',
+    searchCustomer: isEs ? 'Buscar cliente por nombre o empresa...' : 'Search customer by name or company...',
+    noCustomersFound: isEs ? 'No se encontraron clientes' : 'No customers found',
     selectProperty: isEs ? 'Seleccionar Propiedad...' : 'Select Property...',
     noCustomerSelected: isEs ? 'Primero selecciona un cliente' : 'Select a customer first',
     noPropertiesFound: isEs ? 'Sin propiedades registradas' : 'No properties found',
@@ -142,6 +147,10 @@ export default function QuoteEditor({
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(() => {
     return initialEstimate?.customer_id || preselectedCustomerId || '';
   });
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const customerComboboxRef = useRef<HTMLDivElement>(null);
+
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>(() => {
     return initialEstimate?.property_id || '';
   });
@@ -153,6 +162,22 @@ export default function QuoteEditor({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Close customer dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        customerComboboxRef.current &&
+        !customerComboboxRef.current.contains(event.target as Node)
+      ) {
+        setIsCustomerDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Line Items Helper
   const createDefaultLine = (type: LineItemType = 'service'): ServiceLine => {
@@ -503,6 +528,16 @@ export default function QuoteEditor({
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
 
+  const filteredCustomers = useMemo(() => {
+    const q = customerSearchTerm.trim().toLowerCase();
+    if (!q) return customers;
+    return customers.filter((c) => {
+      const fullName = `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase();
+      const company = (c.company_name || '').toLowerCase();
+      return fullName.includes(q) || company.includes(q);
+    });
+  }, [customers, customerSearchTerm]);
+
   return (
     <div className="min-h-screen bg-slate-50/50 pb-20">
       {/* Top sticky navigation bar */}
@@ -604,24 +639,114 @@ export default function QuoteEditor({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+                <div className="relative" ref={customerComboboxRef}>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     {isEs ? 'Cliente' : 'Customer'} <span className="text-red-500">*</span>
                   </label>
-                  <select
+
+                  {/* Hidden input for HTML form validation & fallback */}
+                  <input
+                    type="hidden"
+                    name="customerId"
                     value={selectedCustomerId}
-                    onChange={(e) => setSelectedCustomerId(e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-xl p-2.5 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
                     required
-                  >
-                    <option value="">{t.selectCustomer}</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.company_name ? `${c.company_name} - ` : ''}
-                        {c.first_name} {c.last_name}
-                      </option>
-                    ))}
-                  </select>
+                  />
+
+                  {/* Search Input Box */}
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <Search className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="text"
+                      value={
+                        isCustomerDropdownOpen
+                          ? customerSearchTerm
+                          : selectedCustomer
+                          ? `${selectedCustomer.company_name ? `${selectedCustomer.company_name} - ` : ''}${selectedCustomer.first_name} ${selectedCustomer.last_name}`
+                          : customerSearchTerm
+                      }
+                      placeholder={t.searchCustomer}
+                      onFocus={() => {
+                        setIsCustomerDropdownOpen(true);
+                      }}
+                      onChange={(e) => {
+                        setCustomerSearchTerm(e.target.value);
+                        if (!isCustomerDropdownOpen) {
+                          setIsCustomerDropdownOpen(true);
+                        }
+                      }}
+                      className="w-full bg-white border border-gray-300 rounded-xl pl-9 pr-16 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center gap-1">
+                      {selectedCustomerId ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCustomerId('');
+                            setCustomerSearchTerm('');
+                            setIsCustomerDropdownOpen(true);
+                          }}
+                          title={isEs ? 'Quitar cliente seleccionado' : 'Clear selected customer'}
+                          className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomerDropdownOpen((prev) => !prev)}
+                        className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition cursor-pointer"
+                      >
+                        <ChevronsUpDown className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Dropdown Results */}
+                  {isCustomerDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg z-30">
+                      {filteredCustomers.length === 0 ? (
+                        <div className="px-3 py-3 text-center text-xs text-slate-500">
+                          {t.noCustomersFound}
+                        </div>
+                      ) : (
+                        filteredCustomers.map((c) => {
+                          const isSelected = c.id === selectedCustomerId;
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCustomerId(c.id);
+                                setCustomerSearchTerm('');
+                                setIsCustomerDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition cursor-pointer ${
+                                isSelected
+                                  ? 'bg-emerald-50 text-emerald-900 font-semibold'
+                                  : 'text-slate-800 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div className="flex flex-col min-w-0 pr-2">
+                                <span className="truncate">
+                                  {c.first_name} {c.last_name}
+                                </span>
+                                {c.company_name && (
+                                  <span className="text-[10px] text-slate-500 truncate font-normal">
+                                    {c.company_name}
+                                  </span>
+                                )}
+                              </div>
+                              {isSelected && (
+                                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -1080,7 +1205,6 @@ export default function QuoteEditor({
             <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-emerald-200/60 pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
                     {t.profitabilityTitle}
