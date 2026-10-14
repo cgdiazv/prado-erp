@@ -349,10 +349,16 @@ export async function updateLaborMarkupSettings(formData: FormData) {
   const laborRateRaw = (formData.get('defaultLaborRate') as string | null)?.trim() || '';
   const laborCostRaw = (formData.get('defaultLaborCost') as string | null)?.trim() || '';
   const markupRaw = (formData.get('defaultMaterialsMarkup') as string | null)?.trim() || '';
+  const nightLaborRateRaw = (formData.get('defaultNightLaborRate') as string | null)?.trim() || '';
+  const nightLaborCostRaw = (formData.get('defaultNightLaborCost') as string | null)?.trim() || '';
+  const holidayEmergencyLaborCostRaw = (formData.get('defaultHolidayEmergencyLaborCost') as string | null)?.trim() || '';
 
   const parsedLaborRate = Number.parseFloat(laborRateRaw);
   const parsedLaborCost = Number.parseFloat(laborCostRaw);
   const parsedMarkup = Number.parseFloat(markupRaw);
+  const parsedNightLaborRate = nightLaborRateRaw ? Number.parseFloat(nightLaborRateRaw) : 135.0;
+  const parsedNightLaborCost = nightLaborCostRaw ? Number.parseFloat(nightLaborCostRaw) : 65.0;
+  const parsedHolidayEmergencyLaborCost = holidayEmergencyLaborCostRaw ? Number.parseFloat(holidayEmergencyLaborCostRaw) : 75.0;
 
   if (!Number.isFinite(parsedLaborRate) || parsedLaborRate < 0) {
     return { error: 'Default labor rate must be a valid non-negative number.' };
@@ -364,6 +370,18 @@ export async function updateLaborMarkupSettings(formData: FormData) {
 
   if (!Number.isFinite(parsedMarkup) || parsedMarkup < 0 || parsedMarkup > 500) {
     return { error: 'Default materials markup must be between 0% and 500%.' };
+  }
+
+  if (!Number.isFinite(parsedNightLaborRate) || parsedNightLaborRate < 0) {
+    return { error: 'Night hours labor rate must be a valid non-negative number.' };
+  }
+
+  if (!Number.isFinite(parsedNightLaborCost) || parsedNightLaborCost < 0) {
+    return { error: 'Night hours labor cost must be a valid non-negative number.' };
+  }
+
+  if (!Number.isFinite(parsedHolidayEmergencyLaborCost) || parsedHolidayEmergencyLaborCost < 0) {
+    return { error: 'Holidays and emergency labor cost must be a valid non-negative number.' };
   }
 
   const supabase = await createClient();
@@ -388,16 +406,35 @@ export async function updateLaborMarkupSettings(formData: FormData) {
   const normalizedLaborRate = Math.round(parsedLaborRate * 100) / 100;
   const normalizedLaborCost = Math.round(parsedLaborCost * 100) / 100;
   const normalizedMarkup = Math.round(parsedMarkup * 100) / 100;
+  const normalizedNightLaborRate = Math.round(parsedNightLaborRate * 100) / 100;
+  const normalizedNightLaborCost = Math.round(parsedNightLaborCost * 100) / 100;
+  const normalizedHolidayEmergencyLaborCost = Math.round(parsedHolidayEmergencyLaborCost * 100) / 100;
 
   const adminClient = createAdminClient();
-  const { error } = await adminClient
+  const updatePayload: Record<string, any> = {
+    default_labor_rate: normalizedLaborRate,
+    default_labor_cost: normalizedLaborCost,
+    default_materials_markup: normalizedMarkup,
+    default_night_labor_rate: normalizedNightLaborRate,
+    default_night_labor_cost: normalizedNightLaborCost,
+    default_holiday_emergency_labor_cost: normalizedHolidayEmergencyLaborCost,
+  };
+
+  let { error } = await adminClient
     .from('organizations')
-    .update({
-      default_labor_rate: normalizedLaborRate,
-      default_labor_cost: normalizedLaborCost,
-      default_materials_markup: normalizedMarkup,
-    })
+    .update(updatePayload)
     .eq('id', organization.id);
+
+  if (error && (error.message.includes('default_night_labor_rate') || error.message.includes('default_night_labor_cost') || error.message.includes('default_holiday_emergency_labor_cost') || error.code === '42703')) {
+    delete updatePayload.default_night_labor_rate;
+    delete updatePayload.default_night_labor_cost;
+    delete updatePayload.default_holiday_emergency_labor_cost;
+    const retry = await adminClient
+      .from('organizations')
+      .update(updatePayload)
+      .eq('id', organization.id);
+    error = retry.error;
+  }
 
   if (error) {
     return { error: error.message };
@@ -414,6 +451,9 @@ export async function updateLaborMarkupSettings(formData: FormData) {
     laborRate: normalizedLaborRate,
     laborCost: normalizedLaborCost,
     materialsMarkup: normalizedMarkup,
+    nightLaborRate: normalizedNightLaborRate,
+    nightLaborCost: normalizedNightLaborCost,
+    holidayEmergencyLaborCost: normalizedHolidayEmergencyLaborCost,
   };
 }
 

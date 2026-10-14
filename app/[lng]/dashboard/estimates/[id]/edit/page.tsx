@@ -53,6 +53,10 @@ export default async function EditQuotePage({
       defaultLaborRate={Number(dashboardData.defaultLaborRate ?? 95)}
       defaultLaborCost={Number(dashboardData.defaultLaborCost ?? 45)}
       defaultMaterialsMarkup={Number(dashboardData.defaultMaterialsMarkup ?? 30)}
+      defaultNightLaborRate={Number(dashboardData.defaultNightLaborRate ?? 135)}
+      defaultNightLaborCost={Number(dashboardData.defaultNightLaborCost ?? 65)}
+      defaultHolidayEmergencyLaborRate={Number(dashboardData.defaultHolidayEmergencyLaborRate ?? 165)}
+      defaultHolidayEmergencyLaborCost={Number(dashboardData.defaultHolidayEmergencyLaborCost ?? 75)}
       defaultPaymentTerms={dashboardData.defaultPaymentTerms || 'Due on Receipt'}
     />
   );

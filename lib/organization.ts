@@ -21,6 +21,10 @@ export type UserOrganization = {
   default_labor_rate: number | null;
   default_labor_cost: number | null;
   default_materials_markup: number | null;
+  default_night_labor_rate?: number | null;
+  default_night_labor_cost?: number | null;
+  default_holiday_emergency_labor_rate?: number | null;
+  default_holiday_emergency_labor_cost?: number | null;
   last_qbo_sync_warning: string | null;
   last_qbo_sync_warning_at: string | null;
   last_xero_sync_warning: string | null;
@@ -44,7 +48,7 @@ export type UserOrganizationResult = {
   role: string | null;
 };
 
-const ORG_SELECT_FULL = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, default_labor_rate, default_labor_cost, default_materials_markup, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, referral_code, referred_by_org_id, stripe_subscription_id, stripe_customer_id, referral_discount_active, referral_discount_ends_at, created_at';
+const ORG_SELECT_FULL = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, default_labor_rate, default_labor_cost, default_materials_markup, default_night_labor_rate, default_night_labor_cost, default_holiday_emergency_labor_rate, default_holiday_emergency_labor_cost, last_qbo_sync_warning, last_qbo_sync_warning_at, last_xero_sync_warning, last_xero_sync_warning_at, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, referral_code, referred_by_org_id, stripe_subscription_id, stripe_customer_id, referral_discount_active, referral_discount_ends_at, created_at';
 const ORG_SELECT_WITH_REFERRALS = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, default_labor_rate, default_labor_cost, default_materials_markup, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, referral_code, referred_by_org_id, stripe_subscription_id, stripe_customer_id, referral_discount_active, referral_discount_ends_at, created_at';
 const ORG_SELECT_WITH_LABOR_MARKUP = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, default_labor_rate, default_labor_cost, default_materials_markup, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, created_at';
 const ORG_SELECT_WITH_STRIPE = 'id, name, logo_url, trial_starts_at, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, slogan, phone, street_address, city, state, zip_code, invoice_tax_rate_percent, invoice_currency_code, max_jobs_per_truck, auto_optimize_drive_routes, next_estimate_number, next_invoice_number, document_email_header_color, default_payment_terms, created_at';
@@ -80,6 +84,22 @@ function normalizeOrganizationRow(row: any): UserOrganization {
       typeof row?.default_materials_markup === 'number'
         ? row.default_materials_markup
         : (row?.default_materials_markup != null ? Number(row.default_materials_markup) : 30),
+    default_night_labor_rate:
+      typeof row?.default_night_labor_rate === 'number'
+        ? row.default_night_labor_rate
+        : (row?.default_night_labor_rate != null ? Number(row.default_night_labor_rate) : 135),
+    default_night_labor_cost:
+      typeof row?.default_night_labor_cost === 'number'
+        ? row.default_night_labor_cost
+        : (row?.default_night_labor_cost != null ? Number(row.default_night_labor_cost) : 65),
+    default_holiday_emergency_labor_rate:
+      typeof row?.default_holiday_emergency_labor_rate === 'number'
+        ? row.default_holiday_emergency_labor_rate
+        : (row?.default_holiday_emergency_labor_rate != null ? Number(row.default_holiday_emergency_labor_rate) : 165),
+    default_holiday_emergency_labor_cost:
+      typeof row?.default_holiday_emergency_labor_cost === 'number'
+        ? row.default_holiday_emergency_labor_cost
+        : (row?.default_holiday_emergency_labor_cost != null ? Number(row.default_holiday_emergency_labor_cost) : 75),
     max_jobs_per_truck:
       typeof row?.max_jobs_per_truck === 'number' ? row.max_jobs_per_truck : null,
     auto_optimize_drive_routes:

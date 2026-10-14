@@ -40,6 +40,7 @@ export interface ServiceLine {
   hours?: string;
   laborRate?: string;
   laborCost?: string;
+  laborTier?: 'default' | 'night' | 'emergency';
   materialCost?: string;
   materialMarkup?: string;
 }
@@ -73,6 +74,10 @@ interface QuoteEditorProps {
   defaultLaborRate: number;
   defaultLaborCost: number;
   defaultMaterialsMarkup: number;
+  defaultNightLaborRate?: number;
+  defaultNightLaborCost?: number;
+  defaultHolidayEmergencyLaborRate?: number;
+  defaultHolidayEmergencyLaborCost?: number;
   defaultPaymentTerms: string;
   preselectedCustomerId?: string;
 }
@@ -87,6 +92,10 @@ export default function QuoteEditor({
   defaultLaborRate,
   defaultLaborCost,
   defaultMaterialsMarkup,
+  defaultNightLaborRate = 135,
+  defaultNightLaborCost = 65,
+  defaultHolidayEmergencyLaborRate = 165,
+  defaultHolidayEmergencyLaborCost = 75,
   defaultPaymentTerms,
   preselectedCustomerId,
 }: QuoteEditorProps) {
@@ -193,6 +202,7 @@ export default function QuoteEditor({
         hours: hrs,
         laborRate: rate.toFixed(2),
         laborCost: defaultLaborCost.toFixed(2),
+        laborTier: 'default',
         price: (Number.parseFloat(hrs) * rate).toFixed(2),
       };
     }
@@ -375,6 +385,34 @@ export default function QuoteEditor({
       return;
     }
     setServiceLines((prev) => prev.filter((line) => line.id !== id));
+  };
+
+  const applyLaborTier = (id: number, tier: 'default' | 'night' | 'emergency') => {
+    setServiceLines((prev) =>
+      prev.map((line) => {
+        if (line.id !== id || line.type !== 'labor') return line;
+
+        let newRate = defaultLaborRate;
+        let newCost = defaultLaborCost;
+
+        if (tier === 'night') {
+          newRate = defaultNightLaborRate;
+          newCost = defaultNightLaborCost;
+        } else if (tier === 'emergency') {
+          newRate = defaultHolidayEmergencyLaborRate;
+          newCost = defaultHolidayEmergencyLaborCost;
+        }
+
+        const hrs = Number.parseFloat(line.hours || '0') || 0;
+        return {
+          ...line,
+          laborTier: tier,
+          laborRate: newRate.toFixed(2),
+          laborCost: newCost.toFixed(2),
+          price: (hrs * newRate).toFixed(2),
+        };
+      })
+    );
   };
 
   const updateServiceLine = (id: number, field: keyof ServiceLine, value: any) => {
@@ -827,13 +865,69 @@ export default function QuoteEditor({
                     >
                       {/* Top bar of item card: Type indicator + Delete button */}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[11px] font-bold text-slate-400">#{index + 1}</span>
                           {line.type === 'labor' ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md">
-                              <Clock className="w-2.5 h-2.5" />
-                              {isEs ? 'Mano de Obra' : 'Labor'}
-                            </span>
+                            <>
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md">
+                                <Clock className="w-2.5 h-2.5" />
+                                {isEs ? 'Mano de Obra' : 'Labor'}
+                              </span>
+
+                              <div className="inline-flex items-center rounded-lg bg-slate-100 p-0.5 border border-slate-200/80 text-[10px] font-semibold">
+                                <button
+                                  type="button"
+                                  onClick={() => applyLaborTier(line.id, 'default')}
+                                  className={`cursor-pointer px-2 py-0.5 rounded-md transition ${
+                                    (line.laborTier ||
+                                      (Math.abs(Number(line.laborRate) - Number(defaultNightLaborRate)) < 0.01
+                                        ? 'night'
+                                        : Math.abs(Number(line.laborRate) - Number(defaultHolidayEmergencyLaborRate)) < 0.01
+                                        ? 'emergency'
+                                        : 'default')) === 'default'
+                                      ? 'bg-white text-slate-900 shadow-xs font-bold'
+                                      : 'text-slate-500 hover:text-slate-800'
+                                  }`}
+                                  title={`${isEs ? 'Tarifa Estándar' : 'Default Rate'}: $${defaultLaborRate.toFixed(2)}/hr`}
+                                >
+                                  {isEs ? 'Estándar' : 'Default'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => applyLaborTier(line.id, 'night')}
+                                  className={`cursor-pointer px-2 py-0.5 rounded-md transition ${
+                                    (line.laborTier ||
+                                      (Math.abs(Number(line.laborRate) - Number(defaultNightLaborRate)) < 0.01
+                                        ? 'night'
+                                        : Math.abs(Number(line.laborRate) - Number(defaultHolidayEmergencyLaborRate)) < 0.01
+                                        ? 'emergency'
+                                        : 'default')) === 'night'
+                                      ? 'bg-indigo-600 text-white shadow-xs font-bold'
+                                      : 'text-slate-500 hover:text-slate-800'
+                                  }`}
+                                  title={`${isEs ? 'Tarifa Nocturna' : 'Night Rate'}: $${defaultNightLaborRate.toFixed(2)}/hr`}
+                                >
+                                  {isEs ? 'Nocturno' : 'Night'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => applyLaborTier(line.id, 'emergency')}
+                                  className={`cursor-pointer px-2 py-0.5 rounded-md transition ${
+                                    (line.laborTier ||
+                                      (Math.abs(Number(line.laborRate) - Number(defaultNightLaborRate)) < 0.01
+                                        ? 'night'
+                                        : Math.abs(Number(line.laborRate) - Number(defaultHolidayEmergencyLaborRate)) < 0.01
+                                        ? 'emergency'
+                                        : 'default')) === 'emergency'
+                                      ? 'bg-amber-600 text-white shadow-xs font-bold'
+                                      : 'text-slate-500 hover:text-slate-800'
+                                  }`}
+                                  title={`${isEs ? 'Tarifa de Emergencia' : 'Emergency Rate'}: $${defaultHolidayEmergencyLaborRate.toFixed(2)}/hr`}
+                                >
+                                  {isEs ? 'Emergencia' : 'Emergency'}
+                                </button>
+                              </div>
+                            </>
                           ) : line.type === 'material' ? (
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md">
                               <Package className="w-2.5 h-2.5" />
