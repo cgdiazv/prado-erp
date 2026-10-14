@@ -270,13 +270,13 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
           ))}
         </select>
 
-        <div className="flex items-center gap-2 sm:ml-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:ml-auto w-full sm:w-auto">
           {overdueCount > 0 && (
             <button
               type="button"
               onClick={handleTriggerBatchReminders}
               disabled={isProcessingBatchReminders}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/80 hover:bg-amber-100 transition shadow-2xs cursor-pointer disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/80 hover:bg-amber-100 transition shadow-2xs cursor-pointer disabled:opacity-50"
             >
               {isProcessingBatchReminders ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -289,41 +289,43 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
             </button>
           )}
 
-          <label htmlFor="invoices-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
-            {isEs ? 'Registros por pagina' : 'Rows per page'}
-          </label>
-          <select
-            id="invoices-page-size"
-            value={pageSize}
-            onChange={(event) => setPageSize(Number(event.target.value))}
-            className="text-xs bg-white border border-gray-300 rounded-md px-2 py-1.5 text-slate-700"
-          >
-            {[25, 50, 100].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap sm:flex-nowrap">
+            <label htmlFor="invoices-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+              {isEs ? 'Registros por pagina' : 'Rows per page'}
+            </label>
+            <select
+              id="invoices-page-size"
+              value={pageSize}
+              onChange={(event) => setPageSize(Number(event.target.value))}
+              className="text-xs bg-white border border-gray-300 rounded-md px-2 py-1.5 text-slate-700"
+            >
+              {[25, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
 
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isEs ? 'Anterior' : 'Prev'}
-          </button>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isEs ? 'Anterior' : 'Prev'}
+            </button>
 
-          <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">
-            {isEs ? 'Pagina' : 'Page'} {currentPage} / {totalPages}
-          </span>
+            <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+              {isEs ? 'Pagina' : 'Page'} {currentPage} / {totalPages}
+            </span>
 
-          <button
-            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-            disabled={currentPage >= totalPages}
-            className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isEs ? 'Siguiente' : 'Next'}
-          </button>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage >= totalPages}
+              className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isEs ? 'Siguiente' : 'Next'}
+            </button>
+          </div>
         </div>
       </div>
 
