@@ -13,7 +13,9 @@ import {
   FileText,
   Loader2,
   Receipt,
+  Settings,
   Smartphone,
+  User,
   Users,
   X,
 } from 'lucide-react';
@@ -471,8 +473,8 @@ export default function DashboardNavbar({
               {showSettingsMenu ? (
                 <>
                   <div className="fixed inset-0 z-40" onClick={closeSettingsMenu} />
-                  <div className="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-2xl border border-gray-200/80 bg-white p-5 shadow-2xl animate-fadeIn">
-                    <div className="space-y-0.5">
+                  <div className="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-2xl border border-gray-200/80 bg-white p-3.5 shadow-2xl animate-fadeIn">
+                    <div className="px-2 pt-1 pb-1 space-y-0.5">
                       <p className="text-sm font-bold text-slate-900 leading-snug">
                         {displayFullName}
                       </p>
@@ -481,12 +483,34 @@ export default function DashboardNavbar({
                       </p>
                     </div>
 
-                    <div className="border-t border-gray-100 my-4" />
+                    <div className="border-t border-gray-100 my-2.5" />
+
+                    <div className="space-y-0.5">
+                      <Link
+                        href={`/${activeLocale}/dashboard/profile-settings`}
+                        onClick={closeSettingsMenu}
+                        className="group flex items-center gap-2.5 px-2.5 py-2 text-sm font-semibold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/70 rounded-xl transition cursor-pointer"
+                      >
+                        <User className="h-4.5 w-4.5 shrink-0 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+                        <span>{isEs ? 'Configuración de perfil' : 'Profile Settings'}</span>
+                      </Link>
+
+                      <Link
+                        href={`/${activeLocale}/dashboard/settings`}
+                        onClick={closeSettingsMenu}
+                        className="group flex items-center gap-2.5 px-2.5 py-2 text-sm font-semibold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/70 rounded-xl transition cursor-pointer"
+                      >
+                        <Settings className="h-4.5 w-4.5 shrink-0 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+                        <span>{isEs ? 'Configuración del sistema' : 'System Settings'}</span>
+                      </Link>
+                    </div>
+
+                    <div className="border-t border-gray-100 my-2.5" />
 
                     <form action={`/${activeLocale}/auth/signout`} method="POST">
                       <button
                         type="submit"
-                        className="flex items-center gap-2.5 text-sm font-bold text-emerald-600 hover:text-emerald-700 transition cursor-pointer"
+                        className="group flex items-center gap-2.5 w-full px-2.5 py-2 text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/70 rounded-xl transition cursor-pointer"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -494,7 +518,7 @@ export default function DashboardNavbar({
                           viewBox="0 0 24 24"
                           strokeWidth={2.2}
                           stroke="currentColor"
-                          className="h-4.5 w-4.5 shrink-0"
+                          className="h-4.5 w-4.5 shrink-0 text-emerald-600 group-hover:text-emerald-700 transition-colors"
                         >
                           <path
                             strokeLinecap="round"
@@ -502,7 +526,7 @@ export default function DashboardNavbar({
                             d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 006 21h7.5a2.25 2.25 0 002.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9"
                           />
                         </svg>
-                        {isEs ? 'Cerrar sesión' : 'Sign Out'}
+                        <span>{isEs ? 'Cerrar sesión' : 'Sign Out'}</span>
                       </button>
                     </form>
                   </div>
