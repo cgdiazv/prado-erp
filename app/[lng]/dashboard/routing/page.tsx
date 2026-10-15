@@ -2,11 +2,13 @@ import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import RouteEngine from '@/components/dashboard/RouteEngine';
 import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
-import { canUseDispatchEngine } from '@/lib/subscriptionAccess';
+import { canUseDispatchEngine, canUseLiveTracking } from '@/lib/subscriptionAccess';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
 import { getUserOrganization } from '@/lib/organization';
+
+import { getTeamMembers } from '@/app/actions';
 
 export default async function RoutingPage({
   params,
@@ -34,20 +36,31 @@ export default async function RoutingPage({
     redirect(`/${locale}/dashboard?restricted=true`);
   }
 
+  const canAccessLiveTracking = canUseLiveTracking(org.subscription_status);
+
   // Verify trial lifecycle
   const trial = checkTrialExpiry(org.trial_starts_at, org.subscription_status);
   if (trial.isExpired) {
     redirect(`/${locale}/dashboard?expired=true`);
   }
 
-  // Fetch customer assets and active fleet vehicles in parallel
-  const [customersResponse, trucksResponse] = await Promise.all([
+  // Fetch customer assets, active fleet vehicles, and team members in parallel
+  const [customersResponse, trucksResponse, teamMembersResponse] = await Promise.all([
     supabase.from('customers').select('id').eq('organization_id', org.id),
-    supabase.from('trucks').select('id, name, plate_number').eq('organization_id', org.id).eq('is_active', true)
+    supabase.from('trucks').select('id, name, plate_number').eq('organization_id', org.id).eq('is_active', true),
+    getTeamMembers(org.id),
   ]);
 
   const customers = customersResponse.data || [];
   const trucks = trucksResponse.data || [];
+  const rawMembers = teamMembersResponse?.members || [];
+  const drivers = rawMembers.map((m: any) => ({
+    id: m.user_id || m.email,
+    name: `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email,
+    email: m.email,
+    role: m.role || 'driver',
+    phone: m.phone || null,
+  }));
   const customerIds = customers.map(c => c.id);
 
   const propertiesResponse = customerIds.length > 0
@@ -149,9 +162,11 @@ export default async function RoutingPage({
           orgId={org.id}
           jobs={jobs || []}
           trucks={trucks}
+          drivers={drivers}
           locale={locale}
           maxStopsPerTruck={org.max_jobs_per_truck ?? 4}
           autoOptimizeDriveRoutes={org.auto_optimize_drive_routes ?? true}
+          canAccessLiveTracking={canAccessLiveTracking}
         />
       </div>
     </main>

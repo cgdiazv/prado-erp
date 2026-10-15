@@ -1,7 +1,7 @@
 export const DASHBOARD_MODULES = ['customers', 'estimates', 'jobs', 'dispatch', 'invoice', 'expenses', 'settings'] as const;
 
 export type DashboardModule = (typeof DASHBOARD_MODULES)[number];
-export type DashboardPermissionRole = 'owner' | 'manager' | 'supervisor' | 'dispatcher' | 'billing' | 'subcontractor';
+export type DashboardPermissionRole = 'owner' | 'manager' | 'supervisor' | 'dispatcher' | 'billing' | 'subcontractor' | 'driver';
 export type DashboardRolePermissionsMap = Record<DashboardPermissionRole, DashboardModule[]>;
 
 const FULL_ACCESS_MODULES = [...DASHBOARD_MODULES];
@@ -13,6 +13,7 @@ export const DEFAULT_ROLE_MODULES: DashboardRolePermissionsMap = {
   dispatcher: ['customers', 'jobs', 'dispatch'],
   billing: ['customers', 'invoice', 'expenses'],
   subcontractor: ['jobs', 'dispatch'],
+  driver: ['jobs', 'dispatch'],
 };
 
 const EDITABLE_ROLES = Object.keys(DEFAULT_ROLE_MODULES) as DashboardPermissionRole[];
@@ -58,6 +59,10 @@ export function getDefaultModulesForRole(role: string | null | undefined): Dashb
 
   if (normalizedRole === 'subcontractor') {
     return [...DEFAULT_ROLE_MODULES.subcontractor];
+  }
+
+  if (normalizedRole === 'driver') {
+    return [...DEFAULT_ROLE_MODULES.driver];
   }
 
   if (normalizedRole === 'viewer' || normalizedRole === 'guest') {

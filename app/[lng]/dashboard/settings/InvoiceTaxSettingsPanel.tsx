@@ -36,18 +36,32 @@ export default function InvoiceTaxSettingsPanel({
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const toggleEditing = () => {
+  const startEditing = () => {
     setStatusMessage('');
     setErrorMessage('');
-    setEditing((prev) => !prev);
-    if (!editing) {
-      setRateInput(currentRate.toFixed(2));
-      setCurrencyCode(currentCurrencyCode);
+    setRateInput(currentRate.toFixed(2));
+    setCurrencyCode(currentCurrencyCode);
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setErrorMessage('');
+    setRateInput(currentRate.toFixed(2));
+    setCurrencyCode(currentCurrencyCode);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      void handleSave();
+    } else if (e.key === 'Escape') {
+      cancelEditing();
     }
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSave = async (event?: FormEvent) => {
+    if (event) event.preventDefault();
     setLoading(true);
     setStatusMessage('');
     setErrorMessage('');
@@ -80,93 +94,117 @@ export default function InvoiceTaxSettingsPanel({
     setCurrentCurrencyCode(nextCurrency);
     setCurrencyCode(nextCurrency);
     setEditing(false);
-    setStatusMessage(isEs ? 'Preferencias de facturacion actualizadas.' : 'Billing defaults updated.');
+    setStatusMessage(isEs ? 'Preferencias de facturación actualizadas.' : 'Billing defaults updated.');
   };
 
   return (
     <div className="pt-6 md:pt-8 space-y-6">
       <div className="px-6 md:px-8">
-        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">
-          {isEs ? 'Preferencias de facturacion' : 'Billing Defaults'}
-        </h3>
-        <p className="text-xs text-slate-400">
-          {isEs
-            ? 'Configura el tax y la moneda por defecto para nuevas facturas (USD o EUR).'
-            : 'Set the default tax and currency for new invoices (USD or EUR).'}
-        </p>
-      </div>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">
+              {isEs ? 'Preferencias de facturación' : 'Billing Defaults'}
+            </h3>
+            <p className="text-xs text-slate-500">
+              {isEs
+                ? 'Configura el impuesto (tax) y la moneda por defecto para nuevas facturas (USD o EUR).'
+                : 'Set the default tax and currency for new invoices (USD or EUR).'}
+            </p>
+          </div>
 
-      {statusMessage ? <p className="px-6 md:px-8 text-xs text-emerald-600">{statusMessage}</p> : null}
-      {errorMessage ? <p className="px-6 md:px-8 text-xs text-red-600">{errorMessage}</p> : null}
-
-      <div className="border-y border-slate-200">
-        <div className="divide-y divide-slate-200">
-          <div className="px-6 md:px-8 py-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  {isEs ? 'Tax configurado' : 'Configured tax'}
-                </p>
-                <p className="mt-1 text-sm font-medium text-slate-700">{formatRateLabel(currentRate)}%</p>
-                <p className="mt-1 text-xs text-slate-500">{isEs ? 'Moneda' : 'Currency'}: {currentCurrencyCode}</p>
-              </div>
-              <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0 pt-0.5">
+            {editing ? (
+              <>
                 <button
                   type="button"
-                  onClick={toggleEditing}
-                  className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                  onClick={cancelEditing}
+                  disabled={loading}
+                  className="cursor-pointer text-sm font-semibold text-slate-500 hover:text-slate-700 transition"
                 >
-                  {editing ? (isEs ? 'Cerrar' : 'Close') : (isEs ? 'Editar' : 'Edit')}
+                  {isEs ? 'Cancelar' : 'Cancel'}
                 </button>
-                {editing ? (
-                  <button
-                    type="submit"
-                    form="invoice-tax-rate-form"
-                    disabled={loading}
-                    className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400"
-                  >
-                    {loading ? (isEs ? 'Guardando...' : 'Saving...') : (isEs ? 'Actualizar' : 'Update')}
-                  </button>
-                ) : null}
-              </div>
+                <button
+                  type="button"
+                  onClick={() => void handleSave()}
+                  disabled={loading}
+                  className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400 transition"
+                >
+                  {loading ? (isEs ? 'Guardando...' : 'Saving...') : (isEs ? 'Actualizar' : 'Update')}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={startEditing}
+                className="cursor-pointer text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition"
+              >
+                {isEs ? 'Editar' : 'Edit'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {statusMessage ? <p className="px-6 md:px-8 text-xs text-emerald-600 font-medium">{statusMessage}</p> : null}
+      {errorMessage ? <p className="px-6 md:px-8 text-xs text-red-600 font-medium">{errorMessage}</p> : null}
+
+      <div className="border-y border-slate-200">
+        <div className={`px-6 md:px-8 py-5 transition ${editing ? 'bg-emerald-50/40 border-l-4 border-l-emerald-600' : ''}`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-xl">
+            {/* Tax */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                {isEs ? 'Tax configurado (%)' : 'Configured tax (%)'}
+              </label>
+              {editing ? (
+                <div className="relative mt-1">
+                  <span className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 text-xs">%</span>
+                  <input
+                    id="invoice-tax-rate-input"
+                    type="number"
+                    min="0"
+                    max="30"
+                    step="0.01"
+                    value={rateInput}
+                    onChange={(event) => setRateInput(event.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="w-full rounded-lg border border-emerald-300 bg-white pl-3 pr-7 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
+                    autoFocus
+                  />
+                </div>
+              ) : (
+                <p className="mt-1 text-base font-bold text-slate-800">{formatRateLabel(currentRate)}%</p>
+              )}
+              <p className="text-[11px] text-slate-400 mt-1">
+                {isEs ? 'Ejemplo: 8.25 para 8.25%.' : 'Example: use 8.25 for 8.25%.'}
+              </p>
             </div>
 
-            <form id="invoice-tax-rate-form" onSubmit={handleSubmit} className={editing ? 'mt-3 space-y-3' : 'hidden'}>
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="invoice-tax-rate-input">
-                  {isEs ? 'Tax (%)' : 'Tax (%)'}
-                </label>
-                <input
-                  id="invoice-tax-rate-input"
-                  type="number"
-                  min="0"
-                  max="30"
-                  step="0.01"
-                  value={rateInput}
-                  onChange={(event) => setRateInput(event.target.value)}
-                  className="w-full sm:w-52 rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                />
-                <p className="text-[11px] text-slate-400">
-                  {isEs
-                    ? 'Ejemplo: 8.25 para 8.25%.'
-                    : 'Example: use 8.25 for 8.25%.'}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="invoice-currency-code-input">
-                  {isEs ? 'Moneda' : 'Currency'}
-                </label>
-                <select
-                  id="invoice-currency-code-input"
-                  value={currencyCode}
-                  onChange={(event) => setCurrencyCode(normalizeCurrencyCode(event.target.value))}
-                  className="w-full sm:w-52 rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                </select>
-              </div>
-            </form>
+            {/* Currency */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                {isEs ? 'Moneda' : 'Currency'}
+              </label>
+              {editing ? (
+                <div className="mt-1">
+                  <select
+                    id="invoice-currency-code-input"
+                    value={currencyCode}
+                    onChange={(event) => setCurrencyCode(normalizeCurrencyCode(event.target.value))}
+                    onKeyDown={handleKeyDown}
+                    className="w-full rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs cursor-pointer"
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                  </select>
+                </div>
+              ) : (
+                <p className="mt-1 text-base font-bold text-slate-800">{currentCurrencyCode}</p>
+              )}
+              <p className="text-[11px] text-slate-400 mt-1">
+                {isEs ? 'Moneda predeterminada para facturación' : 'Default currency for invoicing'}
+              </p>
+            </div>
           </div>
         </div>
       </div>

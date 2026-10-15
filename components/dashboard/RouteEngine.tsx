@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import DispatchMap from '@/components/DispatchMap';
-import { updateJobTruckAssignment, syncVehicleRouteOrder } from '@/app/actions';
+import { updateJobTruckAssignment, syncVehicleRouteOrder, assignDriverToVehicle } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 
 interface CustomerSummary {
@@ -36,13 +37,23 @@ interface Truck {
   plate_number: string | null;
 }
 
+export interface DriverOption {
+  id?: string;
+  name: string;
+  email: string;
+  role: string;
+  phone?: string | null;
+}
+
 interface RouteEngineProps {
   orgId: string;
   jobs: Job[] | null;
   trucks: Truck[] | null;
+  drivers?: DriverOption[];
   locale?: string;
   maxStopsPerTruck?: number;
   autoOptimizeDriveRoutes?: boolean;
+  canAccessLiveTracking?: boolean;
 }
 
 type RouteState = {
@@ -247,13 +258,16 @@ export default function RouteEngine({
   orgId,
   jobs,
   trucks,
+  drivers = [],
   locale = 'en',
   maxStopsPerTruck = 4,
   autoOptimizeDriveRoutes = true,
+  canAccessLiveTracking = false,
 }: RouteEngineProps) {
   const router = useRouter();
   const translations = getTranslations(locale);
-  const removeLabel = locale.toLowerCase().startsWith('es') ? 'Quitar' : 'Remove';
+  const isEs = locale.toLowerCase().startsWith('es');
+  const removeLabel = isEs ? 'Quitar' : 'Remove';
   const routeJobs = useMemo(
     () => (jobs || []).filter((job) => job.status === 'scheduled' || job.status === 'dispatched'),
     [jobs]
@@ -261,8 +275,10 @@ export default function RouteEngine({
   const routeTrucks = trucks || [];
   const jobMap = useMemo(() => new Map(routeJobs.map((job) => [job.id, job])), [routeJobs]);
   const storageKey = `${ROUTE_STORAGE_PREFIX}${orgId}`;
+  const driverStorageKey = `dispatch-routing:drivers:${orgId}`;
 
   const [routeState, setRouteState] = useState<RouteState>(() => buildBaseRouteState(routeJobs, routeTrucks));
+  const [vehicleDrivers, setVehicleDrivers] = useState<Record<string, DriverOption>>({});
   const [isHydrated, setIsHydrated] = useState(false);
   const [draggingJob, setDraggingJob] = useState<DragSource | null>(null);
   const [syncingJobId, setSyncingJobId] = useState<string | null>(null);
@@ -284,6 +300,49 @@ export default function RouteEngine({
       ...previous,
       [truckId]: !previous[truckId],
     }));
+  };
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(driverStorageKey);
+      if (stored) {
+        setVehicleDrivers(JSON.parse(stored));
+      }
+    } catch {
+      // Ignored
+    }
+  }, [driverStorageKey]);
+
+  const handleAssignDriver = async (truckId: string, driverEmail: string) => {
+    const selected = drivers.find((d) => d.email === driverEmail);
+
+    setVehicleDrivers((prev) => {
+      const next = { ...prev };
+      if (!driverEmail || !selected) {
+        delete next[truckId];
+      } else {
+        next[truckId] = selected;
+      }
+      try {
+        window.localStorage.setItem(driverStorageKey, JSON.stringify(next));
+        if (selected) {
+          window.localStorage.setItem(`prado_vehicle_driver_${truckId}`, selected.email);
+          window.localStorage.setItem(`prado_driver_vehicle_${selected.email}`, truckId);
+          window.localStorage.setItem('prado_driver_name', selected.name);
+        } else {
+          window.localStorage.removeItem(`prado_vehicle_driver_${truckId}`);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      return next;
+    });
+
+    try {
+      await assignDriverToVehicle(truckId, selected ? selected.name : '', selected ? selected.email : '');
+    } catch (err) {
+      console.warn('Driver assignment server warning:', err);
+    }
   };
 
   useEffect(() => {
@@ -730,6 +789,17 @@ export default function RouteEngine({
           >
             {optimizing ? `${translations.dashboard.routeOptimizeAll}...` : translations.dashboard.routeOptimizeAll}
           </button>
+
+          {/* Live Tracking Module Link */}
+          {canAccessLiveTracking ? (
+            <Link
+              href={`/${locale}/dashboard/tracking`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 hover:border-emerald-300 transition shadow-2xs"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+              <span>{translations.dashboard.liveTracking}</span>
+            </Link>
+          ) : null}
         </div>
       </div>
 
@@ -763,7 +833,9 @@ export default function RouteEngine({
                   longitude: job.properties?.longitude ?? null,
                   job_type: job.job_type,
                   stop_number: index + 1,
-                  vehicle_name: truck.name,
+                  vehicle_name: vehicleDrivers[truck.id]
+                    ? `${truck.name} (${vehicleDrivers[truck.id].name})`
+                    : truck.name,
                   customer_name: getCustomerLabel(job),
                 };
               })
@@ -825,7 +897,7 @@ export default function RouteEngine({
 
         {/* Right Column: Fleet Routes Box */}
         <div id="routes-section" className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex items-center justify-between gap-4 mb-4">
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
@@ -837,10 +909,11 @@ export default function RouteEngine({
               </div>
               <p className="text-xs text-slate-400 mt-1">{translations.dashboard.routeDropHint}</p>
             </div>
-            <span className="text-[10px] text-emerald-600 font-medium inline-flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-              {translations.dashboard.routeSavedLocally}
-            </span>
+            <div>
+              <span className="rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 text-xs font-semibold text-emerald-700 whitespace-nowrap">
+                {routeTrucks.filter((t) => !!vehicleDrivers[t.id]).length} / {routeTrucks.length} {isEs ? 'conductores asignados' : 'drivers assigned'}
+              </span>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -921,6 +994,50 @@ export default function RouteEngine({
                       >
                         {translations.dashboard.routeOptimizeTruck}
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Driver Assignment Bar */}
+                  <div
+                    className="px-3 py-2 bg-white/80 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide shrink-0">
+                        {isEs ? 'Conductor:' : 'Driver:'}
+                      </span>
+                      {vehicleDrivers[truck.id] ? (
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="truncate max-w-[130px] sm:max-w-[180px]">
+                            {vehicleDrivers[truck.id].name}
+                          </span>
+                          {vehicleDrivers[truck.id].role && vehicleDrivers[truck.id].role !== 'driver' && (
+                            <span className="text-[10px] text-emerald-600 font-normal">
+                              ({vehicleDrivers[truck.id].role})
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400 italic">
+                          {isEs ? 'Sin conductor asignado' : 'No driver assigned'}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="relative shrink-0">
+                      <select
+                        value={vehicleDrivers[truck.id]?.email || ''}
+                        onChange={(e) => void handleAssignDriver(truck.id, e.target.value)}
+                        className="text-xs font-semibold rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-slate-700 hover:border-emerald-500 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none transition cursor-pointer shadow-2xs"
+                      >
+                        <option value="">{isEs ? '-- Asignar conductor --' : '-- Assign Driver --'}</option>
+                        {drivers.map((driver) => (
+                          <option key={driver.email} value={driver.email}>
+                            {driver.name} {driver.role === 'driver' ? '• Driver' : `(${driver.role})`}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 

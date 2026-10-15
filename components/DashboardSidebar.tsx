@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useSearchParams, useParams } from 'next/navigation'; 
 import { DASHBOARD_MODULES, type DashboardModule } from '@/lib/dashboardRolePermissions.config';
-import { canUseDispatchEngine, canUseExpenseLedger } from '@/lib/subscriptionAccess';
+import { canUseDispatchEngine, canUseExpenseLedger, canUseLiveTracking } from '@/lib/subscriptionAccess';
 import { getTranslations } from '@/lib/translations';
 
 interface DashboardSidebarProps {
@@ -30,6 +30,36 @@ export default function DashboardSidebar({
   const translations = getTranslations(locale);
   const isEs = activeLocale.toLowerCase().startsWith('es');
   const [isOpen, setIsOpen] = useState(false);
+
+  const isDispatchSublinkActive =
+    pathname.startsWith(`/${activeLocale}/dashboard/tracking`) ||
+    pathname.startsWith(`/${activeLocale}/dashboard/driver-shift`);
+
+  const [isDispatchExpanded, setIsDispatchExpanded] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('prado_dispatch_expanded');
+      if (saved !== null) return saved === 'true';
+    }
+    return true;
+  });
+
+  const toggleDispatchExpanded = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDispatchExpanded((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('prado_dispatch_expanded', String(next));
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (isDispatchSublinkActive) {
+      setIsDispatchExpanded(true);
+    }
+  }, [isDispatchSublinkActive]);
 
   useEffect(() => {
     // Keep backward compatibility for links that may still include ?sidebar=open
@@ -62,6 +92,7 @@ export default function DashboardSidebar({
 
   const hasModuleAccess = (moduleId: DashboardModule) => allowedModules.includes(moduleId);
   const canAccessDispatch = canUseDispatchEngine(subscriptionStatus);
+  const canAccessLiveTracking = canUseLiveTracking(subscriptionStatus);
   const canAccessExpenses = canUseExpenseLedger(subscriptionStatus);
 
   const linkStyle = (path: string) => {
@@ -80,6 +111,17 @@ export default function DashboardSidebar({
       isActive 
         ? 'bg-emerald-50 text-emerald-800 font-semibold' 
         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium'
+    }`;
+  };
+
+  const sublinkStyle = (path: string) => {
+    const localizedPath = `/${activeLocale}${path}`;
+    const isActive = pathname.startsWith(localizedPath);
+
+    return `flex items-center gap-2 px-2.5 py-1.5 text-xs transition rounded-md ${
+      isActive 
+        ? 'bg-emerald-50 text-emerald-800 font-semibold' 
+        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 font-medium'
     }`;
   };
 
@@ -102,9 +144,9 @@ export default function DashboardSidebar({
 
       {/* Sidebar Container Panel */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col p-4 select-none shrink-0 
+        fixed inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 flex flex-col p-4 select-none shrink-0 
         transform transition-transform duration-300 ease-in-out
-        md:w-56 md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:translate-x-0 md:z-auto
+        md:w-64 md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:translate-x-0 md:z-auto
         ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:shadow-none'}
       `}>
         <div className="space-y-0.25 flex-1 overflow-y-auto overflow-x-hidden pt-2 md:pt-0">
@@ -152,12 +194,66 @@ export default function DashboardSidebar({
           ) : null}
 
           {canAccessDispatch && hasModuleAccess('dispatch') ? (
-          <Link href={localizedHref('/dashboard/routing')} onClick={closeSidebar} className={linkStyle('/dashboard/routing')}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-emerald-600 shrink-0">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.856 1.928a1.125 1.125 0 01-1.006 0L9.503 3.813a1.125 1.125 0 00-1.006 0L3.622 6.565c-.383.19-.622.58-.622 1.006v12.166c0 .836.88 1.38 1.628 1.006l3.856-1.928a1.125 1.125 0 011.006 0l3.856 1.928a1.125 1.125 0 001.006 0z" />
-            </svg>
-            {translations.dashboard.dispatchRouting}
-          </Link>
+          <div className="space-y-0.5">
+            <div
+              className={`flex items-center justify-between rounded-lg transition ${
+                pathname.startsWith(`/${activeLocale}/dashboard/routing`)
+                  ? 'bg-emerald-50 text-emerald-800'
+                  : 'hover:bg-gray-50 text-gray-600'
+              }`}
+            >
+              <Link
+                href={localizedHref('/dashboard/routing')}
+                onClick={closeSidebar}
+                className="flex-1 flex items-center gap-2.5 px-3.5 py-2 text-sm font-medium hover:text-gray-900"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-emerald-600 shrink-0">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.856 1.928a1.125 1.125 0 01-1.006 0L9.503 3.813a1.125 1.125 0 00-1.006 0L3.622 6.565c-.383.19-.622.58-.622 1.006v12.166c0 .836.88 1.38 1.628 1.006l3.856-1.928a1.125 1.125 0 011.006 0l3.856 1.928a1.125 1.125 0 001.006 0z" />
+                </svg>
+                <span className={pathname.startsWith(`/${activeLocale}/dashboard/routing`) ? 'font-semibold' : ''}>
+                  {translations.dashboard.dispatchRouting}
+                </span>
+              </Link>
+              <button
+                type="button"
+                onClick={toggleDispatchExpanded}
+                title={isDispatchExpanded ? (isEs ? 'Colapsar subenlaces' : 'Collapse sublinks') : (isEs ? 'Expandir subenlaces' : 'Expand sublinks')}
+                aria-label={isDispatchExpanded ? 'Collapse sublinks' : 'Expand sublinks'}
+                aria-expanded={isDispatchExpanded}
+                className="p-1.5 mr-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-200/50 transition cursor-pointer"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${isDispatchExpanded ? 'rotate-180' : ''}`}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
+            </div>
+            {isDispatchExpanded ? (
+              <div className="ml-5 pl-2.5 border-l border-slate-200 space-y-0.5">
+                {canAccessLiveTracking ? (
+                  <Link href={localizedHref('/dashboard/tracking')} onClick={closeSidebar} className={sublinkStyle('/dashboard/tracking')}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 text-emerald-600 shrink-0">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                    </svg>
+                    <span>{translations.dashboard.liveTracking}</span>
+                  </Link>
+                ) : null}
+                <Link href={localizedHref('/dashboard/driver-shift')} onClick={closeSidebar} className={sublinkStyle('/dashboard/driver-shift')}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 text-emerald-600 shrink-0">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{translations.dashboard.driverShiftPortal}</span>
+                </Link>
+              </div>
+            ) : null}
+          </div>
           ) : null}
 
           {canAccessExpenses && hasModuleAccess('expenses') ? (

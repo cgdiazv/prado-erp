@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { createService, deleteService, restoreService } from './actions';
 import { getTranslations } from '@/lib/translations';
-import { Wrench, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
@@ -311,10 +311,7 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
         </div>
 
         {activeServices.length === 0 ? (
-          <div className="py-10 px-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
-            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
-              <Wrench className="w-5 h-5" />
-            </div>
+          <div className="py-8 px-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
             <p className="text-sm font-semibold text-slate-700">
               {isEs ? 'No hay servicios guardados' : 'No saved services'}
             </p>
@@ -331,41 +328,33 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
                 key={service.id}
                 className="px-4 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/60 transition"
               >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                    <Wrench className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className="text-sm font-semibold text-slate-900 truncate">
-                        {service.name}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="text-sm font-semibold text-slate-900 truncate">
+                      {service.name}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded">
+                      ${(service.base_price ?? 0).toFixed(2)}
+                    </span>
+                    {service.is_recurring_default ? (
+                      <span className="text-[11px] font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+                        {isEs ? 'Cada' : 'Every'} {service.recurrence_interval_days || 30} {isEs ? 'días' : 'days'}
+                        {service.auto_charge_default ? ` • ${isEs ? 'Auto-cobro' : 'Auto-charge'}` : ''}
                       </span>
-                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded">
-                        ${(service.base_price ?? 0).toFixed(2)}
-                      </span>
-                      {service.is_recurring_default ? (
-                        <span className="text-[11px] font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
-                          {isEs ? 'Cada' : 'Every'} {service.recurrence_interval_days || 30} {isEs ? 'días' : 'days'}
-                          {service.auto_charge_default ? ` • ${isEs ? 'Auto-cobro' : 'Auto-charge'}` : ''}
-                        </span>
-                      ) : null}
-                    </div>
-                    {service.description ? (
-                      <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
-                        {service.description}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-slate-400 mt-0.5 italic">
-                        {isEs ? 'Sin descripción' : 'No description'}
-                      </p>
-                    )}
+                    ) : null}
                   </div>
+                  {service.description ? (
+                    <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+                      {service.description}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-400 mt-0.5 italic">
+                      {isEs ? 'Sin descripción' : 'No description'}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                    {isEs ? 'Activo' : 'Active'}
-                  </span>
                   <button
                     type="button"
                     onClick={() => handleDeleteService(service.id, service.name)}
@@ -408,18 +397,13 @@ export default function ServicesPanel({ initialServices, locale = 'en' }: Servic
                       key={service.id}
                       className="px-4 py-3 flex items-center justify-between gap-4 opacity-75"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-slate-200/60 flex items-center justify-center text-slate-400 shrink-0">
-                          <Wrench className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-sm font-medium text-slate-700 truncate">
-                            {cleanName}
-                          </span>
-                          <span className="ml-2 text-xs text-slate-500">
-                            ${(service.base_price ?? 0).toFixed(2)}
-                          </span>
-                        </div>
+                      <div className="min-w-0">
+                        <span className="text-sm font-medium text-slate-700 truncate">
+                          {cleanName}
+                        </span>
+                        <span className="ml-2 text-xs text-slate-500">
+                          ${(service.base_price ?? 0).toFixed(2)}
+                        </span>
                       </div>
                       <button
                         type="button"

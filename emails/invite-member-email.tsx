@@ -31,6 +31,14 @@ const roleLabels: Record<string, { label: string; description: string }> = {
     label: 'Billing',
     description: 'Can view data and manage billing and financial records.',
   },
+  subcontractor: {
+    label: 'Subcontractor',
+    description: 'External contractor. Can view and update assigned jobs and dispatch orders only.',
+  },
+  driver: {
+    label: 'Driver',
+    description: 'Vehicle driver. Can manage shift clock-in, broadcast GPS telematics, and complete route stops.',
+  },
   // Fallback for any other roles
   member: {
     label: 'Team Member',

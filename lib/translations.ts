@@ -231,6 +231,8 @@ type TranslationBundle = {
     jobScheduling: string;
     estimates: string;
     dispatchRouting: string;
+    liveTracking: string;
+    driverShiftPortal: string;
     expenseLedger: string;
     management: string;
     systemSettings: string;

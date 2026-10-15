@@ -193,13 +193,14 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
         <button
           type="button"
           onClick={toggleModal}
-          className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/25 transition hover:bg-emerald-700"
+          title={isEs ? 'Chat de soporte' : 'Support chat'}
+          aria-label={isEs ? 'Chat de soporte' : 'Support chat'}
+          className="fixed bottom-5 right-5 z-40 flex h-13 w-13 md:h-14 md:w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-900/25 transition hover:bg-emerald-700 hover:scale-105 active:scale-95 cursor-pointer"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-6 w-6">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 19.5A2.625 2.625 0 0021 16.875V7.125A2.625 2.625 0 0018.375 4.5H5.625A2.625 2.625 0 003 7.125v9.75A2.625 2.625 0 005.625 19.5h8.155a2.625 2.625 0 011.857.769l1.594 1.594a.375.375 0 00.64-.265V19.5h.504Z" />
           </svg>
-          <span>{isEs ? 'Chat soporte' : 'Support chat'}</span>
         </button>
       ) : null}
 

@@ -878,6 +878,64 @@ export async function createTruck(name: string, plateNumber: string | null) {
   }
 }
 
+export async function updateTruck(truckId: string, name: string, plateNumber: string | null) {
+  try {
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    const normalizedPlateNumber = plateNumber?.trim().replace(/\s+/g, ' ') || null;
+
+    if (!normalizedName) {
+      return { error: 'Vehicle name is required.' };
+    }
+
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage vehicles.' };
+
+    const { organization: org } = await getUserOrganization(user.id);
+
+    if (!org) return { error: 'Workspace not found.' };
+
+    const { data: existingTruck, error: checkError } = await supabase
+      .from('trucks')
+      .select('id')
+      .eq('organization_id', org.id)
+      .eq('name', normalizedName)
+      .eq('plate_number', normalizedPlateNumber)
+      .neq('id', truckId)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (checkError) return { error: checkError.message };
+
+    if (existingTruck) {
+      return { error: 'Another active vehicle with that name and plate already exists.' };
+    }
+
+    const { data, error } = await supabase
+      .from('trucks')
+      .update({
+        name: normalizedName,
+        plate_number: normalizedPlateNumber,
+      })
+      .eq('id', truckId)
+      .eq('organization_id', org.id)
+      .select('id, name, plate_number, is_active, status')
+      .single();
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard/settings');
+    revalidatePath('/dashboard/routing');
+    revalidatePath('/dashboard/schedule');
+    revalidatePath('/dashboard/driver-shift');
+    return { success: true, truck: data };
+  } catch (error: unknown) {
+    return { error: (error as Error)?.message || 'Failed to update vehicle.' };
+  }
+}
+
 export async function deactivateTruck(truckId: string) {
   try {
     const supabase = await createClient();

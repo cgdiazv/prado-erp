@@ -10,7 +10,7 @@ import {
   upsertExpenseCategory,
 } from '@/lib/expenseCategories';
 import { getTranslations } from '@/lib/translations';
-import { Tag, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 interface ExpenseCategoriesPanelProps {
   locale?: string;
@@ -165,10 +165,7 @@ export default function ExpenseCategoriesPanel({ locale = 'en' }: ExpenseCategor
         </div>
 
         {categories.length === 0 ? (
-          <div className="py-10 px-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
-            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
-              <Tag className="w-5 h-5" />
-            </div>
+          <div className="py-8 px-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
             <p className="text-sm font-semibold text-slate-700">
               {isEs ? 'No hay categorías guardadas' : 'No saved categories'}
             </p>
@@ -185,24 +182,16 @@ export default function ExpenseCategoriesPanel({ locale = 'en' }: ExpenseCategor
                 key={category}
                 className="px-4 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/60 transition"
               >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                    <Tag className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-sm font-semibold text-slate-900 truncate block">
-                      {category}
-                    </span>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {isEs ? 'Disponible en registro de gastos' : 'Available in expense logging'}
-                    </p>
-                  </div>
+                <div className="min-w-0">
+                  <span className="text-sm font-semibold text-slate-900 truncate block">
+                    {category}
+                  </span>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {isEs ? 'Disponible en registro de gastos' : 'Available in expense logging'}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                    {isEs ? 'Activa' : 'Active'}
-                  </span>
                   <button
                     type="button"
                     onClick={() => handleArchiveCategory(category)}
@@ -237,10 +226,7 @@ export default function ExpenseCategoriesPanel({ locale = 'en' }: ExpenseCategor
                     key={category}
                     className="px-4 py-3 flex items-center justify-between gap-4 opacity-75"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-slate-200/60 flex items-center justify-center text-slate-400 shrink-0">
-                        <Tag className="w-4 h-4" />
-                      </div>
+                    <div className="min-w-0">
                       <span className="text-sm font-medium text-slate-700 truncate">
                         {category}
                       </span>

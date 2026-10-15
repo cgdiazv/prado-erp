@@ -40,6 +40,10 @@ export function canUseAccountingIntegrations(status: string | null | undefined):
   return hasEnterpriseEquivalentAccess(status);
 }
 
+export function canUseLiveTracking(status: string | null | undefined): boolean {
+  return hasEnterpriseEquivalentAccess(status);
+}
+
 export function getSeatLimitForPlan(status: string | null | undefined): number | null {
   const tier = normalizeSubscriptionStatus(status);
 

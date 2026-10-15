@@ -41,6 +41,7 @@ export async function getOrganizationRolePermissions(organizationId: string): Pr
     dispatcher: [...DEFAULT_ROLE_MODULES.dispatcher],
     billing: [...DEFAULT_ROLE_MODULES.billing],
     subcontractor: [...DEFAULT_ROLE_MODULES.subcontractor],
+    driver: [...DEFAULT_ROLE_MODULES.driver],
   };
 
   const { rows, error } = await loadStoredRolePermissions(organizationId);

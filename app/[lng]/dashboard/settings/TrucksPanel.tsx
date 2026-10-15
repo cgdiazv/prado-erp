@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { createTruck, deactivateTruck, reactivateTruck } from './actions';
+import { createTruck, deactivateTruck, reactivateTruck, updateTruck } from './actions';
 import { getTranslations } from '@/lib/translations';
-import { Truck, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 type TruckItem = {
   id: string;
@@ -28,9 +28,75 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
   const [statusMessage, setStatusMessage] = useState('');
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [editingTruckId, setEditingTruckId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPlateNumber, setEditPlateNumber] = useState('');
 
   const activeTrucks = trucks.filter((truck) => truck.is_active !== false);
   const archivedTrucks = trucks.filter((truck) => truck.is_active === false);
+
+  const startEditing = (truck: TruckItem) => {
+    setEditingTruckId(truck.id);
+    setEditName(truck.name);
+    setEditPlateNumber(truck.plate_number || '');
+    setStatusMessage('');
+  };
+
+  const cancelEditing = () => {
+    setEditingTruckId(null);
+    setEditName('');
+    setEditPlateNumber('');
+  };
+
+  const handleUpdateTruck = async (truckId: string) => {
+    const normalizedName = editName.trim().replace(/\s+/g, ' ');
+    const normalizedPlate = editPlateNumber.trim().replace(/\s+/g, ' ');
+
+    if (!normalizedName) {
+      setStatusMessage(isEs ? 'Ingresa el nombre del vehículo.' : 'Enter a vehicle name first.');
+      return;
+    }
+
+    const isDuplicate = activeTrucks.some(
+      (truck) =>
+        truck.id !== truckId &&
+        truck.name.toLowerCase() === normalizedName.toLowerCase() &&
+        (truck.plate_number || '').toLowerCase() === normalizedPlate.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      setStatusMessage(
+        isEs
+          ? 'Otro vehículo activo ya tiene ese nombre y placa.'
+          : 'Another active vehicle already has that name and plate.'
+      );
+      return;
+    }
+
+    setLoadingAction(`update_${truckId}`);
+    setStatusMessage('');
+
+    const response = await updateTruck(truckId, normalizedName, normalizedPlate || null);
+
+    setLoadingAction(null);
+
+    if (response?.error) {
+      setStatusMessage(response.error);
+      return;
+    }
+
+    if (response?.truck) {
+      setTrucks((currentTrucks) =>
+        currentTrucks.map((t) => (t.id === truckId ? response.truck : t))
+      );
+      cancelEditing();
+      setStatusMessage(
+        isEs
+          ? `Vehículo "${normalizedName}" actualizado con éxito.`
+          : `Updated "${normalizedName}" successfully.`
+      );
+    }
+  };
 
   const handleAddTruck = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -205,10 +271,7 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
         </div>
 
         {activeTrucks.length === 0 ? (
-          <div className="py-10 px-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
-            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
-              <Truck className="w-5 h-5" />
-            </div>
+          <div className="py-8 px-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
             <p className="text-sm font-semibold text-slate-700">
               {isEs ? 'No hay vehículos guardados' : 'No saved vehicles'}
             </p>
@@ -220,15 +283,83 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
           </div>
         ) : (
           <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-            {activeTrucks.map((truck) => (
-              <div
-                key={truck.id}
-                className="px-4 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/60 transition"
-              >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                    <Truck className="w-4 h-4" />
+            {activeTrucks.map((truck) =>
+              editingTruckId === truck.id ? (
+                <div
+                  key={truck.id}
+                  className="px-4 py-3.5 bg-emerald-50/40 border-l-4 border-l-emerald-600 transition"
+                >
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                          {isEs ? 'Nombre del vehículo' : 'Vehicle name'}
+                        </label>
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          placeholder={translations.dashboard.truckName || (isEs ? 'Nombre del vehículo' : 'Vehicle name')}
+                          className="w-full rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleUpdateTruck(truck.id);
+                            } else if (e.key === 'Escape') {
+                              cancelEditing();
+                            }
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                          {isEs ? 'Número de placa' : 'Plate number'}
+                        </label>
+                        <input
+                          type="text"
+                          value={editPlateNumber}
+                          onChange={(e) => setEditPlateNumber(e.target.value)}
+                          placeholder={translations.dashboard.plateNumber || (isEs ? 'Número de placa' : 'Plate number')}
+                          className="w-full rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleUpdateTruck(truck.id);
+                            } else if (e.key === 'Escape') {
+                              cancelEditing();
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 justify-end shrink-0 sm:self-end sm:mb-0.5">
+                      <button
+                        type="button"
+                        onClick={cancelEditing}
+                        disabled={loadingAction === `update_${truck.id}`}
+                        className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-slate-700 transition"
+                      >
+                        {isEs ? 'Cancelar' : 'Cancel'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateTruck(truck.id)}
+                        disabled={loadingAction === `update_${truck.id}`}
+                        className="cursor-pointer text-xs font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400 transition"
+                      >
+                        {loadingAction === `update_${truck.id}`
+                          ? (isEs ? 'Guardando...' : 'Saving...')
+                          : (isEs ? 'Guardar' : 'Save')}
+                      </button>
+                    </div>
                   </div>
+                </div>
+              ) : (
+                <div
+                  key={truck.id}
+                  className="px-4 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/60 transition"
+                >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-slate-900 truncate">
@@ -250,25 +381,29 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
                         : 'Available for scheduling and routing'}
                     </p>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                    {isEs ? 'Activo' : 'Active'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleDeactivateTruck(truck.id, truck.name)}
-                    disabled={loadingAction === truck.id}
-                    className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:text-red-300 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition cursor-pointer"
-                  >
-                    {loadingAction === truck.id
-                      ? (isEs ? 'Archivando...' : 'Archiving...')
-                      : (isEs ? 'Archivar' : 'Archive')}
-                  </button>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => startEditing(truck)}
+                      className="cursor-pointer text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition"
+                    >
+                      {isEs ? 'Editar' : 'Edit'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeactivateTruck(truck.id, truck.name)}
+                      disabled={loadingAction === truck.id}
+                      className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:text-red-300 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition cursor-pointer"
+                    >
+                      {loadingAction === truck.id
+                        ? (isEs ? 'Archivando...' : 'Archiving...')
+                        : (isEs ? 'Archivar' : 'Archive')}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            )}
           </div>
         )}
 
@@ -293,20 +428,15 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
                     key={truck.id}
                     className="px-4 py-3 flex items-center justify-between gap-4 opacity-75"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-slate-200/60 flex items-center justify-center text-slate-400 shrink-0">
-                        <Truck className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-sm font-medium text-slate-700 truncate">
-                          {truck.name}
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-slate-700 truncate">
+                        {truck.name}
+                      </span>
+                      {truck.plate_number ? (
+                        <span className="ml-2 font-mono text-xs text-slate-500">
+                          {truck.plate_number}
                         </span>
-                        {truck.plate_number ? (
-                          <span className="ml-2 font-mono text-xs text-slate-500">
-                            {truck.plate_number}
-                          </span>
-                        ) : null}
-                      </div>
+                      ) : null}
                     </div>
                     <button
                       type="button"

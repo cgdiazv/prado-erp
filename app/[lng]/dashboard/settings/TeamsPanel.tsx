@@ -12,7 +12,7 @@ interface TeamMember {
   last_name?: string;
   phone?: string | null;
   last_login_at?: string | null;
-  role: 'owner' | 'manager' | 'supervisor' | 'dispatcher' | 'billing' | 'subcontractor';
+  role: 'owner' | 'manager' | 'supervisor' | 'dispatcher' | 'billing' | 'subcontractor' | 'driver';
   invited_at: string;
   status?: 'accepted' | 'pending';
 }
@@ -43,6 +43,9 @@ const USER_ROLES = [
   },
   {
     id: 'subcontractor',
+  },
+  {
+    id: 'driver',
   }
 ];
 
@@ -66,6 +69,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
     dispatcher: [...(initialRolePermissions?.dispatcher || DEFAULT_ROLE_MODULES.dispatcher)],
     billing: [...(initialRolePermissions?.billing || DEFAULT_ROLE_MODULES.billing)],
     subcontractor: [...(initialRolePermissions?.subcontractor || DEFAULT_ROLE_MODULES.subcontractor)],
+    driver: [...(initialRolePermissions?.driver || DEFAULT_ROLE_MODULES.driver)],
   }));
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<TeamMember['role'] | null>(null);
@@ -257,6 +261,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
           dispatcher: 'Despachador',
           billing: 'Facturación',
           subcontractor: 'Subcontratista',
+          driver: 'Chofer / Conductor',
         }
       : {
           owner: 'Admin/Owner',
@@ -265,6 +270,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
           dispatcher: 'Dispatcher',
           billing: 'Billing',
           subcontractor: 'Subcontractor',
+          driver: 'Driver',
         };
 
     return labels[roleId] || roleId;
@@ -279,6 +285,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
           dispatcher: 'Puede programar trabajos, asignar recursos y ver datos relacionados.',
           billing: 'Puede ver datos y gestionar facturación y registros financieros.',
           subcontractor: 'Contratista externo. Puede ver y actualizar solo sus trabajos y despachos asignados.',
+          driver: 'Operador de vehículo. Puede gestionar su turno, transmitir telemetría GPS y completar sus paradas asignadas.',
         }
       : {
           owner: 'Full access. Manages billing, team, and all settings.',
@@ -287,6 +294,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
           dispatcher: 'Can schedule jobs, assign resources, and view related data.',
           billing: 'Can view data and manage billing and financial records.',
           subcontractor: 'External contractor. Can view and update assigned jobs and dispatch orders only.',
+          driver: 'Vehicle driver. Can manage shift clock-in, broadcast GPS telematics, and complete assigned route stops.',
         };
 
     return descriptions[roleId] || '';
@@ -330,6 +338,8 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
         return 'bg-amber-100 text-amber-700 border-amber-200';
       case 'subcontractor':
         return 'bg-teal-100 text-teal-700 border-teal-200';
+      case 'driver':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       default:
         return 'bg-gray-100 text-gray-700 border-gray-200';
     }
@@ -455,6 +465,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
                     <option value="dispatcher">{isEs ? 'Despachador' : 'Dispatcher'}</option>
                     <option value="billing">{isEs ? 'Facturación' : 'Billing'}</option>
                     <option value="subcontractor">{isEs ? 'Subcontratista' : 'Subcontractor'}</option>
+                    <option value="driver">{isEs ? 'Chofer / Conductor' : 'Driver'}</option>
                   </select>
                   <button
                     type="submit"
