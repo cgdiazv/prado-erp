@@ -72,7 +72,7 @@ export default async function CustomersPage({
           <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
             
             {/* 1. Header Row - Spans completely across the entire width */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.customersTitle}</h1>
                 <p className="text-xs text-slate-400 mt-1">{translations.dashboard.customersSubtitle}</p>

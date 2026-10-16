@@ -5,7 +5,7 @@ import { clearRememberToken } from '@/lib/rememberMe';
 
 export default function Header({ orgName }: { orgName: string }) {
   return (
-    <header className="mb-8 border-b border-gray-200 pb-4 flex justify-between items-center">
+    <header className="mb-8 flex justify-between items-center">
       <div>
         <h1 className="text-3xl font-bold text-emerald-700">Prado</h1>
         <p className="text-sm text-gray-500 font-medium">Workspace: <span className="text-gray-800 font-bold">{orgName}</span></p>

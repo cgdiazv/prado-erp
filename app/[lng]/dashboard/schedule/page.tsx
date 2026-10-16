@@ -73,7 +73,7 @@ export default async function SchedulePage({
           <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
             
             {/* Header Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex flex-col gap-1">
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.jobScheduling}</h1>
                 <p className="text-xs text-slate-400 mt-1">{translations.dashboard.jobSchedulingDescription}</p>

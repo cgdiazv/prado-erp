@@ -276,39 +276,8 @@ export default function LaborMarkupSettingsPanel({
       <div className="border-y border-slate-200">
         <div className={`px-6 md:px-8 py-5 transition ${editing ? 'bg-emerald-50/40 border-l-4 border-l-emerald-600' : ''}`}>
           <div className="w-full max-w-3xl space-y-5">
-            {/* Row 1: Standard Rates */}
+            {/* Row 1: Costs & Markup */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {/* Labor Rate */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {isEs ? 'Tarifa al Cliente ($/hr)' : 'Labor Rate ($/hr)'}
-                </label>
-                {editing ? (
-                  <div className="relative mt-1.5">
-                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 text-xs">$</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={laborRateInput}
-                      onChange={(e) => setLaborRateInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="95.00"
-                      className="w-full rounded-lg border border-emerald-300 bg-white pl-6 pr-3 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
-                      autoFocus
-                    />
-                  </div>
-                ) : (
-                  <p className="mt-1 text-base font-bold text-slate-800 flex items-center gap-1">
-                    <DollarSign className="w-4 h-4 text-emerald-600" />
-                    {laborRate.toFixed(2)} / hr
-                  </p>
-                )}
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {isEs ? 'Tarifa estándar facturada al cliente' : 'Standard rate billed to customer'}
-                </p>
-              </div>
-
               {/* Labor Cost */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -326,6 +295,7 @@ export default function LaborMarkupSettingsPanel({
                       onKeyDown={handleKeyDown}
                       placeholder="45.00"
                       className="w-full rounded-lg border border-emerald-300 bg-white pl-6 pr-3 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
+                      autoFocus
                     />
                   </div>
                 ) : (
@@ -339,45 +309,104 @@ export default function LaborMarkupSettingsPanel({
                 </p>
               </div>
 
-              {/* Materials Markup */}
+              {/* Night Labor Cost */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {isEs ? 'Margen de Materiales (%)' : 'Materials Markup (%)'}
+                  {isEs ? 'Costo de Mano de Obra Nocturna ($/hr)' : 'Night Labor Cost ($/hr)'}
                 </label>
                 {editing ? (
                   <div className="relative mt-1.5">
-                    <span className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 text-xs">%</span>
+                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 text-xs">$</span>
                     <input
                       type="number"
                       min="0"
-                      max="500"
                       step="0.01"
-                      value={materialsMarkupInput}
-                      onChange={(e) => setMaterialsMarkupInput(e.target.value)}
+                      value={nightLaborCostInput}
+                      onChange={(e) => setNightLaborCostInput(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder="30.00"
-                      className="w-full rounded-lg border border-emerald-300 bg-white pl-3 pr-7 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
+                      placeholder="65.00"
+                      className="w-full rounded-lg border border-emerald-300 bg-white pl-6 pr-3 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
                     />
                   </div>
                 ) : (
                   <p className="mt-1 text-base font-bold text-slate-800 flex items-center gap-1">
-                    <Percent className="w-4 h-4 text-blue-600" />
-                    {materialsMarkup.toFixed(2)}%
+                    <DollarSign className="w-4 h-4 text-slate-500" />
+                    {nightLaborCost.toFixed(2)} / hr
                   </p>
                 )}
                 <p className="text-[11px] text-slate-400 mt-1">
-                  {isEs ? 'Margen comercial sobre costo de repuestos' : 'Added to contractor supplies cost'}
+                  {isEs ? 'Costo interno nocturno privado (sueldo + overhead)' : 'Private night cost (wage + overhead)'}
+                </p>
+              </div>
+
+              {/* Holiday & Emergency Cost */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {isEs ? 'Costo Feriados y Emergencias ($/hr)' : 'Holidays & Emergency Labor Cost ($/hr)'}
+                </label>
+                {editing ? (
+                  <div className="relative mt-1.5">
+                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 text-xs">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={holidayEmergencyLaborCostInput}
+                      onChange={(e) => setHolidayEmergencyLaborCostInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="75.00"
+                      className="w-full rounded-lg border border-emerald-300 bg-white pl-6 pr-3 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
+                    />
+                  </div>
+                ) : (
+                  <p className="mt-1 text-base font-bold text-slate-800 flex items-center gap-1">
+                    <DollarSign className="w-4 h-4 text-slate-500" />
+                    {holidayEmergencyLaborCost.toFixed(2)} / hr
+                  </p>
+                )}
+                <p className="text-[11px] text-slate-400 mt-1">
+                  {isEs ? 'Costo interno privado para feriados y emergencias' : 'Private holiday & emergency cost (wage + overhead)'}
                 </p>
               </div>
             </div>
 
-            {/* Row 2: Night & Emergency Rates */}
+            {/* Row 2: Standard & Night Rates, Materials Markup */}
             <div className="pt-4 border-t border-slate-200/60">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {/* Labor Rate */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {isEs ? 'Tarifa al Cliente ($/hr)' : 'Labor Rate ($/hr)'}
+                  </label>
+                  {editing ? (
+                    <div className="relative mt-1.5">
+                      <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 text-xs">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={laborRateInput}
+                        onChange={(e) => setLaborRateInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="95.00"
+                        className="w-full rounded-lg border border-emerald-300 bg-white pl-6 pr-3 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
+                      />
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-base font-bold text-slate-800 flex items-center gap-1">
+                      <DollarSign className="w-4 h-4 text-emerald-600" />
+                      {laborRate.toFixed(2)} / hr
+                    </p>
+                  )}
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    {isEs ? 'Tarifa estándar facturada al cliente' : 'Standard rate billed to customer'}
+                  </p>
+                </div>
+
                 {/* Night Labor Rate */}
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {isEs ? 'Tarifa Nocturna ($/hr)' : 'Night Hours Labor Rate ($/hr)'}
+                    {isEs ? 'Tarifa Nocturna ($/hr)' : 'Night Labor Rate ($/hr)'}
                   </label>
                   {editing ? (
                     <div className="relative mt-1.5">
@@ -404,63 +433,34 @@ export default function LaborMarkupSettingsPanel({
                   </p>
                 </div>
 
-                {/* Night Labor Cost */}
+                {/* Materials Markup */}
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {isEs ? 'Costo de Mano de Obra Nocturna ($/hr)' : 'Night Hours Labor Cost ($/hr)'}
+                    {isEs ? 'Margen de Materiales (%)' : 'Materials Markup (%)'}
                   </label>
                   {editing ? (
                     <div className="relative mt-1.5">
-                      <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 text-xs">$</span>
+                      <span className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 text-xs">%</span>
                       <input
                         type="number"
                         min="0"
+                        max="500"
                         step="0.01"
-                        value={nightLaborCostInput}
-                        onChange={(e) => setNightLaborCostInput(e.target.value)}
+                        value={materialsMarkupInput}
+                        onChange={(e) => setMaterialsMarkupInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="65.00"
-                        className="w-full rounded-lg border border-emerald-300 bg-white pl-6 pr-3 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
+                        placeholder="30.00"
+                        className="w-full rounded-lg border border-emerald-300 bg-white pl-3 pr-7 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
                       />
                     </div>
                   ) : (
                     <p className="mt-1 text-base font-bold text-slate-800 flex items-center gap-1">
-                      <DollarSign className="w-4 h-4 text-slate-500" />
-                      {nightLaborCost.toFixed(2)} / hr
+                      <Percent className="w-4 h-4 text-blue-600" />
+                      {materialsMarkup.toFixed(2)}%
                     </p>
                   )}
                   <p className="text-[11px] text-slate-400 mt-1">
-                    {isEs ? 'Costo interno nocturno privado (sueldo + overhead)' : 'Private night cost (wage + overhead)'}
-                  </p>
-                </div>
-
-                {/* Holiday & Emergency Cost */}
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {isEs ? 'Costo Feriados y Emergencias ($/hr)' : 'Holidays & Emergency Labor Cost ($/hr)'}
-                  </label>
-                  {editing ? (
-                    <div className="relative mt-1.5">
-                      <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 text-xs">$</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={holidayEmergencyLaborCostInput}
-                        onChange={(e) => setHolidayEmergencyLaborCostInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="75.00"
-                        className="w-full rounded-lg border border-emerald-300 bg-white pl-6 pr-3 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
-                      />
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-base font-bold text-slate-800 flex items-center gap-1">
-                      <DollarSign className="w-4 h-4 text-slate-500" />
-                      {holidayEmergencyLaborCost.toFixed(2)} / hr
-                    </p>
-                  )}
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    {isEs ? 'Costo interno privado para feriados y emergencias' : 'Private holiday & emergency cost (wage + overhead)'}
+                    {isEs ? 'Margen comercial sobre costo de repuestos' : 'Added to contractor supplies cost'}
                   </p>
                 </div>
               </div>

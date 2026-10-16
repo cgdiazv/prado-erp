@@ -12,7 +12,7 @@ export default async function BlogPage({ params }: { params: Promise<{ lng: stri
       <PublicNavbar locale={lng} />
 
       <main className="flex-1 w-full">
-        <section className="border-b border-slate-900 bg-slate-950/60 py-20 px-6">
+        <section className="bg-slate-950/60 py-20 px-6">
           <div className="max-w-6xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-800/60 bg-emerald-950/40 px-3.5 py-1 text-xs font-medium text-emerald-400 backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />

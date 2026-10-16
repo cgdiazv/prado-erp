@@ -7,7 +7,7 @@ export default function EstimatesLoading() {
     <main className="flex-1 overflow-y-auto">
       <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <Skeleton className="h-7 w-48 rounded" />
             <Skeleton className="h-3 w-80 sm:w-96 rounded mt-2" />

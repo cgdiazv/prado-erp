@@ -19,7 +19,7 @@ export default async function TermsAndConditionsPage({
 
       {/* Main Content Workspace */}
       <main className="flex-1 max-w-3xl mx-auto px-6 py-16 space-y-8 text-left">
-        <header className="space-y-4 border-b border-slate-900 pb-6">
+        <header className="space-y-4">
           <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
             {translations.terms.title}
           </h1>

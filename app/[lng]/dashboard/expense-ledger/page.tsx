@@ -72,7 +72,7 @@ export default async function ExpenseLedgerPage({ params }: ExpenseLedgerPagePro
   return (
     <main className="flex-1 overflow-y-auto">
       <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
-        <div className="flex flex-col gap-3 border-b border-gray-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.trackedExpensesSection}</h1>
             <p className="text-xs text-slate-400 mt-1">{translations.dashboard.expenseLedgerDescription}</p>

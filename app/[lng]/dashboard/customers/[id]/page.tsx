@@ -75,7 +75,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
           <div className="w-full px-6 md:px-10 pt-10 pb-8 space-y-8 text-left">
             
             {/* Navigation Breadcrumb Bar & Actions Layout */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex flex-col gap-1">
                 <Link 
                   href="/dashboard/customers" 

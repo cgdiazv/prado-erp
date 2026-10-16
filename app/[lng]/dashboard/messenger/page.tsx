@@ -51,7 +51,7 @@ export default async function MessengerPage({ params, searchParams }: MessengerP
   return (
     <main className="flex-1 overflow-y-auto">
       <div className="w-full px-6 md:px-10 pt-10 pb-8 text-left space-y-6">
-        <div className="border-b border-gray-200 pb-5">
+        <div>
           <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-sky-700">
             {isEs ? 'Soporte' : 'Support'}
           </span>
