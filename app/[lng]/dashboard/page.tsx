@@ -13,6 +13,7 @@ import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import { canUseExpenseLedger } from '@/lib/subscriptionAccess';
 import { getUserOrganization } from '@/lib/organization';
+import { Plus } from 'lucide-react';
 
 type DashboardView = 'operations' | 'financials';
 
@@ -351,13 +352,6 @@ export default async function DashboardHome({
       subtitle: t.alertAwaitingCustomer,
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/estimates`,
-      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 8.25v8.25a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V8.25m19.5 0V6a2.25 2.25 0 00-2.25-2.25H4.5A2.25 2.25 0 002.25 6v2.25m19.5 0l-8.69 5.212a2.25 2.25 0 01-2.12 0L2.25 8.25" />
-        </svg>
-      ),
-      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
     {
       key: 'draft-estimates',
@@ -366,13 +360,6 @@ export default async function DashboardHome({
       subtitle: t.alertReadyToFinalize,
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/estimates`,
-      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
-          <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.687a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
-        </svg>
-      ),
-      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
     {
       key: 'upcoming-jobs',
@@ -381,13 +368,6 @@ export default async function DashboardHome({
       subtitle: t.alertReviewSchedule,
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/schedule`,
-      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-        </svg>
-      ),
-      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
     {
       key: 'unassigned-jobs',
@@ -396,13 +376,6 @@ export default async function DashboardHome({
       subtitle: t.alertAssignAssets,
       cta: t.alertResolveAll,
       href: `/${locale}/dashboard/schedule`,
-      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0Zm10.5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0ZM3.75 6.75h8.25v9.75H3.75V6.75Zm8.25 2.25h3.12a1.5 1.5 0 011.12.502l2.326 2.65a1.5 1.5 0 01.374.99V16.5H12V9Z" />
-        </svg>
-      ),
-      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
     {
       key: 'incomplete-jobs',
@@ -411,13 +384,6 @@ export default async function DashboardHome({
       subtitle: t.alertResolvePending,
       cta: t.alertViewAll,
       href: `/${locale}/dashboard/schedule`,
-      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12m-12 5.25h12m-12 5.25h12M3.75 6.75h.008v.008H3.75V6.75Zm0 5.25h.008v.008H3.75V12Zm0 5.25h.008v.008H3.75v-.008Z" />
-        </svg>
-      ),
-      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
     {
       key: 'overdue-invoices',
@@ -426,56 +392,41 @@ export default async function DashboardHome({
       subtitle: t.alertSendReminders,
       cta: t.alertResolveNow,
       href: `/${locale}/dashboard/invoices-ledger`,
-      cardClass: 'border-slate-200 border-l-4 border-l-emerald-600 bg-white',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5 text-emerald-700">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0ZM12 15.75h.007v.008H12v-.008Z" />
-        </svg>
-      ),
-      buttonClass: 'border-emerald-200 text-emerald-800 hover:bg-emerald-100',
     },
   ];
 
   const operationsQuickActions = (
-    <div className="tour-quick-actions grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+    <div className="tour-quick-actions flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
       <Link
         href={`/${locale}/dashboard/estimates`}
-        className="cursor-pointer rounded-lg border border-gray-200 bg-white h-20 p-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 flex flex-col items-center justify-center gap-2 text-center sm:h-auto sm:flex-row sm:justify-center sm:px-3 sm:py-1.5"
+        className="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 shadow-2xs"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-7 w-7 text-emerald-700 sm:h-5 sm:w-5">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12h6m-6 3h3.75M3 16.5V7.5A2.25 2.25 0 015.25 5.25h5.379a1.125 1.125 0 01.795.33l5.121 5.121a1.125 1.125 0 01.33.795V16.5A2.25 2.25 0 0114.625 18.75h-9.375A2.25 2.25 0 013 16.5z" />
-        </svg>
+        <Plus className="h-3.5 w-3.5 text-slate-500 shrink-0" />
         <span>{t.actionManageEstimates}</span>
       </Link>
 
       <Link
         href={`/${locale}/dashboard/schedule`}
-        className="cursor-pointer rounded-lg border border-gray-200 bg-white h-20 p-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 flex flex-col items-center justify-center gap-2 text-center sm:h-auto sm:flex-row sm:justify-center sm:px-3 sm:py-1.5"
+        className="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 shadow-2xs"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-7 w-7 text-emerald-700 sm:h-5 sm:w-5">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-        </svg>
+        <Plus className="h-3.5 w-3.5 text-slate-500 shrink-0" />
         <span>{t.actionScheduleJob}</span>
       </Link>
 
       <Link
         href={`/${locale}/dashboard/invoices-ledger`}
-        className="cursor-pointer rounded-lg border border-gray-200 bg-white h-20 p-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 flex flex-col items-center justify-center gap-2 text-center sm:h-auto sm:flex-row sm:justify-center sm:px-3 sm:py-1.5"
+        className="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 shadow-2xs"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-7 w-7 text-emerald-700 sm:h-5 sm:w-5">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M7.5 4.5h9A1.5 1.5 0 0118 6v12a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 016 18V6a1.5 1.5 0 011.5-1.5z" />
-        </svg>
+        <Plus className="h-3.5 w-3.5 text-slate-500 shrink-0" />
         <span>{t.actionManageInvoices}</span>
       </Link>
 
       {canAccessExpenseLedger && (
         <Link
           href={`/${locale}/dashboard/expense-ledger`}
-          className="cursor-pointer rounded-lg border border-gray-200 bg-white h-20 p-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 flex flex-col items-center justify-center gap-2 text-center sm:h-auto sm:flex-row sm:justify-center sm:px-3 sm:py-1.5"
+          className="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 shadow-2xs"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-7 w-7 text-emerald-700 sm:h-5 sm:w-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <Plus className="h-3.5 w-3.5 text-slate-500 shrink-0" />
           <span>{t.actionTrackExpenses}</span>
         </Link>
       )}
@@ -492,22 +443,26 @@ export default async function DashboardHome({
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {priorityAlertCards.map((card) => (
-            <div key={card.key} className={`rounded-lg border px-3 py-2.5 flex items-start justify-between gap-3 ${card.cardClass}`}>
-              <div className="flex items-start gap-3 min-w-0">
-                <span className="h-8 w-8 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
-                  {card.icon}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 truncate">{card.title}</p>
-                  <p className="text-lg font-extrabold text-slate-900 leading-tight">{card.count}</p>
-                  <p className="text-xs text-slate-600 truncate">{card.subtitle}</p>
-                </div>
+            <div
+              key={card.key}
+              className="relative flex flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-2xs transition hover:border-slate-300 min-h-[110px]"
+            >
+              <span className="absolute left-0 top-3.5 h-4 w-0.5 rounded-r bg-slate-300" />
+              <div>
+                <p className="text-xs sm:text-[13px] font-semibold text-slate-900 leading-snug">{card.title}</p>
+                <p className="text-[11px] text-slate-500 font-normal mt-0.5 leading-normal">{card.subtitle}</p>
               </div>
-              <Link href={card.href} className={`shrink-0 rounded-md border px-2.5 py-1 text-[11px] font-semibold transition ${card.buttonClass}`}>
-                {card.cta}
-              </Link>
+              <div className="flex items-center justify-between pt-4 mt-auto">
+                <span className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-none">{card.count}</span>
+                <Link
+                  href={card.href}
+                  className="cursor-pointer shrink-0 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 shadow-2xs"
+                >
+                  {card.cta}
+                </Link>
+              </div>
             </div>
           ))}
         </div>
@@ -526,7 +481,7 @@ export default async function DashboardHome({
         )}
         
         {/* Context Subheader */}
-        <div className="flex flex-col gap-1 border-b border-gray-200 pb-5">
+        <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">{org.name}</h1>
           <p className="text-xs text-slate-500 font-medium">{translations.dashboard.metricsSubtitle}</p>
         </div>
@@ -540,39 +495,41 @@ export default async function DashboardHome({
           {operationsQuickActions}
         </div>
 
-        {activeView === 'operations' ? (
-          <>
-            {operationsPanel}
-            <Metrics
-              totalRevenue={totalRevenue}
-              totalExpenses={totalExpenses}
-              netProfit={netProfit}
-              trends={metricTrends}
-              locale={locale}
-            />
-            <PerformanceChart
-              invoices={invoices}
-              expenses={expenses}
-              locale={locale}
-            />
-          </>
-        ) : (
-          <>
-            <Metrics
-              totalRevenue={totalRevenue}
-              totalExpenses={totalExpenses}
-              netProfit={netProfit}
-              trends={metricTrends}
-              locale={locale}
-            />
-            <PerformanceChart
-              invoices={invoices}
-              expenses={expenses}
-              locale={locale}
-            />
-            {operationsPanel}
-          </>
-        )}
+        <div className="space-y-8 !mt-3 sm:!mt-4">
+          {activeView === 'operations' ? (
+            <>
+              {operationsPanel}
+              <Metrics
+                totalRevenue={totalRevenue}
+                totalExpenses={totalExpenses}
+                netProfit={netProfit}
+                trends={metricTrends}
+                locale={locale}
+              />
+              <PerformanceChart
+                invoices={invoices}
+                expenses={expenses}
+                locale={locale}
+              />
+            </>
+          ) : (
+            <>
+              <Metrics
+                totalRevenue={totalRevenue}
+                totalExpenses={totalExpenses}
+                netProfit={netProfit}
+                trends={metricTrends}
+                locale={locale}
+              />
+              <PerformanceChart
+                invoices={invoices}
+                expenses={expenses}
+                locale={locale}
+              />
+              {operationsPanel}
+            </>
+          )}
+        </div>
 
         <DashboardFeedbackStrip locale={locale} />
 
