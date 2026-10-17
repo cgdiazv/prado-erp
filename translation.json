@@ -43,6 +43,10 @@
       "support": "Support"
     },
     "cookies": {
+      "message": "We use essential cookies to ensure platform functionality and improve your browsing experience.",
+      "privacyPolicy": "Privacy Policy",
+      "accept": "Accept",
+      "dismiss": "Dismiss",
       "title": "Cookie preferences",
       "description": "We use strictly necessary cookies to keep Prado secure and functional. Optional analytics and marketing cookies only load after you choose to allow them.",
       "essentialTitle": "Essential",
@@ -459,6 +463,10 @@
       "support": "Soporte"
     },
     "cookies": {
+      "message": "Utilizamos cookies esenciales para mejorar tu experiencia y garantizar el funcionamiento de la plataforma.",
+      "privacyPolicy": "Política de Privacidad",
+      "accept": "Aceptar",
+      "dismiss": "Cerrar",
       "title": "Preferencias de cookies",
       "description": "Usamos cookies estrictamente necesarias para mantener Prado seguro y funcional. Las cookies opcionales de analítica y marketing solo se cargan después de que elijas permitirlas.",
       "essentialTitle": "Esenciales",

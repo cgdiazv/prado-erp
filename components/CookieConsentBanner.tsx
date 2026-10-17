@@ -2,8 +2,9 @@
 
 import Script from 'next/script';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
+import { X } from 'lucide-react';
 import { getTranslations } from '@/lib/translations';
 
 type CookieConsentState = {
@@ -17,39 +18,85 @@ const COOKIE_NAME = 'prado_cookie_consent_v1';
 
 const TRACKING_COOKIE_NAMES = ['_ga', '_gid', '_gat', '_gcl_au'];
 
-function getLocaleFromPathname(pathname: string | null) {
-  return pathname?.split('/')[1]?.toLowerCase().startsWith('es') ? 'es' : 'en';
+const listeners = new Set<() => void>();
+
+function notifyListeners() {
+  listeners.forEach((listener) => listener());
 }
 
-function readStoredConsent(): CookieConsentState | null {
+function subscribe(callback: () => void) {
+  listeners.add(callback);
+  const handleStorage = (e: StorageEvent) => {
+    if (!e.key || e.key === STORAGE_KEY) {
+      callback();
+    }
+  };
+  window.addEventListener('storage', handleStorage);
+  return () => {
+    listeners.delete(callback);
+    window.removeEventListener('storage', handleStorage);
+  };
+}
+
+let cachedConsentRaw: string | null = '__init__';
+let cachedConsentState: CookieConsentState | null = null;
+
+function getConsentSnapshot(): CookieConsentState | null {
   if (typeof window === 'undefined') {
     return null;
   }
 
   try {
     const rawValue = window.localStorage.getItem(STORAGE_KEY);
+    if (rawValue === cachedConsentRaw) {
+      return cachedConsentState;
+    }
+    cachedConsentRaw = rawValue;
     if (!rawValue) {
+      cachedConsentState = null;
       return null;
     }
 
     const parsed = JSON.parse(rawValue) as Partial<CookieConsentState>;
     if (typeof parsed.analytics !== 'boolean' || typeof parsed.marketing !== 'boolean') {
+      cachedConsentState = null;
       return null;
     }
 
-    return {
+    cachedConsentState = {
       analytics: parsed.analytics,
       marketing: parsed.marketing,
       updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : new Date().toISOString(),
     };
+    return cachedConsentState;
   } catch {
+    cachedConsentState = null;
     return null;
   }
+}
+
+function getServerConsentSnapshot(): CookieConsentState | null {
+  return null;
+}
+
+function getAcknowledgmentSnapshot(): boolean {
+  try {
+    const raw = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
+    const hasCookie = typeof document !== 'undefined' && document.cookie.includes(`${COOKIE_NAME}=`);
+    return Boolean(raw || hasCookie);
+  } catch {
+    return true;
+  }
+}
+
+function getServerAcknowledgmentSnapshot(): boolean {
+  return true;
 }
 
 function writeStoredConsent(nextConsent: CookieConsentState) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextConsent));
   document.cookie = `${COOKIE_NAME}=${encodeURIComponent(JSON.stringify(nextConsent))}; Path=/; Max-Age=31536000; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
+  notifyListeners();
 }
 
 function deleteCookie(name: string) {
@@ -58,6 +105,10 @@ function deleteCookie(name: string) {
 
 function purgeTrackingCookies() {
   TRACKING_COOKIE_NAMES.forEach((name) => deleteCookie(name));
+}
+
+function getLocaleFromPathname(pathname: string | null) {
+  return pathname?.split('/')[1]?.toLowerCase().startsWith('es') ? 'es' : 'en';
 }
 
 function loadChatbaseScript() {
@@ -111,43 +162,28 @@ export default function CookieConsentBanner() {
   const locale = useMemo(() => getLocaleFromPathname(pathname), [pathname]);
   const translations = useMemo(() => getTranslations(locale), [locale]);
 
-  const [hydrated, setHydrated] = useState(false);
-  const [consent, setConsent] = useState<CookieConsentState | null>(null);
+  const isAcknowledged = useSyncExternalStore(subscribe, getAcknowledgmentSnapshot, getServerAcknowledgmentSnapshot);
+  const consent = useSyncExternalStore(subscribe, getConsentSnapshot, getServerConsentSnapshot);
+
   const [showSettings, setShowSettings] = useState(false);
-  const [showConsentBanner, setShowConsentBanner] = useState(false);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   const [marketingEnabled, setMarketingEnabled] = useState(false);
 
   useEffect(() => {
-    const hydrationTimer = window.setTimeout(() => {
-      const existingConsent = readStoredConsent();
-      setConsent(existingConsent);
-      setAnalyticsEnabled(existingConsent?.analytics ?? false);
-      setMarketingEnabled(existingConsent?.marketing ?? false);
-      setHydrated(true);
-    }, 0);
-
-    const bannerTimer = window.setTimeout(() => setShowConsentBanner(true), 2000);
-    return () => {
-      window.clearTimeout(hydrationTimer);
-      window.clearTimeout(bannerTimer);
+    const openSettings = () => {
+      setAnalyticsEnabled(consent?.analytics ?? false);
+      setMarketingEnabled(consent?.marketing ?? false);
+      setShowSettings(true);
     };
-  }, []);
-
-  useEffect(() => {
-    const openSettings = () => setShowSettings(true);
 
     window.addEventListener('prado:open-cookie-settings', openSettings as EventListener);
     return () => {
       window.removeEventListener('prado:open-cookie-settings', openSettings as EventListener);
     };
-  }, []);
+  }, [consent]);
 
   const saveConsent = (nextConsent: CookieConsentState) => {
     const previousConsent = consent;
-    setConsent(nextConsent);
-    setAnalyticsEnabled(nextConsent.analytics);
-    setMarketingEnabled(nextConsent.marketing);
     writeStoredConsent(nextConsent);
 
     if (!nextConsent.analytics || !nextConsent.marketing) {
@@ -178,61 +214,44 @@ export default function CookieConsentBanner() {
     setShowSettings(false);
   };
 
-  if (!hydrated) {
-    return null;
-  }
+  const consentBanner = !isAcknowledged ? (
+    <div
+      role="region"
+      aria-label="Cookie acknowledgment"
+      className="fixed bottom-0 inset-x-0 w-full z-50 border-t border-emerald-500/25 bg-slate-950/95 backdrop-blur-md px-4 py-5 sm:px-6 sm:py-4.5 text-slate-300 shadow-[0_-8px_32px_rgba(0,0,0,0.65)]"
+    >
+      <div className="mx-auto flex w-full max-w-7xl flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5 sm:gap-6 text-sm">
+        {/* Strip content */}
+        <div className="min-w-0">
+          <p className="leading-relaxed">
+            <span>{translations.cookies.message}</span>{" "}
+            <Link
+              href={`/${locale}/privacy`}
+              className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors whitespace-nowrap font-medium"
+            >
+              {translations.cookies.privacyPolicy}
+            </Link>
+          </p>
+        </div>
 
-  const consentBanner = !consent && showConsentBanner ? (
-    <div className="fixed inset-x-0 bottom-0 z-50 px-4 sm:px-6">
-      <div className="cookie-consent-enter mx-auto max-w-5xl overflow-hidden rounded-t-3xl border-x-2 border-t-2 border-emerald-500 bg-white text-slate-950 shadow-[0_-16px_60px_rgba(0,0,0,0.45)]">
-        <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1.5fr_1fr] lg:items-start">
-          <div className="space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700">{translations.cookies.title}</p>
-            <p className="text-sm leading-6 text-slate-700">{translations.cookies.description}</p>
-            <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                <p className="font-semibold text-slate-950">{translations.cookies.essentialTitle}</p>
-                <p className="mt-1 leading-5">{translations.cookies.essentialDescription}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                <p className="font-semibold text-slate-950">{translations.cookies.analyticsTitle}</p>
-                <p className="mt-1 leading-5">{translations.cookies.analyticsDescription}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                <p className="font-semibold text-slate-950">{translations.cookies.marketingTitle}</p>
-                <p className="mt-1 leading-5">{translations.cookies.marketingDescription}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-            <button
-              type="button"
-              onClick={acceptAll}
-              className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
-            >
-              {translations.cookies.acceptAll}
-            </button>
-            <button
-              type="button"
-              onClick={rejectNonEssential}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-950"
-            >
-              {translations.cookies.rejectNonEssential}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowSettings(true)}
-              className="w-full rounded-xl px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:text-emerald-950"
-            >
-              {translations.cookies.managePreferences}
-            </button>
-            <p className="text-xs leading-5 text-slate-600">
-              <Link href="/privacy" className="font-semibold text-slate-700 underline decoration-slate-400 underline-offset-4 hover:text-slate-950">
-                {translations.cookies.privacyLink}
-              </Link>
-            </p>
-          </div>
+        {/* Action buttons */}
+        <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
+          <button
+            type="button"
+            onClick={acceptAll}
+            className="rounded-lg bg-emerald-500 px-5 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-emerald-400 active:scale-95 cursor-pointer shadow-md whitespace-nowrap"
+          >
+            {translations.cookies.accept}
+          </button>
+          <button
+            type="button"
+            onClick={rejectNonEssential}
+            aria-label={translations.cookies.dismiss}
+            title={translations.cookies.dismiss}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-colors cursor-pointer"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
         </div>
       </div>
     </div>

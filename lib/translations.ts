@@ -44,6 +44,10 @@ type TranslationBundle = {
     support: string;
   };
   cookies: {
+    message: string;
+    privacyPolicy: string;
+    accept: string;
+    dismiss: string;
     title: string;
     description: string;
     essentialTitle: string;
