@@ -252,3 +252,10 @@ div#soro-blog .soro-blog-article-content a {
   color: #34d399 !important;
   text-decoration: underline !important;
 }
+
+/* iOS / iPadOS Safe Area Support for Sticky Navbars */
+@supports (padding-top: env(safe-area-inset-top)) {
+  nav.sticky {
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+  }
+}
