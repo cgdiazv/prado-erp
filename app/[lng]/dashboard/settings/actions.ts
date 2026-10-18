@@ -244,7 +244,12 @@ export async function updateWorkspaceIdentity(formData: FormData) {
   return { success: true, logoUrl: nextLogoUrl, companyName: updatePayload.name || org.name };
 }
 
-export async function updateDispatchSettings(formData: FormData): Promise<void> {
+export async function updateDispatchSettings(formData: FormData): Promise<{
+  success?: boolean;
+  error?: string;
+  maxJobsPerTruck?: number;
+  autoOptimizeDriveRoutes?: boolean;
+}> {
   const locale = (formData.get('locale') as string | null)?.trim() || 'en';
   const maxJobsRaw = (formData.get('maxJobsPerTruck') as string | null)?.trim() || '';
   const autoOptimizeDriveRoutes = formData
@@ -253,24 +258,40 @@ export async function updateDispatchSettings(formData: FormData): Promise<void> 
   const maxJobsPerTruck = Number.parseInt(maxJobsRaw, 10);
 
   if (!Number.isFinite(maxJobsPerTruck) || maxJobsPerTruck < 1 || maxJobsPerTruck > 100) {
-    return;
+    return {
+      error: locale.toLowerCase().startsWith('es')
+        ? 'El número máximo de paradas debe estar entre 1 y 100.'
+        : 'Max stops must be a number between 1 and 100.',
+    };
   }
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return;
+    return {
+      error: locale.toLowerCase().startsWith('es')
+        ? 'Debes iniciar sesión para actualizar la configuración.'
+        : 'You must be signed in to update settings.',
+    };
   }
 
   const { organization: org, role } = await getUserOrganization(user.id);
   if (!org) {
-    return;
+    return {
+      error: locale.toLowerCase().startsWith('es')
+        ? 'Organización no encontrada.'
+        : 'Organization not found.',
+    };
   }
 
   const normalizedRole = (role || '').toLowerCase();
   if (normalizedRole !== 'owner' && normalizedRole !== 'admin') {
-    return;
+    return {
+      error: locale.toLowerCase().startsWith('es')
+        ? 'Solo los administradores pueden actualizar la configuración.'
+        : 'Only owners and admins can update dispatch settings.',
+    };
   }
 
   const adminClient = createAdminClient();
@@ -283,11 +304,17 @@ export async function updateDispatchSettings(formData: FormData): Promise<void> 
     .eq('id', org.id);
 
   if (error) {
-    return;
+    return { error: error.message };
   }
 
   revalidatePath(`/${locale}/dashboard/settings/dispatch-settings`);
   revalidatePath(`/${locale}/dashboard/routing`);
+
+  return {
+    success: true,
+    maxJobsPerTruck,
+    autoOptimizeDriveRoutes,
+  };
 }
 
 export async function updateInvoiceTaxRate(formData: FormData) {

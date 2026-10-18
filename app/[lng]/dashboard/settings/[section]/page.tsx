@@ -15,7 +15,7 @@ import XeroConnectionCard from '../XeroConnectionCard';
 import QBOConnectionCard from '../QBOConnectionCard';
 import StripeConnectSettings from '@/components/dashboard/StripeConnectSettings';
 import ImportExportPanel from '../ImportExportPanel';
-import { updateDispatchSettings } from '../actions';
+import DispatchSettingsPanel from '../DispatchSettingsPanel';
 import { getOrganizationRolePermissions, hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import {
   canUseAccountingIntegrations,
@@ -286,65 +286,11 @@ export default async function SettingsSectionPage({
 
             {section === 'dispatch-settings' && canAccessDispatchSettings && (
               <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                <div className="p-6 md:p-8 space-y-6">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{translations.dashboard.dispatchSettings}</h3>
-                    <p className="text-xs text-slate-400">{translations.dashboard.dispatchSettingsDescription}</p>
-                  </div>
-
-                  <form action={updateDispatchSettings} className="space-y-4">
-                    <input type="hidden" name="locale" value={locale} />
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="hidden"
-                        name="autoOptimizeDriveRoutes"
-                        value="false"
-                      />
-                      <input
-                        id="optimize-paths"
-                        type="checkbox"
-                        name="autoOptimizeDriveRoutes"
-                        value="true"
-                        defaultChecked={org.auto_optimize_drive_routes ?? true}
-                        className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <div>
-                        <label htmlFor="optimize-paths" className="text-sm font-semibold text-slate-800 block">
-                          {translations.dashboard.autoOptimizeDriveRoutes}
-                        </label>
-                        <span className="text-xs text-slate-400">{translations.dashboard.autoOptimizeDescription}</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label htmlFor="max-jobs-per-truck" className="block text-xs font-semibold text-gray-500 uppercase">
-                        {translations.dashboard.routeMaxStops}
-                      </label>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <input
-                          id="max-jobs-per-truck"
-                          type="number"
-                          name="maxJobsPerTruck"
-                          min={1}
-                          max={100}
-                          defaultValue={org.max_jobs_per_truck ?? 4}
-                          className="w-full sm:w-32 rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                        />
-                        <button
-                          type="submit"
-                          className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition shadow-sm"
-                        >
-                          Update Dispatch Settings
-                        </button>
-                      </div>
-                      <p className="text-xs text-slate-400">
-                        {locale.toLowerCase().startsWith('es')
-                          ? 'Define el umbral de sobrecarga para alertas y planificación de rutas por vehículo.'
-                          : 'Defines the overload threshold for route planning and vehicle capacity alerts.'}
-                      </p>
-                    </div>
-                  </form>
-                </div>
+                <DispatchSettingsPanel
+                  initialMaxJobsPerTruck={org.max_jobs_per_truck ?? 4}
+                  initialAutoOptimizeDriveRoutes={org.auto_optimize_drive_routes ?? true}
+                  locale={locale}
+                />
               </div>
             )}
 
