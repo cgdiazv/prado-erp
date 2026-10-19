@@ -173,6 +173,12 @@ type TranslationBundle = {
     section3Body: string;
     section4Title: string;
     section4Body: string;
+    section5Title: string;
+    section5Body: string;
+    section6Title: string;
+    section6Body: string;
+    section7Title: string;
+    section7Body: string;
     paymentFeesTitle: string;
     paymentFeesIntro: string;
     paymentFeesItem1: string;

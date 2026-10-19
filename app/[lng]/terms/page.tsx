@@ -61,6 +61,27 @@ export default async function TermsAndConditionsPage({
             </p>
           </section>
 
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-white tracking-tight">{translations.terms.section5Title}</h2>
+            <p>
+              {translations.terms.section5Body}
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-white tracking-tight">{translations.terms.section6Title}</h2>
+            <p>
+              {translations.terms.section6Body}
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-white tracking-tight">{translations.terms.section7Title}</h2>
+            <p>
+              {translations.terms.section7Body}
+            </p>
+          </section>
+
           <section id="payment-processing-fees" className="space-y-3 scroll-mt-24">
             <h2 className="text-lg font-bold text-white tracking-tight">{translations.terms.paymentFeesTitle}</h2>
             <p>

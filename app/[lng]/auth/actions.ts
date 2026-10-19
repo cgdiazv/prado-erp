@@ -1,5 +1,6 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabaseServer';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 import { Resend } from 'resend';
@@ -9,6 +10,7 @@ import { issueRememberToken } from '@/lib/rememberMe';
 import { seedTradeSampleData } from '@/lib/sampleData';
 import { sendWelcomeEmail } from '@/lib/welcomeEmail';
 import { scheduleOnboardingSequence } from '@/lib/onboardingEmails';
+import { extractClientNetworkContext, logAuditEvent } from '@/lib/auditLogger';
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string;
@@ -98,6 +100,9 @@ export async function signup(formData: FormData) {
       return { error: 'Email and password are required.' };
     }
 
+    const headerStore = await headers();
+    const { clientIp, userAgent } = extractClientNetworkContext(headerStore);
+
     const supabase = await createClient();
     const supabaseAdmin = createAdminClient();
 
@@ -112,6 +117,9 @@ export async function signup(formData: FormData) {
           trade_vertical: tradeVertical,
           team_size: teamSize,
           primary_pain_point: painPoint,
+          registration_ip: clientIp,
+          registration_user_agent: userAgent,
+          registration_timestamp: new Date().toISOString(),
         },
       },
     });
@@ -155,7 +163,15 @@ export async function signup(formData: FormData) {
     // Auto-sign in the user to establish an active session immediately
     await supabase.auth.signInWithPassword({ email, password });
 
-    await upsertAuthUserIndex(supabaseAdmin, { id: userId, email });
+    await upsertAuthUserIndex(supabaseAdmin, {
+      id: userId,
+      email,
+      user_metadata: {
+        registration_ip: clientIp,
+        registration_user_agent: userAgent,
+        registration_timestamp: new Date().toISOString(),
+      },
+    });
 
     // 2. Determine signup type: invite vs regular
     let orgData: any = null;
@@ -230,6 +246,22 @@ export async function signup(formData: FormData) {
       // Invite signup: user joins existing organization, don't create new one
       console.log('Invite signup detected - skipping organization creation');
     }
+
+    // 2.1 Log registration event to immutable audit log
+    await logAuditEvent({
+      eventType: 'user_registration',
+      actorUserId: userId,
+      actorEmail: normalizedEmail,
+      organizationId: ownerOrgId,
+      ipAddress: clientIp,
+      userAgent,
+      metadata: {
+        source: inviteOrgId ? 'team_invite_signup' : 'web_signup',
+        companyName,
+        intendedPlan: intendedPlan || 'trial',
+        tradeVertical: tradeVertical || null,
+      },
+    });
 
     // 3. Check for pending team invitations and add user to those organizations
     const { data: pendingInvites } = await supabase

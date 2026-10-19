@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 import { NextResponse } from 'next/server';
 import { normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
+import { extractClientNetworkContext, logAuditEvent } from '@/lib/auditLogger';
 
 export async function POST(request: Request) {
   try {
@@ -15,10 +16,19 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const supabaseAdmin = createAdminClient();
 
+    const { clientIp, userAgent } = extractClientNetworkContext(request.headers);
+
     // 1. Register user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          registration_ip: clientIp,
+          registration_user_agent: userAgent,
+          registration_timestamp: new Date().toISOString(),
+        },
+      },
     });
 
     if (authError || !authData.user) {
@@ -26,7 +36,15 @@ export async function POST(request: Request) {
     }
 
     const userId = authData.user.id;
-    await upsertAuthUserIndex(supabaseAdmin, authData.user);
+    await upsertAuthUserIndex(supabaseAdmin, {
+      ...authData.user,
+      user_metadata: {
+        ...(authData.user.user_metadata || {}),
+        registration_ip: clientIp,
+        registration_user_agent: userAgent,
+        registration_timestamp: new Date().toISOString(),
+      },
+    });
 
     // 2. Create their own organization
     const { data: orgData, error: orgError } = await supabase
@@ -38,6 +56,20 @@ export async function POST(request: Request) {
     if (orgError || !orgData) {
       return NextResponse.json({ error: orgError?.message || 'Failed to create organization.' }, { status: 400 });
     }
+
+    // 2.1 Log registration event to immutable audit log
+    await logAuditEvent({
+      eventType: 'user_registration',
+      actorUserId: userId,
+      actorEmail: normalizedEmail,
+      organizationId: orgData.id,
+      ipAddress: clientIp,
+      userAgent,
+      metadata: {
+        source: 'api_signup',
+        companyName,
+      },
+    });
 
     // 3. Check for pending invitations and add user to those organizations
     const { data: pendingInvites } = await supabase
