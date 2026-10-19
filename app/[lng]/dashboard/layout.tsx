@@ -7,7 +7,6 @@ import { DashboardNotificationProvider } from '@/components/dashboard/DashboardN
 import AccountingSyncWarningBanner from '@/components/dashboard/AccountingSyncWarningBanner';
 import { getAllowedDashboardModules } from '@/lib/dashboardRolePermissions';
 import { getUserOrganization } from '@/lib/organization';
-import { isPradoManagementUser } from '@/lib/pradoManagement';
 import { REMEMBER_ME_COOKIE_NAME } from '@/lib/rememberMe';
 import InactivityLockScreen from '@/components/dashboard/InactivityLockScreen';
 import SupportChatModal from '@/components/dashboard/SupportChatModal';
@@ -90,7 +89,6 @@ export default async function DashboardLayout({
     !normalizedZipCode.trim();
 
   const canViewImportExport = role === 'owner' || role === 'admin';
-  const canAccessPradoManagement = isPradoManagementUser(user);
   const rawFirstName = profile?.first_name?.trim() || user.user_metadata?.first_name?.trim() || '';
   const rawLastName = profile?.last_name?.trim() || user.user_metadata?.last_name?.trim() || '';
   const combinedName = [rawFirstName, rawLastName].filter(Boolean).join(' ');
@@ -135,7 +133,6 @@ export default async function DashboardLayout({
               subscriptionStatus={org.subscription_status ?? undefined}
               locale={locale}
               canViewImportExport={canViewImportExport}
-              canAccessPradoManagement={canAccessPradoManagement}
               allowedModules={allowedModules}
             />
           </div>

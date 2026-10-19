@@ -12,8 +12,6 @@ function getLocaleRevalidationPaths(locale: string) {
   return [
     '/dashboard/messenger',
     `/${locale}/dashboard/messenger`,
-    '/management',
-    `/${locale}/management`,
   ];
 }
 

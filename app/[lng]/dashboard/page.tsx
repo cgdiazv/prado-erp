@@ -321,7 +321,7 @@ export default async function DashboardHome({
     const expense = expensesByDay.get(key) || 0;
 
     return {
-      dateLabel: date.toLocaleDateString(locale, { month: 'short', day: 'numeric' }),
+      dateLabel: date.toLocaleDateString(isEs ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric' }),
       revenue,
       expenses: expense,
       netIncome: revenue - expense,
