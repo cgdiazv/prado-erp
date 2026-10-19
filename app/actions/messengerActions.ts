@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabaseServer';
-import { createAdminClient } from '@/lib/supabaseAdmin';
+import { createHelpdeskAdminClient } from '@/lib/helpdeskClient';
 import { getUserOrganization } from '@/lib/organization';
 
 const ACTIVE_SUPPORT_TICKET_STATUSES = ['open', 'in_progress', 'blocked'];
@@ -53,14 +53,16 @@ export async function disconnectMessengerConnection(organizationId: string, loca
 
 async function getOrCreateDashboardSupportTicket({
   organizationId,
+  organizationName,
   requestedByUserId,
   requestedByEmail,
 }: {
   organizationId: string;
+  organizationName?: string | null;
   requestedByUserId: string;
   requestedByEmail: string | null;
 }) {
-  const supabaseAdmin = createAdminClient();
+  const supabaseAdmin = createHelpdeskAdminClient();
   const { data: activeTicket, error: activeTicketError } = await supabaseAdmin
     .from('helpdesk_tickets')
     .select('id')
@@ -79,14 +81,16 @@ async function getOrCreateDashboardSupportTicket({
     return activeTicket.id as string;
   }
 
+  const orgLabel = organizationName ? ` (${organizationName})` : '';
+
   const { data: createdTicket, error: createdTicketError } = await supabaseAdmin
     .from('helpdesk_tickets')
     .insert({
       organization_id: organizationId,
       requested_by_user_id: requestedByUserId,
       requested_by_email: requestedByEmail,
-      subject: 'Dashboard Support Chat',
-      description: 'Conversation started from dashboard support chat.',
+      subject: `Dashboard Support Chat${orgLabel}`,
+      description: `Conversation started from dashboard support chat${orgLabel}.`,
       priority: 'medium',
       status: 'open',
       escalated_from: 'dashboard_chat',
@@ -105,10 +109,10 @@ async function getOrCreateDashboardSupportTicket({
   await supabaseAdmin.from('helpdesk_ticket_events').insert({
     ticket_id: createdTicket.id,
     event_type: 'escalated',
-    event_note: 'Conversation opened from dashboard support chat.',
+    event_note: `Conversation opened from dashboard support chat${orgLabel}.`,
     actor_user_id: requestedByUserId,
     actor_email: requestedByEmail,
-    metadata: { source: 'dashboard_chat' },
+    metadata: { source: 'dashboard_chat', organization_name: organizationName || null },
   });
 
   return createdTicket.id as string;
@@ -116,7 +120,7 @@ async function getOrCreateDashboardSupportTicket({
 
 export async function getDashboardSupportThread() {
   const { organization } = await requireOrgAccess();
-  const supabaseAdmin = createAdminClient();
+  const supabaseAdmin = createHelpdeskAdminClient();
 
   const { data: ticket, error: ticketError } = await supabaseAdmin
     .from('helpdesk_tickets')
@@ -206,11 +210,12 @@ export async function sendDashboardSupportMessage({
   const { user, organization } = await requireOrgAccess();
   const ticketId = await getOrCreateDashboardSupportTicket({
     organizationId: organization.id,
+    organizationName: organization.name,
     requestedByUserId: user.id,
     requestedByEmail: user.email || null,
   });
 
-  const supabaseAdmin = createAdminClient();
+  const supabaseAdmin = createHelpdeskAdminClient();
   const { error: commentError } = await supabaseAdmin
     .from('helpdesk_ticket_comments')
     .insert({

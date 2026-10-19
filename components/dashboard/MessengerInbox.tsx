@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { sendDashboardSupportMessage } from '@/app/actions/messengerActions';
 
 type SupportMessageRow = {
@@ -36,6 +36,17 @@ export default function MessengerInbox({
   const normalizedStatus = (ticketStatus || '').toLowerCase();
   const ticketClosed = normalizedStatus === 'closed';
   const ticketResolved = normalizedStatus === 'resolved';
+
+  useEffect(() => {
+    // Keep chat fresh with agent replies from prado-sys
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && !pending) {
+        router.refresh();
+      }
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [router, pending]);
 
   const statusLabel = useMemo(() => {
     if (!ticketStatus) return isEs ? 'Sin ticket activo' : 'No active ticket';

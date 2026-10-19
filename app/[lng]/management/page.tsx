@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabaseAdmin';
+import { createHelpdeskAdminClient } from '@/lib/helpdeskClient';
 import { requirePradoManagementUser } from '@/lib/pradoManagement';
 import HelpdeskHowToAssistant from '@/components/management/HelpdeskHowToAssistant';
 import HelpdeskInbox from '@/components/management/HelpdeskInbox';
@@ -70,6 +71,7 @@ export default async function PradoManagementPage({
   const hasError = (resolvedSearchParams.error || '').trim();
 
   const supabaseAdmin = createAdminClient();
+  const helpdeskAdmin = createHelpdeskAdminClient();
 
   const { data: organizations, error: organizationsError } = await supabaseAdmin
     .from('organizations')
@@ -81,17 +83,17 @@ export default async function PradoManagementPage({
   }
 
   const [ticketsResult, commentsResult, eventsResult] = await Promise.all([
-    supabaseAdmin
+    helpdeskAdmin
       .from('helpdesk_tickets')
       .select('id, organization_id, subject, description, priority, status, assignee_name, assignee_email, requested_by_email, escalated_from, unread_for_agent_count, unread_for_user_count, waiting_on, last_comment_at, last_comment_author_email, created_at, updated_at')
       .order('updated_at', { ascending: false })
       .limit(200),
-    supabaseAdmin
+    helpdeskAdmin
       .from('helpdesk_ticket_comments')
       .select('id, ticket_id, author_user_id, author_email, comment, created_at')
       .order('created_at', { ascending: true })
       .limit(2000),
-    supabaseAdmin
+    helpdeskAdmin
       .from('helpdesk_ticket_events')
       .select('id, ticket_id, event_type, event_note, actor_email, created_at')
       .order('created_at', { ascending: false })

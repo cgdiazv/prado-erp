@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabaseServer';
 import { createAdminClient } from '@/lib/supabaseAdmin';
+import { createHelpdeskAdminClient } from '@/lib/helpdeskClient';
 import { isPradoManagementUser } from '@/lib/pradoManagement';
 
 const ALLOWED_SUBSCRIPTION_STATUS = new Set([
@@ -68,7 +69,7 @@ async function applyTicketMessageState({
   role: TicketMessageRole;
   authorEmail: string | null;
 }) {
-  const supabaseAdmin = createAdminClient();
+  const supabaseAdmin = createHelpdeskAdminClient();
   const { data: current, error: currentError } = await supabaseAdmin
     .from('helpdesk_tickets')
     .select('id, unread_for_agent_count, unread_for_user_count')
@@ -176,7 +177,7 @@ export async function createHelpdeskTicket(formData: FormData) {
     managementRedirect(locale, 'error', 'Invalid ticket priority.', organizationIdForRedirect, redirectTo);
   }
 
-  const supabaseAdmin = createAdminClient();
+  const supabaseAdmin = createHelpdeskAdminClient();
 
   const { data: ticket, error: ticketError } = await supabaseAdmin
     .from('helpdesk_tickets')
@@ -241,7 +242,7 @@ export async function updateHelpdeskTicket(formData: FormData) {
     managementRedirect(locale, 'error', 'Invalid ticket priority.', undefined, redirectTo);
   }
 
-  const supabaseAdmin = createAdminClient();
+  const supabaseAdmin = createHelpdeskAdminClient();
 
   const { error: updateError } = await supabaseAdmin
     .from('helpdesk_tickets')
@@ -291,7 +292,7 @@ export async function addHelpdeskTicketComment(formData: FormData) {
     managementRedirect(locale, 'error', 'Comment cannot be empty.', undefined, redirectTo);
   }
 
-  const supabaseAdmin = createAdminClient();
+  const supabaseAdmin = createHelpdeskAdminClient();
 
   const { error: commentError } = await supabaseAdmin
     .from('helpdesk_ticket_comments')
@@ -333,10 +334,11 @@ export async function getHelpdeskInboxSnapshot(locale = 'en') {
   await requireManagementSession(locale);
 
   const supabaseAdmin = createAdminClient();
+  const helpdeskAdmin = createHelpdeskAdminClient();
 
   const [{ data: orgRows }, { data: ticketRows, error: ticketsError }] = await Promise.all([
     supabaseAdmin.from('organizations').select('id, name'),
-    supabaseAdmin
+    helpdeskAdmin
       .from('helpdesk_tickets')
         .select('id, organization_id, subject, description, priority, status, assignee_name, assignee_email, requested_by_email, escalated_from, created_at, updated_at, unread_for_agent_count, unread_for_user_count, waiting_on, last_comment_at, last_comment_author_email')
       .order('updated_at', { ascending: false })
@@ -352,12 +354,12 @@ export async function getHelpdeskInboxSnapshot(locale = 'en') {
 
   const [commentsResult, eventsResult] = ticketIds.length
     ? await Promise.all([
-        supabaseAdmin
+        helpdeskAdmin
           .from('helpdesk_ticket_comments')
           .select('id, ticket_id, author_user_id, author_email, comment, created_at')
           .in('ticket_id', ticketIds)
           .order('created_at', { ascending: true }),
-        supabaseAdmin
+        helpdeskAdmin
           .from('helpdesk_ticket_events')
           .select('id, ticket_id, event_type, event_note, actor_email, created_at')
           .in('ticket_id', ticketIds)
@@ -430,7 +432,7 @@ export async function sendHelpdeskAgentReply({
     return { error: 'Comment cannot be empty.' };
   }
 
-  const supabaseAdmin = createAdminClient();
+  const supabaseAdmin = createHelpdeskAdminClient();
 
   const { error: commentError } = await supabaseAdmin
     .from('helpdesk_ticket_comments')
@@ -478,7 +480,7 @@ export async function markHelpdeskTicketSeenByAgent({
     return { error: 'Ticket ID is required.' };
   }
 
-  const supabaseAdmin = createAdminClient();
+  const supabaseAdmin = createHelpdeskAdminClient();
   const { error } = await supabaseAdmin
     .from('helpdesk_tickets')
     .update({ unread_for_agent_count: 0, updated_at: new Date().toISOString() })
@@ -513,7 +515,7 @@ export async function updateHelpdeskTicketStatusQuick({
     return { error: 'Invalid ticket status.' };
   }
 
-  const supabaseAdmin = createAdminClient();
+  const supabaseAdmin = createHelpdeskAdminClient();
   const { error: updateError } = await supabaseAdmin
     .from('helpdesk_tickets')
     .update({ status: normalizedStatus })

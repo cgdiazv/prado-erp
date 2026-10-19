@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabaseServer';
-import { createAdminClient } from '@/lib/supabaseAdmin';
+import { createHelpdeskAdminClient } from '@/lib/helpdeskClient';
 import { getUserOrganization } from '@/lib/organization';
 import MessengerInbox from '@/components/dashboard/MessengerInbox';
 
@@ -28,7 +28,7 @@ export default async function MessengerPage({ params, searchParams }: MessengerP
     redirect(`/${locale}/auth/access-pending`);
   }
 
-  const admin = createAdminClient();
+  const admin = createHelpdeskAdminClient();
 
   const { data: activeTicket } = await admin
     .from('helpdesk_tickets')
