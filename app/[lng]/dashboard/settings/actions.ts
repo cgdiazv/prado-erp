@@ -378,6 +378,7 @@ export async function updateLaborMarkupSettings(formData: FormData) {
   const markupRaw = (formData.get('defaultMaterialsMarkup') as string | null)?.trim() || '';
   const nightLaborRateRaw = (formData.get('defaultNightLaborRate') as string | null)?.trim() || '';
   const nightLaborCostRaw = (formData.get('defaultNightLaborCost') as string | null)?.trim() || '';
+  const holidayEmergencyLaborRateRaw = (formData.get('defaultHolidayEmergencyLaborRate') as string | null)?.trim() || '';
   const holidayEmergencyLaborCostRaw = (formData.get('defaultHolidayEmergencyLaborCost') as string | null)?.trim() || '';
 
   const parsedLaborRate = Number.parseFloat(laborRateRaw);
@@ -385,6 +386,7 @@ export async function updateLaborMarkupSettings(formData: FormData) {
   const parsedMarkup = Number.parseFloat(markupRaw);
   const parsedNightLaborRate = nightLaborRateRaw ? Number.parseFloat(nightLaborRateRaw) : 135.0;
   const parsedNightLaborCost = nightLaborCostRaw ? Number.parseFloat(nightLaborCostRaw) : 65.0;
+  const parsedHolidayEmergencyLaborRate = holidayEmergencyLaborRateRaw ? Number.parseFloat(holidayEmergencyLaborRateRaw) : 165.0;
   const parsedHolidayEmergencyLaborCost = holidayEmergencyLaborCostRaw ? Number.parseFloat(holidayEmergencyLaborCostRaw) : 75.0;
 
   if (!Number.isFinite(parsedLaborRate) || parsedLaborRate < 0) {
@@ -405,6 +407,10 @@ export async function updateLaborMarkupSettings(formData: FormData) {
 
   if (!Number.isFinite(parsedNightLaborCost) || parsedNightLaborCost < 0) {
     return { error: 'Night hours labor cost must be a valid non-negative number.' };
+  }
+
+  if (!Number.isFinite(parsedHolidayEmergencyLaborRate) || parsedHolidayEmergencyLaborRate < 0) {
+    return { error: 'Holidays and emergency labor rate must be a valid non-negative number.' };
   }
 
   if (!Number.isFinite(parsedHolidayEmergencyLaborCost) || parsedHolidayEmergencyLaborCost < 0) {
@@ -435,6 +441,7 @@ export async function updateLaborMarkupSettings(formData: FormData) {
   const normalizedMarkup = Math.round(parsedMarkup * 100) / 100;
   const normalizedNightLaborRate = Math.round(parsedNightLaborRate * 100) / 100;
   const normalizedNightLaborCost = Math.round(parsedNightLaborCost * 100) / 100;
+  const normalizedHolidayEmergencyLaborRate = Math.round(parsedHolidayEmergencyLaborRate * 100) / 100;
   const normalizedHolidayEmergencyLaborCost = Math.round(parsedHolidayEmergencyLaborCost * 100) / 100;
 
   const adminClient = createAdminClient();
@@ -444,6 +451,7 @@ export async function updateLaborMarkupSettings(formData: FormData) {
     default_materials_markup: normalizedMarkup,
     default_night_labor_rate: normalizedNightLaborRate,
     default_night_labor_cost: normalizedNightLaborCost,
+    default_holiday_emergency_labor_rate: normalizedHolidayEmergencyLaborRate,
     default_holiday_emergency_labor_cost: normalizedHolidayEmergencyLaborCost,
   };
 
@@ -452,9 +460,10 @@ export async function updateLaborMarkupSettings(formData: FormData) {
     .update(updatePayload)
     .eq('id', organization.id);
 
-  if (error && (error.message.includes('default_night_labor_rate') || error.message.includes('default_night_labor_cost') || error.message.includes('default_holiday_emergency_labor_cost') || error.code === '42703')) {
+  if (error && (error.message.includes('default_night_labor_rate') || error.message.includes('default_night_labor_cost') || error.message.includes('default_holiday_emergency_labor_rate') || error.message.includes('default_holiday_emergency_labor_cost') || error.code === '42703')) {
     delete updatePayload.default_night_labor_rate;
     delete updatePayload.default_night_labor_cost;
+    delete updatePayload.default_holiday_emergency_labor_rate;
     delete updatePayload.default_holiday_emergency_labor_cost;
     const retry = await adminClient
       .from('organizations')
@@ -480,6 +489,7 @@ export async function updateLaborMarkupSettings(formData: FormData) {
     materialsMarkup: normalizedMarkup,
     nightLaborRate: normalizedNightLaborRate,
     nightLaborCost: normalizedNightLaborCost,
+    holidayEmergencyLaborRate: normalizedHolidayEmergencyLaborRate,
     holidayEmergencyLaborCost: normalizedHolidayEmergencyLaborCost,
   };
 }

@@ -10,6 +10,7 @@ interface LaborMarkupSettingsPanelProps {
   initialMaterialsMarkup?: number | null;
   initialNightLaborRate?: number | null;
   initialNightLaborCost?: number | null;
+  initialHolidayEmergencyLaborRate?: number | null;
   initialHolidayEmergencyLaborCost?: number | null;
   locale?: string;
 }
@@ -25,6 +26,7 @@ export default function LaborMarkupSettingsPanel({
   initialMaterialsMarkup = 30.0,
   initialNightLaborRate = 135.0,
   initialNightLaborCost = 65.0,
+  initialHolidayEmergencyLaborRate = 165.0,
   initialHolidayEmergencyLaborCost = 75.0,
   locale = 'en',
 }: LaborMarkupSettingsPanelProps) {
@@ -35,6 +37,7 @@ export default function LaborMarkupSettingsPanel({
   const safeInitialMarkup = normalizeMoney(initialMaterialsMarkup, 30.0);
   const safeInitialNightLaborRate = normalizeMoney(initialNightLaborRate, 135.0);
   const safeInitialNightLaborCost = normalizeMoney(initialNightLaborCost, 65.0);
+  const safeInitialHolidayEmergencyLaborRate = normalizeMoney(initialHolidayEmergencyLaborRate, 165.0);
   const safeInitialHolidayEmergencyLaborCost = normalizeMoney(initialHolidayEmergencyLaborCost, 75.0);
 
   const [editing, setEditing] = useState(false);
@@ -45,6 +48,7 @@ export default function LaborMarkupSettingsPanel({
   const [materialsMarkup, setMaterialsMarkup] = useState(safeInitialMarkup);
   const [nightLaborRate, setNightLaborRate] = useState(safeInitialNightLaborRate);
   const [nightLaborCost, setNightLaborCost] = useState(safeInitialNightLaborCost);
+  const [holidayEmergencyLaborRate, setHolidayEmergencyLaborRate] = useState(safeInitialHolidayEmergencyLaborRate);
   const [holidayEmergencyLaborCost, setHolidayEmergencyLaborCost] = useState(safeInitialHolidayEmergencyLaborCost);
 
   const [laborRateInput, setLaborRateInput] = useState(safeInitialLaborRate.toFixed(2));
@@ -52,6 +56,7 @@ export default function LaborMarkupSettingsPanel({
   const [materialsMarkupInput, setMaterialsMarkupInput] = useState(safeInitialMarkup.toFixed(2));
   const [nightLaborRateInput, setNightLaborRateInput] = useState(safeInitialNightLaborRate.toFixed(2));
   const [nightLaborCostInput, setNightLaborCostInput] = useState(safeInitialNightLaborCost.toFixed(2));
+  const [holidayEmergencyLaborRateInput, setHolidayEmergencyLaborRateInput] = useState(safeInitialHolidayEmergencyLaborRate.toFixed(2));
   const [holidayEmergencyLaborCostInput, setHolidayEmergencyLaborCostInput] = useState(safeInitialHolidayEmergencyLaborCost.toFixed(2));
 
   const [statusMessage, setStatusMessage] = useState('');
@@ -63,6 +68,7 @@ export default function LaborMarkupSettingsPanel({
     const markup = normalizeMoney(initialMaterialsMarkup, 30.0);
     const nRate = normalizeMoney(initialNightLaborRate, 135.0);
     const nCost = normalizeMoney(initialNightLaborCost, 65.0);
+    const hRate = normalizeMoney(initialHolidayEmergencyLaborRate, 165.0);
     const hCost = normalizeMoney(initialHolidayEmergencyLaborCost, 75.0);
     setLaborRate(rate);
     setLaborRateInput(rate.toFixed(2));
@@ -74,9 +80,11 @@ export default function LaborMarkupSettingsPanel({
     setNightLaborRateInput(nRate.toFixed(2));
     setNightLaborCost(nCost);
     setNightLaborCostInput(nCost.toFixed(2));
+    setHolidayEmergencyLaborRate(hRate);
+    setHolidayEmergencyLaborRateInput(hRate.toFixed(2));
     setHolidayEmergencyLaborCost(hCost);
     setHolidayEmergencyLaborCostInput(hCost.toFixed(2));
-  }, [initialLaborRate, initialLaborCost, initialMaterialsMarkup, initialNightLaborRate, initialNightLaborCost, initialHolidayEmergencyLaborCost]);
+  }, [initialLaborRate, initialLaborCost, initialMaterialsMarkup, initialNightLaborRate, initialNightLaborCost, initialHolidayEmergencyLaborRate, initialHolidayEmergencyLaborCost]);
 
   const startEditing = () => {
     setStatusMessage('');
@@ -86,6 +94,7 @@ export default function LaborMarkupSettingsPanel({
     setMaterialsMarkupInput(materialsMarkup.toFixed(2));
     setNightLaborRateInput(nightLaborRate.toFixed(2));
     setNightLaborCostInput(nightLaborCost.toFixed(2));
+    setHolidayEmergencyLaborRateInput(holidayEmergencyLaborRate.toFixed(2));
     setHolidayEmergencyLaborCostInput(holidayEmergencyLaborCost.toFixed(2));
     setEditing(true);
   };
@@ -98,6 +107,7 @@ export default function LaborMarkupSettingsPanel({
     setMaterialsMarkupInput(materialsMarkup.toFixed(2));
     setNightLaborRateInput(nightLaborRate.toFixed(2));
     setNightLaborCostInput(nightLaborCost.toFixed(2));
+    setHolidayEmergencyLaborRateInput(holidayEmergencyLaborRate.toFixed(2));
     setHolidayEmergencyLaborCostInput(holidayEmergencyLaborCost.toFixed(2));
   };
 
@@ -121,6 +131,7 @@ export default function LaborMarkupSettingsPanel({
     const parsedMarkup = Number.parseFloat(materialsMarkupInput);
     const parsedNightLaborRate = Number.parseFloat(nightLaborRateInput);
     const parsedNightLaborCost = Number.parseFloat(nightLaborCostInput);
+    const parsedHolidayEmergencyLaborRate = Number.parseFloat(holidayEmergencyLaborRateInput);
     const parsedHolidayEmergencyLaborCost = Number.parseFloat(holidayEmergencyLaborCostInput);
 
     if (!Number.isFinite(parsedLaborRate) || parsedLaborRate < 0) {
@@ -163,6 +174,16 @@ export default function LaborMarkupSettingsPanel({
       return;
     }
 
+    if (!Number.isFinite(parsedHolidayEmergencyLaborRate) || parsedHolidayEmergencyLaborRate < 0) {
+      setLoading(false);
+      setErrorMessage(
+        isEs
+          ? 'Ingresa una tarifa de feriados y emergencias válida (mayor o igual a 0).'
+          : 'Enter a valid holidays and emergency labor rate (>= 0).'
+      );
+      return;
+    }
+
     if (!Number.isFinite(parsedHolidayEmergencyLaborCost) || parsedHolidayEmergencyLaborCost < 0) {
       setLoading(false);
       setErrorMessage(
@@ -180,6 +201,7 @@ export default function LaborMarkupSettingsPanel({
     formData.set('defaultMaterialsMarkup', String(parsedMarkup));
     formData.set('defaultNightLaborRate', String(parsedNightLaborRate));
     formData.set('defaultNightLaborCost', String(parsedNightLaborCost));
+    formData.set('defaultHolidayEmergencyLaborRate', String(parsedHolidayEmergencyLaborRate));
     formData.set('defaultHolidayEmergencyLaborCost', String(parsedHolidayEmergencyLaborCost));
 
     const response = await updateLaborMarkupSettings(formData);
@@ -196,6 +218,10 @@ export default function LaborMarkupSettingsPanel({
     const nextMarkup = normalizeMoney(response?.materialsMarkup, parsedMarkup);
     const nextNightLaborRate = normalizeMoney(response?.nightLaborRate, parsedNightLaborRate);
     const nextNightLaborCost = normalizeMoney(response?.nightLaborCost, parsedNightLaborCost);
+    const nextHolidayEmergencyLaborRate = normalizeMoney(
+      response?.holidayEmergencyLaborRate,
+      parsedHolidayEmergencyLaborRate
+    );
     const nextHolidayEmergencyLaborCost = normalizeMoney(
       response?.holidayEmergencyLaborCost,
       parsedHolidayEmergencyLaborCost
@@ -211,6 +237,8 @@ export default function LaborMarkupSettingsPanel({
     setNightLaborRateInput(nextNightLaborRate.toFixed(2));
     setNightLaborCost(nextNightLaborCost);
     setNightLaborCostInput(nextNightLaborCost.toFixed(2));
+    setHolidayEmergencyLaborRate(nextHolidayEmergencyLaborRate);
+    setHolidayEmergencyLaborRateInput(nextHolidayEmergencyLaborRate.toFixed(2));
     setHolidayEmergencyLaborCost(nextHolidayEmergencyLaborCost);
     setHolidayEmergencyLaborCostInput(nextHolidayEmergencyLaborCost.toFixed(2));
 
@@ -276,7 +304,7 @@ export default function LaborMarkupSettingsPanel({
       <div className="border-y border-slate-200">
         <div className={`px-6 md:px-8 py-5 transition ${editing ? 'bg-emerald-50/40 border-l-4 border-l-emerald-600' : ''}`}>
           <div className="w-full max-w-3xl space-y-5">
-            {/* Row 1: Costs & Markup */}
+            {/* Row 1: Internal Costs */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               {/* Labor Cost */}
               <div>
@@ -370,7 +398,7 @@ export default function LaborMarkupSettingsPanel({
               </div>
             </div>
 
-            {/* Row 2: Standard & Night Rates, Materials Markup */}
+            {/* Row 2: Customer Rates (Standard, Night, Holiday & Emergency) */}
             <div className="pt-4 border-t border-slate-200/60">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {/* Labor Rate */}
@@ -433,7 +461,41 @@ export default function LaborMarkupSettingsPanel({
                   </p>
                 </div>
 
-                {/* Materials Markup */}
+                {/* Holiday & Emergency Labor Rate */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {isEs ? 'Tarifa Feriados y Emergencias ($/hr)' : 'Holidays & Emergency Labor Rate ($/hr)'}
+                  </label>
+                  {editing ? (
+                    <div className="relative mt-1.5">
+                      <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 text-xs">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={holidayEmergencyLaborRateInput}
+                        onChange={(e) => setHolidayEmergencyLaborRateInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="165.00"
+                        className="w-full rounded-lg border border-emerald-300 bg-white pl-6 pr-3 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
+                      />
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-base font-bold text-slate-800 flex items-center gap-1">
+                      <DollarSign className="w-4 h-4 text-amber-600" />
+                      {holidayEmergencyLaborRate.toFixed(2)} / hr
+                    </p>
+                  )}
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    {isEs ? 'Tarifa facturada en feriados o emergencias' : 'Holiday & emergency rate billed to customer'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 3: Materials Markup */}
+            <div className="pt-4 border-t border-slate-200/60">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
                     {isEs ? 'Margen de Materiales (%)' : 'Materials Markup (%)'}

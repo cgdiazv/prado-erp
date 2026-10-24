@@ -43,7 +43,7 @@ export default function MessengerInbox({
       if (typeof document !== 'undefined' && document.visibilityState === 'visible' && !pending) {
         router.refresh();
       }
-    }, 6000);
+    }, 2500);
 
     return () => clearInterval(interval);
   }, [router, pending]);

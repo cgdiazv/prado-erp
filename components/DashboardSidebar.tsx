@@ -33,13 +33,7 @@ export default function DashboardSidebar({
     pathname.startsWith(`/${activeLocale}/dashboard/tracking`) ||
     pathname.startsWith(`/${activeLocale}/dashboard/driver-shift`);
 
-  const [isDispatchExpanded, setIsDispatchExpanded] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('prado_dispatch_expanded');
-      if (saved !== null) return saved === 'true';
-    }
-    return true;
-  });
+  const [isDispatchExpanded, setIsDispatchExpanded] = useState<boolean>(true);
 
   const toggleDispatchExpanded = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -56,6 +50,11 @@ export default function DashboardSidebar({
   useEffect(() => {
     if (isDispatchSublinkActive) {
       setIsDispatchExpanded(true);
+      return;
+    }
+    const saved = localStorage.getItem('prado_dispatch_expanded');
+    if (saved !== null) {
+      setIsDispatchExpanded(saved === 'true');
     }
   }, [isDispatchSublinkActive]);
 

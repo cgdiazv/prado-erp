@@ -233,6 +233,7 @@ export default async function SettingsSectionPage({
                     initialMaterialsMarkup={org.default_materials_markup ?? 30}
                     initialNightLaborRate={org.default_night_labor_rate ?? 135}
                     initialNightLaborCost={org.default_night_labor_cost ?? 65}
+                    initialHolidayEmergencyLaborRate={org.default_holiday_emergency_labor_rate ?? 165}
                     initialHolidayEmergencyLaborCost={org.default_holiday_emergency_labor_cost ?? 75}
                     locale={locale}
                   />
