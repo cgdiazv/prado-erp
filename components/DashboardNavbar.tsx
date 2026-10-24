@@ -225,15 +225,30 @@ export default function DashboardNavbar({
   return (
     <nav className="w-full border-b border-gray-200 bg-white sticky top-0 z-50 px-6 py-3 select-none">
       <div className="mx-auto flex justify-between items-center">
-        {/* Left Side: Logo Branding */}
-        <div className="flex items-center gap-3">
+        {/* Left Side: Mobile Menu Toggle and Logo */}
+        <div className="order-1 flex items-center gap-1 md:order-1">
+          <button
+            onClick={toggleSidebar}
+            className="md:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 focus:outline-none transition cursor-pointer"
+            aria-label="Toggle workspace side menu"
+          >
+            {isSidebarOpen ? (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
           <Link href="/dashboard" className="hover:opacity-95 transition">
             <PradoLogo theme="light" iconType="layers" />
           </Link>
         </div>
 
-        {/* Right Side: Account Settings Avatar & Mobile Menu Toggle */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Right Side: Account Settings Avatar */}
+        <div className="order-3 flex items-center gap-2 sm:gap-3 md:order-2">
           <div className="order-2 flex items-center gap-2 sm:gap-3">
             {/* Notification Bell Icon */}
             <div className="relative mt-0.5" ref={notificationRef}>
@@ -535,22 +550,6 @@ export default function DashboardNavbar({
             </div>
           </div>
 
-          {/* Mobile Hamburger Toggle Trigger Menu Button */}
-          <button
-            onClick={toggleSidebar}
-            className="order-3 md:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 focus:outline-none transition cursor-pointer"
-            aria-label="Toggle workspace side menu"
-          >
-            {isSidebarOpen ? (
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
         </div>
       </div>
     </nav>

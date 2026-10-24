@@ -51,27 +51,29 @@ export default function PublicNavbar({ theme = 'dark', locale = 'en' }: PublicNa
     <>
       <nav className={`sticky top-0 z-50 px-6 py-4 border-b ${navClasses[theme]}`}>
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <Link href="/" className="hover:opacity-95 transition">
-            <PradoLogo theme={theme} iconType="layers" subtitle="Job & Field Operations" />
-          </Link>
+          <div className="flex items-center gap-1">
+            {/* Mobile menu button */}
+            <div className="md:hidden flex items-center">
+              <button
+                onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+                className={`focus:outline-none p-1 rounded-md transition cursor-pointer ${mobileButtonClasses[theme]}`}
+                aria-label={translations.nav.menuAriaLabel}
+              >
+                {isDrawerOpen ? (
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+            </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-              className={`focus:outline-none p-1 rounded-md transition cursor-pointer ${mobileButtonClasses[theme]}`}
-              aria-label={translations.nav.menuAriaLabel}
-            >
-              {isDrawerOpen ? (
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
-            </button>
+            <Link href="/" className="hover:opacity-95 transition">
+              <PradoLogo theme={theme} iconType="layers" subtitle="Job & Field Operations" />
+            </Link>
           </div>
 
           {/* Desktop navigation links */}
