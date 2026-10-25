@@ -465,17 +465,17 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
             <tbody className="divide-y divide-gray-200 bg-white">
               {paginatedJobs.map((job) => (
                 <tr key={job.id} className="hover:bg-gray-50/50 transition duration-150">
-                  <td className="px-4 py-3 text-slate-700 whitespace-nowrap table-date-column">
+                  <td className="px-4 py-3 text-xs text-slate-700 whitespace-nowrap table-date-column">
                     {formatJobDate(job.scheduled_date)}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{job.properties?.street_address || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500">{job.job_type}</td>
-                  <td className="px-4 py-3 text-gray-500">
+                  <td className="px-4 py-3 text-xs text-gray-500">{job.properties?.street_address || '—'}</td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{job.job_type}</td>
+                  <td className="px-4 py-3 text-xs text-gray-500">
                     {job.truck_id
                       ? (trucks.find((t) => t.id === job.truck_id)?.name ?? (isEs ? 'Sin asignar' : 'Unassigned'))
                       : (isEs ? 'Sin asignar' : 'Unassigned')}
                   </td>
-                  <td className="px-4 py-3 font-bold text-slate-800">
+                  <td className="px-4 py-3 text-xs font-bold text-slate-800 whitespace-nowrap">
                     ${Number(job.cost_amount || 0).toFixed(2)}
                     {Number(job.subcontractor_pay_amount || 0) > 0 ? (
                       <span className="block text-[10px] text-emerald-700 font-semibold mt-0.5">

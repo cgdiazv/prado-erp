@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { markInvoiceAsPaid, sendInvoiceOverdueReminderAction, triggerOverdueRemindersForWorkspaceAction } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
-import { Printer, Pencil, BellRing, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { BellRing, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import EditInvoiceModal from './EditInvoiceModal';
+import InvoiceRowActions from './InvoiceRowActions';
 
 type FilterType = 'all' | 'unpaid' | 'paid';
 type SortColumn = 'customer' | 'date' | 'tax' | 'total' | 'status';
@@ -87,6 +88,13 @@ export default function InvoicesLedgerTable({
     } finally {
       setSendingReminderId(null);
     }
+  };
+
+  const handleMarkAsPaid = async (invoiceId: string, customerId: string) => {
+    await markInvoiceAsPaid(invoiceId, customerId);
+    setInvoiceRows((prev) =>
+      prev.map((r) => (r.id === invoiceId ? { ...r, status: 'paid' } : r))
+    );
   };
 
   const handleTriggerBatchReminders = async () => {
@@ -351,12 +359,6 @@ export default function InvoicesLedgerTable({
                     {renderSortIndicator('customer')}
                   </button>
                 </th>
-                <th className="px-4 py-3">
-                  <button type="button" onClick={() => handleSort('tax')} className="inline-flex items-center gap-1">
-                    <span>{translations.dashboard.taxCharge}</span>
-                    {renderSortIndicator('tax')}
-                  </button>
-                </th>
                 <th className="px-4 py-3 text-right">
                   <button type="button" onClick={() => handleSort('total')} className="inline-flex items-center gap-1 justify-end">
                     <span>{translations.dashboard.totalOwed}</span>
@@ -372,7 +374,7 @@ export default function InvoicesLedgerTable({
                     {renderSortIndicator('status')}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-4 py-3 text-right min-w-[160px]">
                   <span>{isEs ? 'Acciones' : 'Actions'}</span>
                 </th>
               </tr>
@@ -387,20 +389,20 @@ export default function InvoicesLedgerTable({
 
                 return (
                   <tr key={inv.id} className="hover:bg-gray-50/50 transition duration-150">
-                    <td className="px-4 py-3 text-slate-700 whitespace-nowrap table-date-column">
+                    <td className="px-4 py-3 text-xs text-slate-700 whitespace-nowrap table-date-column">
                       {new Date(inv.due_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-700">
+                    <td className="px-4 py-3 text-xs text-gray-700">
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-1.5">
-                          <span>{customerName}</span>
+                          <span className="font-bold text-slate-900">{customerName}</span>
                           {inv.invoice_type === 'deposit' && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 text-slate-600 border border-slate-200">
                               {isEs ? 'Anticipo' : 'Deposit'}
                             </span>
                           )}
                           {inv.invoice_type === 'final' && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 text-slate-600 border border-slate-200">
                               {isEs ? 'Saldo' : 'Final'}
                             </span>
                           )}
@@ -412,8 +414,7 @@ export default function InvoicesLedgerTable({
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-500 font-mono">{formatCurrency(Number(inv.tax_amount || 0), rowCurrency)}</td>
-                    <td className="px-4 py-3 text-right font-bold text-slate-800">{formatCurrency(Number(inv.total_amount || 0), rowCurrency)}</td>
+                    <td className="px-4 py-3 text-xs text-right font-bold text-slate-800 whitespace-nowrap">{formatCurrency(Number(inv.total_amount || 0), rowCurrency)}</td>
                     <td className="px-4 py-3 text-right">
                       {inv.status !== 'paid' && inv.stripe_payment_url ? (
                         <a
@@ -455,43 +456,19 @@ export default function InvoicesLedgerTable({
                         </form>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="inline-flex items-center justify-end gap-1">
-                        {inv.status !== 'paid' && inv.due_date && new Date(inv.due_date) < new Date() && (
-                          <button
-                            type="button"
-                            onClick={() => handleSendRowReminder(inv.id)}
-                            disabled={sendingReminderId === inv.id}
-                            title={isEs ? 'Enviar recordatorio de pago' : 'Send payment reminder'}
-                            aria-label={isEs ? 'Enviar recordatorio de pago' : 'Send payment reminder'}
-                            className="inline-flex items-center justify-center p-1.5 rounded-md text-amber-600 hover:text-amber-800 hover:bg-amber-50 transition duration-150 cursor-pointer border border-transparent hover:border-amber-200 disabled:opacity-50"
-                          >
-                            {sendingReminderId === inv.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
-                            ) : (
-                              <BellRing className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setEditingInvoice(inv)}
-                          title={isEs ? 'Editar factura' : 'Edit invoice'}
-                          aria-label={isEs ? 'Editar factura' : 'Edit invoice'}
-                          className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition duration-150 cursor-pointer border border-transparent hover:border-emerald-100"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => window.open(`/api/invoices/${inv.id}/pdf?lng=${locale}`, '_blank', 'noopener,noreferrer')}
-                          title={isEs ? 'Imprimir factura' : 'Print invoice'}
-                          aria-label={isEs ? 'Imprimir factura' : 'Print invoice'}
-                          className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition duration-150 cursor-pointer border border-transparent hover:border-gray-200"
-                        >
-                          <Printer className="w-4 h-4" />
-                        </button>
-                      </div>
+                    <td className="px-4 py-3 text-right min-w-[160px]">
+                      <InvoiceRowActions
+                        invoice={inv}
+                        locale={locale}
+                        translations={translations}
+                        sendingReminderId={sendingReminderId}
+                        onSendReminder={handleSendRowReminder}
+                        onEdit={setEditingInvoice}
+                        onPrint={(invoice) =>
+                          window.open(`/api/invoices/${invoice.id}/pdf?lng=${locale}`, '_blank', 'noopener,noreferrer')
+                        }
+                        onMarkAsPaid={handleMarkAsPaid}
+                      />
                     </td>
                   </tr>
                 );

@@ -688,7 +688,7 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                   </td>
                   <td className="p-4 text-right font-bold text-slate-800 whitespace-nowrap">${estimate.estimated_amount.toFixed(2)}</td>
                   <td className="p-4 text-center whitespace-nowrap">
-                    <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
                       estimate.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
                       estimate.status === 'sent' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
                       estimate.status === 'declined' ? 'bg-red-100 text-red-700 border border-red-200' :

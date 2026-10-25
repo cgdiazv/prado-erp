@@ -279,10 +279,10 @@ export default function CustomersAccountsSection({
                 </tr>
               ) : paginatedCustomers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
+                  <td className="px-4 py-3 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
                     <Link href={`/dashboard/customers/${customer.id}`}>{customer.first_name} {customer.last_name}</Link>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">
+                  <td className="px-4 py-3 text-xs text-gray-500">
                     {customer.email ? (
                       <CustomerEmailModal
                         locale={locale}
@@ -296,11 +296,11 @@ export default function CustomersAccountsSection({
                       '—'
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{formatPhoneDisplay(customer.phone)}</td>
-                  <td className="px-4 py-3 font-bold text-slate-800">
+                  <td className="px-4 py-3 text-xs text-gray-500">{formatPhoneDisplay(customer.phone)}</td>
+                  <td className="px-4 py-3 text-xs font-bold text-slate-800 whitespace-nowrap">
                     {paidBalances[customer.id] > 0 ? `$${paidBalances[customer.id].toFixed(2)}` : '—'}
                   </td>
-                  <td className="px-4 py-3 font-bold text-slate-800">
+                  <td className="px-4 py-3 text-xs font-bold text-slate-800 whitespace-nowrap">
                     {unpaidBalances[customer.id] > 0 ? `$${unpaidBalances[customer.id].toFixed(2)}` : '—'}
                   </td>
                 </tr>
