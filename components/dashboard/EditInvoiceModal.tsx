@@ -59,6 +59,7 @@ export default function EditInvoiceModal({
   const [sendUpdatedEmail, setSendUpdatedEmail] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSendingEmailOnly, setIsSendingEmailOnly] = useState(false);
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -74,6 +75,7 @@ export default function EditInvoiceModal({
       setInvoiceType((invoice.invoice_type as any) || 'standard');
       setNotes(invoice.notes || '');
       setSendUpdatedEmail(false);
+      setIsSendingReminder(false);
       setError(null);
       setSuccessMessage(null);
     }
@@ -202,7 +204,6 @@ export default function EditInvoiceModal({
 
   const isPaid = (invoice.status || '').toLowerCase() === 'paid';
   const isOverdue = !isPaid && Boolean(invoice.due_date && new Date(invoice.due_date) < new Date());
-  const [isSendingReminder, setIsSendingReminder] = useState(false);
 
   const handleSendReminder = async () => {
     if (!invoice.customerEmail) {
