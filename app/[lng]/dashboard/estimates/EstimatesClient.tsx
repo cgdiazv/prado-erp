@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Printer, Plus, Pencil, Send, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import QuoteRowActions from '@/components/dashboard/QuoteRowActions';
 import {
   updateEstimateStatus,
   convertEstimateToJob,
@@ -150,8 +151,8 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         labelEstimatedAmount: 'Importe de la Cotización ($)',
         labelNotes: 'Notas / Alcance del Trabajo',
         notesPlaceholder: 'Detalles sobre materiales, mano de obra o condiciones de entrega...',
-        labelTruck: 'Camión (opcional)',
-        optionSelectTruckOptional: 'Selecciona un camión...',
+        labelTruck: 'Vehículo (opcional)',
+        optionSelectTruckOptional: 'Selecciona un vehículo...',
         cancel: 'Cancelar',
         saveProposal: 'Guardar Cotización',
         updateProposal: 'Actualizar Cotización',
@@ -253,8 +254,8 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         labelEstimatedAmount: 'Quote Amount ($)',
         labelNotes: 'Notes / Scope of Work',
         notesPlaceholder: 'Details about materials, labor, or delivery conditions...',
-        labelTruck: 'Truck (optional)',
-        optionSelectTruckOptional: 'Select a truck...',
+        labelTruck: 'Vehicle (optional)',
+        optionSelectTruckOptional: 'Select a vehicle...',
         cancel: 'Cancel',
         saveProposal: 'Save Quote',
         updateProposal: 'Update Quote',
@@ -697,151 +698,20 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
                     </span>
                   </td>
                   <td className="p-4 text-right min-w-[185px]">
-                    <div className="inline-flex items-center justify-end gap-1.5 flex-wrap">
-                      {estimate.status === 'draft' && (
-                        <>
-                          <Link
-                            href={`/${locale}/dashboard/estimates/${estimate.id}/edit`}
-                            title={t.actionEdit}
-                            aria-label={t.actionEdit}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 transition duration-150 cursor-pointer"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => handleSendEstimate(estimate.id)}
-                            disabled={sendingEstimateId === estimate.id || deletingEstimateId === estimate.id}
-                            title={sendingEstimateId === estimate.id ? t.sendingEmail : t.actionMarkSent}
-                            aria-label={sendingEstimateId === estimate.id ? t.sendingEmail : t.actionMarkSent}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200 hover:border-amber-300 transition duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                          >
-                            {sendingEstimateId === estimate.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteEstimate(estimate.id)}
-                            disabled={deletingEstimateId === estimate.id || sendingEstimateId === estimate.id}
-                            title={deletingEstimateId === estimate.id ? t.deleting : t.actionDelete}
-                            aria-label={deletingEstimateId === estimate.id ? t.deleting : t.actionDelete}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 hover:border-red-300 transition duration-150 cursor-pointer disabled:opacity-50"
-                          >
-                            {deletingEstimateId === estimate.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </>
-                      )}
-                      {estimate.status === 'sent' && (
-                        <>
-                          <Link
-                            href={`/${locale}/dashboard/estimates/${estimate.id}/edit`}
-                            title={t.actionEdit}
-                            aria-label={t.actionEdit}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 transition duration-150 cursor-pointer"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => handleSendEstimate(estimate.id, true)}
-                            disabled={sendingEstimateId === estimate.id}
-                            title={sendingEstimateId === estimate.id ? t.resendingEmail : t.actionResend}
-                            aria-label={sendingEstimateId === estimate.id ? t.resendingEmail : t.actionResend}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-blue-600 hover:text-blue-700 hover:bg-blue-50 border border-blue-200 hover:border-blue-300 transition duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                          >
-                            {sendingEstimateId === estimate.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleStatusChange(estimate.id, 'approved')}
-                            disabled={approvingEstimateId === estimate.id}
-                            title={approvingEstimateId === estimate.id ? t.approveProcessing : t.actionApproveSchedule}
-                            aria-label={approvingEstimateId === estimate.id ? t.approveProcessing : t.actionApproveSchedule}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 transition duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                          >
-                            {approvingEstimateId === estimate.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Check className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleStatusChange(estimate.id, 'declined')}
-                            title={t.actionDecline}
-                            aria-label={t.actionDecline}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 hover:border-red-300 transition duration-150 cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </>
-                      )}
-                      {estimate.status === 'approved' && (
-                        <>
-                          <Link
-                            href={`/${locale}/dashboard/estimates/${estimate.id}/edit`}
-                            title={t.actionEdit}
-                            aria-label={t.actionEdit}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 transition duration-150 cursor-pointer"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => handleSendEstimate(estimate.id, true)}
-                            disabled={sendingEstimateId === estimate.id}
-                            title={sendingEstimateId === estimate.id ? t.resendingEmail : t.actionResend}
-                            aria-label={sendingEstimateId === estimate.id ? t.resendingEmail : t.actionResend}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 transition duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                          >
-                            {sendingEstimateId === estimate.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </>
-                      )}
-                      {estimate.status === 'declined' && (
-                        <>
-                          <span className="text-[10px] text-red-500 font-bold">{t.declined}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleSendEstimate(estimate.id, true)}
-                            disabled={sendingEstimateId === estimate.id}
-                            title={sendingEstimateId === estimate.id ? t.resendingEmail : t.actionResend}
-                            aria-label={sendingEstimateId === estimate.id ? t.resendingEmail : t.actionResend}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 transition duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                          >
-                            {sendingEstimateId === estimate.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => window.open(`/api/estimates/${estimate.id}/pdf?lng=${locale}`, '_blank', 'noopener,noreferrer')}
-                        title={t.actionPrint}
-                        aria-label={t.actionPrint}
-                        className="w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 transition duration-150 cursor-pointer"
-                      >
-                        <Printer className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    <QuoteRowActions
+                      estimate={estimate}
+                      locale={locale}
+                      t={t}
+                      sendingEstimateId={sendingEstimateId}
+                      approvingEstimateId={approvingEstimateId}
+                      deletingEstimateId={deletingEstimateId}
+                      onSendEstimate={handleSendEstimate}
+                      onStatusChange={handleStatusChange}
+                      onDeleteEstimate={handleDeleteEstimate}
+                      onPrint={(estimateId) =>
+                        window.open(`/api/estimates/${estimateId}/pdf?lng=${locale}`, '_blank', 'noopener,noreferrer')
+                      }
+                    />
                   </td>
                 </tr>
               ))

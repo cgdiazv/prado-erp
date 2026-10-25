@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DeleteJobButton from '@/components/DeleteJobButton';
+import JobRowActions from '@/components/dashboard/JobRowActions';
 import { completeJob, updateJobScheduleDetails, createDepositInvoiceForJob } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { downloadICS } from '@/lib/icsExport';
-import { Clock, Calendar, Check, DollarSign, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import CompleteJobModal from '@/components/dashboard/CompleteJobModal';
 
 type FilterType = 'all' | 'scheduled' | 'completed' | 'archived';
@@ -444,7 +444,7 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
                 </th>
                 <th className="px-4 py-3">
                   <button type="button" onClick={() => handleSort('truck')} className="inline-flex items-center gap-1">
-                    <span>{isEs ? 'Camión' : 'Truck'}</span>
+                    <span>{isEs ? 'Vehículo' : 'Vehicle'}</span>
                     {renderSortIndicator('truck')}
                   </button>
                 </th>
@@ -454,7 +454,7 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
                     {renderSortIndicator('cost')}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-right min-w-[170px]">
+                <th className="px-4 py-3 text-right min-w-[160px]">
                   <button type="button" onClick={() => handleSort('action')} className="inline-flex items-center gap-1 justify-end">
                     <span>{translations.dashboard.action}</span>
                     {renderSortIndicator('action')}
@@ -483,78 +483,18 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
                       </span>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3 text-right min-w-[170px]">
-                    <div className="inline-flex items-center justify-end gap-1.5 flex-wrap">
-                      {/* MARK DONE ICON TRIGGER */}
-                      {job.status === 'scheduled' ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => openScheduleDetails(job)}
-                            title={translations.dashboard.scheduleDetails}
-                            aria-label={translations.dashboard.scheduleDetails}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200 hover:border-amber-300 transition duration-150 cursor-pointer"
-                          >
-                            <Clock className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => downloadICS({
-                              id: job.id,
-                              scheduled_date: (job.scheduled_date || '').slice(0, 10),
-                              job_type: job.job_type,
-                              cost_amount: job.cost_amount,
-                              street_address: job.properties?.street_address,
-                              truck_name: job.truck_id ? (trucks.find((t) => t.id === job.truck_id)?.name ?? null) : null,
-                            })}
-                            title={isEs ? 'Exportar al calendario' : 'Export to calendar'}
-                            aria-label={isEs ? 'Exportar al calendario' : 'Export to calendar'}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-blue-600 hover:text-blue-700 hover:bg-blue-50 border border-blue-200 hover:border-blue-300 transition duration-150 cursor-pointer"
-                          >
-                            <Calendar className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleCreateDeposit(job)}
-                            disabled={creatingDepositJobId === job.id}
-                            title={isEs ? 'Generar factura de anticipo (50%)' : 'Create 50% deposit invoice'}
-                            aria-label={isEs ? 'Generar factura de anticipo' : 'Create deposit invoice'}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200 hover:border-amber-300 transition duration-150 cursor-pointer disabled:opacity-50"
-                          >
-                            {creatingDepositJobId === job.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <DollarSign className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setCompletingJob(job)}
-                            title={translations.dashboard.markDone}
-                            aria-label={translations.dashboard.markDone}
-                            className="w-7 h-7 inline-flex items-center justify-center rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 transition duration-150 cursor-pointer"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                          </button>
-                        </>
-                      ) : job.status === 'archived' ? (
-                        <span className="text-[10px] uppercase tracking-wider font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200 shadow-xs select-none">
-                          {translations.dashboard.archived}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md border border-gray-200 shadow-xs select-none">
-                          <span>{translations.dashboard.completed}</span>
-                          {job.completion_photos && job.completion_photos.length > 0 ? (
-                            <span className="text-emerald-600 font-semibold" title={`${job.completion_photos.length} photos`}>
-                              📷 {job.completion_photos.length}
-                            </span>
-                          ) : null}
-                        </span>
-                      )}
-
-                      {/* CLIENT COMPONENT ISOLATION FOR DELETE INTERACTIVITY */}
-                      <DeleteJobButton jobId={job.id} jobStatus={job.status} locale={locale} />
-                    </div>
+                  <td className="px-4 py-3 text-right min-w-[160px]">
+                    <JobRowActions
+                      job={job}
+                      trucks={trucks}
+                      locale={locale}
+                      translations={translations}
+                      onComplete={setCompletingJob}
+                      onOpenScheduleDetails={openScheduleDetails}
+                      onCreateDeposit={handleCreateDeposit}
+                      isCreatingDeposit={creatingDepositJobId === job.id}
+                      onDownloadICS={downloadICS}
+                    />
                   </td>
                 </tr>
               ))}
@@ -624,7 +564,7 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
           <div className="overflow-x-auto">
             <div className="min-w-[980px]">
               <div className="grid grid-cols-[180px_1fr] border border-slate-200 rounded-t-lg bg-slate-50 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                <div className="px-3 py-2 border-r border-slate-200">{isEs ? 'Camion' : 'Truck'}</div>
+                <div className="px-3 py-2 border-r border-slate-200">{isEs ? 'Vehículo' : 'Vehicle'}</div>
                 <div
                   className="grid"
                   style={{ gridTemplateColumns: `repeat(${timelineDays.length}, minmax(68px, 1fr))` }}
