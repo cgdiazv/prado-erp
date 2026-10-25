@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { Filter, Plus } from 'lucide-react';
 import QuoteRowActions from '@/components/dashboard/QuoteRowActions';
 import {
   updateEstimateStatus,
@@ -503,35 +503,33 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
 
             {/* Barra de Filtros + Paginacion */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-6 md:mb-3">
-              {/* Desktop filter buttons */}
-              <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-                {['all', 'draft', 'sent', 'approved', 'declined'].map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setStatusFilter(filter)}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
-                      statusFilter === filter
-                        ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {filter === 'all' ? t.filterAll : filter === 'draft' ? t.filterDraft : filter === 'sent' ? t.filterSent : filter === 'approved' ? t.filterApproved : t.filterDeclined}
-                  </button>
-                ))}
+              {/* Filter dropdown */}
+              <div className="relative inline-flex items-center">
+                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                  <Filter className="w-3.5 h-3.5" />
+                </div>
+                <select
+                  id="estimates-status-filter"
+                  aria-label={isEs ? 'Filtro por estado' : 'Filter by status'}
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="text-xs bg-white border border-gray-300 rounded-md pl-8 pr-7 py-1.5 text-slate-700 font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition cursor-pointer appearance-none"
+                >
+                  {['all', 'draft', 'sent', 'approved', 'declined'].map((filter) => (
+                    <option key={filter} value={filter}>
+                      {filter === 'all' ? t.filterAll : filter === 'draft' ? t.filterDraft : filter === 'sent' ? t.filterSent : filter === 'approved' ? t.filterApproved : t.filterDeclined}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-slate-400">
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                    <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd" />
+                  </svg>
+                </div>
               </div>
-              
-              {/* Mobile filter dropdown */}
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="sm:hidden text-xs bg-white border border-gray-300 rounded-md px-3 py-1.5 text-slate-700 w-full"
-              >
-                {['all', 'draft', 'sent', 'approved', 'declined'].map((filter) => (
-                  <option key={filter} value={filter}>
-                    {filter === 'all' ? t.filterAll : filter === 'draft' ? t.filterDraft : filter === 'sent' ? t.filterSent : filter === 'approved' ? t.filterApproved : t.filterDeclined}
-                  </option>
-                ))}
-              </select>
 
               <div className="flex items-center gap-2 sm:ml-auto">
                 <label htmlFor="estimate-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">

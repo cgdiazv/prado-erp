@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { Filter, Search, X } from 'lucide-react';
 import { getTranslations } from '@/lib/translations';
 import CustomerEmailModal from '@/components/dashboard/CustomerEmailModal';
 
@@ -33,6 +34,7 @@ export default function CustomersAccountsSection({
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
   const [balanceFilter, setBalanceFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [pageSize, setPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortColumn, setSortColumn] = useState<SortColumn>('name');
@@ -40,16 +42,34 @@ export default function CustomersAccountsSection({
   const customerList = customers || [];
 
   const filteredCustomers = useMemo(() => {
+    let list = customerList;
+
     if (balanceFilter === 'unpaid') {
-      return customerList.filter((customer) => (unpaidBalances[customer.id] || 0) > 0);
+      list = list.filter((customer) => (unpaidBalances[customer.id] || 0) > 0);
+    } else if (balanceFilter === 'paid') {
+      list = list.filter((customer) => (paidBalances[customer.id] || 0) > 0);
     }
 
-    if (balanceFilter === 'paid') {
-      return customerList.filter((customer) => (paidBalances[customer.id] || 0) > 0);
+    const query = searchTerm.trim().toLowerCase();
+    if (query) {
+      const queryDigits = query.replace(/\D/g, '');
+      list = list.filter((customer) => {
+        const fullName = `${customer.first_name} ${customer.last_name}`.toLowerCase();
+        const company = (customer.company_name || '').toLowerCase();
+        const nameMatch = fullName.includes(query) || company.includes(query);
+
+        const phone = customer.phone || '';
+        const phoneDigits = phone.replace(/\D/g, '');
+        const phoneMatch =
+          phone.toLowerCase().includes(query) ||
+          (queryDigits.length > 0 && phoneDigits.includes(queryDigits));
+
+        return nameMatch || phoneMatch;
+      });
     }
 
-    return customerList;
-  }, [balanceFilter, customerList, unpaidBalances, paidBalances]);
+    return list;
+  }, [balanceFilter, customerList, unpaidBalances, paidBalances, searchTerm]);
 
   const withoutOptional = (label: string) => label.replace(/\s*\((?:optional|opcional)\)\s*/gi, '').trim();
 
@@ -134,62 +154,60 @@ export default function CustomersAccountsSection({
   return (
     <>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-6 md:mb-2">
-        {/* Desktop filter buttons */}
-        <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-          <button
-            onClick={() => {
-              setBalanceFilter('all');
+        {/* Filter dropdown */}
+        <div className="relative inline-flex items-center">
+          <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+            <Filter className="w-3.5 h-3.5" />
+          </div>
+          <select
+            id="customers-balance-filter"
+            aria-label={isEs ? 'Filtro por saldo' : 'Filter by balance'}
+            value={balanceFilter}
+            onChange={(e) => {
+              setBalanceFilter(e.target.value as any);
               resetToFirstPage();
             }}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
-              balanceFilter === 'all'
-                ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className="text-xs bg-white border border-gray-300 rounded-md pl-8 pr-7 py-1.5 text-slate-700 font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition cursor-pointer appearance-none"
           >
-            {labels.filterAll}
-          </button>
-          <button
-            onClick={() => {
-              setBalanceFilter('unpaid');
-              resetToFirstPage();
-            }}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
-              balanceFilter === 'unpaid'
-                ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {labels.filterUnpaid}
-          </button>
-          <button
-            onClick={() => {
-              setBalanceFilter('paid');
-              resetToFirstPage();
-            }}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 cursor-pointer ${
-              balanceFilter === 'paid'
-                ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {labels.filterPaid}
-          </button>
+            <option value="all">{labels.filterAll}</option>
+            <option value="unpaid">{labels.filterUnpaid}</option>
+            <option value="paid">{labels.filterPaid}</option>
+          </select>
+          <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-slate-400">
+            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd" />
+            </svg>
+          </div>
         </div>
-        
-        {/* Mobile filter dropdown */}
-        <select
-          value={balanceFilter}
-          onChange={(e) => {
-            setBalanceFilter(e.target.value as any);
-            resetToFirstPage();
-          }}
-          className="sm:hidden text-xs bg-white border border-gray-300 rounded-md px-3 py-1.5 text-slate-700 w-full"
-        >
-          <option value="all">{labels.filterAll}</option>
-          <option value="unpaid">{labels.filterUnpaid}</option>
-          <option value="paid">{labels.filterPaid}</option>
-        </select>
+
+        {/* Search bar (between filters and pagination) */}
+        <div className="relative w-full sm:w-64 sm:mx-3">
+          <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+            <Search className="w-3.5 h-3.5" />
+          </div>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              resetToFirstPage();
+            }}
+            placeholder={isEs ? 'Buscar por nombre o teléfono...' : 'Search by name or phone...'}
+            className="w-full bg-white border border-gray-300 rounded-md pl-8 pr-7 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                resetToFirstPage();
+              }}
+              className="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
 
         <div className="flex items-center gap-2 sm:ml-auto">
           <label htmlFor="customers-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">

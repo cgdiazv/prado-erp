@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { markInvoiceAsPaid, sendInvoiceOverdueReminderAction, triggerOverdueRemindersForWorkspaceAction } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
-import { BellRing, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { AlertCircle, BellRing, CheckCircle2, Filter, Loader2 } from 'lucide-react';
 import EditInvoiceModal from './EditInvoiceModal';
 import InvoiceRowActions from './InvoiceRowActions';
 
@@ -253,35 +253,33 @@ export default function InvoicesLedgerTable({
 
       {/* Filter tabs + pagination */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-6 md:mb-3">
-        {/* Desktop filter buttons */}
-        <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-          {filters.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 ${
-                filter === key
-                  ? 'bg-white text-gray-900 shadow-xs border border-gray-200'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        {/* Filter dropdown */}
+        <div className="relative inline-flex items-center">
+          <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+            <Filter className="w-3.5 h-3.5" />
+          </div>
+          <select
+            id="invoices-status-filter"
+            aria-label={isEs ? 'Filtro por estado de factura' : 'Filter by invoice status'}
+            value={filter}
+            onChange={(e) => {
+              setFilter(e.target.value as FilterType);
+              setCurrentPage(1);
+            }}
+            className="text-xs bg-white border border-gray-300 rounded-md pl-8 pr-7 py-1.5 text-slate-700 font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition cursor-pointer appearance-none"
+          >
+            {filters.map(({ key, label }) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-slate-400">
+            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd" />
+            </svg>
+          </div>
         </div>
-        
-        {/* Mobile filter dropdown */}
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as FilterType)}
-          className="sm:hidden text-xs bg-white border border-gray-300 rounded-md px-3 py-1.5 text-slate-700 w-full"
-        >
-          {filters.map(({ key, label }) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </select>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:ml-auto w-full sm:w-auto">
           {overdueCount > 0 && (
