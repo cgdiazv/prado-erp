@@ -9,8 +9,6 @@ import {
   Trash2,
   Save,
   ShieldCheck,
-  Building2,
-  User,
   FileText,
   Clock,
   Package,
@@ -668,10 +666,7 @@ export default function QuoteEditor({
             {/* 1. Customer & Property Card */}
             <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-emerald-600" />
-                  <h2 className="text-sm font-bold text-slate-900">{t.customerSectionTitle}</h2>
-                </div>
+                <h2 className="text-sm font-bold text-slate-900">{t.customerSectionTitle}</h2>
                 {selectedCustomer && (
                   <span className="text-[11px] font-medium text-slate-500">
                     {selectedCustomer.company_name ? `${selectedCustomer.company_name} • ` : ''}
@@ -823,10 +818,7 @@ export default function QuoteEditor({
             {/* 2. Line Items Builder Card */}
             <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <Wrench className="w-4 h-4 text-emerald-600" />
-                  <h2 className="text-sm font-bold text-slate-900">{t.itemsSectionTitle}</h2>
-                </div>
+                <h2 className="text-sm font-bold text-slate-900">{t.itemsSectionTitle}</h2>
 
                 {/* Add Line Buttons */}
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -1235,8 +1227,7 @@ export default function QuoteEditor({
 
             {/* 3. Terms & Scope Notes Card */}
             <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs space-y-4">
-              <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-                <FileText className="w-4 h-4 text-emerald-600" />
+              <div className="border-b border-gray-100 pb-3">
                 <h2 className="text-sm font-bold text-slate-900">{t.termsSectionTitle}</h2>
               </div>
 

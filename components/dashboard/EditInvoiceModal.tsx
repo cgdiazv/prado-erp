@@ -5,7 +5,6 @@ import { updateInvoice, resendInvoiceEmail } from '@/app/actions';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 import {
   X,
-  FileEdit,
   DollarSign,
   Calendar,
   Percent,
@@ -245,12 +244,8 @@ export default function EditInvoiceModal({
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700">
-              <FileEdit className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
+          <div>
+            <div className="flex items-center gap-2">
                 <h3 className="font-bold text-slate-900 text-base">
                   {isEs ? 'Editar Factura' : 'Edit Invoice'} {invoiceNumberLabel}
                 </h3>
@@ -265,10 +260,9 @@ export default function EditInvoiceModal({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500">
-                {invoice.customerName || (isEs ? 'Cliente' : 'Customer')}
-              </p>
-            </div>
+            <p className="text-xs text-slate-500">
+              {invoice.customerName || (isEs ? 'Cliente' : 'Customer')}
+            </p>
           </div>
           <button
             type="button"
