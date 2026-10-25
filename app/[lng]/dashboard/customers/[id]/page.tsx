@@ -164,6 +164,7 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
                 customerName={`${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || customer?.company_name || 'Customer'}
                 customerEmail={customer?.email || null}
                 locale={locale}
+                orgTaxRatePercent={Number(org.invoice_tax_rate_percent ?? 0)}
               />
 
             </div>

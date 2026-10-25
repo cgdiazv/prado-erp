@@ -81,7 +81,11 @@ export default async function InvoicesLedgerPage({
               </p>
             </div>
 
-            <InvoicesLedgerTable invoices={(invoices as InvoiceRow[]) ?? []} locale={locale} />
+            <InvoicesLedgerTable
+              invoices={(invoices as InvoiceRow[]) ?? []}
+              locale={locale}
+              orgTaxRatePercent={Number(org.invoice_tax_rate_percent ?? 0)}
+            />
           </div>
     </main>
   );

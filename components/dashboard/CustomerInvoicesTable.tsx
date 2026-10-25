@@ -27,6 +27,7 @@ interface CustomerInvoicesTableProps {
   customerName?: string;
   customerEmail?: string | null;
   locale?: string;
+  orgTaxRatePercent?: number;
 }
 
 type StatusFilter = 'all' | 'paid' | 'unpaid';
@@ -37,6 +38,7 @@ export default function CustomerInvoicesTable({
   customerName,
   customerEmail,
   locale = 'en',
+  orgTaxRatePercent,
 }: CustomerInvoicesTableProps) {
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
@@ -294,6 +296,7 @@ export default function CustomerInvoicesTable({
           );
         }}
         locale={locale}
+        orgTaxRatePercent={orgTaxRatePercent}
       />
     </div>
   );

@@ -70,7 +70,11 @@ function normalizeOrganizationRow(row: any): UserOrganization {
     stripe_account_payouts_enabled:
       typeof row?.stripe_account_payouts_enabled === 'boolean' ? row.stripe_account_payouts_enabled : false,
     invoice_tax_rate_percent:
-      typeof row?.invoice_tax_rate_percent === 'number' ? row.invoice_tax_rate_percent : 8.25,
+      typeof row?.invoice_tax_rate_percent === 'number'
+        ? row.invoice_tax_rate_percent
+        : (row?.invoice_tax_rate_percent != null && !Number.isNaN(Number(row.invoice_tax_rate_percent))
+            ? Number(row.invoice_tax_rate_percent)
+            : 0),
     invoice_currency_code:
       typeof row?.invoice_currency_code === 'string' ? row.invoice_currency_code : 'USD',
     default_labor_rate:

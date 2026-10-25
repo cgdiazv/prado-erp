@@ -46,13 +46,16 @@ export default function EditInvoiceModal({
   invoice,
   onSuccess,
   locale = 'en',
-  orgTaxRatePercent = 8.25,
+  orgTaxRatePercent = 0,
 }: EditInvoiceModalProps) {
   const isEs = locale.toLowerCase().startsWith('es');
 
   const [dueDate, setDueDate] = useState('');
   const [baseAmount, setBaseAmount] = useState<string>('0');
   const [taxAmount, setTaxAmount] = useState<string>('0');
+  const [taxRatePercent, setTaxRatePercent] = useState<number>(() => {
+    return typeof orgTaxRatePercent === 'number' ? orgTaxRatePercent : 0;
+  });
   const [invoiceType, setInvoiceType] = useState<'standard' | 'deposit' | 'final'>('standard');
   const [notes, setNotes] = useState('');
   const [sendUpdatedEmail, setSendUpdatedEmail] = useState(false);
@@ -67,16 +70,22 @@ export default function EditInvoiceModal({
       const initialTax = Number(invoice.tax_amount || 0);
       const initialBase = Math.max(0, initialTotal - initialTax);
 
+      let effectiveRate = typeof orgTaxRatePercent === 'number' ? orgTaxRatePercent : 0;
+      if (initialBase > 0) {
+        effectiveRate = parseFloat(((initialTax / initialBase) * 100).toFixed(2));
+      }
+
       setDueDate(invoice.due_date ? invoice.due_date.split('T')[0] : new Date().toISOString().split('T')[0]);
       setBaseAmount(initialBase.toFixed(2));
       setTaxAmount(initialTax.toFixed(2));
+      setTaxRatePercent(effectiveRate);
       setInvoiceType((invoice.invoice_type as any) || 'standard');
       setNotes(invoice.notes || '');
       setSendUpdatedEmail(false);
       setError(null);
       setSuccessMessage(null);
     }
-  }, [invoice, isOpen]);
+  }, [invoice, isOpen, orgTaxRatePercent]);
 
   if (!isOpen || !invoice) return null;
 
@@ -86,9 +95,36 @@ export default function EditInvoiceModal({
   const handleBaseAmountChange = (val: string) => {
     setBaseAmount(val);
     const num = parseFloat(val);
-    if (!isNaN(num) && num >= 0 && orgTaxRatePercent > 0) {
-      const autoTax = parseFloat((num * (orgTaxRatePercent / 100)).toFixed(2));
-      setTaxAmount(autoTax.toFixed(2));
+    if (!isNaN(num) && num >= 0) {
+      if (taxRatePercent > 0) {
+        const autoTax = parseFloat((num * (taxRatePercent / 100)).toFixed(2));
+        setTaxAmount(autoTax.toFixed(2));
+      } else {
+        setTaxAmount('0.00');
+      }
+    }
+  };
+
+  const handleTaxAmountChange = (val: string) => {
+    setTaxAmount(val);
+    const parsedTax = parseFloat(val);
+    const parsedBase = parseFloat(baseAmount);
+    if (!isNaN(parsedTax) && !isNaN(parsedBase) && parsedBase > 0) {
+      const computedRate = parseFloat(((parsedTax / parsedBase) * 100).toFixed(2));
+      setTaxRatePercent(computedRate);
+    } else if (parsedTax === 0) {
+      setTaxRatePercent(0);
+    }
+  };
+
+  const handleTaxRatePercentChange = (val: string | number) => {
+    const parsedRate = typeof val === 'number' ? val : parseFloat(val);
+    const validRate = isNaN(parsedRate) ? 0 : Math.max(0, Math.min(100, parsedRate));
+    setTaxRatePercent(validRate);
+    const parsedBase = parseFloat(baseAmount);
+    if (!isNaN(parsedBase) && parsedBase >= 0) {
+      const computedTax = parseFloat((parsedBase * (validRate / 100)).toFixed(2));
+      setTaxAmount(computedTax.toFixed(2));
     }
   };
 
@@ -97,7 +133,7 @@ export default function EditInvoiceModal({
     if (currentBase > 0) {
       const newBase = parseFloat((currentBase * (percentage / 100)).toFixed(2));
       setBaseAmount(newBase.toFixed(2));
-      const newTax = parseFloat((newBase * (orgTaxRatePercent / 100)).toFixed(2));
+      const newTax = parseFloat((newBase * (taxRatePercent / 100)).toFixed(2));
       setTaxAmount(newTax.toFixed(2));
       setInvoiceType('deposit');
       setNotes(isEs ? `Anticipo ${percentage}%` : `${percentage}% Deposit`);
@@ -342,12 +378,41 @@ export default function EditInvoiceModal({
                 {/* Tax Amount */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700">
-                      {isEs ? `Impuestos (${orgTaxRatePercent}%)` : `Tax (${orgTaxRatePercent}%)`}
-                    </label>
-                    <span className="text-[11px] font-semibold text-slate-400">
-                      {currencyCode}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-bold text-slate-700">
+                        {isEs ? 'Impuestos' : 'Tax'}
+                      </label>
+                      <div
+                        className="inline-flex items-center gap-0.5 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 rounded-md px-1.5 py-0.5 transition"
+                        title={isEs ? 'Tasa de impuesto dinámica (%)' : 'Dynamic tax rate (%)'}
+                      >
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          value={taxRatePercent}
+                          onChange={(e) => handleTaxRatePercentChange(e.target.value)}
+                          className="w-10 text-[11px] font-bold text-slate-700 bg-transparent text-right outline-none p-0"
+                        />
+                        <span className="text-[11px] font-bold text-slate-500">%</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {typeof orgTaxRatePercent === 'number' && orgTaxRatePercent !== taxRatePercent && (
+                        <button
+                          type="button"
+                          onClick={() => handleTaxRatePercentChange(orgTaxRatePercent)}
+                          className="text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
+                          title={isEs ? `Restablecer a la tasa de la organización (${orgTaxRatePercent}%)` : `Reset to workspace rate (${orgTaxRatePercent}%)`}
+                        >
+                          {orgTaxRatePercent}% {isEs ? 'Org' : 'Org'}
+                        </button>
+                      )}
+                      <span className="text-[11px] font-semibold text-slate-400">
+                        {currencyCode}
+                      </span>
+                    </div>
                   </div>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xs">
@@ -358,7 +423,7 @@ export default function EditInvoiceModal({
                       step="0.01"
                       min="0"
                       value={taxAmount}
-                      onChange={(e) => setTaxAmount(e.target.value)}
+                      onChange={(e) => handleTaxAmountChange(e.target.value)}
                       className="w-full pl-7 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-mono font-medium text-slate-800"
                     />
                   </div>

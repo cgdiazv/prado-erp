@@ -35,9 +35,14 @@ interface InvoiceRow {
 interface InvoicesLedgerTableProps {
   invoices: InvoiceRow[];
   locale?: string;
+  orgTaxRatePercent?: number;
 }
 
-export default function InvoicesLedgerTable({ invoices, locale = 'en' }: InvoicesLedgerTableProps) {
+export default function InvoicesLedgerTable({
+  invoices,
+  locale = 'en',
+  orgTaxRatePercent,
+}: InvoicesLedgerTableProps) {
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
   const [invoiceRows, setInvoiceRows] = useState<InvoiceRow[]>(invoices);
@@ -520,6 +525,7 @@ export default function InvoicesLedgerTable({ invoices, locale = 'en' }: Invoice
           );
         }}
         locale={locale}
+        orgTaxRatePercent={orgTaxRatePercent}
       />
     </>
   );
