@@ -534,8 +534,8 @@ export default async function PrintReportsPage({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {reportSummary.map((metric) => (
               <div key={metric.label} className="border border-gray-200 rounded-lg p-3 bg-slate-50">
-                <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{metric.label}</p>
-                <p className="text-lg font-extrabold text-slate-900 mt-1">{metric.value}</p>
+                <p className="text-xs uppercase font-semibold tracking-wider text-slate-500">{metric.label}</p>
+                <p className="text-xl font-bold text-slate-900 mt-1">{metric.value}</p>
               </div>
             ))}
           </div>

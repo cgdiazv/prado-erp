@@ -82,16 +82,16 @@ export default async function CustomersPage({
 
             <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
               <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600">{isEs ? 'Total pendiente' : 'Total Unpaid'}</span>
-                <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">${totalUnpaid.toFixed(2)}</p>
+                <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">{isEs ? 'Total pendiente' : 'Total Unpaid'}</span>
+                <p className="text-xl font-bold text-slate-900 mt-1">${totalUnpaid.toFixed(2)}</p>
               </div>
               <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600">{isEs ? 'Total pagado' : 'Total Paid'}</span>
-                <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">${totalPaid.toFixed(2)}</p>
+                <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">{isEs ? 'Total pagado' : 'Total Paid'}</span>
+                <p className="text-xl font-bold text-slate-900 mt-1">${totalPaid.toFixed(2)}</p>
               </div>
               <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{isEs ? 'Neto pendiente' : 'Net Outstanding'}</span>
-                <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">${netOutstanding.toFixed(2)}</p>
+                <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">{isEs ? 'Neto pendiente' : 'Net Outstanding'}</span>
+                <p className="text-xl font-bold text-slate-900 mt-1">${netOutstanding.toFixed(2)}</p>
               </div>
             </div>
             

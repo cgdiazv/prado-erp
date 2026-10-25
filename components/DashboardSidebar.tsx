@@ -6,6 +6,7 @@ import { usePathname, useSearchParams, useParams } from 'next/navigation';
 import { DASHBOARD_MODULES, type DashboardModule } from '@/lib/dashboardRolePermissions.config';
 import { canUseDispatchEngine, canUseExpenseLedger, canUseLiveTracking } from '@/lib/subscriptionAccess';
 import { getTranslations } from '@/lib/translations';
+import { Gift, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface DashboardSidebarProps {
   subscriptionStatus?: string | null; // 'trial' | 'individual' | 'growth' | 'enterprise'
@@ -101,10 +102,10 @@ export default function DashboardSidebar({
 
     // Exact match required for parent dashboard link
     if (path === '/dashboard' && pathname !== localizedPath) {
-      return `flex items-center gap-2.5 px-3.5 py-2 text-sm transition rounded-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium border-l-2 border-transparent`;
+      return `flex items-center gap-2.5 px-3 py-2 text-sm transition rounded-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium border-l-2 border-transparent`;
     }
 
-    return `flex items-center gap-2.5 px-3.5 py-2 text-sm transition rounded-sm ${
+    return `flex items-center gap-2.5 px-3 py-2 text-sm transition rounded-sm ${
       isActive 
         ? 'bg-emerald-50 text-emerald-800 font-semibold border-l-2 border-emerald-600' 
         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium border-l-2 border-transparent'
@@ -148,9 +149,9 @@ export default function DashboardSidebar({
 
       {/* Sidebar Container Panel */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 flex flex-col p-4 select-none shrink-0 
+        fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col p-3 select-none shrink-0 
         transform transition-transform duration-300 ease-in-out
-        md:w-64 md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:translate-x-0 md:z-auto
+        md:w-56 md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:translate-x-0 md:z-auto
         ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:shadow-none'}
       `}>
         <div className="space-y-0.25 flex-1 overflow-y-auto overflow-x-hidden pt-2 md:pt-0">
@@ -209,12 +210,12 @@ export default function DashboardSidebar({
               <Link
                 href={localizedHref('/dashboard/routing')}
                 onClick={closeSidebar}
-                className="flex-1 flex items-center gap-2.5 px-3.5 py-2 text-sm font-medium hover:text-gray-900"
+                className="flex-1 flex items-center gap-2.5 px-3 py-2 text-sm font-medium hover:text-gray-900 min-w-0"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={iconStyle('/dashboard/routing')}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.856 1.928a1.125 1.125 0 01-1.006 0L9.503 3.813a1.125 1.125 0 00-1.006 0L3.622 6.565c-.383.19-.622.58-.622 1.006v12.166c0 .836.88 1.38 1.628 1.006l3.856-1.928a1.125 1.125 0 011.006 0l3.856 1.928a1.125 1.125 0 001.006 0z" />
                 </svg>
-                <span className={pathname.startsWith(`/${activeLocale}/dashboard/routing`) ? 'font-semibold' : ''}>
+                <span className={`whitespace-nowrap truncate ${pathname.startsWith(`/${activeLocale}/dashboard/routing`) ? 'font-semibold' : ''}`}>
                   {translations.dashboard.dispatchRouting}
                 </span>
               </Link>
@@ -226,16 +227,11 @@ export default function DashboardSidebar({
                 aria-expanded={isDispatchExpanded}
                 className="p-1.5 mr-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-200/50 transition cursor-pointer"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${isDispatchExpanded ? 'rotate-180' : ''}`}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                </svg>
+                {isDispatchExpanded ? (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5" />
+                )}
               </button>
             </div>
             {isDispatchExpanded ? (
@@ -286,15 +282,10 @@ export default function DashboardSidebar({
             <Link
               href={localizedHref('/dashboard/settings/manage-subscription')}
               onClick={closeSidebar}
-              className="mt-2 group flex items-center justify-between gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border border-emerald-200/80 transition shadow-2xs"
+              className="mt-2 group flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border border-emerald-200/80 transition shadow-2xs"
             >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-sm shrink-0">🎁</span>
-                <span className="truncate">{isEs ? 'Obtén 50% de Descuento' : 'Get 50% Off Prado'}</span>
-              </div>
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-sm bg-emerald-600 text-white uppercase tracking-wider shrink-0">
-                50% OFF
-              </span>
+              <Gift className="w-4 h-4 text-emerald-600 shrink-0 transition-transform group-hover:scale-110" />
+              <span className="truncate">{isEs ? 'Invita y Gana 50%' : 'Invite & Earn 50%'}</span>
             </Link>
           </div>
         </div>

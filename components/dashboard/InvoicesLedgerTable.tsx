@@ -198,24 +198,24 @@ export default function InvoicesLedgerTable({
     <>
       <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
         <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-red-600">
+          <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">
             {isEs ? 'Total Pendiente' : 'Unpaid Total'}
           </span>
-          <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">{formatCurrency(unpaidTotal, summaryCurrency)}</p>
+          <p className="text-xl font-bold text-slate-900 mt-1">{formatCurrency(unpaidTotal, summaryCurrency)}</p>
         </div>
 
         <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600">
+          <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">
             {isEs ? 'Total Pagado' : 'Paid Total'}
           </span>
-          <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">{formatCurrency(paidTotal, summaryCurrency)}</p>
+          <p className="text-xl font-bold text-slate-900 mt-1">{formatCurrency(paidTotal, summaryCurrency)}</p>
         </div>
 
         <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
+          <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">
             {isEs ? 'Facturas Totales' : 'Total Invoices'}
           </span>
-          <p className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">{totalInvoices}</p>
+          <p className="text-xl font-bold text-slate-900 mt-1">{totalInvoices}</p>
         </div>
       </div>
 
