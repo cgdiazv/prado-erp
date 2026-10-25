@@ -167,7 +167,7 @@ export default function CustomersAccountsSection({
               setBalanceFilter(e.target.value as any);
               resetToFirstPage();
             }}
-            className="text-xs bg-white border border-gray-300 rounded-md pl-8 pr-7 py-1.5 text-slate-700 font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition cursor-pointer appearance-none"
+            className="h-8 text-xs bg-white border border-gray-300 rounded-md pl-8 pr-7 text-slate-700 font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition cursor-pointer appearance-none"
           >
             <option value="all">{labels.filterAll}</option>
             <option value="unpaid">{labels.filterUnpaid}</option>
@@ -193,7 +193,7 @@ export default function CustomersAccountsSection({
               resetToFirstPage();
             }}
             placeholder={isEs ? 'Buscar por nombre o teléfono...' : 'Search by name or phone...'}
-            className="w-full bg-white border border-gray-300 rounded-md pl-8 pr-7 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+            className="w-full h-8 bg-white border border-gray-300 rounded-md pl-8 pr-7 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
           />
           {searchTerm && (
             <button
@@ -220,7 +220,7 @@ export default function CustomersAccountsSection({
               setPageSize(Number(e.target.value));
               resetToFirstPage();
             }}
-            className="text-xs bg-white border border-gray-300 rounded-md px-2 py-1.5 text-slate-700"
+            className="h-8 text-xs bg-white border border-gray-300 rounded-md px-2 text-slate-700"
           >
             {[25, 50, 100].map((size) => (
               <option key={size} value={size}>
@@ -232,7 +232,7 @@ export default function CustomersAccountsSection({
           <button
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-8 inline-flex items-center text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isEs ? 'Anterior' : 'Prev'}
           </button>
@@ -244,7 +244,7 @@ export default function CustomersAccountsSection({
           <button
             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={currentPage >= totalPages}
-            className="text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-8 inline-flex items-center text-xs font-semibold text-slate-700 border border-gray-300 rounded-md px-2.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isEs ? 'Siguiente' : 'Next'}
           </button>
