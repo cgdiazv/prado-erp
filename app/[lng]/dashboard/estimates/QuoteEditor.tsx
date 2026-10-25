@@ -169,6 +169,10 @@ export default function QuoteEditor({
   const [paymentTerms, setPaymentTerms] = useState(
     initialEstimate?.payment_terms || defaultPaymentTerms || 'Due on Receipt'
   );
+  const [isCustomTerms, setIsCustomTerms] = useState<boolean>(() => {
+    const initial = initialEstimate?.payment_terms || defaultPaymentTerms || 'Due on Receipt';
+    return !['Due on Receipt', 'Net 15', 'Net 30', 'Net 60', '50% Deposit / 50% Completion'].includes(initial);
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -541,7 +545,7 @@ export default function QuoteEditor({
     formData.set('title', title);
     formData.set('estimatedAmount', estimatedAmount.toFixed(2));
     formData.set('description', description);
-    formData.set('paymentTerms', paymentTerms);
+    formData.set('paymentTerms', paymentTerms.trim() || 'Due on Receipt');
     formData.set('lineItemsJson', JSON.stringify(validServices));
 
     setIsSaving(true);
@@ -1241,17 +1245,21 @@ export default function QuoteEditor({
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     {t.paymentTermsLabel}
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="space-y-2">
                     <select
-                      value={
-                        ['Due on Receipt', 'Net 15', 'Net 30', 'Net 60', '50% Deposit / 50% Completion'].includes(
-                          paymentTerms
-                        )
-                          ? paymentTerms
-                          : 'Custom'
-                      }
+                      value={isCustomTerms ? 'Custom' : paymentTerms}
                       onChange={(e) => {
-                        if (e.target.value !== 'Custom') {
+                        if (e.target.value === 'Custom') {
+                          setIsCustomTerms(true);
+                          if (
+                            ['Due on Receipt', 'Net 15', 'Net 30', 'Net 60', '50% Deposit / 50% Completion'].includes(
+                              paymentTerms
+                            )
+                          ) {
+                            setPaymentTerms('');
+                          }
+                        } else {
+                          setIsCustomTerms(false);
                           setPaymentTerms(e.target.value);
                         }
                       }}
@@ -1267,13 +1275,16 @@ export default function QuoteEditor({
                       <option value="Custom">{isEs ? 'Personalizado...' : 'Custom...'}</option>
                     </select>
 
-                    <input
-                      type="text"
-                      value={paymentTerms}
-                      onChange={(e) => setPaymentTerms(e.target.value)}
-                      placeholder={t.paymentTermsPlaceholder}
-                      className="w-full bg-white border border-gray-300 rounded-xl p-2.5 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
-                    />
+                    {isCustomTerms && (
+                      <input
+                        type="text"
+                        autoFocus
+                        value={paymentTerms}
+                        onChange={(e) => setPaymentTerms(e.target.value)}
+                        placeholder={t.paymentTermsPlaceholder}
+                        className="w-full bg-white border border-gray-300 rounded-xl p-2.5 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -1357,7 +1368,7 @@ export default function QuoteEditor({
 
                 <div className="flex items-center justify-between text-slate-600">
                   <span>{t.paymentTermsLabel}:</span>
-                  <span className="font-medium text-slate-900 truncate max-w-[180px]">{paymentTerms}</span>
+                  <span className="font-medium text-slate-900 truncate max-w-[180px]">{paymentTerms || (isEs ? 'Personalizado' : 'Custom')}</span>
                 </div>
 
                 {selectedCustomer && (
