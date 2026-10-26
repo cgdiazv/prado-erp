@@ -13,6 +13,7 @@ import InviteMemberEmail from '@/emails/invite-member-email';
 import JobScheduledEmail from '@/emails/job-scheduled-email';
 import JobCompletedEmail from '@/emails/job-completed-email';
 import WelcomeCustomerEmail from '@/emails/welcome-customer-email';
+import QuoteApprovedEmail from '@/emails/quote-approved-email';
 import { enqueueXeroCompletedJobInvoice, enqueueXeroExpenseBill } from '@/app/actions/xeroActions';
 import { syncInvoiceToQBO } from '@/app/actions/qboActions';
 import { geocodeAddressServer } from '@/lib/googleMapsServer';
@@ -3291,7 +3292,7 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
     // 3. Notificar al cliente por email sobre la fecha agendada y los servicios incluidos
     const { data: customer } = await supabase
       .from('customers')
-      .select('first_name, last_name, email')
+      .select('id, first_name, last_name, email')
       .eq('id', estimate.customer_id)
       .limit(1)
       .maybeSingle();
@@ -3299,42 +3300,20 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
     if (customer?.email) {
       const { data: org } = await supabase
         .from('organizations')
-        .select('name, slogan')
+        .select('name, slogan, logo_url, document_email_header_color, invoice_currency_code')
         .eq('id', estimate.organization_id)
         .limit(1)
         .maybeSingle();
 
       const organizationName = org?.name?.trim() || 'Prado ERP';
       const organizationSlogan = org?.slogan?.trim() || '';
+      const organizationLogoUrl = org?.logo_url?.trim() || '';
+      const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org?.document_email_header_color);
+      const invoiceCurrencyCode = (org as any)?.invoice_currency_code || 'USD';
 
-      const parseDescriptionItems = (desc: string | null | undefined) => {
-        if (!desc) return [] as Array<{ name: string; cost: string }>;
-
-        const lines = desc.split(/\r?\n/);
-        const items: Array<{ name: string; cost: string }> = [];
-
-        lines.forEach((line) => {
-          const match = line.match(/^\s*-\s*(.*?):\s*\$(.*?)\s*$/);
-          if (match) {
-            items.push({
-              name: match[1].trim(),
-              cost: Number(match[2].replace(/,/g, '')).toFixed(2),
-            });
-          }
-        });
-
-        return items;
-      };
-
-      const serviceItems = parseDescriptionItems(estimate.description);
-      const formattedDate = Number.isNaN(new Date(`${scheduledDate}T00:00:00`).getTime())
-        ? scheduledDate
-        : new Date(`${scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          });
+      const customerDisplayName =
+        `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Valued Customer';
+      const jobType = estimate.title || 'General Service';
 
       const { data: property } = await supabase
         .from('properties')
@@ -3343,67 +3322,83 @@ export async function convertEstimateToJob(estimateId: string, scheduledDate: st
         .limit(1)
         .maybeSingle();
 
-      const serviceLocation = [property?.street_address, property?.city, property?.state, property?.zip_code]
-        .filter((part) => typeof part === 'string' && part.trim().length > 0)
-        .join(', ') || 'On file with your customer profile';
+      const serviceLocation =
+        [property?.street_address, property?.city, property?.state, property?.zip_code]
+          .filter((part) => typeof part === 'string' && part.trim().length > 0)
+          .join(', ') || null;
 
-      const amountStr = `$${Number(estimate.estimated_amount || 0).toFixed(2)}`;
-      const jobType = estimate.title || 'General Service';
-      const customerDisplayName = customer.first_name || customer.last_name || 'there';
-      const footerYear = new Date().getFullYear();
+      let truckName: string | null = null;
+      if (truckId) {
+        const { data: truck } = await supabase.from('trucks').select('name').eq('id', truckId).maybeSingle();
+        truckName = truck?.name ?? null;
+      }
 
-      const servicesHtml =
-        serviceItems.length > 0
-          ? `<ul style="margin: 10px 0 0 18px; padding: 0; color: #334155;">${serviceItems
-              .map(
-                (item) =>
-                  `<li style="margin: 0 0 6px 0;"><span style="font-weight: 600; color: #0f172a;">${item.name}</span> - $${item.cost}</li>`
-              )
-              .join('')}</ul>`
-          : `<p style="margin: 10px 0 0 0; color: #334155;"><strong>Service:</strong> ${estimate.title}</p>`;
+      const calendarUrl = insertedJob?.id
+        ? buildJobCalendarUrl({
+            id: insertedJob.id,
+            scheduledDate,
+            jobType,
+            address: property?.street_address ?? null,
+            truckName,
+            costAmount: Number(estimate.estimated_amount || 0),
+          })
+        : null;
+
+      const formattedEstimateNumber = formatDocumentNumber('estimate', estimate.estimate_number);
+
+      const emailHtml = await render(
+        QuoteApprovedEmail({
+          customerName: customerDisplayName,
+          estimate,
+          scheduledDate,
+          serviceLocation,
+          truckName,
+          calendarUrl,
+          organizationName,
+          organizationSlogan,
+          organizationLogoUrl,
+          headerColor: documentEmailHeaderColor,
+          currencyCode: invoiceCurrencyCode,
+          paymentTerms: estimate.payment_terms,
+        })
+      );
 
       const resend = new Resend(process.env.RESEND_API_KEY);
       const fromAddress = getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName });
       const replyToAddress = user?.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
 
+      const subject = formattedEstimateNumber
+        ? `${organizationName} Quote ${formattedEstimateNumber} Approved & Scheduled: ${jobType}`
+        : `${organizationName} Quote Approved & Scheduled: ${jobType}`;
+
       try {
-        await resend.emails.send({
+        const sendResult = await resend.emails.send({
           from: fromAddress,
-          to: customer.email,
+          to: [customer.email],
           replyTo: replyToAddress,
-          subject: `${organizationName} Estimate Approved & Scheduled: ${jobType}`,
-          html: `
-            <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b;">
-              <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
-                <div style="background: #009966; padding: 24px; text-align: center; color: #ffffff;">
-                  <h1 style="margin: 0; font-size: 22px; font-weight: 700;">${organizationName}</h1>
-                  <div style="display: inline-block; background: #E6F4EA; color: #009966; font-weight: bold; padding: 6px 12px; border-radius: 20px; font-size: 12px; margin-top: 8px;">ESTIMATE APPROVED &amp; SCHEDULED</div>
-                </div>
-                <div style="padding: 28px;">
-                  <h2 style="margin: 0 0 12px 0;">Great news, ${customerDisplayName}!</h2>
-                  <p style="margin: 0 0 16px 0;">Your estimate has been approved and converted into a scheduled service job.</p>
-                  <div style="background: #f1f5f9; border-radius: 8px; padding: 16px; margin: 20px 0;">
-                    <p style="margin: 0 0 8px 0;"><strong>Scheduled Service:</strong> ${jobType}</p>
-                    <p style="margin: 0 0 8px 0;"><strong>Scheduled Date:</strong> ${formattedDate}</p>
-                    <p style="margin: 0 0 8px 0;"><strong>Service Location:</strong> ${serviceLocation}</p>
-                    <p style="margin: 0;"><strong>Approved Amount:</strong> ${amountStr}</p>
-                  </div>
-                  ${serviceItems.length > 0 ? `<p style="margin: 0 0 10px 0;"><strong>Service Breakdown:</strong></p>${servicesHtml}` : ''}
-                  <p style="margin: 16px 0 0 0;">Our team will arrive as scheduled. If you need to make any changes, feel free to reply to this email.</p>
-                  <p style="margin: 12px 0 0 0;">Best regards,<br/><strong>${organizationName} Operations</strong></p>
-                  ${organizationSlogan ? `<p style="margin: 12px 0 0 0; font-size: 12px; color: #64748b;">${organizationSlogan}</p>` : ''}
-                </div>
-                <div style="background: #f8fafc; padding: 16px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
-                  &copy; ${footerYear} ${organizationName}. All rights reserved.
-                </div>
-              </div>
-            </div>
-          `,
+          subject,
+          html: emailHtml,
         });
+
+        if (customer.id && !sendResult.error && user?.id) {
+          const supabaseAdmin = createAdminClient();
+          await supabaseAdmin.from('customer_email_logs').insert([
+            {
+              organization_id: estimate.organization_id,
+              customer_id: customer.id,
+              sent_by_user_id: user.id,
+              to_email: customer.email.trim(),
+              subject,
+              body_preview: `Quote approved notification dispatched for ${jobType}`,
+              context: 'quote_approved',
+            },
+          ]);
+        }
       } catch (emailErr) {
-        console.error('Estimate approved and scheduled, but email delivery failed:', emailErr);
+        console.error('Quote approved and scheduled, but email delivery failed:', emailErr);
       }
     }
+
 
     revalidatePath('/dashboard/jobs');
     revalidatePath('/dashboard/estimates');
