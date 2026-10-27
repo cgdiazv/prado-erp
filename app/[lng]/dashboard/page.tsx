@@ -464,7 +464,7 @@ export default async function DashboardHome({
           <p className="text-xs text-slate-500 font-medium">{translations.dashboard.metricsSubtitle}</p>
         </div>
 
-        <div className="mt-0 sm:mt-1 flex flex-wrap items-center justify-between gap-2">
+        <div className="!mt-3 flex flex-col-reverse sm:flex-row sm:flex-wrap sm:items-center justify-between gap-3 sm:gap-2">
           <DashboardViewToggle
             activeView={activeView}
             operationsLabel={t.modeOperations}
