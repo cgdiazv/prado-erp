@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
+import Image from 'next/image';
 import { getDashboardSupportThread, sendDashboardSupportMessage } from '@/app/actions/messengerActions';
 
 type SupportMessage = {
@@ -193,14 +194,26 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
         <button
           type="button"
           onClick={toggleModal}
-          title={isEs ? 'Chat de soporte' : 'Support chat'}
-          aria-label={isEs ? 'Chat de soporte' : 'Support chat'}
-          className="fixed bottom-5 right-5 z-40 flex h-13 w-13 md:h-14 md:w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-900/25 transition hover:bg-emerald-700 hover:scale-105 active:scale-95 cursor-pointer"
+          title={isEs ? 'Chat con soporte Prado' : 'Chat with Prado support'}
+          aria-label={isEs ? 'Chat con soporte Prado' : 'Chat with Prado support'}
+          className="group fixed bottom-5 right-5 z-40 flex h-13 w-13 md:h-14 md:w-14 items-center justify-center rounded-full bg-white shadow-xl shadow-slate-900/25 ring-2 ring-white transition hover:scale-105 active:scale-95 cursor-pointer"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-6 w-6">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 19.5A2.625 2.625 0 0021 16.875V7.125A2.625 2.625 0 0018.375 4.5H5.625A2.625 2.625 0 003 7.125v9.75A2.625 2.625 0 005.625 19.5h8.155a2.625 2.625 0 011.857.769l1.594 1.594a.375.375 0 00.64-.265V19.5h.504Z" />
-          </svg>
+          <div className="relative flex h-full w-full items-center justify-center">
+            <div className="h-full w-full overflow-hidden rounded-full">
+              <Image
+                src="/support-agent.jpg"
+                alt={isEs ? 'Soporte Prado' : 'Prado Support'}
+                width={56}
+                height={56}
+                className="h-full w-full object-cover object-center transition duration-200 group-hover:scale-105"
+              />
+            </div>
+            {/* Online Indicator Badge */}
+            <span className="absolute bottom-0 right-0 flex h-3.5 w-3.5 items-center justify-center">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+            </span>
+          </div>
         </button>
       ) : null}
 
@@ -208,17 +221,30 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
         ? createPortal(
           <div className="fixed inset-0 z-[9999] flex h-dvh flex-col overscroll-none bg-white md:inset-auto md:bottom-20 md:right-5 md:h-[min(78vh,680px)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-2xl md:border md:border-slate-200 md:shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-              <button
-                type="button"
-                onClick={toggleModal}
-                className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900"
-                aria-label={isEs ? 'Volver al dashboard' : 'Back to dashboard'}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-                </svg>
-                <span>{isEs ? 'Volver' : 'Back'}</span>
-              </button>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={toggleModal}
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900"
+                  aria-label={isEs ? 'Volver al dashboard' : 'Back to dashboard'}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                  </svg>
+                  <span>{isEs ? 'Volver' : 'Back'}</span>
+                </button>
+
+                <div className="relative h-8 w-8 rounded-full overflow-hidden ring-1 ring-slate-200">
+                  <Image
+                    src="/support-agent.jpg"
+                    alt="Prado Support"
+                    width={32}
+                    height={32}
+                    className="h-full w-full object-cover object-center"
+                  />
+                  <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-white" />
+                </div>
+              </div>
 
               <div className="text-right">
                 <h3 className="text-sm font-bold text-slate-900">{isEs ? 'Chat con Prado' : 'Prado support chat'}</h3>

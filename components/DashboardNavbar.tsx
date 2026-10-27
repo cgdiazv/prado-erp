@@ -458,7 +458,7 @@ export default function DashboardNavbar({
                 aria-haspopup="menu"
                 aria-expanded={showSettingsMenu}
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-sm shadow-xs">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 border border-slate-200/90 text-slate-700 font-bold text-sm shadow-2xs">
                   {displayInitials}
                 </div>
 

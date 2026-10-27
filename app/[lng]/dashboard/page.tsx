@@ -13,7 +13,7 @@ import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import { canUseExpenseLedger } from '@/lib/subscriptionAccess';
 import { getUserOrganization } from '@/lib/organization';
-import { Plus } from 'lucide-react';
+import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions';
 
 type DashboardView = 'operations' | 'financials';
 
@@ -72,6 +72,7 @@ export default async function DashboardHome({
         alertResolveAll: 'Resolver Todo',
         alertResolveNow: 'Resolver Ahora',
         nextActions: 'Plan de Acción',
+        actions: 'Acciones',
         actionScheduleJob: 'Agendar Job',
         actionManageInvoices: 'Gestionar Facturas',
         actionManageEstimates: 'Gestionar Cotizaciones',
@@ -105,6 +106,7 @@ export default async function DashboardHome({
         alertResolveAll: 'Resolve All',
         alertResolveNow: 'Resolve Now',
         nextActions: 'Action Plan',
+        actions: 'Actions',
         actionScheduleJob: 'Schedule Job',
         actionManageInvoices: 'Manage Invoices',
         actionManageEstimates: 'Manage Quotes',
@@ -396,41 +398,17 @@ export default async function DashboardHome({
   ];
 
   const operationsQuickActions = (
-    <div className="tour-quick-actions flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
-      <Link
-        href={`/${locale}/dashboard/estimates`}
-        className="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 shadow-2xs"
-      >
-        <Plus className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-        <span>{t.actionManageEstimates}</span>
-      </Link>
-
-      <Link
-        href={`/${locale}/dashboard/schedule`}
-        className="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 shadow-2xs"
-      >
-        <Plus className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-        <span>{t.actionScheduleJob}</span>
-      </Link>
-
-      <Link
-        href={`/${locale}/dashboard/invoices-ledger`}
-        className="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 shadow-2xs"
-      >
-        <Plus className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-        <span>{t.actionManageInvoices}</span>
-      </Link>
-
-      {canAccessExpenseLedger && (
-        <Link
-          href={`/${locale}/dashboard/expense-ledger`}
-          className="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 shadow-2xs"
-        >
-          <Plus className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-          <span>{t.actionTrackExpenses}</span>
-        </Link>
-      )}
-    </div>
+    <DashboardQuickActions
+      locale={locale}
+      canAccessExpenseLedger={canAccessExpenseLedger}
+      labels={{
+        actions: t.actions,
+        manageQuotes: t.actionManageEstimates,
+        scheduleJob: t.actionScheduleJob,
+        manageInvoices: t.actionManageInvoices,
+        trackExpenses: t.actionTrackExpenses,
+      }}
+    />
   );
 
   const operationsPanel = (
@@ -486,7 +464,7 @@ export default async function DashboardHome({
           <p className="text-xs text-slate-500 font-medium">{translations.dashboard.metricsSubtitle}</p>
         </div>
 
-        <div className="mt-0 sm:mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-0 sm:mt-1 flex flex-wrap items-center justify-between gap-2">
           <DashboardViewToggle
             activeView={activeView}
             operationsLabel={t.modeOperations}
