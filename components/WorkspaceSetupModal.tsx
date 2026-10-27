@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, FormEvent } from 'react';
+import React, { useState, useRef, useEffect, FormEvent } from 'react';
 import { signup } from '@/app/[lng]/auth/actions';
 import { useRouter } from 'next/navigation';
 import { 
@@ -25,7 +25,8 @@ import {
   ShieldCheck,
   Lock,
   Mail,
-  Loader2
+  Loader2,
+  MapPin
 } from 'lucide-react';
 
 import BlurredDashboardPreview from '@/components/BlurredDashboardPreview';
@@ -57,6 +58,125 @@ export default function WorkspaceSetupModal({
   // Status & Error state
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Google Maps Company Suggestions state
+  const [companySuggestions, setCompanySuggestions] = useState<
+    Array<{ placeId: string; name: string; address: string; fullText: string }>
+  >([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState<boolean>(false);
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number>(-1);
+  const companyInputWrapperRef = useRef<HTMLDivElement | null>(null);
+  const companyDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (
+        companyInputWrapperRef.current &&
+        !companyInputWrapperRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      if (companyDebounceRef.current) {
+        clearTimeout(companyDebounceRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const fetchCompanySuggestions = (query: string) => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setCompanySuggestions([]);
+      setShowSuggestions(false);
+      setLoadingSuggestions(false);
+      return;
+    }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    setLoadingSuggestions(true);
+
+    fetch(`/api/places/company-suggestions?query=${encodeURIComponent(trimmed)}`, {
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.suggestions && Array.isArray(data.suggestions)) {
+          setCompanySuggestions(data.suggestions);
+          setShowSuggestions(data.suggestions.length > 0);
+          setSelectedSuggestionIndex(-1);
+        } else {
+          setCompanySuggestions([]);
+          setShowSuggestions(false);
+        }
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.warn('Failed to fetch company suggestions:', err);
+          setCompanySuggestions([]);
+          setShowSuggestions(false);
+        }
+      })
+      .finally(() => {
+        setLoadingSuggestions(false);
+      });
+  };
+
+  const handleCompanyNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCompanyName(val);
+
+    if (companyDebounceRef.current) {
+      clearTimeout(companyDebounceRef.current);
+    }
+
+    companyDebounceRef.current = setTimeout(() => {
+      fetchCompanySuggestions(val);
+    }, 250);
+  };
+
+  const handleSelectSuggestion = (suggestion: { name: string; address: string; fullText: string }) => {
+    setCompanyName(suggestion.name);
+    setShowSuggestions(false);
+    setCompanySuggestions([]);
+    setSelectedSuggestionIndex(-1);
+  };
+
+  const handleCompanyInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || companySuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedSuggestionIndex((prev) =>
+        prev < companySuggestions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedSuggestionIndex((prev) =>
+        prev > 0 ? prev - 1 : companySuggestions.length - 1
+      );
+    } else if (e.key === 'Enter') {
+      if (selectedSuggestionIndex >= 0 && companySuggestions[selectedSuggestionIndex]) {
+        e.preventDefault();
+        handleSelectSuggestion(companySuggestions[selectedSuggestionIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -218,37 +338,31 @@ export default function WorkspaceSetupModal({
                     id: 'Lawn Care & Landscaping',
                     title: 'Lawn Care & Landscaping',
                     icon: Trees,
-                    iconBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
                   },
                   {
                     id: 'HVAC & Refrigeration',
                     title: 'HVAC & Refrigeration',
                     icon: Wind,
-                    iconBg: 'bg-sky-50 text-sky-700 border-sky-200',
                   },
                   {
                     id: 'Plumbing & Drain',
                     title: 'Plumbing & Drain',
                     icon: Wrench,
-                    iconBg: 'bg-blue-50 text-blue-700 border-blue-200',
                   },
                   {
                     id: 'Cleaning & Janitorial',
                     title: 'Cleaning & Janitorial',
                     icon: Sparkles,
-                    iconBg: 'bg-teal-50 text-teal-700 border-teal-200',
                   },
                   {
                     id: 'Roofing & Construction',
                     title: 'Roofing & Construction',
                     icon: Hammer,
-                    iconBg: 'bg-amber-50 text-amber-700 border-amber-200',
                   },
                   {
                     id: 'Other / General Maintenance',
                     title: 'Other / General Maintenance',
                     icon: Settings,
-                    iconBg: 'bg-purple-50 text-purple-700 border-purple-200',
                   },
                 ].map((item) => {
                   const IconComponent = item.icon;
@@ -265,7 +379,11 @@ export default function WorkspaceSetupModal({
                       }`}
                     >
                       <div className="flex justify-between items-start">
-                        <div className={`p-2 rounded-lg border ${item.iconBg}`}>
+                        <div className={`p-2 rounded-lg border transition duration-200 ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            : 'bg-slate-100 border-slate-200 text-slate-600 group-hover:text-slate-900 group-hover:border-slate-300'
+                        }`}>
                           <IconComponent className="w-5 h-5" />
                         </div>
                         {isSelected && (
@@ -335,7 +453,11 @@ export default function WorkspaceSetupModal({
                       }`}
                     >
                       <div className="flex items-center gap-3.5">
-                        <div className={`p-2.5 rounded-lg border ${isSelected ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-100 border-slate-200 text-emerald-700'} group-hover:scale-105 transition`}>
+                        <div className={`p-2.5 rounded-lg border transition duration-200 ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            : 'bg-slate-100 border-slate-200 text-slate-600 group-hover:text-slate-900 group-hover:border-slate-300'
+                        } group-hover:scale-105`}>
                           <IconComp className="w-5 h-5" />
                         </div>
                         <div>
@@ -374,28 +496,24 @@ export default function WorkspaceSetupModal({
                     title: 'Quoting & estimating faster on-site',
                     desc: 'Win jobs on the spot with quick digital estimates',
                     icon: Zap,
-                    color: 'bg-amber-50 text-amber-700 border-amber-200',
                   },
                   {
                     id: 'Route planning & reducing drive time',
                     title: 'Route planning & reducing drive time',
                     desc: 'Save fuel and fit more jobs into every day',
                     icon: Navigation,
-                    color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
                   },
                   {
                     id: 'Chasing unpaid invoices & slow billing',
                     title: 'Chasing unpaid invoices & slow billing',
                     desc: 'Automate payment collection & sync with QBO/Xero',
                     icon: DollarSign,
-                    color: 'bg-teal-50 text-teal-700 border-teal-200',
                   },
                   {
                     id: 'Replacing spreadsheets with one clean system',
                     title: 'Replacing spreadsheets with one clean system',
                     desc: 'Centralize jobs, scheduling, and customer history',
                     icon: FileSpreadsheet,
-                    color: 'bg-indigo-50 text-indigo-700 border-indigo-200',
                   },
                 ].map((item) => {
                   const IconComp = item.icon;
@@ -412,7 +530,11 @@ export default function WorkspaceSetupModal({
                       }`}
                     >
                       <div className="flex items-center gap-3.5">
-                        <div className={`p-2.5 rounded-lg border ${item.color} group-hover:scale-105 transition`}>
+                        <div className={`p-2.5 rounded-lg border transition duration-200 ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            : 'bg-slate-100 border-slate-200 text-slate-600 group-hover:text-slate-900 group-hover:border-slate-300'
+                        } group-hover:scale-105`}>
                           <IconComp className="w-5 h-5" />
                         </div>
                         <div>
@@ -459,9 +581,15 @@ export default function WorkspaceSetupModal({
                 <input type="hidden" name="teamSize" value={teamSize} />
                 <input type="hidden" name="painPoint" value={painPoint} />
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
-                    Company Name
+                <div ref={companyInputWrapperRef} className="relative">
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Company Name</span>
+                    {loadingSuggestions && (
+                      <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 normal-case tracking-normal">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Searching Google Maps...</span>
+                      </span>
+                    )}
                   </label>
                   <div className="relative flex items-center">
                     <Building2 className="absolute left-3.5 w-4 h-4 text-slate-400" />
@@ -469,12 +597,76 @@ export default function WorkspaceSetupModal({
                       type="text"
                       name="companyName"
                       required
+                      autoComplete="off"
                       value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
+                      onChange={handleCompanyNameChange}
+                      onFocus={() => {
+                        if (companySuggestions.length > 0) {
+                          setShowSuggestions(true);
+                        }
+                      }}
+                      onKeyDown={handleCompanyInputKeyDown}
                       placeholder="e.g., Green Clean Lawn Care"
-                      className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 transition placeholder:text-slate-400 font-medium"
+                      className="w-full pl-10 pr-9 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 transition placeholder:text-slate-400 font-medium"
                     />
+                    {loadingSuggestions && (
+                      <div className="absolute right-3.5 text-slate-400 pointer-events-none">
+                        <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                      </div>
+                    )}
                   </div>
+
+                  {/* Google Maps Suggestions Dropdown */}
+                  {showSuggestions && companySuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden py-1 animate-fadeIn">
+                      <div className="px-3.5 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                        <span className="flex items-center gap-1.5">
+                          <MapPin className="w-3 h-3 text-emerald-600" />
+                          <span>Google Maps Suggestions</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-normal">Select to autofill</span>
+                      </div>
+                      <ul className="max-h-56 overflow-y-auto divide-y divide-slate-100">
+                        {companySuggestions.map((item, idx) => {
+                          const isHighlighted = idx === selectedSuggestionIndex;
+                          return (
+                            <li key={item.placeId || idx}>
+                              <button
+                                type="button"
+                                onClick={() => handleSelectSuggestion(item)}
+                                onMouseEnter={() => setSelectedSuggestionIndex(idx)}
+                                className={`w-full px-3.5 py-2.5 flex items-start gap-3 transition text-left cursor-pointer group ${
+                                  isHighlighted
+                                    ? 'bg-emerald-50/80 text-emerald-950'
+                                    : 'hover:bg-slate-50 text-slate-800'
+                                }`}
+                              >
+                                <div className={`p-1.5 rounded-lg border shrink-0 mt-0.5 transition ${
+                                  isHighlighted
+                                    ? 'bg-emerald-600 text-white border-emerald-600'
+                                    : 'bg-slate-100 border-slate-200 text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-700 group-hover:border-emerald-200'
+                                }`}>
+                                  <MapPin className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className={`text-sm font-semibold truncate transition ${
+                                    isHighlighted ? 'text-emerald-950 font-bold' : 'text-slate-900 group-hover:text-emerald-900'
+                                  }`}>
+                                    {item.name}
+                                  </div>
+                                  {item.address && (
+                                    <div className="text-xs text-slate-500 group-hover:text-slate-700 truncate mt-0.5">
+                                      {item.address}
+                                    </div>
+                                  )}
+                                </div>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 <div>
