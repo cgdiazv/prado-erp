@@ -54,7 +54,7 @@ export default function JobScheduledEmail({
                       alt={`${organizationName} logo`}
                       width="22"
                       height="22"
-                      style={{ width: 22, height: 22, borderRadius: 5, objectFit: 'contain', border: '1px solid #e2e8f0', background: '#ffffff', display: 'inline-block' }}
+                      style={{ width: 22, height: 22, objectFit: 'contain', display: 'inline-block' }}
                     />
                   ) : (
                     <span style={{ display: 'inline-block', width: 22, height: 22, lineHeight: '22px', borderRadius: 5, background: '#ffffff', color: normalizedHeaderColor, fontSize: 11, fontWeight: 900, textAlign: 'center' }}>{fallbackInitial}</span>

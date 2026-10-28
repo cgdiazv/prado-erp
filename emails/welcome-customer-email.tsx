@@ -40,7 +40,7 @@ export default function WelcomeCustomerEmail({
               alt={`${headerTitle} logo`}
               width="48"
               height="48"
-              style={{ display: 'block', width: 48, height: 48, margin: '0 auto 12px auto', borderRadius: 8, objectFit: 'contain', background: '#ffffff', padding: 4 }}
+              style={{ display: 'block', width: 48, height: 48, margin: '0 auto 12px auto', objectFit: 'contain' }}
             />
           ) : (
             <div style={{ display: 'inline-block', width: 44, height: 44, lineHeight: '44px', borderRadius: 10, background: '#ffffff', color: normalizedHeaderColor, fontSize: 20, fontWeight: 900, textAlign: 'center', margin: '0 auto 12px auto' }}>

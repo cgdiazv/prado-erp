@@ -134,40 +134,9 @@ export default function QuoteApprovedEmail({
                       alt={`${headerTitle} logo`}
                       width="42"
                       height="42"
-                      style={{
-                        display: 'inline-block',
-                        verticalAlign: 'middle',
-                        width: 42,
-                        height: 42,
-                        marginRight: 12,
-                        borderRadius: 8,
-                        objectFit: 'contain',
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        padding: 2,
-                      }}
+                      style={{ display: 'inline-block', verticalAlign: 'middle', width: 42, height: 42, marginRight: 12, objectFit: 'contain' }}
                     />
-                  ) : (
-                    <div
-                      style={{
-                        display: 'inline-block',
-                        verticalAlign: 'middle',
-                        width: 42,
-                        height: 42,
-                        lineHeight: '42px',
-                        borderRadius: 8,
-                        background: '#f1f5f9',
-                        border: '1px solid #e2e8f0',
-                        color: normalizedHeaderColor,
-                        fontSize: 18,
-                        fontWeight: 800,
-                        textAlign: 'center',
-                        marginRight: 12,
-                      }}
-                    >
-                      {fallbackInitial}
-                    </div>
-                  )}
+                  ) : null}
                   <div style={{ display: 'inline-block', verticalAlign: 'middle' }}>
                     <h1
                       style={{
