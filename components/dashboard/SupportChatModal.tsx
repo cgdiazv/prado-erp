@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { getDashboardSupportThread, sendDashboardSupportMessage } from '@/app/actions/messengerActions';
+import { isWithinSupportBusinessHours } from '@/lib/supportHours';
 
 type SupportMessage = {
   id: string;
@@ -23,6 +24,7 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
   const [isOpen, setIsOpen] = useState(false);
   const [isLoadingThread, setIsLoadingThread] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isSupportOnline, setIsSupportOnline] = useState(() => isWithinSupportBusinessHours());
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [ticketStatus, setTicketStatus] = useState<string | null>(null);
   const [ticketPriority, setTicketPriority] = useState<string | null>(null);
@@ -32,6 +34,14 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
   const [isSending, startTransition] = useTransition();
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    setIsSupportOnline(isWithinSupportBusinessHours());
+    const intervalId = window.setInterval(() => {
+      setIsSupportOnline(isWithinSupportBusinessHours());
+    }, 60000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   const loadThread = async () => {
     setIsLoadingThread(true);
@@ -188,13 +198,21 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
     handleSendMessage();
   };
 
+  const hoursLabel = isEs
+    ? 'Lun–Vie, 9:00 AM – 6:00 PM CST'
+    : 'Mon–Fri, 9:00 AM – 6:00 PM CST';
+
   return (
     <>
       {!isOpen ? (
         <button
           type="button"
           onClick={toggleModal}
-          title={isEs ? 'Chat con soporte Prado' : 'Chat with Prado support'}
+          title={
+            isEs
+              ? `Chat con soporte Prado (${hoursLabel})`
+              : `Chat with Prado support (${hoursLabel})`
+          }
           aria-label={isEs ? 'Chat con soporte Prado' : 'Chat with Prado support'}
           className="group fixed bottom-5 right-5 z-40 flex h-13 w-13 md:h-14 md:w-14 items-center justify-center rounded-full bg-white shadow-xl shadow-slate-900/25 ring-2 ring-white transition hover:scale-105 active:scale-95 cursor-pointer"
         >
@@ -208,10 +226,16 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
                 className="h-full w-full object-cover object-center transition duration-200 group-hover:scale-105"
               />
             </div>
-            {/* Online Indicator Badge */}
+            {/* Online / Off-Hours Indicator Badge */}
             <span className="absolute bottom-0 right-0 flex h-3.5 w-3.5 items-center justify-center">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+              {isSupportOnline ? (
+                <>
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                </>
+              ) : (
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-white" />
+              )}
             </span>
           </div>
         </button>
@@ -242,14 +266,30 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
                     height={32}
                     className="h-full w-full object-cover object-center"
                   />
-                  <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-white" />
+                  <span
+                    className={`absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-white ${
+                      isSupportOnline ? 'bg-emerald-500' : 'bg-amber-400'
+                    }`}
+                  />
                 </div>
               </div>
 
               <div className="text-right">
                 <h3 className="text-sm font-bold text-slate-900">{isEs ? 'Chat con Prado' : 'Prado support chat'}</h3>
-                <div className="mt-1 flex items-center justify-end gap-2">
-                  <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                <p className="text-[10px] text-slate-500">{hoursLabel}</p>
+                <div className="mt-1 flex items-center justify-end gap-1.5">
+                  <span
+                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                      isSupportOnline
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                        : 'border-amber-200 bg-amber-50 text-amber-700'
+                    }`}
+                  >
+                    {isSupportOnline
+                      ? (isEs ? 'En línea' : 'Online')
+                      : (isEs ? 'Fuera de horario' : 'Off hours')}
+                  </span>
+                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700">
                     {statusLabel}
                   </span>
                   {ticketPriority ? (
@@ -262,6 +302,14 @@ export default function SupportChatModal({ locale = 'en', currentUserId }: Suppo
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-4 py-4 space-y-2">
+            {!isSupportOnline ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-3 py-2 text-xs text-amber-800">
+                {isEs
+                  ? 'Nuestro horario de atención en vivo es de lunes a viernes de 9:00 AM a 6:00 PM CST. Déjanos tu mensaje y te responderemos tan pronto como lo veamos.'
+                  : "Our live support hours are Monday to Friday from 9:00 AM to 6:00 PM CST. Leave us a message and we'll get back to you as soon as we see it."}
+              </div>
+            ) : null}
+
             {isLoadingThread ? (
               <p className="text-sm text-slate-500">{isEs ? 'Cargando conversación...' : 'Loading conversation...'}</p>
             ) : null}
