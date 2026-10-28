@@ -3,8 +3,11 @@ import { redirect } from 'next/navigation';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import InvoicesLedgerTable from '@/components/dashboard/InvoicesLedgerTable';
+import CreateInvoiceModal from '@/components/dashboard/CreateInvoiceModal';
 import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { getUserOrganization } from '@/lib/organization';
+
+const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
 interface InvoiceRow {
   id: string;
@@ -52,10 +55,19 @@ export default async function InvoicesLedgerPage({
     redirect(`/${locale}/dashboard?expired=true`);
   }
 
-  const { data: customers } = await supabase
-    .from('customers')
-    .select('id')
-    .eq('organization_id', org.id);
+  const [{ data: customers }, { data: services }] = await Promise.all([
+    supabase
+      .from('customers')
+      .select('id, first_name, last_name, company_name, email')
+      .eq('organization_id', org.id)
+      .order('first_name', { ascending: true }),
+    supabase
+      .from('services')
+      .select('id, name, base_price')
+      .eq('organization_id', org.id)
+      .not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`)
+      .order('name', { ascending: true }),
+  ]);
 
   const customerIds = customers?.map((customer) => customer.id) || [];
 
@@ -70,15 +82,24 @@ export default async function InvoicesLedgerPage({
   return (
         <main className="flex-1 overflow-y-auto">
           <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                {translations.dashboard.invoicesAndLedger}
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                {isEs
-                  ? 'Monitorea el estado de pago de todas las facturas emitidas en tu workspace.'
-                  : 'Monitor payment status for all invoices issued in your workspace.'}
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                  {translations.dashboard.invoicesAndLedger}
+                </h1>
+                <p className="text-xs text-slate-400 mt-1">
+                  {isEs
+                    ? 'Monitorea el estado de pago de todas las facturas emitidas en tu workspace.'
+                    : 'Monitor payment status for all invoices issued in your workspace.'}
+                </p>
+              </div>
+              <CreateInvoiceModal
+                customers={customers || []}
+                services={services || []}
+                orgTaxRatePercent={Number(org.invoice_tax_rate_percent ?? 0)}
+                currencyCode={org.invoice_currency_code}
+                locale={locale}
+              />
             </div>
 
             <InvoicesLedgerTable

@@ -6,6 +6,7 @@ import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 import { Printer, Pencil } from 'lucide-react';
 import EditInvoiceModal from './EditInvoiceModal';
+import CreateInvoiceModal from './CreateInvoiceModal';
 
 interface InvoiceRow {
   id: string;
@@ -89,7 +90,17 @@ export default function CustomerInvoicesTable({
 
   return (
     <div className="space-y-3">
-      <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{translations.dashboard.invoicesAndLedger}</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{translations.dashboard.invoicesAndLedger}</h2>
+        <CreateInvoiceModal
+          defaultCustomerId={customerId}
+          defaultCustomerName={customerName}
+          defaultCustomerEmail={customerEmail}
+          orgTaxRatePercent={orgTaxRatePercent}
+          locale={locale}
+          onSuccess={(newInvoice) => setRows((prev) => [newInvoice, ...prev])}
+        />
+      </div>
 
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

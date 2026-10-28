@@ -2406,6 +2406,260 @@ export async function createDepositInvoiceForJob(
   }
 }
 
+export async function createManualInvoice(payload: {
+  customerId: string;
+  dueDate: string;
+  totalAmount: number;
+  taxAmount: number;
+  notes?: string | null;
+  invoiceType?: 'standard' | 'deposit' | 'final' | string;
+  sendEmail?: boolean;
+}) {
+  if (!payload.customerId) return { error: 'Please select a customer.' };
+  if (!payload.dueDate) return { error: 'Please select a due date.' };
+
+  const totalAmount = parseFloat(Number(payload.totalAmount || 0).toFixed(2));
+  const taxAmount = Math.max(0, parseFloat(Number(payload.taxAmount || 0).toFixed(2)));
+  const baseAmount = Math.max(0, parseFloat((totalAmount - taxAmount).toFixed(2)));
+
+  if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+    return { error: 'Total amount must be greater than 0.' };
+  }
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: 'Unauthorized operational execution.' };
+
+    const { organization: defaultOrg } = await getUserOrganization(user.id);
+    const adminClient = createAdminClient();
+
+    const { data: customerMeta, error: customerError } = await adminClient
+      .from('customers')
+      .select('id, first_name, last_name, company_name, email, organization_id')
+      .eq('id', payload.customerId)
+      .maybeSingle();
+
+    if (customerError || !customerMeta) {
+      return { error: 'Customer not found.' };
+    }
+
+    const targetOrgId = customerMeta.organization_id || defaultOrg?.id;
+    let org = defaultOrg;
+
+    if (targetOrgId && org?.id !== targetOrgId) {
+      const access = await verifyUserOrganizationAccess(user.id, targetOrgId);
+      if (!access.authorized) {
+        return { error: 'Forbidden.' };
+      }
+      org = access.organization || defaultOrg;
+    }
+
+    if (!org) return { error: 'Organization not found.' };
+
+    const currencyCode = normalizeCurrencyCode(org.invoice_currency_code);
+    const taxRatePercent =
+      baseAmount > 0
+        ? parseFloat(((taxAmount / baseAmount) * 100).toFixed(2))
+        : normalizeInvoiceTaxRatePercent(org.invoice_tax_rate_percent);
+    const invoiceType = payload.invoiceType || 'standard';
+    const cleanNotes = payload.notes?.trim() || null;
+    const serviceName = cleanNotes || 'Service Invoice';
+
+    const invoiceNumber = await reserveDocumentNumber(supabase, org.id, 'invoice');
+
+    const insertPayload: Record<string, any> = {
+      organization_id: org.id,
+      customer_id: customerMeta.id,
+      invoice_number: invoiceNumber,
+      due_date: payload.dueDate,
+      status: 'unpaid',
+      total_amount: totalAmount,
+      tax_amount: taxAmount,
+      currency_code: currencyCode,
+      invoice_type: invoiceType,
+      notes: cleanNotes,
+    };
+
+    let { data: invoiceRecord, error: invError } = await adminClient
+      .from('invoices')
+      .insert([insertPayload])
+      .select('id, invoice_number')
+      .single();
+
+    if (invError && (invError.message?.includes('schema cache') || invError.message?.includes('column'))) {
+      delete insertPayload.invoice_type;
+      delete insertPayload.notes;
+      const retry = await adminClient
+        .from('invoices')
+        .insert([insertPayload])
+        .select('id, invoice_number')
+        .single();
+      invoiceRecord = retry.data;
+      invError = retry.error;
+    }
+
+    if (invError || !invoiceRecord) {
+      return { error: invError?.message || 'Failed to create invoice.' };
+    }
+
+    const customerDisplayName =
+      `${customerMeta.first_name || ''} ${customerMeta.last_name || ''}`.trim() ||
+      customerMeta.company_name ||
+      'Prado Customer';
+
+    let paymentUrl: string | null = null;
+    let stripeSessionId: string | null = null;
+
+    if (
+      org.id &&
+      canUseOnlineInvoicePayments(org.subscription_status) &&
+      org.stripe_account_id &&
+      org.stripe_account_charges_enabled &&
+      org.stripe_account_payouts_enabled &&
+      customerMeta.email
+    ) {
+      try {
+        const session = await createInvoiceCheckoutSession({
+          invoiceId: invoiceRecord.id,
+          organizationId: org.id,
+          customerId: customerMeta.id,
+          stripeAccountId: org.stripe_account_id,
+          customerEmail: customerMeta.email,
+          customerName: customerDisplayName,
+          serviceName,
+          baseAmount,
+          taxAmount,
+          taxRatePercent,
+          currencyCode,
+          totalAmount,
+          enableAutopayIfPossible: false,
+        });
+
+        paymentUrl = session?.paymentUrl || null;
+        stripeSessionId = session?.sessionId || null;
+
+        if (paymentUrl || stripeSessionId) {
+          await adminClient
+            .from('invoices')
+            .update({
+              stripe_payment_url: paymentUrl,
+              stripe_checkout_session_id: stripeSessionId,
+              stripe_payment_status: 'open',
+            })
+            .eq('id', invoiceRecord.id);
+        }
+      } catch (stripeErr) {
+        console.error('Failed to create Stripe link for manual invoice:', stripeErr);
+      }
+    }
+
+    if (org.id && invoiceRecord.id && !stripeSessionId) {
+      enqueueXeroCompletedJobInvoice({
+        organizationId: org.id,
+        customerName: customerDisplayName,
+        customerEmail: customerMeta.email || null,
+        jobType: serviceName,
+        invoiceId: invoiceRecord.id,
+        invoiceNumber: invoiceRecord.invoice_number,
+        dueDate: payload.dueDate,
+        baseAmount,
+        taxAmount,
+        taxRatePercent,
+        currencyCode,
+      }).catch((err) => console.error('Xero queue warning (manual invoice kept in Prado):', err));
+
+      syncInvoiceToQBO({
+        organizationId: org.id,
+        customerName: customerDisplayName,
+        customerEmail: customerMeta.email || null,
+        jobType: serviceName,
+        invoiceNumber: invoiceRecord.invoice_number,
+        dueDate: payload.dueDate,
+        baseAmount,
+        taxAmount,
+        taxRatePercent,
+        currencyCode,
+      }).catch((err) => console.error('QBO sync warning (manual invoice kept in Prado):', err));
+    }
+
+    if (payload.sendEmail && customerMeta.email) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const organizationName = org.name?.trim() || 'Prado ERP';
+        const fromAddress = getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName });
+        const replyToAddress = user.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
+        const formattedInvNum = formatDocumentNumber('invoice', invoiceRecord.invoice_number);
+
+        const html = await render(
+          InvoiceEmail({
+            customerName: customerDisplayName,
+            serviceName,
+            dueDate: payload.dueDate,
+            baseAmount,
+            taxAmount,
+            taxRatePercent,
+            currencyCode,
+            totalAmount,
+            invoiceNumber: invoiceRecord.invoice_number,
+            paymentUrl: paymentUrl || undefined,
+            organizationName,
+            organizationSlogan: org.slogan?.trim() || '',
+            organizationLogoUrl: org.logo_url?.trim() || '',
+            headerColor: normalizeDocumentEmailHeaderColor(org.document_email_header_color),
+          })
+        );
+
+        await resend.emails.send({
+          from: fromAddress,
+          to: customerMeta.email,
+          replyTo: replyToAddress,
+          subject: formattedInvNum
+            ? `${organizationName} Invoice ${formattedInvNum}`
+            : `Invoice - ${serviceName}`,
+          html,
+        });
+      } catch (emailErr) {
+        console.error('Failed to send manual invoice email:', emailErr);
+      }
+    }
+
+    revalidatePath('/dashboard/invoices-ledger');
+    revalidatePath('/[lng]/dashboard/invoices-ledger');
+    revalidatePath(`/dashboard/customers/${customerMeta.id}`);
+    revalidatePath(`/[lng]/dashboard/customers/${customerMeta.id}`);
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      invoice: {
+        id: invoiceRecord.id,
+        customer_id: customerMeta.id,
+        invoice_number: invoiceRecord.invoice_number,
+        due_date: payload.dueDate,
+        tax_amount: taxAmount,
+        total_amount: totalAmount,
+        currency_code: currencyCode,
+        status: 'unpaid' as const,
+        stripe_payment_url: paymentUrl,
+        invoice_type: invoiceType,
+        notes: cleanNotes,
+        customers: {
+          first_name: customerMeta.first_name,
+          last_name: customerMeta.last_name,
+          company_name: customerMeta.company_name,
+          email: customerMeta.email,
+        },
+      },
+    };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to create invoice.' };
+  }
+}
+
 export async function submitSupportTicket(formData: FormData) {
   const name = formData.get('name') as string;
   const email = formData.get('email') as string;
