@@ -12,36 +12,37 @@ export default function SupportHubPage() {
   const translations = getTranslations(locale);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-950 font-sans">
-      
-      {/* Shared Navigation Header Component with Global Mobile Drawer Context */}
-      <PublicNavbar theme="dark" locale={locale} />
+    <div className="min-h-screen bg-white text-[#101828] flex flex-col selection:bg-[#0a9d73] selection:text-white font-sans">
+      {/* Navigation Header */}
+      <PublicNavbar theme="light" locale={locale} />
 
       {/* Main Container Grid Viewport */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-12 text-left items-start">
-        
+      <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-16 sm:py-20 grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-12 text-left items-start">
         {/* Left Side Info Blocks */}
         <div className="lg:col-span-1 space-y-6">
           <header className="space-y-3">
-            <span className="inline-flex items-center gap-2.5 bg-emerald-950/40 border border-emerald-800/60 rounded-full px-3.5 py-1 text-xs text-emerald-400 font-medium backdrop-blur-xs">
-              {translations.support.badge}
+            <span className="inline-flex items-center gap-2 bg-[#f0fdf9] border border-[#a7f3d0] rounded-full px-3.5 py-1 text-xs font-semibold text-[#0a9d73]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#0a9d73] animate-pulse" />
+              <span>{translations.support.badge}</span>
             </span>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+            <h1 className="text-3xl md:text-4xl font-bold text-[#101828] tracking-tight">
               {translations.support.title}
             </h1>
-            <p className="text-xs md:text-sm text-slate-400 leading-relaxed font-medium">
+            <p className="text-sm text-[#667085] leading-relaxed">
               {translations.support.description}
             </p>
           </header>
 
-          <div className="border border-slate-900 bg-slate-900/10 p-4 rounded-xl space-y-3">
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">{translations.support.inboxTitle}</h3>
-            <p className="text-xs text-slate-400 font-medium">
+          <div className="border border-[#eaecf0] bg-[#fcfcfd] p-5 rounded-2xl space-y-3 shadow-xs">
+            <h3 className="text-xs font-bold text-[#101828] uppercase tracking-wider">
+              {translations.support.inboxTitle}
+            </h3>
+            <p className="text-xs text-[#667085] leading-relaxed">
               {translations.support.inboxBody}
             </p>
-            <a 
-              href="mailto:support@pradojob.com" 
-              className="block text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition underline decoration-emerald-500/30"
+            <a
+              href="mailto:support@pradojob.com"
+              className="inline-block text-xs font-semibold text-[#0a9d73] hover:text-[#088763] transition underline decoration-[#0a9d73]/30"
             >
               support@pradojob.com
             </a>
@@ -50,13 +51,12 @@ export default function SupportHubPage() {
 
         {/* Right Side Interactive Ticketing Section Form Container */}
         <div className="lg:col-span-2">
-          <SupportTicketForm locale={locale} theme="dark" />
+          <SupportTicketForm locale={locale} theme="light" />
         </div>
-
       </main>
 
       {/* Reusable Public Main Site Footer Component */}
       <Footer locale={locale} />
     </div>
   );
-}
+}

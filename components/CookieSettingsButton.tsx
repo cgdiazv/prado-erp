@@ -17,7 +17,7 @@ export default function CookieSettingsButton({ locale }: CookieSettingsButtonPro
     <button
       type="button"
       onClick={openCookieSettings}
-      className="inline-flex items-center rounded-full border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-300 transition hover:border-emerald-400 hover:text-emerald-200"
+      className="inline-flex items-center rounded-xl border border-[#d0d5dd] bg-white px-4 py-2 text-xs font-semibold text-[#344054] shadow-xs transition hover:border-[#0a9d73] hover:text-[#0a9d73] hover:bg-[#f9fafb] cursor-pointer"
     >
       {translations.cookies.managePreferences}
     </button>

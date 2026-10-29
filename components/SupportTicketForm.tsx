@@ -18,30 +18,35 @@ export default function SupportTicketForm({ locale = 'en', theme = 'light' }: Su
 
   const panelClassName = isDark
     ? 'bg-slate-900/20 border border-slate-900 rounded-2xl p-6 md:p-8 shadow-xl'
-    : 'bg-white border border-gray-200 rounded-2xl p-6 shadow-sm';
-  const titleClassName = isDark ? 'text-lg font-bold text-white tracking-tight mb-1' : 'text-lg font-bold text-slate-900 tracking-tight mb-1';
-  const descriptionClassName = isDark ? 'text-xs text-slate-400 mb-6 font-medium' : 'text-xs text-slate-500 mb-6 font-medium';
+    : 'bg-white border border-[#eaecf0] rounded-2xl p-6 sm:p-8 shadow-xs';
+  const titleClassName = isDark
+    ? 'text-lg font-bold text-white tracking-tight mb-1'
+    : 'text-xl font-bold text-[#101828] tracking-tight mb-1';
+  const descriptionClassName = isDark
+    ? 'text-xs text-slate-400 mb-6 font-medium'
+    : 'text-xs sm:text-sm text-[#667085] mb-6 font-normal';
   const successClassName = isDark
     ? 'p-6 bg-emerald-950/40 border border-emerald-800/60 text-emerald-400 text-xs rounded-xl font-semibold text-center leading-relaxed'
-    : 'p-6 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl font-semibold text-center leading-relaxed';
+    : 'p-6 bg-[#f0fdf9] border border-[#a7f3d0] text-[#0a9d73] text-sm rounded-xl font-semibold text-center leading-relaxed';
   const errorClassName = isDark
     ? 'p-3 bg-rose-950/40 border border-rose-800/60 text-rose-400 text-xs rounded-lg font-medium'
-    : 'p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg font-medium';
+    : 'p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium';
   const labelClassName = isDark
     ? 'block text-[10px] font-bold uppercase text-slate-400 mb-1.5 tracking-wider'
-    : 'block text-[10px] font-bold uppercase text-slate-500 mb-1.5 tracking-wider';
+    : 'block text-xs font-semibold text-[#344054] mb-1.5';
   const inputClassName = isDark
     ? 'w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 outline-none focus:ring-1 focus:ring-emerald-500 transition font-medium'
-    : 'w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs text-slate-900 outline-none focus:ring-1 focus:ring-emerald-500 transition font-medium';
+    : 'w-full bg-[#fcfcfd] border border-[#d0d5dd] rounded-xl px-3.5 py-2.5 text-sm text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#0a9d73] focus:ring-2 focus:ring-[#0a9d73]/20 transition';
   const selectClassName = isDark
     ? 'w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-300 outline-none focus:ring-1 focus:ring-emerald-500 transition font-medium cursor-pointer'
-    : 'w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs text-slate-900 outline-none focus:ring-1 focus:ring-emerald-500 transition font-medium cursor-pointer';
+    : 'w-full bg-[#fcfcfd] border border-[#d0d5dd] rounded-xl px-3.5 py-2.5 text-sm text-[#101828] outline-none focus:border-[#0a9d73] focus:ring-2 focus:ring-[#0a9d73]/20 transition cursor-pointer';
   const textareaClassName = isDark
     ? 'w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 outline-none focus:ring-1 focus:ring-emerald-500 transition font-medium resize-none leading-relaxed'
-    : 'w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs text-slate-900 outline-none focus:ring-1 focus:ring-emerald-500 transition font-medium resize-none leading-relaxed';
+    : 'w-full bg-[#fcfcfd] border border-[#d0d5dd] rounded-xl p-3.5 text-sm text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#0a9d73] focus:ring-2 focus:ring-[#0a9d73]/20 transition resize-none leading-relaxed';
   const buttonClassName = isDark
     ? 'w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:cursor-not-allowed text-white text-xs font-bold py-3 rounded-xl transition shadow-xl mt-2 cursor-pointer outline-none focus:ring-2 focus:ring-emerald-500'
-    : 'w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs font-bold py-3 rounded-xl transition shadow-sm mt-2 cursor-pointer outline-none focus:ring-2 focus:ring-emerald-500';
+    : 'w-full bg-[#0a9d73] hover:bg-[#088763] disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold py-3.5 rounded-xl transition shadow-sm hover:shadow-md mt-2 cursor-pointer outline-none focus:ring-2 focus:ring-[#0a9d73]/30';
+
 
   return (
     <div className={panelClassName}>
