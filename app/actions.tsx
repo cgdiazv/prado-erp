@@ -1960,6 +1960,8 @@ export async function updateInvoice(
             organizationSlogan,
             organizationLogoUrl,
             headerColor: documentEmailHeaderColor,
+            notes: notes !== undefined ? (notes || undefined) : (invoice.notes || undefined),
+            photos: (invoice as any).photos || undefined,
           })
         );
 
@@ -2027,6 +2029,7 @@ export async function resendInvoiceEmail(invoiceId: string) {
         status,
         stripe_payment_url,
         notes,
+        photos,
         customers (
           id,
           first_name,
@@ -2105,6 +2108,8 @@ export async function resendInvoiceEmail(invoiceId: string) {
         organizationSlogan,
         organizationLogoUrl,
         headerColor: documentEmailHeaderColor,
+        notes: invoice.notes || undefined,
+        photos: (invoice as any).photos || undefined,
       })
     );
 
@@ -2403,6 +2408,306 @@ export async function createDepositInvoiceForJob(
     return { success: true, invoiceId: invoiceRecord.id };
   } catch (err: unknown) {
     return { error: (err as Error)?.message || 'Failed to create deposit invoice.' };
+  }
+}
+
+export async function createStandaloneInvoice(formData: FormData) {
+  const customerId = (formData.get('customerId') as string)?.trim();
+  if (!customerId) return { error: 'Customer is required' };
+
+  const serviceName = (formData.get('serviceName') as string)?.trim() || 'General Service';
+  const rawBase = parseFloat((formData.get('baseAmount') as string) || '0');
+  const rawTaxRate = parseFloat((formData.get('taxRatePercent') as string) || '0');
+  const dueDate = (formData.get('dueDate') as string)?.trim() || new Date().toISOString().split('T')[0];
+  const invoiceType = (formData.get('invoiceType') as string)?.trim() || 'standard';
+  const notes = (formData.get('notes') as string)?.trim() || '';
+  const sendEmail = formData.get('sendEmail') !== 'false';
+  const photoFiles = formData.getAll('photos') as File[];
+
+  if (rawBase <= 0) {
+    return { error: 'Base amount must be greater than zero.' };
+  }
+
+  try {
+    // 1. Auth & Organization check
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'Unauthorized operational execution.' };
+
+    const { organization: defaultOrg } = await getUserOrganization(user.id);
+    const adminClient = createAdminClient();
+
+    // 2. Customer check & Org authorization
+    const { data: customer, error: customerErr } = await adminClient
+      .from('customers')
+      .select('id, first_name, last_name, company_name, email, organization_id')
+      .eq('id', customerId)
+      .single();
+
+    if (customerErr || !customer) {
+      return { error: 'Selected customer could not be found.' };
+    }
+
+    const targetOrgId = customer.organization_id || defaultOrg?.id;
+    let org = defaultOrg;
+    if (targetOrgId && org?.id !== targetOrgId) {
+      const access = await verifyUserOrganizationAccess(user.id, targetOrgId);
+      if (!access.authorized) return { error: 'Forbidden.' };
+      org = access.organization || defaultOrg;
+    }
+    if (!org?.id) return { error: 'No organizational profile found.' };
+
+    // 3. Tax & total calculation
+    const taxRatePercent = Number.isFinite(rawTaxRate) && rawTaxRate >= 0
+      ? rawTaxRate
+      : normalizeInvoiceTaxRatePercent(org.invoice_tax_rate_percent);
+    const taxAmount = parseFloat((rawBase * (taxRatePercent / 100)).toFixed(2));
+    const totalAmount = parseFloat((rawBase + taxAmount).toFixed(2));
+    const invoiceCurrencyCode = normalizeCurrencyCode(org.invoice_currency_code);
+
+    // 4. Reserve document number
+    const invoiceNumber = await reserveDocumentNumber(supabase, org.id, 'invoice');
+
+    // 5. Handle Photos Upload (if any)
+    const photoUrls: string[] = [];
+    const attachments: Array<{ filename: string; content: Buffer }> = [];
+    const bucket = process.env.SUPABASE_JOB_PHOTOS_BUCKET || 'job-photos';
+
+    if (photoFiles && photoFiles.length > 0) {
+      try {
+        const { data: buckets } = await adminClient.storage.listBuckets();
+        const bucketExists = buckets?.some((b) => b.name === bucket);
+        if (!bucketExists) {
+          await adminClient.storage.createBucket(bucket, {
+            public: true,
+            fileSizeLimit: 10485760, // 10MB
+          });
+        }
+      } catch (bucketErr) {
+        console.warn('Storage bucket check notice:', bucketErr);
+      }
+
+      for (let i = 0; i < photoFiles.length; i++) {
+        const file = photoFiles[i];
+        if (!(file instanceof File) || file.size === 0) continue;
+
+        const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const cleanFileName = `invoice-${Date.now()}-${i + 1}.${extension}`;
+        const objectPath = `${org.id}/invoices/inv-${invoiceNumber || Date.now()}/${cleanFileName}`;
+
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+
+          const { error: uploadError } = await adminClient.storage
+            .from(bucket)
+            .upload(objectPath, buffer, {
+              contentType: file.type || 'image/jpeg',
+              cacheControl: '3600',
+              upsert: true,
+            });
+
+          if (!uploadError) {
+            const { data: publicData } = adminClient.storage.from(bucket).getPublicUrl(objectPath);
+            if (publicData?.publicUrl) {
+              photoUrls.push(publicData.publicUrl);
+            }
+            attachments.push({
+              filename: `Invoice-WorkPhoto-${i + 1}.${extension}`,
+              content: buffer,
+            });
+          } else {
+            console.error(`Upload error for invoice photo ${i}:`, uploadError.message);
+          }
+        } catch (err) {
+          console.error(`Error processing photo ${i}:`, err);
+        }
+      }
+    }
+
+    // 6. Insert invoice record
+    const invoiceInsertPayload: Record<string, any> = {
+      organization_id: org.id,
+      customer_id: customer.id,
+      invoice_number: invoiceNumber,
+      due_date: dueDate,
+      status: 'unpaid',
+      total_amount: totalAmount,
+      tax_amount: taxAmount,
+      currency_code: invoiceCurrencyCode,
+      invoice_type: invoiceType,
+      notes: notes || serviceName || null,
+      photos: photoUrls,
+    };
+
+    let { data: invoiceRecord, error: invError } = await adminClient
+      .from('invoices')
+      .insert([invoiceInsertPayload])
+      .select('*')
+      .single();
+
+    if (invError && (invError.message?.includes('schema cache') || invError.message?.includes('column') || (invError as any).code === '42703')) {
+      delete invoiceInsertPayload.photos;
+      const retry = await adminClient
+        .from('invoices')
+        .insert([invoiceInsertPayload])
+        .select('*')
+        .single();
+      invoiceRecord = retry.data;
+      invError = retry.error;
+    }
+
+    if (invError || !invoiceRecord) {
+      return { error: invError?.message || 'Failed to create invoice.' };
+    }
+
+    // 7. Stripe Checkout session generation (if online payments enabled)
+    let paymentUrl: string | null = null;
+    let stripeCheckoutSessionId: string | null = null;
+    const customerDisplayName =
+      `${customer.first_name || ''} ${customer.last_name || ''}`.trim() ||
+      customer.company_name ||
+      'Valued Customer';
+
+    if (
+      org.id &&
+      canUseOnlineInvoicePayments(org.subscription_status) &&
+      org.stripe_account_id &&
+      org.stripe_account_charges_enabled &&
+      org.stripe_account_payouts_enabled &&
+      customer.email
+    ) {
+      try {
+        const paymentSession = await createInvoiceCheckoutSession({
+          invoiceId: invoiceRecord.id,
+          organizationId: org.id,
+          customerId: customer.id,
+          stripeAccountId: org.stripe_account_id,
+          customerEmail: customer.email,
+          customerName: customerDisplayName,
+          serviceName,
+          baseAmount: rawBase,
+          taxAmount,
+          taxRatePercent,
+          currencyCode: invoiceCurrencyCode,
+          totalAmount,
+          enableAutopayIfPossible: false,
+        });
+
+        paymentUrl = paymentSession?.paymentUrl || null;
+        stripeCheckoutSessionId = paymentSession?.sessionId || null;
+
+        if (paymentUrl || stripeCheckoutSessionId) {
+          await adminClient
+            .from('invoices')
+            .update({
+              stripe_payment_url: paymentUrl,
+              stripe_checkout_session_id: stripeCheckoutSessionId,
+              stripe_payment_status: 'open',
+            })
+            .eq('id', invoiceRecord.id);
+        }
+      } catch (paymentErr) {
+        console.error('Failed to generate Stripe checkout session for invoice:', paymentErr);
+      }
+    }
+
+    // 8. Accounting Sync (Xero & QBO)
+    if (org.id && invoiceRecord.id && !stripeCheckoutSessionId) {
+      enqueueXeroCompletedJobInvoice({
+        organizationId: org.id,
+        customerName: customerDisplayName,
+        customerEmail: customer.email || null,
+        jobType: serviceName,
+        invoiceId: invoiceRecord.id,
+        invoiceNumber: invoiceRecord.invoice_number,
+        dueDate,
+        baseAmount: rawBase,
+        taxAmount,
+        taxRatePercent,
+        currencyCode: invoiceCurrencyCode,
+      }).catch((err) => console.error('Xero sync warning:', err));
+
+      syncInvoiceToQBO({
+        organizationId: org.id,
+        customerName: customerDisplayName,
+        customerEmail: customer.email || null,
+        jobType: serviceName,
+        invoiceNumber: invoiceRecord.invoice_number,
+        dueDate,
+        baseAmount: rawBase,
+        taxAmount,
+        taxRatePercent,
+        currencyCode: invoiceCurrencyCode,
+      }).catch((err) => console.error('QBO sync warning:', err));
+    }
+
+    // 9. Send email notification if requested and customer has email
+    if (sendEmail && customer.email) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const organizationName = org.name?.trim() || 'Prado ERP';
+        const organizationSlogan = org.slogan?.trim() || '';
+        const organizationLogoUrl = org.logo_url?.trim() || '';
+        const documentEmailHeaderColor = normalizeDocumentEmailHeaderColor(org.document_email_header_color);
+        const fromAddress = getResendFromAddress({ email: process.env.RESEND_FROM_EMAIL, displayName: organizationName });
+        const replyToAddress = user.email || process.env.RESEND_REPLY_TO_EMAIL || undefined;
+        const formattedInvoiceNumber = formatDocumentNumber('invoice', invoiceRecord.invoice_number);
+
+        const invoiceHtml = await render(
+          InvoiceEmail({
+            customerName: customerDisplayName,
+            serviceName,
+            dueDate,
+            baseAmount: rawBase,
+            taxAmount,
+            taxRatePercent,
+            currencyCode: invoiceCurrencyCode,
+            totalAmount,
+            invoiceNumber: invoiceRecord.invoice_number,
+            paymentUrl: paymentUrl || undefined,
+            organizationName,
+            organizationSlogan,
+            organizationLogoUrl,
+            headerColor: documentEmailHeaderColor,
+            notes: notes || undefined,
+            photos: photoUrls,
+          })
+        );
+
+        await resend.emails.send({
+          from: fromAddress,
+          to: customer.email,
+          replyTo: replyToAddress,
+          subject: formattedInvoiceNumber
+            ? `${organizationName} Invoice ${formattedInvoiceNumber}`
+            : `Invoice for Service - ${serviceName}`,
+          html: invoiceHtml,
+          attachments: attachments.length > 0 ? attachments : undefined,
+        });
+      } catch (emailErr) {
+        console.error('Invoice created, but failed to send email:', emailErr);
+      }
+    }
+
+    // 10. Revalidate Paths
+    revalidatePath('/dashboard/invoices-ledger');
+    revalidatePath('/[lng]/dashboard/invoices-ledger');
+    revalidatePath(`/dashboard/customers/${customer.id}`);
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      invoice: {
+        ...invoiceRecord,
+        stripe_payment_url: paymentUrl,
+        photos: photoUrls,
+      },
+    };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to create standalone invoice.' };
   }
 }
 

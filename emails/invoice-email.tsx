@@ -27,6 +27,7 @@ type InvoiceEmailProps = {
   lineItems?: LineItem[];
   notes?: string | null;
   invoiceDate?: string | null;
+  photos?: string[];
 };
 
 function formatDate(value: string | null | undefined, locale = 'en-US') {
@@ -58,6 +59,7 @@ export default function InvoiceEmail({
   lineItems: explicitLineItems,
   notes = '',
   invoiceDate,
+  photos = [],
 }: InvoiceEmailProps) {
   const normalizedCurrency: SupportedCurrencyCode = normalizeCurrencyCode(currencyCode);
   const safeTaxRatePercent = Number.isFinite(taxRatePercent) ? Number(taxRatePercent) : 8.25;
@@ -295,6 +297,43 @@ export default function InvoiceEmail({
               <div style={{ fontSize: 13, color: '#334155', lineHeight: '20px', whiteSpace: 'pre-wrap' }}>
                 {notes.trim()}
               </div>
+            </div>
+          ) : null}
+
+          {/* Finished Work Photos / Documentation (if present) */}
+          {photos && photos.length > 0 ? (
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 12 }}>
+                FINISHED WORK PHOTOS ({photos.length})
+              </div>
+              <table role="presentation" border={0} cellPadding={0} cellSpacing={0} width="100%">
+                <tbody>
+                  <tr>
+                    <td>
+                      <div style={{ display: 'grid', gridTemplateColumns: photos.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+                        {photos.map((url, idx) => (
+                          <a
+                            key={idx}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ display: 'block', borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0', textDecoration: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+                          >
+                            <img
+                              src={url}
+                              alt={`Finished work photo ${idx + 1}`}
+                              style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }}
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p style={{ margin: '8px 0 0 0', fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>
+                Click any image to view full resolution. Photos are also attached to this invoice.
+              </p>
             </div>
           ) : null}
 

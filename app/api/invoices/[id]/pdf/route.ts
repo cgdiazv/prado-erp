@@ -34,6 +34,24 @@ function truncateText(text: string, maxChars: number) {
   return text.length > maxChars ? `${text.slice(0, maxChars - 1)}...` : text;
 }
 
+async function fetchAndEmbedPhoto(pdfDoc: PDFDocument, url: string) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(4500) });
+    if (!res.ok) return null;
+    const arrayBuffer = await res.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    if (bytes.length === 0) return null;
+    const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+    if (isPng) {
+      return await pdfDoc.embedPng(arrayBuffer);
+    }
+    return await pdfDoc.embedJpg(arrayBuffer);
+  } catch (err) {
+    console.warn(`[invoice PDF] Failed to embed photo: ${url}`, err);
+    return null;
+  }
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -735,7 +753,42 @@ export async function GET(
       color: rgb(0.55, 0.6, 0.65),
     });
 
-    const pageCountText = isEs ? 'Página 1 de 1' : 'Page 1 of 1';
+    // Check for attached photos on invoice or linked job
+    let rawPhotos: string[] = Array.isArray((invoice as any).photos) ? (invoice as any).photos : [];
+    if (rawPhotos.length === 0 && invoice.job_id) {
+      try {
+        const { data: jobRow } = await supabase
+          .from('jobs')
+          .select('completion_photos')
+          .eq('id', invoice.job_id)
+          .maybeSingle();
+        if (jobRow?.completion_photos && Array.isArray(jobRow.completion_photos)) {
+          rawPhotos = jobRow.completion_photos;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // Try embedding up to 6 photos
+    const embeddedPhotos: Array<{ image: any; width: number; height: number }> = [];
+    if (rawPhotos.length > 0) {
+      const photosToProcess = rawPhotos.slice(0, 6);
+      for (const pUrl of photosToProcess) {
+        if (!pUrl || typeof pUrl !== 'string') continue;
+        const img = await fetchAndEmbedPhoto(pdfDoc, pUrl);
+        if (img) {
+          embeddedPhotos.push({
+            image: img,
+            width: img.width,
+            height: img.height,
+          });
+        }
+      }
+    }
+
+    const totalPages = embeddedPhotos.length > 0 ? 2 : 1;
+    const pageCountText = isEs ? `Página 1 de ${totalPages}` : `Page 1 of ${totalPages}`;
     const pageCountWidth = regularFont.widthOfTextAtSize(pageCountText, 7);
     page.drawText(pageCountText, {
       x: PAGE_WIDTH - MARGIN - pageCountWidth,
@@ -744,6 +797,211 @@ export async function GET(
       font: regularFont,
       color: rgb(0.55, 0.6, 0.65),
     });
+
+    // -------------------------------------------------------------
+    // BUILD PAGE 2: FINISHED WORK PHOTOS (IF AVAILABLE)
+    // -------------------------------------------------------------
+    if (embeddedPhotos.length > 0) {
+      const page2 = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+
+      // Top Accent Bar
+      page2.drawRectangle({
+        x: 0,
+        y: PAGE_HEIGHT - topBarHeight,
+        width: PAGE_WIDTH,
+        height: topBarHeight,
+        color: brandColorRgb,
+      });
+
+      let p2Y = PAGE_HEIGHT - MARGIN;
+
+      // Header Left: Organization Logo & Identity
+      if (embeddedLogo) {
+        page2.drawImage(embeddedLogo.image, {
+          x: logoX,
+          y: p2Y - embeddedLogo.height,
+          width: embeddedLogo.width,
+          height: embeddedLogo.height,
+        });
+      }
+
+      page2.drawText(truncateText(orgName, embeddedLogo ? 26 : 34), {
+        x: textX,
+        y: p2Y - 14,
+        size: 18,
+        font: boldFont,
+        color: rgb(0.1, 0.12, 0.15),
+      });
+
+      page2.drawText(
+        isEs
+          ? 'Evidencia fotográfica de los servicios realizados'
+          : 'Finished work photographic documentation',
+        {
+          x: textX,
+          y: p2Y - 28,
+          size: 8.5,
+          font: regularFont,
+          color: rgb(0.4, 0.45, 0.5),
+        }
+      );
+
+      // Header Right: Title & Invoice reference
+      const p2Title = isEs ? 'FOTOS DEL TRABAJO' : 'WORK PHOTOS & PROOF';
+      const p2TitleWidth = boldFont.widthOfTextAtSize(p2Title, 14);
+      page2.drawText(p2Title, {
+        x: PAGE_WIDTH - MARGIN - p2TitleWidth,
+        y: p2Y - 14,
+        size: 14,
+        font: boldFont,
+        color: brandColorRgb,
+      });
+
+      const p2Ref = `# ${formattedInvNumber}`;
+      const p2RefWidth = boldFont.widthOfTextAtSize(p2Ref, 10);
+      page2.drawText(p2Ref, {
+        x: PAGE_WIDTH - MARGIN - p2RefWidth,
+        y: p2Y - 28,
+        size: 10,
+        font: boldFont,
+        color: rgb(0.3, 0.35, 0.4),
+      });
+
+      // Divider below header
+      const headerLineY = p2Y - 42;
+      page2.drawLine({
+        start: { x: MARGIN, y: headerLineY },
+        end: { x: PAGE_WIDTH - MARGIN, y: headerLineY },
+        thickness: 1,
+        color: rgb(0.88, 0.9, 0.93),
+      });
+
+      // Photo Grid Layout
+      const gridTopY = headerLineY - 16;
+      const count = embeddedPhotos.length;
+
+      if (count === 1) {
+        // Single large centered photo
+        const p = embeddedPhotos[0];
+        const maxW = 440;
+        const maxH = 460;
+        const scale = Math.min(maxW / p.width, maxH / p.height);
+        const w = p.width * scale;
+        const h = p.height * scale;
+        const x = MARGIN + (CONTENT_WIDTH - w) / 2;
+        const y = gridTopY - h - 10;
+
+        // Border box
+        page2.drawRectangle({
+          x: x - 4,
+          y: y - 4,
+          width: w + 8,
+          height: h + 8,
+          color: rgb(0.96, 0.97, 0.98),
+          borderColor: rgb(0.85, 0.88, 0.92),
+          borderWidth: 1,
+        });
+
+        page2.drawImage(p.image, { x, y, width: w, height: h });
+
+        const capText = isEs ? 'Foto 1 - Trabajo completado' : 'Photo 1 - Finished service';
+        const capW = regularFont.widthOfTextAtSize(capText, 9);
+        page2.drawText(capText, {
+          x: MARGIN + (CONTENT_WIDTH - capW) / 2,
+          y: y - 20,
+          size: 9,
+          font: regularFont,
+          color: rgb(0.4, 0.45, 0.5),
+        });
+      } else {
+        // 2-column grid
+        const colGap = 16;
+        const rowGap = 20;
+        const colWidth = (CONTENT_WIDTH - colGap) / 2; // ~258 pt
+        const boxHeight = count <= 2 ? 280 : count <= 4 ? 220 : 170;
+
+        for (let i = 0; i < count; i++) {
+          const p = embeddedPhotos[i];
+          const colIndex = i % 2;
+          const rowIndex = Math.floor(i / 2);
+
+          const cellX = MARGIN + colIndex * (colWidth + colGap);
+          const cellY = gridTopY - (rowIndex + 1) * boxHeight - rowIndex * rowGap;
+
+          // Draw background card for photo
+          page2.drawRectangle({
+            x: cellX,
+            y: cellY,
+            width: colWidth,
+            height: boxHeight,
+            color: rgb(0.97, 0.98, 0.99),
+            borderColor: rgb(0.88, 0.9, 0.93),
+            borderWidth: 1,
+          });
+
+          // Scale image inside box with padding
+          const pad = 6;
+          const labelReserve = 18;
+          const availW = colWidth - pad * 2;
+          const availH = boxHeight - pad * 2 - labelReserve;
+          const scale = Math.min(availW / p.width, availH / p.height);
+          const w = p.width * scale;
+          const h = p.height * scale;
+          const imgX = cellX + pad + (availW - w) / 2;
+          const imgY = cellY + pad + labelReserve + (availH - h) / 2;
+
+          page2.drawImage(p.image, { x: imgX, y: imgY, width: w, height: h });
+
+          // Caption label inside card at bottom
+          const cap = isEs ? `Foto ${i + 1}` : `Photo ${i + 1}`;
+          page2.drawText(cap, {
+            x: cellX + pad + 4,
+            y: cellY + pad + 3,
+            size: 8,
+            font: boldFont,
+            color: rgb(0.4, 0.45, 0.5),
+          });
+        }
+      }
+
+      // Page 2 Footer
+      const p2FooterLineY = MARGIN + 22;
+      const p2FooterY = MARGIN + 8;
+      const p2DisclaimerY = MARGIN + 14;
+
+      page2.drawLine({
+        start: { x: MARGIN, y: p2FooterLineY },
+        end: { x: PAGE_WIDTH - MARGIN, y: p2FooterLineY },
+        thickness: 0.5,
+        color: rgb(0.88, 0.9, 0.93),
+      });
+
+      page2.drawText(legalDisclaimer, {
+        x: MARGIN,
+        y: p2DisclaimerY,
+        size: 6.8,
+        font: regularFont,
+        color: rgb(0.5, 0.55, 0.6),
+      });
+
+      page2.drawText(truncateText(footerText, 75), {
+        x: MARGIN,
+        y: p2FooterY,
+        size: 7,
+        font: regularFont,
+        color: rgb(0.55, 0.6, 0.65),
+      });
+
+      const p2CountText = isEs ? `Página 2 de ${totalPages}` : `Page 2 of ${totalPages}`;
+      const p2CountWidth = regularFont.widthOfTextAtSize(p2CountText, 7);
+      page2.drawText(p2CountText, {
+        x: PAGE_WIDTH - MARGIN - p2CountWidth,
+        y: p2FooterY,
+        size: 7,
+        font: regularFont,
+        color: rgb(0.55, 0.6, 0.65),
+      });
+    }
 
     // Save and send response
     const pdfBytes = await pdfDoc.save();

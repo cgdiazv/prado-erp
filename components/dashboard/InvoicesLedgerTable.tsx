@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { markInvoiceAsPaid, sendInvoiceOverdueReminderAction, triggerOverdueRemindersForWorkspaceAction } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
-import { AlertCircle, BellRing, CheckCircle2, Filter, Loader2 } from 'lucide-react';
+import { AlertCircle, BellRing, CheckCircle2, Filter, Loader2, Plus, Image as ImageIcon } from 'lucide-react';
 import EditInvoiceModal from './EditInvoiceModal';
+import CreateInvoiceModal, { CustomerOption } from './CreateInvoiceModal';
 import InvoiceRowActions from './InvoiceRowActions';
 
 type FilterType = 'all' | 'unpaid' | 'paid';
@@ -25,6 +27,7 @@ interface InvoiceRow {
   job_id?: string | null;
   invoice_type?: string | null;
   notes?: string | null;
+  photos?: string[] | null;
   customers?: {
     first_name?: string | null;
     last_name?: string | null;
@@ -35,19 +38,25 @@ interface InvoiceRow {
 
 interface InvoicesLedgerTableProps {
   invoices: InvoiceRow[];
+  customers?: CustomerOption[];
   locale?: string;
   orgTaxRatePercent?: number;
+  orgCurrencyCode?: string;
 }
 
 export default function InvoicesLedgerTable({
   invoices,
+  customers = [],
   locale = 'en',
   orgTaxRatePercent,
+  orgCurrencyCode = 'USD',
 }: InvoicesLedgerTableProps) {
+  const router = useRouter();
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
   const [invoiceRows, setInvoiceRows] = useState<InvoiceRow[]>(invoices);
   const [editingInvoice, setEditingInvoice] = useState<InvoiceRow | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
   const [pageSize, setPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -204,6 +213,28 @@ export default function InvoicesLedgerTable({
 
   return (
     <>
+      {/* 1. Header Row - Title & Subtitle on left, New Invoice Button on right end */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-1">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            {translations.dashboard.invoicesAndLedger}
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            {isEs
+              ? 'Monitorea el estado de pago de todas las facturas emitidas en tu workspace.'
+              : 'Monitor payment status for all invoices issued in your workspace.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCreateModalOpen(true)}
+          className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm inline-flex items-center justify-center gap-1.5 shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5 text-white" />
+          <span>{isEs ? 'Nueva Factura' : 'New Invoice'}</span>
+        </button>
+      </div>
+
       <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
         <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
           <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">
@@ -404,6 +435,15 @@ export default function InvoicesLedgerTable({
                               {isEs ? 'Saldo' : 'Final'}
                             </span>
                           )}
+                          {inv.photos && inv.photos.length > 0 && (
+                            <span
+                              title={isEs ? `${inv.photos.length} fotos adjuntas` : `${inv.photos.length} photos attached`}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            >
+                              <ImageIcon className="w-2.5 h-2.5" />
+                              {inv.photos.length}
+                            </span>
+                          )}
                         </div>
                         {inv.notes && (
                           <span className="text-[11px] text-slate-400 font-normal truncate max-w-xs">
@@ -502,6 +542,21 @@ export default function InvoicesLedgerTable({
         locale={locale}
         orgTaxRatePercent={orgTaxRatePercent}
       />
+
+      {isCreateModalOpen && (
+        <CreateInvoiceModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          customers={customers}
+          locale={locale}
+          orgTaxRatePercent={orgTaxRatePercent}
+          orgCurrencyCode={orgCurrencyCode}
+          onSuccess={(createdInvoice) => {
+            setInvoiceRows((prev) => [createdInvoice, ...prev]);
+            router.refresh();
+          }}
+        />
+      )}
     </>
   );
 }

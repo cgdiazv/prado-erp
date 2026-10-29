@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { markInvoiceAsPaid } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
-import { Printer, Pencil } from 'lucide-react';
+import { Printer, Pencil, Plus, Image as ImageIcon } from 'lucide-react';
 import EditInvoiceModal from './EditInvoiceModal';
+import CreateInvoiceModal from './CreateInvoiceModal';
 
 interface InvoiceRow {
   id: string;
@@ -19,6 +21,7 @@ interface InvoiceRow {
   job_id?: string | null;
   invoice_type?: string | null;
   notes?: string | null;
+  photos?: string[] | null;
 }
 
 interface CustomerInvoicesTableProps {
@@ -42,8 +45,10 @@ export default function CustomerInvoicesTable({
 }: CustomerInvoicesTableProps) {
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
+  const router = useRouter();
   const [rows, setRows] = useState(invoices);
   const [editingInvoice, setEditingInvoice] = useState<InvoiceRow | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
@@ -89,7 +94,17 @@ export default function CustomerInvoicesTable({
 
   return (
     <div className="space-y-3">
-      <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{translations.dashboard.invoicesAndLedger}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{translations.dashboard.invoicesAndLedger}</h2>
+        <button
+          type="button"
+          onClick={() => setIsCreateModalOpen(true)}
+          className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm inline-flex items-center justify-center gap-1.5"
+        >
+          <Plus className="w-3.5 h-3.5 text-white" />
+          <span>{isEs ? 'Nueva Factura' : 'New Invoice'}</span>
+        </button>
+      </div>
 
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -204,6 +219,15 @@ export default function CustomerInvoicesTable({
                                 {isEs ? 'Saldo' : 'Final'}
                               </span>
                             )}
+                            {inv.photos && inv.photos.length > 0 && (
+                              <span
+                                title={isEs ? `${inv.photos.length} fotos adjuntas` : `${inv.photos.length} photos attached`}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              >
+                                <ImageIcon className="w-2.5 h-2.5" />
+                                {inv.photos.length}
+                              </span>
+                            )}
                           </div>
                           {inv.notes && (
                             <span className="text-[10px] text-slate-400 font-normal truncate max-w-[180px]">
@@ -298,6 +322,21 @@ export default function CustomerInvoicesTable({
         locale={locale}
         orgTaxRatePercent={orgTaxRatePercent}
       />
+
+      {isCreateModalOpen && (
+        <CreateInvoiceModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          customers={[{ id: customerId, first_name: customerName, email: customerEmail }]}
+          defaultCustomerId={customerId}
+          locale={locale}
+          orgTaxRatePercent={orgTaxRatePercent}
+          onSuccess={(createdInvoice) => {
+            setRows((prev) => [createdInvoice, ...prev]);
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }

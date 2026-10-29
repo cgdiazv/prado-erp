@@ -25,6 +25,7 @@ interface InvoiceRow {
   job_id?: string | null;
   invoice_type?: string | null;
   notes?: string | null;
+  photos?: string[] | null;
   customers?: {
     first_name?: string | null;
     last_name?: string | null;
