@@ -4,15 +4,18 @@ import Link from 'next/link';
 import PradoLogo from '@/components/PradoLogo';
 import { useState } from 'react';
 import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
+import LiveDemoModal from '@/components/LiveDemoModal';
 
 interface FooterProps {
   locale?: string;
   onOpenTrial?: () => void;
+  onOpenLiveDemo?: () => void;
 }
 
-export default function Footer({ locale = 'en', onOpenTrial }: FooterProps) {
+export default function Footer({ locale = 'en', onOpenTrial, onOpenLiveDemo }: FooterProps) {
   const isEs = locale.toLowerCase().startsWith('es');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
 
   const handleOpenTrial = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -20,6 +23,15 @@ export default function Footer({ locale = 'en', onOpenTrial }: FooterProps) {
       onOpenTrial();
     } else {
       setIsModalOpen(true);
+    }
+  };
+
+  const handleOpenLiveDemo = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onOpenLiveDemo) {
+      onOpenLiveDemo();
+    } else {
+      setIsDemoModalOpen(true);
     }
   };
 
@@ -63,9 +75,13 @@ export default function Footer({ locale = 'en', onOpenTrial }: FooterProps) {
                   </a>
                 </li>
                 <li>
-                  <Link href={`/${locale}/demo`} className="text-[#667085] hover:text-[#101828] transition">
+                  <button
+                    type="button"
+                    onClick={handleOpenLiveDemo}
+                    className="text-[#667085] hover:text-[#101828] transition cursor-pointer text-left"
+                  >
                     {isEs ? 'Demo en Vivo' : 'Live Demo'}
-                  </Link>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -132,6 +148,14 @@ export default function Footer({ locale = 'en', onOpenTrial }: FooterProps) {
         <WorkspaceSetupModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
+          locale={locale}
+        />
+      )}
+
+      {!onOpenLiveDemo && (
+        <LiveDemoModal
+          isOpen={isDemoModalOpen}
+          onClose={() => setIsDemoModalOpen(false)}
           locale={locale}
         />
       )}

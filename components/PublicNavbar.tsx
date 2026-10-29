@@ -5,17 +5,25 @@ import PradoLogo from '@/components/PradoLogo';
 import { useState } from 'react';
 import { getTranslations } from '@/lib/translations';
 import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
+import LiveDemoModal from '@/components/LiveDemoModal';
 import { ArrowUpRight, Menu, X } from 'lucide-react';
 
 interface PublicNavbarProps {
   theme?: 'dark' | 'light';
   locale?: string;
   onOpenTrial?: () => void;
+  onOpenLiveDemo?: () => void;
 }
 
-export default function PublicNavbar({ theme = 'light', locale = 'en', onOpenTrial }: PublicNavbarProps) {
+export default function PublicNavbar({
+  theme = 'light',
+  locale = 'en',
+  onOpenTrial,
+  onOpenLiveDemo,
+}: PublicNavbarProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isInternalModalOpen, setIsInternalModalOpen] = useState(false);
+  const [isInternalDemoModalOpen, setIsInternalDemoModalOpen] = useState(false);
   const isEs = locale.toLowerCase().startsWith('es');
   const translations = getTranslations(locale);
 
@@ -28,6 +36,16 @@ export default function PublicNavbar({ theme = 'light', locale = 'en', onOpenTri
       onOpenTrial();
     } else {
       setIsInternalModalOpen(true);
+    }
+  };
+
+  const handleOpenLiveDemo = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setIsDrawerOpen(false);
+    if (onOpenLiveDemo) {
+      onOpenLiveDemo();
+    } else {
+      setIsInternalDemoModalOpen(true);
     }
   };
 
@@ -74,14 +92,15 @@ export default function PublicNavbar({ theme = 'light', locale = 'en', onOpenTri
             >
               {isEs ? 'Precios' : 'Pricing'}
             </a>
-            <Link
-              href={`/${locale}/demo`}
+            <button
+              type="button"
+              onClick={handleOpenLiveDemo}
               className={`text-sm font-medium transition cursor-pointer ${
                 isLight ? 'text-[#344054] hover:text-[#101828]' : 'text-slate-400 hover:text-white'
               }`}
             >
               {isEs ? 'Demo en Vivo' : 'Live Demo'}
-            </Link>
+            </button>
           </div>
 
           {/* Desktop Right Actions */}
@@ -139,7 +158,7 @@ export default function PublicNavbar({ theme = 'light', locale = 'en', onOpenTri
                 <button
                   type="button"
                   onClick={() => setIsDrawerOpen(false)}
-                  className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100"
+                  className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -167,13 +186,13 @@ export default function PublicNavbar({ theme = 'light', locale = 'en', onOpenTri
                 >
                   {isEs ? 'Precios' : 'Pricing'}
                 </a>
-                <Link
-                  href={`/${locale}/demo`}
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="px-3 py-2 text-base font-medium rounded-lg text-[#344054] hover:bg-slate-50"
+                <button
+                  type="button"
+                  onClick={handleOpenLiveDemo}
+                  className="px-3 py-2 text-base font-medium rounded-lg text-left text-[#344054] hover:bg-slate-50 cursor-pointer"
                 >
                   {isEs ? 'Demo en Vivo' : 'Live Demo'}
-                </Link>
+                </button>
                 <Link
                   href={`/${locale}/login`}
                   onClick={() => setIsDrawerOpen(false)}
@@ -202,6 +221,14 @@ export default function PublicNavbar({ theme = 'light', locale = 'en', onOpenTri
         <WorkspaceSetupModal
           isOpen={isInternalModalOpen}
           onClose={() => setIsInternalModalOpen(false)}
+          locale={locale}
+        />
+      )}
+
+      {!onOpenLiveDemo && (
+        <LiveDemoModal
+          isOpen={isInternalDemoModalOpen}
+          onClose={() => setIsInternalDemoModalOpen(false)}
           locale={locale}
         />
       )}

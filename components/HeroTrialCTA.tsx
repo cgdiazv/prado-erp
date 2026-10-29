@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
+import LiveDemoModal from '@/components/LiveDemoModal';
 import { ArrowRight } from 'lucide-react';
 
 interface HeroTrialCTAProps {
@@ -19,12 +20,19 @@ export default function HeroTrialCTA({
   locale = 'en',
 }: HeroTrialCTAProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
 
   return (
     <>
       <WorkspaceSetupModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        locale={locale}
+      />
+
+      <LiveDemoModal
+        isOpen={isDemoModalOpen}
+        onClose={() => setIsDemoModalOpen(false)}
         locale={locale}
       />
 
@@ -38,12 +46,13 @@ export default function HeroTrialCTA({
             <span>{primaryLabel}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
-          <Link
-            href="/demo"
-            className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 px-6 py-3.5 rounded-xl transition border border-slate-800 flex items-center justify-center"
+          <button
+            type="button"
+            onClick={() => setIsDemoModalOpen(true)}
+            className="w-full sm:w-auto text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 px-6 py-3.5 rounded-xl transition border border-slate-800 flex items-center justify-center cursor-pointer"
           >
             <span>{secondaryLabel}</span>
-          </Link>
+          </button>
         </div>
       )}
 

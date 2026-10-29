@@ -7,6 +7,7 @@ import PublicNavbar from '@/components/PublicNavbar';
 import Footer from '@/components/Footer';
 import PradoLogo from '@/components/PradoLogo';
 import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
+import LiveDemoModal from '@/components/LiveDemoModal';
 import {
   ArrowUpRight,
   ArrowRight,
@@ -36,6 +37,7 @@ interface MarketingLandingPageProps {
 export default function MarketingLandingPage({ locale = 'en' }: MarketingLandingPageProps) {
   const isEs = locale.toLowerCase().startsWith('es');
   const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
+  const [isLiveDemoModalOpen, setIsLiveDemoModalOpen] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   const toggleFaq = (index: number) => {
@@ -72,7 +74,12 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
   return (
     <div className="min-h-screen bg-white text-[#101828] flex flex-col font-sans selection:bg-[#0a9d73] selection:text-white">
       {/* 0. Top Navigation */}
-      <PublicNavbar locale={locale} theme="light" onOpenTrial={() => setIsTrialModalOpen(true)} />
+      <PublicNavbar
+        locale={locale}
+        theme="light"
+        onOpenTrial={() => setIsTrialModalOpen(true)}
+        onOpenLiveDemo={() => setIsLiveDemoModalOpen(true)}
+      />
 
       {/* 1. Hero Introduction */}
       <section className="pt-12 sm:pt-20 pb-12 sm:pb-16 px-6 sm:px-12 lg:px-20 max-w-7xl mx-auto w-full">
@@ -119,12 +126,13 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
                 <ArrowUpRight className="w-4 h-4" />
               </button>
 
-              <Link
-                href={`/${locale}/demo`}
-                className="inline-flex items-center justify-center text-sm font-medium bg-white hover:bg-[#f9fafb] text-[#101828] border border-[#d0d5dd] px-6 py-3.5 rounded-xl transition"
+              <button
+                type="button"
+                onClick={() => setIsLiveDemoModalOpen(true)}
+                className="inline-flex items-center justify-center text-sm font-medium bg-white hover:bg-[#f9fafb] text-[#101828] border border-[#d0d5dd] px-6 py-3.5 rounded-xl transition cursor-pointer"
               >
                 <span>{isEs ? 'Explorar Demo en Vivo' : 'Explore Live Demo'}</span>
-              </Link>
+              </button>
             </div>
 
             <p className="text-xs text-[#667085]">
@@ -1066,7 +1074,11 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
       </section>
 
       {/* 10. Footer */}
-      <Footer locale={locale} onOpenTrial={() => setIsTrialModalOpen(true)} />
+      <Footer
+        locale={locale}
+        onOpenTrial={() => setIsTrialModalOpen(true)}
+        onOpenLiveDemo={() => setIsLiveDemoModalOpen(true)}
+      />
 
       {/* Workspace Setup Modal */}
       <WorkspaceSetupModal
@@ -1074,6 +1086,14 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
         onClose={() => setIsTrialModalOpen(false)}
         locale={locale}
       />
+
+      {/* Live Demo Modal */}
+      <LiveDemoModal
+        isOpen={isLiveDemoModalOpen}
+        onClose={() => setIsLiveDemoModalOpen(false)}
+        locale={locale}
+      />
     </div>
   );
 }
+
