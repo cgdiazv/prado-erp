@@ -21,10 +21,12 @@ export default function SupportHubPage() {
         {/* Left Side Info Blocks */}
         <div className="lg:col-span-1 space-y-6">
           <header className="space-y-3">
-            <span className="inline-flex items-center gap-2 bg-[#f0fdf9] border border-[#a7f3d0] rounded-full px-3.5 py-1 text-xs font-semibold text-[#0a9d73]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#0a9d73] animate-pulse" />
-              <span>{translations.support.badge}</span>
-            </span>
+            <div className="inline-flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-[#0a9d73] rounded-2xs" />
+              <span className="text-[11px] font-bold text-[#0a9d73] uppercase tracking-wider">
+                {translations.support.badge}
+              </span>
+            </div>
             <h1 className="text-3xl md:text-4xl font-bold text-[#101828] tracking-tight">
               {translations.support.title}
             </h1>

@@ -15,9 +15,11 @@ export default async function BlogPage({ params }: { params: Promise<{ lng: stri
         {/* Header Hero */}
         <section className="bg-[#fcfcfd] border-b border-[#eaecf0] py-16 sm:py-20 px-6">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#a7f3d0] bg-[#f0fdf9] px-3.5 py-1 text-xs font-semibold text-[#0a9d73]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#0a9d73] animate-pulse" />
-              <span>{isEs ? 'Blog y Recursos' : 'Blog & Resources'}</span>
+            <div className="inline-flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-[#0a9d73] rounded-2xs" />
+              <span className="text-[11px] font-bold text-[#0a9d73] uppercase tracking-wider">
+                {isEs ? 'Blog y Recursos' : 'Blog & Resources'}
+              </span>
             </div>
             <h1 className="mt-5 text-3xl sm:text-5xl font-bold tracking-tight text-[#101828]">
               {isEs ? 'Explora nuestras historias y guías' : 'Explore our stories and guides'}

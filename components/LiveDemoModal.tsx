@@ -97,9 +97,11 @@ export default function LiveDemoModal({ isOpen, onClose, locale = 'en' }: LiveDe
         {/* Header bar */}
         <div className="p-6 pb-4 sm:p-7 sm:pb-5 border-b border-[#f2f4f7] flex items-start justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 bg-[#f0fdf9] border border-[#a7f3d0] rounded-full px-3 py-0.5 text-xs font-semibold text-[#0a9d73] mb-2.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#0a9d73] animate-pulse" />
-              <span>{isEs ? 'Demostración en Vivo' : 'Live Product Walkthrough'}</span>
+            <div className="inline-flex items-center gap-2 mb-2.5">
+              <span className="w-1.5 h-1.5 bg-[#0a9d73] rounded-2xs" />
+              <span className="text-[11px] font-bold text-[#0a9d73] uppercase tracking-wider">
+                {isEs ? 'Demostración en Vivo' : 'Live Product Walkthrough'}
+              </span>
             </div>
             <h2 id="demo-modal-title" className="text-xl sm:text-2xl font-bold text-[#101828] tracking-tight">
               {step === 'calendar'

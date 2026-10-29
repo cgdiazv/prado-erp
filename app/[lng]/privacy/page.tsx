@@ -20,9 +20,11 @@ export default async function PrivacyPolicyPage({
       {/* Main Content Workspace */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-6 sm:px-8 py-16 sm:py-20 space-y-8 text-left">
         <header className="space-y-4">
-          <div className="inline-flex items-center gap-2 bg-[#f0fdf9] border border-[#a7f3d0] rounded-full px-3.5 py-1 text-xs font-semibold text-[#0a9d73]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0a9d73] animate-pulse" />
-            <span>Legal Notice</span>
+          <div className="inline-flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-[#0a9d73] rounded-2xs" />
+            <span className="text-[11px] font-bold text-[#0a9d73] uppercase tracking-wider">
+              {locale.toLowerCase().startsWith('es') ? 'AVISO LEGAL' : 'LEGAL NOTICE'}
+            </span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-bold text-[#101828] tracking-tight">
             {translations.privacy.title}

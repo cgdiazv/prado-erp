@@ -44,8 +44,11 @@ export default function LiveDemoPage() {
 
       <main className="flex-1 max-w-3xl mx-auto px-6 py-16 space-y-12 w-full">
         <header className="text-center max-w-2xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2.5 bg-emerald-950/40 border border-emerald-800/60 rounded-full px-3.5 py-1 text-xs text-emerald-400 font-medium backdrop-blur-xs">
-            {translations.demo.badge}
+          <div className="inline-flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-[#0a9d73] rounded-2xs" />
+            <span className="text-[11px] font-bold text-[#0a9d73] uppercase tracking-wider">
+              {translations.demo.badge}
+            </span>
           </div>
           <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
             {translations.demo.titleLine1} <br />
