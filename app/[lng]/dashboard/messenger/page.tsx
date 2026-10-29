@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabaseServer';
-import { createHelpdeskAdminClient } from '@/lib/helpdeskClient';
 import { getUserOrganization } from '@/lib/organization';
+import { getDashboardSupportThread } from '@/app/actions/messengerActions';
 import MessengerInbox from '@/components/dashboard/MessengerInbox';
 
 interface MessengerPageProps {
@@ -28,25 +28,7 @@ export default async function MessengerPage({ params, searchParams }: MessengerP
     redirect(`/${locale}/auth/access-pending`);
   }
 
-  const admin = createHelpdeskAdminClient();
-
-  const { data: activeTicket } = await admin
-    .from('helpdesk_tickets')
-    .select('id, status, priority, subject, updated_at')
-    .eq('organization_id', org.id)
-    .eq('escalated_from', 'dashboard_chat')
-    .in('status', ['open', 'in_progress', 'blocked', 'resolved'])
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const { data: messages } = activeTicket?.id
-    ? await admin
-        .from('helpdesk_ticket_comments')
-        .select('id, author_user_id, author_email, comment, created_at')
-        .eq('ticket_id', activeTicket.id)
-        .order('created_at', { ascending: true })
-    : { data: [] };
+  const thread = await getDashboardSupportThread();
 
   return (
     <main className="flex-1 overflow-y-auto">
@@ -66,9 +48,9 @@ export default async function MessengerPage({ params, searchParams }: MessengerP
         <MessengerInbox
           locale={locale}
           currentUserId={user.id}
-          ticketStatus={(activeTicket?.status as string | undefined) || null}
-          ticketPriority={(activeTicket?.priority as string | undefined) || null}
-          messages={(messages || []) as any[]}
+          ticketStatus={(thread?.ticketStatus as string | null) || null}
+          ticketPriority={(thread?.ticketPriority as string | null) || null}
+          messages={(thread?.messages || []) as any[]}
         />
       </div>
     </main>

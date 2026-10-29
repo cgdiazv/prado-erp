@@ -3,8 +3,11 @@ import { redirect } from 'next/navigation';
 import { checkTrialExpiry } from '@/lib/trialCheck';
 import { getTranslations } from '@/lib/translations';
 import InvoicesLedgerTable from '@/components/dashboard/InvoicesLedgerTable';
+import CreateInvoiceModal from '@/components/dashboard/CreateInvoiceModal';
 import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { getUserOrganization } from '@/lib/organization';
+
+const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
 interface InvoiceRow {
   id: string;
@@ -52,11 +55,19 @@ export default async function InvoicesLedgerPage({
     redirect(`/${locale}/dashboard?expired=true`);
   }
 
-  const { data: customers } = await supabase
-    .from('customers')
-    .select('id, first_name, last_name, company_name, email')
-    .eq('organization_id', org.id)
-    .order('created_at', { ascending: false });
+  const [{ data: customers }, { data: services }] = await Promise.all([
+    supabase
+      .from('customers')
+      .select('id, first_name, last_name, company_name, email')
+      .eq('organization_id', org.id)
+      .order('first_name', { ascending: true }),
+    supabase
+      .from('services')
+      .select('id, name, base_price')
+      .eq('organization_id', org.id)
+      .not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`)
+      .order('name', { ascending: true }),
+  ]);
 
   const customerIds = customers?.map((customer) => customer.id) || [];
 
@@ -74,6 +85,7 @@ export default async function InvoicesLedgerPage({
         <InvoicesLedgerTable
           invoices={(invoices as InvoiceRow[]) ?? []}
           customers={customers || []}
+          services={services || []}
           locale={locale}
           orgTaxRatePercent={Number(org.invoice_tax_rate_percent ?? 0)}
           orgCurrencyCode={org.invoice_currency_code || 'USD'}

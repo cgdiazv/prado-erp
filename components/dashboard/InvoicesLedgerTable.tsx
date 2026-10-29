@@ -7,7 +7,7 @@ import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 import { AlertCircle, BellRing, CheckCircle2, Filter, Loader2, Plus, Image as ImageIcon } from 'lucide-react';
 import EditInvoiceModal from './EditInvoiceModal';
-import CreateInvoiceModal, { CustomerOption } from './CreateInvoiceModal';
+import CreateInvoiceModal, { CustomerOption, ServiceOption } from './CreateInvoiceModal';
 import InvoiceRowActions from './InvoiceRowActions';
 
 type FilterType = 'all' | 'unpaid' | 'paid';
@@ -39,6 +39,7 @@ interface InvoiceRow {
 interface InvoicesLedgerTableProps {
   invoices: InvoiceRow[];
   customers?: CustomerOption[];
+  services?: ServiceOption[];
   locale?: string;
   orgTaxRatePercent?: number;
   orgCurrencyCode?: string;
@@ -47,6 +48,7 @@ interface InvoicesLedgerTableProps {
 export default function InvoicesLedgerTable({
   invoices,
   customers = [],
+  services = [],
   locale = 'en',
   orgTaxRatePercent,
   orgCurrencyCode = 'USD',
@@ -548,6 +550,7 @@ export default function InvoicesLedgerTable({
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           customers={customers}
+          services={services}
           locale={locale}
           orgTaxRatePercent={orgTaxRatePercent}
           orgCurrencyCode={orgCurrencyCode}

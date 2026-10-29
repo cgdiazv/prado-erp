@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { sendDashboardSupportMessage } from '@/app/actions/messengerActions';
+import { isWithinSupportBusinessHours } from '@/lib/supportHours';
 
 type SupportMessageRow = {
   id: string;
@@ -32,10 +33,19 @@ export default function MessengerInbox({
   const [messageText, setMessageText] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isSupportOnline, setIsSupportOnline] = useState(() => isWithinSupportBusinessHours());
   const [pending, startTransition] = useTransition();
   const normalizedStatus = (ticketStatus || '').toLowerCase();
   const ticketClosed = normalizedStatus === 'closed';
   const ticketResolved = normalizedStatus === 'resolved';
+
+  useEffect(() => {
+    setIsSupportOnline(isWithinSupportBusinessHours());
+    const intervalId = window.setInterval(() => {
+      setIsSupportOnline(isWithinSupportBusinessHours());
+    }, 60000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     // Keep chat fresh with agent replies from prado-sys
@@ -83,6 +93,10 @@ export default function MessengerInbox({
     });
   };
 
+  const hoursLabel = isEs
+    ? 'Horario de atención: Lun–Vie, 9:00 AM – 6:00 PM CST'
+    : 'Support hours: Mon–Fri, 9:00 AM – 6:00 PM CST';
+
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       <div className="border-b border-slate-200 px-5 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -91,11 +105,23 @@ export default function MessengerInbox({
           <p className="text-xs text-slate-500">
             {isEs
               ? 'Escribe aquí para recibir ayuda de soporte dentro de tu operación.'
-              : 'Use this channel to get support help inside your operation.'}
+              : 'Use this channel to get support help inside your operation.'}{' '}
+            <span className="font-medium text-slate-600">({hoursLabel})</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+          <span
+            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+              isSupportOnline
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-amber-200 bg-amber-50 text-amber-700'
+            }`}
+          >
+            {isSupportOnline
+              ? (isEs ? 'En línea' : 'Online')
+              : (isEs ? 'Fuera de horario' : 'Off hours')}
+          </span>
+          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-700">
             {statusLabel}
           </span>
           {ticketPriority ? (
@@ -107,6 +133,14 @@ export default function MessengerInbox({
       </div>
 
       <div className="max-h-[56vh] overflow-y-auto bg-slate-50 px-5 py-5 space-y-3">
+        {!isSupportOnline ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-xs text-amber-800">
+            {isEs
+              ? 'Nuestro horario de soporte en vivo es de lunes a viernes de 9:00 AM a 6:00 PM CST. Déjanos tu mensaje y te responderemos tan pronto como lo veamos.'
+              : "Our live support hours are Monday to Friday from 9:00 AM to 6:00 PM CST. Leave us a message and we'll get back to you as soon as we see it."}
+          </div>
+        ) : null}
+
         {messages.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
             {isEs

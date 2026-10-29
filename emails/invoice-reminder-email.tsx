@@ -84,7 +84,7 @@ export default function InvoiceReminderEmail({
                       alt={`${headerTitle} logo`}
                       width="42"
                       height="42"
-                      style={{ display: 'inline-block', verticalAlign: 'middle', width: 42, height: 42, marginRight: 12, borderRadius: 8, objectFit: 'contain', background: '#ffffff', border: '1px solid #e2e8f0', padding: 2 }}
+                      style={{ display: 'inline-block', verticalAlign: 'middle', width: 42, height: 42, marginRight: 12, objectFit: 'contain' }}
                     />
                   ) : null}
                   <div style={{ display: 'inline-block', verticalAlign: 'middle' }}>

@@ -2550,6 +2550,8 @@ export async function createStandaloneInvoice(formData: FormData) {
 
     if (invError && (invError.message?.includes('schema cache') || invError.message?.includes('column') || (invError as any).code === '42703')) {
       delete invoiceInsertPayload.photos;
+      delete invoiceInsertPayload.invoice_type;
+      delete invoiceInsertPayload.notes;
       const retry = await adminClient
         .from('invoices')
         .insert([invoiceInsertPayload])
@@ -2695,20 +2697,62 @@ export async function createStandaloneInvoice(formData: FormData) {
     // 10. Revalidate Paths
     revalidatePath('/dashboard/invoices-ledger');
     revalidatePath('/[lng]/dashboard/invoices-ledger');
+    revalidatePath('/dashboard/customers');
+    revalidatePath('/[lng]/dashboard/customers');
     revalidatePath(`/dashboard/customers/${customer.id}`);
+    revalidatePath(`/[lng]/dashboard/customers/${customer.id}`);
     revalidatePath('/dashboard');
 
     return {
       success: true,
       invoice: {
         ...invoiceRecord,
+        id: invoiceRecord.id,
+        customer_id: customer.id,
+        invoice_number: invoiceRecord.invoice_number,
+        due_date: dueDate,
+        tax_amount: taxAmount,
+        total_amount: totalAmount,
+        currency_code: invoiceCurrencyCode,
+        status: 'unpaid' as const,
         stripe_payment_url: paymentUrl,
+        invoice_type: invoiceType,
+        notes: notes || serviceName || null,
         photos: photoUrls,
+        customers: {
+          first_name: customer.first_name,
+          last_name: customer.last_name,
+          company_name: customer.company_name,
+          email: customer.email,
+        },
       },
     };
   } catch (err: unknown) {
     return { error: (err as Error)?.message || 'Failed to create standalone invoice.' };
   }
+}
+
+export async function createManualInvoice(payload: {
+  customerId: string;
+  dueDate: string;
+  totalAmount: number;
+  taxAmount: number;
+  notes?: string | null;
+  invoiceType?: 'standard' | 'deposit' | 'final' | string;
+  sendEmail?: boolean;
+}) {
+  const formData = new FormData();
+  formData.append('customerId', payload.customerId);
+  const baseAmount = Math.max(0, payload.totalAmount - (payload.taxAmount || 0));
+  formData.append('baseAmount', baseAmount.toFixed(2));
+  formData.append('taxAmount', (payload.taxAmount || 0).toFixed(2));
+  const taxRate = baseAmount > 0 ? ((payload.taxAmount || 0) / baseAmount) * 100 : 0;
+  formData.append('taxRatePercent', taxRate.toFixed(2));
+  formData.append('dueDate', payload.dueDate);
+  if (payload.invoiceType) formData.append('invoiceType', payload.invoiceType);
+  if (payload.notes) formData.append('notes', payload.notes);
+  formData.append('sendEmail', payload.sendEmail ? 'true' : 'false');
+  return createStandaloneInvoice(formData);
 }
 
 export async function submitSupportTicket(formData: FormData) {

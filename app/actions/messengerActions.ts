@@ -1,12 +1,26 @@
 'use server';
 
+import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabaseServer';
-import { createHelpdeskAdminClient } from '@/lib/helpdeskClient';
+import { createAdminClient } from '@/lib/supabaseAdmin';
+import { getHelpdeskAdminClient, isMissingHelpdeskTableError } from '@/lib/helpdeskClient';
 import { getUserOrganization } from '@/lib/organization';
+import { getSupportAutoReplyMessage, isWithinSupportBusinessHours } from '@/lib/supportHours';
 
 const ACTIVE_SUPPORT_TICKET_STATUSES = ['open', 'in_progress', 'blocked'];
 const VISIBLE_SUPPORT_TICKET_STATUSES = ['open', 'in_progress', 'blocked', 'resolved', 'closed'];
+
+type SupportChatMessage = {
+  id: string;
+  author_user_id: string | null;
+  author_email: string | null;
+  comment: string;
+  created_at: string;
+};
+
+// In-process fallback store used only if neither Supabase instance has `helpdesk_tickets` or `audit_logs`.
+const memorySupportThreads = new Map<string, SupportChatMessage[]>();
 
 function getLocaleRevalidationPaths(locale: string) {
   return [
@@ -33,6 +47,70 @@ async function requireOrgAccess() {
   return { user, organization, role: (role || '').toLowerCase() };
 }
 
+async function getFallbackSupportMessages(organizationId: string): Promise<SupportChatMessage[]> {
+  try {
+    const erpAdmin = createAdminClient();
+    const { data, error } = await erpAdmin
+      .from('audit_logs')
+      .select('id, actor_user_id, actor_email, metadata, created_at')
+      .eq('organization_id', organizationId)
+      .eq('event_type', 'support_chat_message')
+      .order('created_at', { ascending: true })
+      .limit(200);
+
+    if (!error && Array.isArray(data)) {
+      return data.map((row: any) => ({
+        id: String(row.id),
+        author_user_id: row.actor_user_id || null,
+        author_email: row.actor_email || null,
+        comment: typeof row.metadata?.comment === 'string' ? row.metadata.comment : '',
+        created_at: row.created_at,
+      }));
+    }
+  } catch {
+    // Fall back to in-memory thread if audit_logs is unavailable
+  }
+
+  return memorySupportThreads.get(organizationId) || [];
+}
+
+async function appendFallbackSupportMessage({
+  organizationId,
+  authorUserId,
+  authorEmail,
+  comment,
+}: {
+  organizationId: string;
+  authorUserId: string | null;
+  authorEmail: string | null;
+  comment: string;
+}) {
+  const createdAt = new Date().toISOString();
+  const entry: SupportChatMessage = {
+    id: randomUUID(),
+    author_user_id: authorUserId,
+    author_email: authorEmail,
+    comment,
+    created_at: createdAt,
+  };
+
+  const existing = memorySupportThreads.get(organizationId) || [];
+  memorySupportThreads.set(organizationId, [...existing, entry]);
+
+  try {
+    const erpAdmin = createAdminClient();
+    await erpAdmin.from('audit_logs').insert({
+      event_type: 'support_chat_message',
+      organization_id: organizationId,
+      actor_user_id: authorUserId,
+      actor_email: authorEmail,
+      metadata: { comment, source: 'dashboard_chat' },
+    });
+  } catch {
+    // Ignore if audit_logs is not migrated
+  }
+}
+
 export async function checkMessengerConnection(organizationId: string) {
   void organizationId;
   return { isConnected: true, pageName: 'Prado Support', pageId: 'internal-support' };
@@ -50,17 +128,18 @@ export async function disconnectMessengerConnection(organizationId: string, loca
 }
 
 async function getOrCreateDashboardSupportTicket({
+  supabaseAdmin,
   organizationId,
   organizationName,
   requestedByUserId,
   requestedByEmail,
 }: {
+  supabaseAdmin: any;
   organizationId: string;
   organizationName?: string | null;
   requestedByUserId: string;
   requestedByEmail: string | null;
 }) {
-  const supabaseAdmin = createHelpdeskAdminClient();
   const { data: activeTicket, error: activeTicketError } = await supabaseAdmin
     .from('helpdesk_tickets')
     .select('id')
@@ -72,7 +151,7 @@ async function getOrCreateDashboardSupportTicket({
     .maybeSingle();
 
   if (activeTicketError) {
-    throw new Error(activeTicketError.message);
+    throw activeTicketError;
   }
 
   if (activeTicket?.id) {
@@ -101,7 +180,7 @@ async function getOrCreateDashboardSupportTicket({
     .single();
 
   if (createdTicketError || !createdTicket?.id) {
-    throw new Error(createdTicketError?.message || 'Failed to create support chat ticket.');
+    throw createdTicketError || new Error('Failed to create support chat ticket.');
   }
 
   await supabaseAdmin.from('helpdesk_ticket_events').insert({
@@ -118,7 +197,16 @@ async function getOrCreateDashboardSupportTicket({
 
 export async function getDashboardSupportThread() {
   const { organization } = await requireOrgAccess();
-  const supabaseAdmin = createHelpdeskAdminClient();
+  const { client: supabaseAdmin, hasHelpdeskTables } = await getHelpdeskAdminClient();
+
+  if (!hasHelpdeskTables) {
+    const fallbackMessages = await getFallbackSupportMessages(organization.id);
+    return {
+      ticketStatus: fallbackMessages.length > 0 ? 'open' : null,
+      ticketPriority: fallbackMessages.length > 0 ? 'medium' : null,
+      messages: fallbackMessages,
+    };
+  }
 
   const { data: ticket, error: ticketError } = await supabaseAdmin
     .from('helpdesk_tickets')
@@ -131,6 +219,14 @@ export async function getDashboardSupportThread() {
     .maybeSingle();
 
   if (ticketError) {
+    if (isMissingHelpdeskTableError(ticketError)) {
+      const fallbackMessages = await getFallbackSupportMessages(organization.id);
+      return {
+        ticketStatus: fallbackMessages.length > 0 ? 'open' : null,
+        ticketPriority: fallbackMessages.length > 0 ? 'medium' : null,
+        messages: fallbackMessages,
+      };
+    }
     return { error: ticketError.message };
   }
 
@@ -138,13 +234,7 @@ export async function getDashboardSupportThread() {
     return {
       ticketStatus: null,
       ticketPriority: null,
-      messages: [] as Array<{
-        id: string;
-        author_user_id: string | null;
-        author_email: string | null;
-        comment: string;
-        created_at: string;
-      }>,
+      messages: [] as SupportChatMessage[],
     };
   }
 
@@ -155,13 +245,7 @@ export async function getDashboardSupportThread() {
     return {
       ticketStatus: 'closed',
       ticketPriority: typeof ticket.priority === 'string' ? ticket.priority : null,
-      messages: [] as Array<{
-        id: string;
-        author_user_id: string | null;
-        author_email: string | null;
-        comment: string;
-        created_at: string;
-      }>,
+      messages: [] as SupportChatMessage[],
     };
   }
 
@@ -206,14 +290,69 @@ export async function sendDashboardSupportMessage({
   }
 
   const { user, organization } = await requireOrgAccess();
-  const ticketId = await getOrCreateDashboardSupportTicket({
-    organizationId: organization.id,
-    organizationName: organization.name,
-    requestedByUserId: user.id,
-    requestedByEmail: user.email || null,
-  });
+  const { client: supabaseAdmin, hasHelpdeskTables } = await getHelpdeskAdminClient();
+  const isOnline = isWithinSupportBusinessHours();
 
-  const supabaseAdmin = createHelpdeskAdminClient();
+  if (!hasHelpdeskTables) {
+    await appendFallbackSupportMessage({
+      organizationId: organization.id,
+      authorUserId: user.id,
+      authorEmail: user.email || null,
+      comment: normalizedMessage,
+    });
+
+    if (!isOnline) {
+      await appendFallbackSupportMessage({
+        organizationId: organization.id,
+        authorUserId: null,
+        authorEmail: 'support@pradojob.com',
+        comment: getSupportAutoReplyMessage(locale),
+      });
+    }
+
+    for (const path of getLocaleRevalidationPaths(locale)) {
+      revalidatePath(path);
+    }
+
+    return { success: true, offHoursAutoReplied: !isOnline };
+  }
+
+  let ticketId: string;
+  try {
+    ticketId = await getOrCreateDashboardSupportTicket({
+      supabaseAdmin,
+      organizationId: organization.id,
+      organizationName: organization.name,
+      requestedByUserId: user.id,
+      requestedByEmail: user.email || null,
+    });
+  } catch (err: any) {
+    if (isMissingHelpdeskTableError(err)) {
+      await appendFallbackSupportMessage({
+        organizationId: organization.id,
+        authorUserId: user.id,
+        authorEmail: user.email || null,
+        comment: normalizedMessage,
+      });
+
+      if (!isOnline) {
+        await appendFallbackSupportMessage({
+          organizationId: organization.id,
+          authorUserId: null,
+          authorEmail: 'support@pradojob.com',
+          comment: getSupportAutoReplyMessage(locale),
+        });
+      }
+
+      for (const path of getLocaleRevalidationPaths(locale)) {
+        revalidatePath(path);
+      }
+
+      return { success: true, offHoursAutoReplied: !isOnline };
+    }
+    return { error: err?.message || 'Failed to create support chat ticket.' };
+  }
+
   const { error: commentError } = await supabaseAdmin
     .from('helpdesk_ticket_comments')
     .insert({
@@ -256,11 +395,30 @@ export async function sendDashboardSupportMessage({
     metadata: { source: 'dashboard_chat' },
   });
 
+  if (!isOnline) {
+    const autoReplyText = getSupportAutoReplyMessage(locale);
+    await supabaseAdmin.from('helpdesk_ticket_comments').insert({
+      ticket_id: ticketId,
+      author_user_id: null,
+      author_email: 'support@pradojob.com',
+      comment: autoReplyText,
+    });
+
+    await supabaseAdmin.from('helpdesk_ticket_events').insert({
+      ticket_id: ticketId,
+      event_type: 'comment',
+      event_note: autoReplyText,
+      actor_user_id: null,
+      actor_email: 'support@pradojob.com',
+      metadata: { source: 'dashboard_chat_auto_reply', off_hours: true },
+    });
+  }
+
   for (const path of getLocaleRevalidationPaths(locale)) {
     revalidatePath(path);
   }
 
-  return { success: true };
+  return { success: true, offHoursAutoReplied: !isOnline };
 }
 
 export async function sendMessengerReply({ message, locale = 'en' }: { message: string; locale?: string }) {
