@@ -74,13 +74,13 @@ export function PwaInstallPrompt() {
   if (!deferredPrompt && !isIos) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm rounded-2xl border border-emerald-500/30 bg-slate-900 p-4 text-white shadow-2xl backdrop-blur-md sm:left-auto">
+    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm rounded-2xl border border-emerald-500/30 bg-slate-900 p-4 text-white shadow-2xl backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="shrink-0 overflow-hidden rounded-xl border border-emerald-500/40 shadow-sm">
             <Image
               src={appIcon}
-              alt="Prado Jobs App Icon"
+              alt="Prado App Icon"
               width={44}
               height={44}
               className="h-11 w-11 object-cover"
@@ -88,7 +88,7 @@ export function PwaInstallPrompt() {
           </div>
           <div>
             <p className="text-xs font-bold text-slate-100">
-              Install Prado Jobs App
+              Install Prado App
             </p>
             <p className="mt-0.5 text-[11px] leading-tight text-slate-300">
               Add to home screen for instant 1-tap access from any device.
