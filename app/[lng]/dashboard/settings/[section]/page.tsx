@@ -1,8 +1,6 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
-import ServicesPanel from '../ServicesPanel';
-import TrucksPanel from '../TrucksPanel';
-import ExpenseCategoriesPanel from '../ExpenseCategoriesPanel';
+import OperationsSettingsTabs from '../OperationsSettingsTabs';
 import TeamsPanel from '../TeamsPanel';
 import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
 import DeleteAccountSurveyCard from '../DeleteAccountSurveyCard';
@@ -27,7 +25,6 @@ import {
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
 
-const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
 const SECTION_IDS = [
   'account-settings',
@@ -48,10 +45,14 @@ function isSectionId(value: string): value is SectionId {
 
 export default async function SettingsSectionPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ lng?: string; section?: string }>;
+  searchParams?: Promise<{ tab?: string }>;
 }) {
   const resolvedParams = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const initialTab = typeof resolvedSearchParams?.tab === 'string' ? resolvedSearchParams.tab : undefined;
   const locale = resolvedParams.lng ?? 'en';
   const translations = getTranslations(locale);
   const sectionParam = resolvedParams.section ?? '';
@@ -197,23 +198,13 @@ export default async function SettingsSectionPage({
             )}
 
             {section === 'operations-settings' && (
-              <>
-                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                  <ServicesPanel initialServices={services} locale={locale} />
-                </div>
-
-                {!isIndividualAccount && (
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                    <TrucksPanel initialTrucks={trucks} locale={locale} />
-                  </div>
-                )}
-
-                {!isIndividualAccount && (
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                    <ExpenseCategoriesPanel locale={locale} />
-                  </div>
-                )}
-              </>
+              <OperationsSettingsTabs
+                services={services}
+                trucks={trucks}
+                locale={locale}
+                isIndividualAccount={isIndividualAccount}
+                initialTab={initialTab}
+              />
             )}
 
             {section === 'document-settings' && (
