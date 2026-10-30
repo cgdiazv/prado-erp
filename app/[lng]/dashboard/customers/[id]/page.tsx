@@ -1,10 +1,7 @@
 import { createClient } from '@/lib/supabaseServer';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import CustomerDetailsForm from '@/components/dashboard/CustomerDetailsForm';
-import CustomerInvoicesTable from '@/components/dashboard/CustomerInvoicesTable';
-import CustomerJobLogTable from '@/components/dashboard/CustomerJobLogTable';
-import ServiceSitesSection from '@/components/dashboard/ServiceSitesSection';
+import CustomerDetailTabs from '@/components/dashboard/CustomerDetailTabs';
 import CustomerEmailModal from '@/components/dashboard/CustomerEmailModal';
 import DeleteCustomerModal from '@/components/dashboard/DeleteCustomerModal';
 import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
@@ -13,10 +10,13 @@ import { getUserOrganization } from '@/lib/organization';
 
 interface CustomerPageProps {
   params: Promise<{ id: string; lng?: string }> | { id: string; lng?: string };
+  searchParams?: Promise<{ tab?: string }> | { tab?: string };
 }
 
-export default async function CustomerDetailPage({ params }: CustomerPageProps) {
+export default async function CustomerDetailPage({ params, searchParams }: CustomerPageProps) {
   const resolvedParams = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const initialTab = resolvedSearchParams.tab;
   const { id: customerId, lng } = resolvedParams;
   const locale = lng ?? 'en';
   const isEs = locale.toLowerCase().startsWith('es');
@@ -93,81 +93,62 @@ export default async function CustomerDetailPage({ params }: CustomerPageProps) 
             </div>
 
             {/* Client Master Profile Banner Section */}
-            <header className="bg-white p-6 md:p-8 rounded-xl border border-gray-200 shadow-xs">
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                <div>
-                  <span className="text-xs font-bold uppercase text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md tracking-wide">
-                    {translations.dashboard.crmClientAccount}
-                  </span>
-                  <h1 className="text-3xl font-bold text-slate-900 mt-3">
-                    {customer.first_name} {customer.last_name}
-                  </h1>
-                  <p className="text-xs text-slate-400 font-semibold mt-1 uppercase tracking-wider">
+            <header className="space-y-2.5">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                  {customer.first_name} {customer.last_name}
+                </h1>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
                     {customer.company_name || translations.dashboard.individualResidentialAccount}
                   </p>
                   {customer.autopay_enabled ? (
-                    <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                    <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
                       {isEs ? 'Auto cobro activo' : 'Auto Pay Active'}
-                    </div>
+                    </span>
                   ) : null}
                 </div>
-                
-                <div className="text-xs text-slate-600 space-y-1.5 md:text-right border-t md:border-t-0 pt-4 md:pt-0 border-gray-100 min-w-[200px]">
-                  <div>
-                    <strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide block md:inline md:mr-1">{translations.dashboard.email}:</strong>
-                    {customer.email ? (
-                      <CustomerEmailModal
-                        locale={locale}
-                        customerId={customer.id}
-                        customerEmail={customer.email}
-                        customerName={`${customer.first_name} ${customer.last_name}`.trim()}
-                        context="customer_profile"
-                        className="cursor-pointer text-emerald-600 hover:text-emerald-700 hover:underline"
-                      />
-                    ) : (
-                      '—'
-                    )}
-                  </div>
-                  <div><strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide block md:inline md:mr-1">{translations.dashboard.phone}:</strong> {customer.phone || '—'}</div>
-                  <div><strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide block md:inline md:mr-1">{translations.dashboard.billingAddressLabel}:</strong> {customer.billing_address || '—'}</div>
+              </div>
+
+              {/* Contact Details directly under company name */}
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs text-slate-600 pt-0.5">
+                <div>
+                  <strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide mr-1.5">{translations.dashboard.email}:</strong>
+                  {customer.email ? (
+                    <CustomerEmailModal
+                      locale={locale}
+                      customerId={customer.id}
+                      customerEmail={customer.email}
+                      customerName={`${customer.first_name} ${customer.last_name}`.trim()}
+                      context="customer_profile"
+                      className="cursor-pointer text-emerald-600 hover:text-emerald-700 hover:underline font-medium"
+                    />
+                  ) : (
+                    '—'
+                  )}
+                </div>
+                <div>
+                  <strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide mr-1.5">{translations.dashboard.phone}:</strong>
+                  <span className="text-slate-700 font-medium">{customer.phone || '—'}</span>
+                </div>
+                <div>
+                  <strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide mr-1.5">{translations.dashboard.billingAddressLabel}:</strong>
+                  <span className="text-slate-700 font-medium">{customer.billing_address || '—'}</span>
                 </div>
               </div>
             </header>
 
-            {/* MAIN DATA VIEW AREA */}
-            <div className="space-y-8">
-              
-              {/* HORIZONTAL PROFILE MANAGEMENT WORKSPACE FORM */}
-              <CustomerDetailsForm
-                customerId={customerId}
-                locale={locale}
-                initialFirstName={customer.first_name}
-                initialLastName={customer.last_name}
-                initialCompanyName={customer.company_name || ''}
-                initialEmail={customer.email || ''}
-                initialPhone={customer.phone || ''}
-                initialBillingAddress={customer.billing_address || ''}
-              />
-
-              {/* Service Sites Container Section (MOVED UP ABOVE THE COLUMNS SPLIT) */}
-            <ServiceSitesSection customerId={customerId} locale={locale} properties={properties || []} />
-
-              {/* Job History Manifest Timeline Log */}
-              <div className="space-y-3">
-                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{translations.dashboard.operationalJobLog}</h2>
-                <CustomerJobLogTable jobs={customerJobs} locale={locale} />
-              </div>
-
-              <CustomerInvoicesTable
-                invoices={invoices || []}
-                customerId={customerId}
-                customerName={`${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || customer?.company_name || 'Customer'}
-                customerEmail={customer?.email || null}
-                locale={locale}
-                orgTaxRatePercent={Number(org.invoice_tax_rate_percent ?? 0)}
-              />
-
-            </div>
+            {/* Horizontal Sub-tabs (Client Details | Jobs Log | Invoice) */}
+            <CustomerDetailTabs
+              customerId={customerId}
+              locale={locale}
+              initialTab={initialTab}
+              customer={customer}
+              properties={properties || []}
+              customerJobs={customerJobs}
+              invoices={invoices || []}
+              orgTaxRatePercent={Number(org.invoice_tax_rate_percent ?? 0)}
+            />
           </div>
     </main>
   );

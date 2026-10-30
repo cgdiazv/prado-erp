@@ -131,12 +131,9 @@ export default function ReferralProgramCard({
       {/* Header & Value Proposition */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <Gift className="w-3.5 h-3.5 text-emerald-600" />
-              {isEs ? 'Programa de Referidos' : 'Contractor Referral Program'}
-            </span>
-          </div>
+          <p className="text-[11px] font-bold text-[#0a9d73] uppercase tracking-wider mb-1.5">
+            {isEs ? 'Programa de Referidos' : 'Contractor Referral Program'}
+          </p>
           <h3 className="text-xl font-black text-slate-900 tracking-tight">
             {isEs ? 'Invita a un colega y obtén 50% de descuento por 1 año' : 'Give an invite, get 50% off for 1 full year'}
           </h3>

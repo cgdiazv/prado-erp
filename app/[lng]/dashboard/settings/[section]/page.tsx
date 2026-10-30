@@ -87,7 +87,6 @@ export default async function SettingsSectionPage({
     redirect(`/${locale}/dashboard`);
   }
 
-  const initial = org.name ? org.name.charAt(0) : 'C';
   const tier = normalizeSubscriptionStatus(org.subscription_status);
   const isIndividualAccount = tier === 'individual';
   const canAccessTeamFeatures = canUseTeamFeatures(tier);
@@ -249,6 +248,7 @@ export default async function SettingsSectionPage({
                 subscriptionStatus={org.subscription_status || null}
                 currentUserRole={normalizedRole || null}
                 initialRolePermissions={initialRolePermissions || undefined}
+                initialTab={initialTab}
               />
             )}
 

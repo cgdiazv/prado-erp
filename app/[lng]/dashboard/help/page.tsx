@@ -29,9 +29,9 @@ export default async function DashboardHelpPage({
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
           <section className="xl:col-span-8 space-y-6">
             <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#0a9d73]">
                 {isEs ? 'Centro de Ayuda' : 'Help Center'}
-              </span>
+              </p>
               <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
                 {isEs ? 'Asistente de Ayuda y Guias Practicas' : 'Help Assistant and How-To Guides'}
               </h1>

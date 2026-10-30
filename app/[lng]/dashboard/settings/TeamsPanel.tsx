@@ -23,7 +23,10 @@ interface TeamsPanelProps {
   subscriptionStatus?: string | null;
   currentUserRole?: string | null;
   initialRolePermissions?: DashboardRolePermissionsMap;
+  initialTab?: string;
 }
+
+export type TeamTabId = 'settings' | 'members';
 
 const USER_ROLES = [
   {
@@ -49,8 +52,46 @@ const USER_ROLES = [
   }
 ];
 
-export default function TeamsPanel({ organizationId, locale = 'en', subscriptionStatus = null, currentUserRole = null, initialRolePermissions }: TeamsPanelProps) {
+export default function TeamsPanel({
+  organizationId,
+  locale = 'en',
+  subscriptionStatus = null,
+  currentUserRole = null,
+  initialRolePermissions,
+  initialTab,
+}: TeamsPanelProps) {
   const isEs = locale.toLowerCase().startsWith('es');
+
+  const normalizeInitialTab = (tab?: string): TeamTabId => {
+    if (tab === 'members') return 'members';
+    return 'settings';
+  };
+
+  const [activeTab, setActiveTab] = useState<TeamTabId>(() => normalizeInitialTab(initialTab));
+
+  const handleTabChange = (tabId: TeamTabId) => {
+    setActiveTab(tabId);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (tabId === 'settings') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tabId);
+      }
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  };
+
+  const tabs: Array<{ id: TeamTabId; label: string }> = [
+    {
+      id: 'settings',
+      label: isEs ? 'Invitar Miembro' : 'Invite Member',
+    },
+    {
+      id: 'members',
+      label: isEs ? 'Miembros' : 'Members',
+    },
+  ];
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<TeamMember['role']>('owner');
   const [isLoading, setIsLoading] = useState(false);
@@ -413,25 +454,50 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-xs p-6 md:p-8 space-y-6">
-        <div className="space-y-6">
-          <div className="space-y-6">
-            {/* Header */}
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">
-                {isEs ? 'Equipo' : 'Team'}
-              </h3>
-              <p className="text-xs text-slate-400">
-                {isEs
-                  ? 'Invita miembros del equipo y gestiona sus permisos y roles.'
-                  : 'Invite team members and manage their permissions and roles.'}
-              </p>
-            </div>
+    <div className="space-y-4 min-w-0">
+      {/* Horizontal Sub-tabs */}
+      <div className="border-b border-slate-200">
+        <nav
+          className="flex items-center space-x-8 -mb-px overflow-x-auto no-scrollbar"
+          role="tablist"
+          aria-label={isEs ? 'Pestañas de equipo' : 'Team sub-tabs'}
+        >
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                id={`tab-${tab.id}`}
+                role="tab"
+                type="button"
+                aria-selected={isActive}
+                aria-controls={`tabpanel-${tab.id}`}
+                onClick={() => handleTabChange(tab.id)}
+                className={`whitespace-nowrap pb-3 pt-1 px-1 text-sm transition-all border-b-[3px] cursor-pointer ${
+                  isActive
+                    ? 'border-emerald-600 text-slate-900 font-bold'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 font-medium'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
+      {/* Tab 1: Team Settings (First section: Header, Invite Form, Roles & Permissions) */}
+      <div
+        id="tabpanel-settings"
+        role="tabpanel"
+        aria-labelledby="tab-settings"
+        className={activeTab === 'settings' ? 'block' : 'hidden'}
+      >
+        <div className="bg-white rounded-xl border border-gray-200 shadow-xs p-6 md:p-8 space-y-6">
+          <div className="space-y-6">
             {/* Invite Form */}
             {canViewTeamTables ? (
-              <div className="border-t border-gray-200 pt-6">
+              <div>
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
                   {isEs ? 'Invitar Miembro' : 'Invite Member'}
                 </p>
@@ -470,7 +536,7 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
                   <button
                     type="submit"
                     disabled={isLoading || !email}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white text-xs font-bold rounded-lg transition shadow-sm"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white text-xs font-bold rounded-lg transition shadow-sm cursor-pointer"
                   >
                     {isLoading ? (isEs ? 'Enviando...' : 'Sending...') : (isEs ? 'Invitar' : 'Invite')}
                   </button>
@@ -490,115 +556,121 @@ export default function TeamsPanel({ organizationId, locale = 'en', subscription
                 </form>
               </div>
             ) : null}
-          </div>
 
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Roles &amp; Permission</p>
-              <p className="text-xs text-slate-400 mt-1">Configure module actions and permissions for dashboard roles.</p>
-            </div>
+            <div className="space-y-4 pt-6 border-t border-gray-200">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Roles &amp; Permission</p>
+                <p className="text-xs text-slate-400 mt-1">Configure module actions and permissions for dashboard roles.</p>
+              </div>
 
-            <div className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
-              {USER_ROLES.map((roleItem) => {
-                const roleId = roleItem.id as TeamMember['role'];
-                return (
-                  <div key={roleItem.id} className="p-3 flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">{getRoleLabel(roleItem.id)}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{getRoleDescription(roleItem.id)}</p>
+              <div className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+                {USER_ROLES.map((roleItem) => {
+                  const roleId = roleItem.id as TeamMember['role'];
+                  return (
+                    <div key={roleItem.id} className="p-3 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{getRoleLabel(roleItem.id)}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{getRoleDescription(roleItem.id)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openRoleModal(roleId)}
+                        disabled={!canViewTeamTables}
+                        className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer disabled:cursor-not-allowed disabled:text-slate-400"
+                      >
+                        Edit
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => openRoleModal(roleId)}
-                      disabled={!canViewTeamTables}
-                      className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {canViewTeamTables ? (
-        <>
+      {/* Tab 2: Members Table Panel */}
+      <div
+        id="tabpanel-members"
+        role="tabpanel"
+        aria-labelledby="tab-members"
+        className={activeTab === 'members' ? 'block' : 'hidden'}
+      >
+        {canViewTeamTables ? (
           <div className="space-y-3">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               {isEs ? 'Miembros Actuales' : 'Current Members'} ({acceptedMembers.length})
             </p>
 
             {isLoadingMembers ? (
-              <p className="text-xs text-slate-500">{isEs ? 'Cargando miembros...' : 'Loading members...'}</p>
+              <div className="border border-gray-200 bg-white rounded-xl p-8 text-center shadow-xs">
+                <p className="text-xs text-slate-500">{isEs ? 'Cargando miembros...' : 'Loading members...'}</p>
+              </div>
             ) : (
               <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-xs">
                 <table className="w-full min-w-[980px] text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Nombre' : 'Name'}</th>
-                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Apellido' : 'Last Name'}</th>
-                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Correo' : 'Email Address'}</th>
-                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Telefono' : 'Phone Number'}</th>
-                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Permiso' : 'Permission Type'}</th>
-                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Ultimo acceso' : 'Last Login'}</th>
-                  <th className="text-right py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Accion' : 'Action'}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {acceptedMembers.length === 0 ? (
-                  <tr className="border-t border-gray-100">
-                    <td colSpan={7} className="py-6 px-3 text-sm text-slate-500 text-center">
-                      {isEs ? 'No hay miembros activos todavia.' : 'No active members yet.'}
-                    </td>
-                  </tr>
-                ) : (
-                  acceptedMembers.map((member) => (
-                    <tr key={member.email} className="border-t border-gray-100 hover:bg-slate-50/60">
-                      <td className="py-2.5 px-3 text-sm text-gray-800">{member.first_name?.trim() || '—'}</td>
-                      <td className="py-2.5 px-3 text-sm text-gray-800">{member.last_name?.trim() || '—'}</td>
-                      <td className="py-2.5 px-3 text-sm text-gray-800">{member.email}</td>
-                      <td className="py-2.5 px-3 text-sm text-gray-800">{member.phone?.trim() || '—'}</td>
-                      <td className="py-2.5 px-3 text-sm text-gray-800">
-                        <span className={`text-xs font-bold px-2 py-1 rounded border whitespace-nowrap ${getRoleBadgeColor(member.role)}`}>
-                          {getRoleLabel(member.role)}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-sm text-gray-800">{formatLastLogin(member.last_login_at)}</td>
-                      <td className="py-2.5 px-3 text-right">
-                        {member.role === 'owner' ? (
-                          <span className="text-xs font-semibold text-red-600">
-                            {isEs ? 'Usa Eliminar cuenta' : 'Use Delete Account'}
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleRemoveMember(member.email)}
-                            disabled={deletingEmail === member.email}
-                            className="px-2 py-1 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded transition disabled:opacity-50"
-                          >
-                            {deletingEmail === member.email ? (isEs ? 'Eliminando...' : 'Removing...') : (isEs ? 'Eliminar' : 'Remove')}
-                          </button>
-                        )}
-                      </td>
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Nombre' : 'Name'}</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Apellido' : 'Last Name'}</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Correo' : 'Email Address'}</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Telefono' : 'Phone Number'}</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Permiso' : 'Permission Type'}</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Ultimo acceso' : 'Last Login'}</th>
+                      <th className="text-right py-2.5 px-3 text-xs font-semibold text-slate-500">{isEs ? 'Accion' : 'Action'}</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
+                  </thead>
+                  <tbody>
+                    {acceptedMembers.length === 0 ? (
+                      <tr className="border-t border-gray-100">
+                        <td colSpan={7} className="py-6 px-3 text-sm text-slate-500 text-center">
+                          {isEs ? 'No hay miembros activos todavia.' : 'No active members yet.'}
+                        </td>
+                      </tr>
+                    ) : (
+                      acceptedMembers.map((member) => (
+                        <tr key={member.email} className="border-t border-gray-100 hover:bg-slate-50/60">
+                          <td className="py-2.5 px-3 text-sm text-gray-800">{member.first_name?.trim() || '—'}</td>
+                          <td className="py-2.5 px-3 text-sm text-gray-800">{member.last_name?.trim() || '—'}</td>
+                          <td className="py-2.5 px-3 text-sm text-gray-800">{member.email}</td>
+                          <td className="py-2.5 px-3 text-sm text-gray-800">{member.phone?.trim() || '—'}</td>
+                          <td className="py-2.5 px-3 text-sm text-gray-800">
+                            <span className={`text-xs font-bold px-2 py-1 rounded border whitespace-nowrap ${getRoleBadgeColor(member.role)}`}>
+                              {getRoleLabel(member.role)}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-sm text-gray-800">{formatLastLogin(member.last_login_at)}</td>
+                          <td className="py-2.5 px-3 text-right">
+                            {member.role === 'owner' ? (
+                              <span className="text-xs font-semibold text-red-600">
+                                {isEs ? 'Usa Eliminar cuenta' : 'Use Delete Account'}
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleRemoveMember(member.email)}
+                                disabled={deletingEmail === member.email}
+                                className="px-2 py-1 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded transition disabled:opacity-50 cursor-pointer"
+                              >
+                                {deletingEmail === member.email ? (isEs ? 'Eliminando...' : 'Removing...') : (isEs ? 'Eliminar' : 'Remove')}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
                 </table>
               </div>
             )}
-
           </div>
-
-        </>
-      ) : !isResolvingRole ? (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-          {isEs
-            ? 'Solo propietario y gerente pueden ver la tabla de miembros.'
-            : 'Only owner and manager can view the member table.'}
-        </div>
-      ) : null}
+        ) : !isResolvingRole ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+            {isEs
+              ? 'Solo propietario y gerente pueden ver la tabla de miembros.'
+              : 'Only owner and manager can view the member table.'}
+          </div>
+        ) : null}
+      </div>
 
       {isRoleModalOpen && editingRole ? (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-4">
