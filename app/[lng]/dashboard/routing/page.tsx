@@ -12,10 +12,14 @@ import { getTeamMembers } from '@/app/actions';
 
 export default async function RoutingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ lng?: string }>;
+  searchParams?: Promise<{ tab?: string }>;
 }) {
   const resolvedParams = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const initialTab = resolvedSearchParams.tab;
   const locale = resolvedParams.lng ?? 'en';
   const translations = getTranslations(locale);
 
@@ -164,6 +168,7 @@ export default async function RoutingPage({
           trucks={trucks}
           drivers={drivers}
           locale={locale}
+          initialTab={initialTab}
           maxStopsPerTruck={org.max_jobs_per_truck ?? 4}
           autoOptimizeDriveRoutes={org.auto_optimize_drive_routes ?? true}
           canAccessLiveTracking={canAccessLiveTracking}

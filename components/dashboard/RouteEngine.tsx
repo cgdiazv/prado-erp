@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import DispatchMap from '@/components/DispatchMap';
-import { updateJobTruckAssignment, syncVehicleRouteOrder, assignDriverToVehicle } from '@/app/actions';
+import { syncVehicleRouteOrder, assignDriverToVehicle } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 
 interface CustomerSummary {
@@ -51,6 +50,7 @@ interface RouteEngineProps {
   trucks: Truck[] | null;
   drivers?: DriverOption[];
   locale?: string;
+  initialTab?: string;
   maxStopsPerTruck?: number;
   autoOptimizeDriveRoutes?: boolean;
   canAccessLiveTracking?: boolean;
@@ -61,14 +61,11 @@ type RouteState = {
   truckRoutes: Record<string, string[]>;
 };
 
-type DragSource = {
-  jobId: string;
-  fromTruckId: string | null;
-};
-
 type SerializedRouteState = RouteState;
+type TabType = 'map' | 'unassigned' | 'routes';
 
 const ROUTE_STORAGE_PREFIX = 'dispatch-routing:planner:';
+
 function getCustomerLabel(job: Job) {
   const customer = job.properties?.customers;
   if (!customer) return '';
@@ -260,6 +257,7 @@ export default function RouteEngine({
   trucks,
   drivers = [],
   locale = 'en',
+  initialTab,
   maxStopsPerTruck = 4,
   autoOptimizeDriveRoutes = true,
   canAccessLiveTracking = false,
@@ -268,6 +266,28 @@ export default function RouteEngine({
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
   const removeLabel = isEs ? 'Quitar' : 'Remove';
+
+  const normalizeInitialTab = (tab?: string): TabType => {
+    if (tab === 'unassigned' || tab === 'unassigned-jobs') return 'unassigned';
+    if (tab === 'routes' || tab === 'fleet-routes') return 'routes';
+    return 'map';
+  };
+
+  const [activeTab, setActiveTab] = useState<TabType>(() => normalizeInitialTab(initialTab));
+
+  const handleTabChange = (tabId: TabType) => {
+    setActiveTab(tabId);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (tabId === 'map') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tabId);
+      }
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  };
+
   const routeJobs = useMemo(
     () => (jobs || []).filter((job) => job.status === 'scheduled' || job.status === 'dispatched'),
     [jobs]
@@ -280,19 +300,8 @@ export default function RouteEngine({
   const [routeState, setRouteState] = useState<RouteState>(() => buildBaseRouteState(routeJobs, routeTrucks));
   const [vehicleDrivers, setVehicleDrivers] = useState<Record<string, DriverOption>>({});
   const [isHydrated, setIsHydrated] = useState(false);
-  const [draggingJob, setDraggingJob] = useState<DragSource | null>(null);
   const [syncingJobId, setSyncingJobId] = useState<string | null>(null);
-  const [mapDropActive, setMapDropActive] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
-  const touchDragHoldRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchStartPointRef = useRef<{ x: number; y: number } | null>(null);
-
-  const clearTouchHold = () => {
-    if (!touchDragHoldRef.current) return;
-    clearTimeout(touchDragHoldRef.current);
-    touchDragHoldRef.current = null;
-  };
-
   const [collapsedTrucks, setCollapsedTrucks] = useState<Record<string, boolean>>({});
 
   const toggleTruckCollapse = (truckId: string) => {
@@ -388,131 +397,6 @@ export default function RouteEngine({
     }
   };
 
-  const persistAssignment = async (jobId: string, truckId: string | null) => {
-    setSyncingJobId(jobId);
-    const result = await updateJobTruckAssignment(jobId, truckId);
-
-    if (result?.error) {
-      console.error(result.error);
-    } else {
-      router.refresh();
-    }
-
-    setSyncingJobId(null);
-  };
-
-  const moveJob = (
-    jobId: string,
-    target: { truckId?: string | null; beforeJobId?: string | null }
-  ) => {
-    setRouteState((previous) => {
-      const job = jobMap.get(jobId);
-      if (!job) return previous;
-
-      const cleaned = removeJobFromState(previous, jobId);
-
-      if (typeof target.truckId === 'string') {
-        return {
-          ...cleaned,
-          truckRoutes: {
-            ...cleaned.truckRoutes,
-            [target.truckId]: insertJobId(cleaned.truckRoutes[target.truckId] || [], jobId, target.beforeJobId),
-          },
-        };
-      }
-
-      return {
-        ...cleaned,
-        unassignedIds: insertJobId(cleaned.unassignedIds, jobId, target.beforeJobId),
-      };
-    });
-  };
-
-  const handleDragStart = (jobId: string, fromTruckId: string | null) => {
-    setDraggingJob({ jobId, fromTruckId });
-  };
-
-  const handleDragEnd = () => {
-    clearTouchHold();
-    touchStartPointRef.current = null;
-    setDraggingJob(null);
-    setMapDropActive(false);
-  };
-
-  const startTouchHoldDrag = (
-    event: React.TouchEvent<HTMLElement>,
-    jobId: string,
-    fromTruckId: string | null
-  ) => {
-    if (!canStartTouchDrag(event.target)) return;
-    const touch = event.touches[0];
-    if (!touch) return;
-
-    touchStartPointRef.current = { x: touch.clientX, y: touch.clientY };
-    clearTouchHold();
-    touchDragHoldRef.current = setTimeout(() => {
-      setDraggingJob({ jobId, fromTruckId });
-      touchDragHoldRef.current = null;
-    }, 280);
-  };
-
-  const handleTouchMove = (event: React.TouchEvent<HTMLElement>) => {
-    const startPoint = touchStartPointRef.current;
-    if (!startPoint || draggingJob) return;
-    const touch = event.touches[0];
-    if (!touch) return;
-
-    const movedX = Math.abs(touch.clientX - startPoint.x);
-    const movedY = Math.abs(touch.clientY - startPoint.y);
-
-    if (movedX > 8 || movedY > 8) {
-      clearTouchHold();
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      clearTouchHold();
-    };
-  }, []);
-
-  const handleTouchDrop = async (clientX: number, clientY: number) => {
-    if (!draggingJob) return;
-
-    const dropElement = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
-    const dropZone = dropElement?.closest('[data-route-dropzone]') as HTMLElement | null;
-    const dropTarget = dropZone?.dataset.routeDropzone;
-
-    if (!dropTarget) {
-      handleDragEnd();
-      return;
-    }
-
-    if (dropTarget === 'map') {
-      await handleDropToMap();
-      return;
-    }
-
-    const [zoneType, zoneId, beforeJobId] = dropTarget.split(':');
-
-    if (zoneType === 'unassigned') {
-      await handleDropToUnassigned(zoneId || undefined);
-      return;
-    }
-
-    if (zoneType === 'truck' && zoneId) {
-      await handleDropToTruck(zoneId, beforeJobId || undefined);
-      return;
-    }
-
-    handleDragEnd();
-  };
-
-  const canStartTouchDrag = (target: EventTarget | null) => {
-    if (!(target instanceof HTMLElement)) return true;
-    return !target.closest('button, a, input, select, textarea, label');
-  };
-
   const chooseTruckForJob = (job: Job) => {
     if (routeTrucks.length === 0) return null;
 
@@ -560,7 +444,7 @@ export default function RouteEngine({
 
       const cleaned = removeJobFromState(previous, jobId);
 
-      if (typeof truckId === 'string') {
+      if (typeof truckId === 'string' && truckId) {
         nextState = {
           ...cleaned,
           truckRoutes: {
@@ -577,32 +461,57 @@ export default function RouteEngine({
       return nextState;
     });
 
-    setDraggingJob(null);
     await syncRouteChanges(nextState, jobId);
   };
 
-  const handleDropToTruck = async (truckId: string, beforeJobId?: string | null) => {
-    if (!draggingJob) return;
-    await assignJobToTruck(draggingJob.jobId, truckId, beforeJobId);
+  const moveStopInRoute = async (truckId: string, fromIndex: number, toIndex: number) => {
+    const list = routeState.truckRoutes[truckId] || [];
+    if (toIndex < 0 || toIndex >= list.length) return;
+    const nextList = [...list];
+    const [moved] = nextList.splice(fromIndex, 1);
+    nextList.splice(toIndex, 0, moved);
+
+    const nextState: RouteState = {
+      ...routeState,
+      truckRoutes: {
+        ...routeState.truckRoutes,
+        [truckId]: nextList,
+      },
+    };
+    setRouteState(nextState);
+    await syncRouteChanges(nextState);
   };
 
-  const handleDropToUnassigned = async (beforeJobId?: string | null) => {
-    if (!draggingJob) return;
-    await assignJobToTruck(draggingJob.jobId, null, beforeJobId);
-  };
-
-  const handleDropToMap = async () => {
-    if (!draggingJob) return;
-    const job = jobMap.get(draggingJob.jobId);
+  const autoAssignJob = async (jobId: string) => {
+    const job = jobMap.get(jobId);
     if (!job) return;
-
     const bestTruck = chooseTruckForJob(job);
-    if (!bestTruck) {
-      await handleDropToUnassigned();
-      return;
-    }
+    if (!bestTruck) return;
+    await assignJobToTruck(jobId, bestTruck);
+  };
 
-    await assignJobToTruck(job.id, bestTruck);
+  const autoAssignAllUnassigned = async () => {
+    if (routeTrucks.length === 0 || routeState.unassignedIds.length === 0) return;
+    setOptimizing(true);
+    let nextState: RouteState = { ...routeState };
+    for (const jobId of routeState.unassignedIds) {
+      const job = jobMap.get(jobId);
+      if (!job) continue;
+      const bestTruck = chooseTruckForJob(job);
+      if (bestTruck) {
+        const cleaned = removeJobFromState(nextState, jobId);
+        nextState = {
+          ...cleaned,
+          truckRoutes: {
+            ...cleaned.truckRoutes,
+            [bestTruck]: insertJobId(cleaned.truckRoutes[bestTruck] || [], jobId),
+          },
+        };
+      }
+    }
+    setRouteState(nextState);
+    await syncRouteChanges(nextState);
+    setOptimizing(false);
   };
 
   const optimizeAllRoutes = async () => {
@@ -628,295 +537,331 @@ export default function RouteEngine({
     await syncRouteChanges(nextState);
   };
 
-  const renderJobCard = (jobId: string, sourceTruckId: string | null, beforeJobId?: string | null) => {
-    const job = jobMap.get(jobId);
-    if (!job) return null;
-
-    const customerLabel = getCustomerLabel(job);
-    const isSyncing = syncingJobId === job.id;
-
-    return (
-      <div
-        key={job.id}
-        data-route-dropzone={`unassigned:${job.id}`}
-        draggable
-        onDragStart={() => handleDragStart(job.id, sourceTruckId)}
-        onDragEnd={handleDragEnd}
-        onTouchStart={(event) => startTouchHoldDrag(event, job.id, sourceTruckId)}
-        onTouchMove={handleTouchMove}
-        onTouchCancel={handleDragEnd}
-        onTouchEnd={(event) => {
-          clearTouchHold();
-          touchStartPointRef.current = null;
-          if (!draggingJob) return;
-          const touch = event.changedTouches[0];
-          if (!touch) return;
-          void handleTouchDrop(touch.clientX, touch.clientY);
-        }}
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={(event) => {
-          event.preventDefault();
-          if (sourceTruckId === null) {
-            void handleDropToUnassigned(beforeJobId);
-          } else {
-            void handleDropToTruck(sourceTruckId, beforeJobId);
-          }
-        }}
-        className={`group rounded-lg border border-slate-200 bg-white p-2.5 shadow-2xs transition hover:border-slate-300 hover:shadow-xs cursor-grab active:cursor-grabbing ${
-          draggingJob?.jobId === job.id ? 'opacity-40 scale-[0.98]' : ''
-        } ${isSyncing ? 'ring-2 ring-emerald-300' : ''}`}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-              <h4 className="text-xs font-bold text-slate-900 truncate">{job.job_type}</h4>
-            </div>
-            <p className="text-[11px] text-slate-500 truncate">{job.properties?.street_address || '—'}</p>
-            {customerLabel && (
-              <p className="text-[10px] text-slate-400 truncate mt-0.5">{customerLabel}</p>
-            )}
-          </div>
-          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
-            Drag
-          </span>
-        </div>
-      </div>
-    );
-  };
-
   const overloadedTrucks = routeTrucks.filter((truck) => (routeState.truckRoutes[truck.id] || []).length > maxStopsPerTruck);
   const missingGeoCount = routeJobs.filter((job) => !hasCoordinates(job)).length;
+
+  const tabs: Array<{
+    id: TabType;
+    label: string;
+    count?: number;
+    hasWarning?: boolean;
+    warningTitle?: string;
+  }> = [
+    {
+      id: 'map',
+      label: isEs ? 'Mapa' : 'Map',
+    },
+    {
+      id: 'unassigned',
+      label: translations.dashboard.unassignedJobs || (isEs ? 'Trabajos sin asignar' : 'Unassigned Jobs'),
+      count: routeState.unassignedIds.length,
+      hasWarning: missingGeoCount > 0,
+      warningTitle: `${missingGeoCount} ${translations.dashboard.routeMissingGeo}`,
+    },
+    {
+      id: 'routes',
+      label: isEs ? 'Rutas de Flota' : 'Fleet Routes',
+      count: routeTrucks.length,
+      hasWarning: overloadedTrucks.length > 0,
+      warningTitle: `${overloadedTrucks.length} ${translations.dashboard.routeCapacityWarning}`,
+    },
+  ];
 
   return (
     <section className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            {translations.dashboard.dispatchRoutingOptimization}
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            {translations.dashboard.dispatchRoutingDescription}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          {/* Route Capacity Warning Button */}
-          <button
-            type="button"
-            onClick={() => {
-              document.getElementById('routes-section')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            title={translations.dashboard.routeCapacityWarning}
-            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition shadow-2xs ${
-              overloadedTrucks.length > 0
-                ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 hover:border-amber-400'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 text-amber-500 shrink-0">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-            </svg>
-            <span className="text-[11px] font-bold uppercase tracking-wider">
-              {translations.dashboard.routeCapacityWarning}
-            </span>
-            <span className={`rounded-full px-1.5 py-0.2 text-[11px] font-extrabold ${
-              overloadedTrucks.length > 0 ? 'bg-amber-200 text-amber-900' : 'bg-slate-100 text-slate-700'
-            }`}>
-              {overloadedTrucks.length}
-            </span>
-          </button>
-
-          {/* Missing Map Coordinates Button */}
-          <button
-            type="button"
-            onClick={() => {
-              document.getElementById('unassigned-jobs-section')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            title={translations.dashboard.routeMissingGeo}
-            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition shadow-2xs ${
-              missingGeoCount > 0
-                ? 'border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100 hover:border-rose-400'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 text-rose-500 shrink-0">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            </svg>
-            <span className="text-[11px] font-bold uppercase tracking-wider">
-              {translations.dashboard.routeMissingGeo}
-            </span>
-            <span className={`rounded-full px-1.5 py-0.2 text-[11px] font-extrabold ${
-              missingGeoCount > 0 ? 'bg-rose-200 text-rose-900' : 'bg-slate-100 text-slate-700'
-            }`}>
-              {missingGeoCount}
-            </span>
-          </button>
-
-          {/* Unassigned Jobs Button */}
-          <button
-            type="button"
-            onClick={() => {
-              document.getElementById('unassigned-jobs-section')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            title={translations.dashboard.unassignedJobs}
-            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition shadow-2xs ${
-              routeState.unassignedIds.length > 0
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:border-emerald-400'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 text-emerald-600 shrink-0">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0" />
-            </svg>
-            <span className="text-[11px] font-bold uppercase tracking-wider">
-              {translations.dashboard.unassignedJobs}
-            </span>
-            <span className={`rounded-full px-1.5 py-0.2 text-[11px] font-extrabold ${
-              routeState.unassignedIds.length > 0 ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-100 text-slate-700'
-            }`}>
-              {routeState.unassignedIds.length}
-            </span>
-          </button>
-
-          {/* Optimize All Routes Button */}
-          <button
-            type="button"
-            onClick={optimizeAllRoutes}
-            disabled={optimizing}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition shadow-2xs disabled:opacity-60"
-          >
-            {optimizing ? `${translations.dashboard.routeOptimizeAll}...` : translations.dashboard.routeOptimizeAll}
-          </button>
-
-          {/* Live Tracking Module Link */}
-          {canAccessLiveTracking ? (
-            <Link
-              href={`/${locale}/dashboard/tracking`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 hover:border-emerald-300 transition shadow-2xs"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
-              <span>{translations.dashboard.liveTracking}</span>
-            </Link>
-          ) : null}
-        </div>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          {translations.dashboard.dispatchRoutingOptimization}
+        </h1>
+        <p className="text-xs text-slate-400 mt-1">
+          {translations.dashboard.dispatchRoutingDescription}
+        </p>
       </div>
 
-      {/* Full-width Google Map */}
-      <div
-        className="w-full relative h-[480px] lg:h-[540px] rounded-xl overflow-hidden border border-gray-200 shadow-sm"
-        data-route-dropzone="map"
-        onDragOver={(event) => {
-          event.preventDefault();
-          setMapDropActive(true);
-        }}
-        onDragLeave={() => setMapDropActive(false)}
-        onDrop={(event) => {
-          event.preventDefault();
-          void handleDropToMap();
-          setMapDropActive(false);
-        }}
-      >
-        <DispatchMap
-          className="w-full h-full rounded-xl overflow-hidden bg-gray-100"
-          stops={routeTrucks.flatMap((truck) => {
-            const assignedJobIds = routeState.truckRoutes[truck.id] || [];
-            return assignedJobIds
-              .map((id, index) => {
-                const job = jobMap.get(id);
-                if (!job || !hasCoordinates(job)) return null;
-                return {
-                  id: job.id,
-                  street_address: job.properties?.street_address || '',
-                  latitude: job.properties?.latitude ?? null,
-                  longitude: job.properties?.longitude ?? null,
-                  job_type: job.job_type,
-                  stop_number: index + 1,
-                  vehicle_name: vehicleDrivers[truck.id]
-                    ? `${truck.name} (${vehicleDrivers[truck.id].name})`
-                    : truck.name,
-                  customer_name: getCustomerLabel(job),
-                };
-              })
-              .filter((stop): stop is NonNullable<typeof stop> => stop !== null);
+      {/* Horizontal Tabs Navigation (matching Operations Settings & Customer Details) */}
+      <div className="border-b border-slate-200">
+        <nav
+          className="flex items-center space-x-8 -mb-px overflow-x-auto no-scrollbar"
+          role="tablist"
+          aria-label={isEs ? 'Pestañas de despacho' : 'Dispatch tabs'}
+        >
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                id={`tab-${tab.id}`}
+                role="tab"
+                type="button"
+                aria-selected={isActive}
+                aria-controls={`tabpanel-${tab.id}`}
+                onClick={() => handleTabChange(tab.id)}
+                className={`whitespace-nowrap pb-3 pt-1 px-1 text-sm transition-all border-b-[3px] cursor-pointer inline-flex items-center gap-2 ${
+                  isActive
+                    ? 'border-emerald-600 text-slate-900 font-bold'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 font-medium'
+                }`}
+              >
+                <span>{tab.label}</span>
+                {tab.count !== undefined && (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                      isActive
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+                {tab.hasWarning && (
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      tab.id === 'unassigned' ? 'bg-rose-500' : 'bg-amber-500'
+                    }`}
+                    title={tab.warningTitle}
+                  />
+                )}
+              </button>
+            );
           })}
-        />
-        {mapDropActive && (
-          <div className="absolute inset-0 rounded-xl border-2 border-dashed border-emerald-400 bg-emerald-500/10 flex items-center justify-center pointer-events-none z-10">
-            <div className="rounded-full bg-white/95 px-4 py-2 text-xs font-bold text-emerald-700 shadow-md">
-              {translations.dashboard.routeAutoAssignMap}
-            </div>
-          </div>
-        )}
+        </nav>
       </div>
 
-      {/* 2-Column Grid: Unassigned Jobs (Left) + Fleet Routes (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {/* Left Column: Unassigned Jobs Box */}
-        <div id="unassigned-jobs-section" className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-start justify-between gap-4 mb-4">
+      {/* Tab Panels */}
+      <div>
+        {/* TAB 1: FULL-WIDTH GOOGLE MAP */}
+        <div
+          id="tabpanel-map"
+          role="tabpanel"
+          aria-labelledby="tab-map"
+          className={activeTab === 'map' ? 'block' : 'hidden'}
+        >
+        <div className="w-full relative h-[540px] lg:h-[620px] rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+          <DispatchMap
+            className="w-full h-full rounded-xl overflow-hidden bg-gray-100"
+            stops={routeTrucks.flatMap((truck) => {
+              const assignedJobIds = routeState.truckRoutes[truck.id] || [];
+              return assignedJobIds
+                .map((id, index) => {
+                  const job = jobMap.get(id);
+                  if (!job || !hasCoordinates(job)) return null;
+                  return {
+                    id: job.id,
+                    street_address: job.properties?.street_address || '',
+                    latitude: job.properties?.latitude ?? null,
+                    longitude: job.properties?.longitude ?? null,
+                    job_type: job.job_type,
+                    stop_number: index + 1,
+                    vehicle_name: vehicleDrivers[truck.id]
+                      ? `${truck.name} (${vehicleDrivers[truck.id].name})`
+                      : truck.name,
+                    customer_name: getCustomerLabel(job),
+                  };
+                })
+                .filter((stop): stop is NonNullable<typeof stop> => stop !== null);
+            })}
+          />
+        </div>
+      </div>
+
+      {/* TAB 2: UNASSIGNED JOBS */}
+      {activeTab === 'unassigned' && (
+        <div
+          id="tabpanel-unassigned"
+          role="tabpanel"
+          aria-labelledby="tab-unassigned"
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                <h2 className="text-base font-bold uppercase tracking-wider text-slate-900">
                   {translations.dashboard.unassignedJobs}
                 </h2>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-extrabold ${
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-extrabold ${
                   routeState.unassignedIds.length > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
                 }`}>
                   {routeState.unassignedIds.length}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">{translations.dashboard.routeReorderHint}</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {isEs
+                  ? 'Trabajos listos para asignación a vehículos de flota.'
+                  : 'Jobs awaiting assignment to fleet vehicles.'}
+              </p>
             </div>
-            <span className="text-xs font-medium text-slate-500">
-              {routeState.unassignedIds.length} {translations.dashboard.routeStops}
-            </span>
-          </div>
 
-          <div
-            data-route-dropzone="unassigned"
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => {
-              event.preventDefault();
-              void handleDropToUnassigned();
-            }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-3 min-h-[260px] rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3"
-          >
-            {routeState.unassignedIds.length > 0 ? (
-              routeState.unassignedIds.map((jobId, index) => renderJobCard(jobId, null, routeState.unassignedIds[index]))
-            ) : (
-              <div className="flex h-full min-h-[220px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white text-center col-span-full">
-                <p className="text-xs text-slate-400 px-6">
-                  {locale.toLowerCase().startsWith('es') ? 'No hay trabajos sin asignar' : 'No unassigned jobs'}
-                </p>
-              </div>
+            {routeState.unassignedIds.length > 0 && routeTrucks.length > 0 && (
+              <button
+                type="button"
+                onClick={autoAssignAllUnassigned}
+                disabled={optimizing}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 hover:border-emerald-400 transition shadow-2xs self-start sm:self-auto"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-emerald-600">
+                  <path fillRule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clipRule="evenodd" />
+                </svg>
+                <span>{isEs ? 'Auto-asignar todos' : 'Auto-Assign All'}</span>
+              </button>
             )}
           </div>
-        </div>
 
-        {/* Right Column: Fleet Routes Box */}
-        <div id="routes-section" className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between gap-4 mb-4">
+          {/* Missing coordinates notice */}
+          {missingGeoCount > 0 && (
+            <div className="flex items-center gap-2 p-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-800 text-xs">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-rose-500 shrink-0">
+                <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clipRule="evenodd" />
+              </svg>
+              <span>
+                {isEs
+                  ? `${missingGeoCount} trabajo(s) no tienen coordenadas válidas en el mapa.`
+                  : `${missingGeoCount} job(s) do not have valid map coordinates.`}
+              </span>
+            </div>
+          )}
+
+          {/* Unassigned Jobs Grid */}
+          {routeState.unassignedIds.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {routeState.unassignedIds.map((jobId) => {
+                const job = jobMap.get(jobId);
+                if (!job) return null;
+                const customerLabel = getCustomerLabel(job);
+                const isSyncing = syncingJobId === job.id;
+
+                return (
+                  <div
+                    key={job.id}
+                    className={`rounded-xl border border-slate-200 bg-white p-4 shadow-2xs hover:border-slate-300 hover:shadow-xs transition flex flex-col justify-between gap-3 ${
+                      isSyncing ? 'ring-2 ring-emerald-400' : ''
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-bold text-slate-900 truncate">{job.job_type}</h4>
+                        </div>
+                        {!hasCoordinates(job) && (
+                          <span className="text-[10px] font-bold uppercase text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded shrink-0">
+                            {translations.dashboard.routeMissingGeo}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-slate-600 truncate flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-slate-400 shrink-0">
+                          <path fillRule="evenodd" d="m9.69 18.933.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 0 0 .281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 1 0 3 9c0 3.492 1.698 5.988 3.36 7.587a17.068 17.068 0 0 0 3.03 2.198l.019.009.006.002.002.001c.088.04.18.083.273.136Zm.31-7.933a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z" clipRule="evenodd" />
+                        </svg>
+                        <span>{job.properties?.street_address || '—'}</span>
+                      </p>
+
+                      {customerLabel && (
+                        <p className="text-xs text-slate-500 truncate mt-1 flex items-center gap-1.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-slate-400 shrink-0">
+                            <path d="M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.465 14.493a1.23 1.23 0 0 0 .41 1.412A9.957 9.957 0 0 0 10 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 0 0-13.074.003Z" />
+                          </svg>
+                          <span>{customerLabel}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Assignment controls */}
+                    <div className="pt-2.5 border-t border-slate-100 flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              void assignJobToTruck(job.id, e.target.value);
+                            }
+                          }}
+                          className="w-full text-xs font-semibold rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-slate-700 hover:border-emerald-500 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none transition cursor-pointer shadow-2xs"
+                        >
+                          <option value="" disabled>
+                            {isEs ? '-- Asignar a Vehículo --' : '-- Assign to Vehicle --'}
+                          </option>
+                          {routeTrucks.map((truck) => (
+                            <option key={truck.id} value={truck.id}>
+                              {truck.name} {truck.plate_number ? `(${truck.plate_number})` : ''} ({(routeState.truckRoutes[truck.id] || []).length} stops)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {routeTrucks.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => void autoAssignJob(job.id)}
+                          title={isEs ? 'Asignar automáticamente al vehículo óptimo' : 'Auto-assign to optimal vehicle'}
+                          className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition shadow-2xs shrink-0"
+                        >
+                          Auto
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex min-h-[220px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-slate-300 mb-2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <h3 className="text-sm font-semibold text-slate-700">
+                {isEs ? 'Todos los trabajos asignados' : 'All jobs assigned'}
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                {isEs
+                  ? 'No hay trabajos sin asignar pendientes en este momento.'
+                  : 'There are no pending unassigned jobs at this time.'}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: FLEET ROUTES */}
+      {activeTab === 'routes' && (
+        <div
+          id="tabpanel-routes"
+          role="tabpanel"
+          aria-labelledby="tab-routes"
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-                  {translations.dashboard.routeRoutes}
+                <h2 className="text-base font-bold uppercase tracking-wider text-slate-900">
+                  {isEs ? 'Rutas de Flota' : 'Fleet Routes'}
                 </h2>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-extrabold text-slate-600">
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-extrabold text-slate-600">
                   {routeTrucks.length}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">{translations.dashboard.routeDropHint}</p>
-            </div>
-            <div>
-              <span className="rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 text-xs font-semibold text-emerald-700 whitespace-nowrap">
-                {routeTrucks.filter((t) => !!vehicleDrivers[t.id]).length} / {routeTrucks.length} {isEs ? 'conductores asignados' : 'drivers assigned'}
-              </span>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {isEs
+                  ? 'Secuencia de paradas, asignación de conductores y optimización por vehículo.'
+                  : 'Stop sequences, driver assignments, and vehicle route optimization.'}
+              </p>
             </div>
           </div>
 
-          <div className="space-y-4">
+          {/* Overloaded vehicles warning */}
+          {overloadedTrucks.length > 0 && (
+            <div className="flex items-center gap-2 p-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-xs">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-amber-500 shrink-0">
+                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+              </svg>
+              <span>
+                {translations.dashboard.routeCapacityWarning}: {overloadedTrucks.length} {isEs ? 'vehículo(s) exceden el límite de' : 'vehicle(s) exceed the limit of'} {maxStopsPerTruck} {translations.dashboard.routeStops}.
+              </span>
+            </div>
+          )}
+
+          {/* Vehicles List - 2 per row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
             {routeTrucks.map((truck) => {
               const assignedJobIds = routeState.truckRoutes[truck.id] || [];
               const routeLoad = assignedJobIds.length;
@@ -926,15 +871,6 @@ export default function RouteEngine({
               return (
                 <div
                   key={truck.id}
-                  data-route-dropzone={`truck:${truck.id}`}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    void handleDropToTruck(truck.id);
-                    if (isCollapsed) {
-                      setCollapsedTrucks((prev) => ({ ...prev, [truck.id]: false }));
-                    }
-                  }}
                   className={`rounded-xl border transition ${
                     loadWarning
                       ? 'border-amber-300 bg-amber-50/40 ring-1 ring-amber-200'
@@ -943,7 +879,7 @@ export default function RouteEngine({
                 >
                   {/* Vehicle Header Bar */}
                   <div
-                    className="p-3 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-slate-100/60 rounded-t-xl transition"
+                    className="p-3.5 flex items-center justify-between gap-2 cursor-pointer select-none hover:bg-slate-100/60 rounded-t-xl transition"
                     onClick={() => toggleTruckCollapse(truck.id)}
                   >
                     <div className="flex items-center gap-2 min-w-0">
@@ -966,17 +902,17 @@ export default function RouteEngine({
                         </svg>
                       </button>
                       <div className="min-w-0">
-                        <h3 className="text-sm font-bold text-slate-900 truncate flex items-center gap-2">
-                          <span>{truck.name}</span>
+                        <h3 className="text-sm font-bold text-slate-900 truncate flex items-center gap-1.5">
+                          <span className="truncate">{truck.name}</span>
                           {truck.plate_number && (
-                            <span className="text-xs font-normal text-slate-400">({truck.plate_number})</span>
+                            <span className="text-xs font-normal text-slate-400 truncate">({truck.plate_number})</span>
                           )}
                         </h3>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider rounded-md px-2 py-1 ${
+                    <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider rounded-md px-2 py-0.5 ${
                         loadWarning
                           ? 'bg-amber-100 text-amber-800 border border-amber-300'
                           : routeLoad > 0
@@ -990,7 +926,7 @@ export default function RouteEngine({
                         onClick={() => optimizeTruckRoute(truck.id)}
                         disabled={routeLoad <= 1}
                         title={translations.dashboard.routeOptimizeTruck}
-                        className="rounded-md border border-emerald-200 bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-50 transition shadow-2xs disabled:opacity-40"
+                        className="rounded-md border border-emerald-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-50 transition shadow-2xs disabled:opacity-40"
                       >
                         {translations.dashboard.routeOptimizeTruck}
                       </button>
@@ -999,7 +935,7 @@ export default function RouteEngine({
 
                   {/* Driver Assignment Bar */}
                   <div
-                    className="px-3 py-2 bg-white/80 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2"
+                    className="px-3.5 py-2.5 bg-white/80 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center gap-2 min-w-0">
@@ -1012,15 +948,10 @@ export default function RouteEngine({
                           <span className="truncate max-w-[130px] sm:max-w-[180px]">
                             {vehicleDrivers[truck.id].name}
                           </span>
-                          {vehicleDrivers[truck.id].role && vehicleDrivers[truck.id].role !== 'driver' && (
-                            <span className="text-[10px] text-emerald-600 font-normal">
-                              ({vehicleDrivers[truck.id].role})
-                            </span>
-                          )}
                         </div>
                       ) : (
                         <span className="text-xs text-slate-400 italic">
-                          {isEs ? 'Sin conductor asignado' : 'No driver assigned'}
+                          {isEs ? 'Sin conductor' : 'No driver'}
                         </span>
                       )}
                     </div>
@@ -1041,16 +972,16 @@ export default function RouteEngine({
                     </div>
                   </div>
 
-                  {/* Stops List & Drop Target */}
+                  {/* Stops List */}
                   {!isCollapsed && (
-                    <div className="p-3 pt-1 space-y-2 border-t border-slate-200/60">
+                    <div className="p-3 pt-2 space-y-2 border-t border-slate-200/60">
                       {loadWarning && (
-                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-amber-800">
                           {translations.dashboard.routeCapacityWarning}: {routeLoad}/{maxStopsPerTruck}
                         </div>
                       )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 min-h-[72px]">
+                      <div className="space-y-2.5 min-h-[72px]">
                         {assignedJobIds.length > 0 ? (
                           assignedJobIds.map((jobId, index) => {
                             const job = jobMap.get(jobId);
@@ -1060,58 +991,91 @@ export default function RouteEngine({
                             return (
                               <div
                                 key={job.id}
-                                data-route-dropzone={`truck:${truck.id}:${job.id}`}
-                                draggable
-                                onDragStart={() => handleDragStart(job.id, truck.id)}
-                                onDragEnd={handleDragEnd}
-                                onTouchStart={(event) => startTouchHoldDrag(event, job.id, truck.id)}
-                                onTouchMove={handleTouchMove}
-                                onTouchCancel={handleDragEnd}
-                                onTouchEnd={(event) => {
-                                  clearTouchHold();
-                                  touchStartPointRef.current = null;
-                                  if (!draggingJob) return;
-                                  const touch = event.changedTouches[0];
-                                  if (!touch) return;
-                                  void handleTouchDrop(touch.clientX, touch.clientY);
-                                }}
-                                onDragOver={(event) => event.preventDefault()}
-                                onDrop={(event) => {
-                                  event.preventDefault();
-                                  void handleDropToTruck(truck.id, job.id);
-                                }}
-                                className={`rounded-lg border border-slate-200 bg-white p-3 shadow-2xs transition hover:border-slate-300 hover:shadow-xs cursor-grab active:cursor-grabbing ${
-                                  draggingJob?.jobId === job.id ? 'opacity-40 scale-[0.98]' : ''
+                                className={`rounded-lg border border-slate-200 bg-white p-3 shadow-2xs transition hover:border-slate-300 hover:shadow-xs ${
+                                  syncingJobId === job.id ? 'ring-2 ring-emerald-300' : ''
                                 }`}
                               >
                                 <div className="w-full space-y-1.5">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white shrink-0">
-                                      {index + 1}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        void assignJobToTruck(job.id, null);
-                                      }}
-                                      title={removeLabel}
-                                      className="text-[10px] font-semibold uppercase tracking-wider rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition"
-                                    >
-                                      {removeLabel}
-                                    </button>
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white shrink-0">
+                                        {index + 1}
+                                      </span>
+                                      <span className="text-xs font-bold text-slate-900 truncate">
+                                        {job.job_type}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-0.5 shrink-0">
+                                      {/* Move Up */}
+                                      <button
+                                        type="button"
+                                        disabled={index === 0}
+                                        onClick={() => void moveStopInRoute(truck.id, index, index - 1)}
+                                        title={isEs ? 'Mover arriba' : 'Move up'}
+                                        className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-20 disabled:hover:bg-transparent"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                          <path fillRule="evenodd" d="M10 17a.75.75 0 0 1-.75-.75V5.612L5.29 9.77a.75.75 0 0 1-1.08-1.04l5.25-5.5a.75.75 0 0 1 1.08 0l5.25 5.5a.75.75 0 1 1-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0 1 10 17Z" clipRule="evenodd" />
+                                        </svg>
+                                      </button>
+
+                                      {/* Move Down */}
+                                      <button
+                                        type="button"
+                                        disabled={index === assignedJobIds.length - 1}
+                                        onClick={() => void moveStopInRoute(truck.id, index, index + 1)}
+                                        title={isEs ? 'Mover abajo' : 'Move down'}
+                                        className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-20 disabled:hover:bg-transparent"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                          <path fillRule="evenodd" d="M10 3a.75.75 0 0 1 .75.75v10.638l3.96-4.158a.75.75 0 1 1 1.08 1.04l-5.25 5.5a.75.75 0 0 1-1.08 0l-5.25-5.5a.75.75 0 1 1 1.08-1.04l3.96 4.158V3.75A.75.75 0 0 1 10 3Z" clipRule="evenodd" />
+                                        </svg>
+                                      </button>
+
+                                      {/* Unassign */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          void assignJobToTruck(job.id, null);
+                                        }}
+                                        title={removeLabel}
+                                        className="text-[10px] font-semibold uppercase tracking-wider rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition"
+                                      >
+                                        {removeLabel}
+                                      </button>
+                                    </div>
                                   </div>
-                                  <p className="text-xs font-bold text-slate-900 truncate">{job.job_type}</p>
+
                                   <p className="text-[11px] text-slate-500 truncate">{job.properties?.street_address || '—'}</p>
                                   {customerLabel && (
                                     <p className="text-[10px] text-slate-400 truncate">{customerLabel}</p>
+                                  )}
+
+                                  {/* Re-assign to another vehicle */}
+                                  {routeTrucks.length > 1 && (
+                                    <div className="pt-1.5 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100">
+                                      <span>{isEs ? 'Cambiar a:' : 'Move to:'}</span>
+                                      <select
+                                        value={truck.id}
+                                        onChange={(e) => void assignJobToTruck(job.id, e.target.value)}
+                                        className="text-[11px] font-medium rounded border border-slate-200 bg-white px-1.5 py-0.5 text-slate-700 outline-none hover:border-slate-300 max-w-[130px]"
+                                      >
+                                        {routeTrucks.map((t) => (
+                                          <option key={t.id} value={t.id}>
+                                            {t.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
                                   )}
                                 </div>
                               </div>
                             );
                           })
                         ) : (
-                          <div className="col-span-full rounded-lg border border-dashed border-slate-200 bg-white/70 py-4 px-3 text-center text-xs text-slate-400 hover:border-emerald-300 hover:bg-emerald-50/30 transition">
-                            {translations.dashboard.routeDropHint}
+                          <div className="rounded-lg border border-dashed border-slate-200 bg-white/70 py-6 px-3 text-center text-xs text-slate-400">
+                            {isEs ? 'No hay trabajos asignados a este vehículo.' : 'No jobs assigned to this vehicle.'}
                           </div>
                         )}
                       </div>
@@ -1122,6 +1086,7 @@ export default function RouteEngine({
             })}
           </div>
         </div>
+      )}
       </div>
     </section>
   );
