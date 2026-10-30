@@ -38,7 +38,7 @@ export default function WorkspaceIdentityForm({
   const [isPending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [editingField, setEditingField] = useState<'companyName' | 'slogan' | 'logo' | 'phone' | 'streetAddress' | 'city' | 'state' | 'zipCode' | null>(null);
+  const [editingField, setEditingField] = useState<'companyName' | 'slogan' | 'logo' | 'phone' | 'address' | null>(null);
   const [companyNameValue, setCompanyNameValue] = useState(companyName);
   const [slogan, setSlogan] = useState(initialSlogan);
   const [phone, setPhone] = useState(initialPhone);
@@ -94,6 +94,17 @@ export default function WorkspaceIdentityForm({
     return byCode ? byCode.name : '';
   })();
   const stateDefaultValue = normalizedState || initialState.trim();
+
+  const resolveStateName = (value: string) => {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return '';
+
+    const byCode = US_STATES.find((entry) => entry.code.toLowerCase() === normalized);
+    if (byCode) return byCode.name;
+
+    const byName = US_STATES.find((entry) => entry.name.toLowerCase() === normalized);
+    return byName?.name || value;
+  };
 
   function toggleField(field: typeof editingField) {
     setErrorMsg(null);
@@ -336,89 +347,97 @@ export default function WorkspaceIdentityForm({
                 <div className="px-6 md:px-8 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.streetAddress}</p>
-                      <p className="mt-1 text-sm font-medium text-slate-700">{streetAddress.trim() || (isEs ? 'Sin dirección' : 'No street address')}</p>
-                    </div>
-                    {renderFieldActions('streetAddress')}
-                  </div>
-                  <div className={editingField === 'streetAddress' ? 'mt-3' : 'hidden'}>
-                    <AddressAutocompleteInput
-                      name="streetAddress"
-                      value={streetAddress}
-                      onChange={(event) => setStreetAddress(event.target.value)}
-                      placeholder={translations.dashboard.workspaceAddressPlaceholder}
-                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                    />
-                  </div>
-                </div>
-
-                <div className="px-6 md:px-8 py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.city}</p>
-                      <p className="mt-1 text-sm font-medium text-slate-700">{city.trim() || (isEs ? 'Sin ciudad' : 'No city')}</p>
-                    </div>
-                    {renderFieldActions('city')}
-                  </div>
-                  <div className={editingField === 'city' ? 'mt-3' : 'hidden'}>
-                    <input
-                      type="text"
-                      name="city"
-                      value={city}
-                      onChange={(event) => setCity(event.target.value)}
-                      placeholder={translations.dashboard.city}
-                      maxLength={120}
-                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                    />
-                  </div>
-                </div>
-
-                <div className="px-6 md:px-8 py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.state}</p>
-                      <p className="mt-1 text-sm font-medium text-slate-700">{(stateValue || stateDefaultValue).trim() || (isEs ? 'Sin estado' : 'No state')}</p>
-                    </div>
-                    {renderFieldActions('state')}
-                  </div>
-                  <div className={editingField === 'state' ? 'mt-3' : 'hidden'}>
-                    <select
-                      name="state"
-                      value={stateValue}
-                      onChange={(event) => setStateValue(event.target.value)}
-                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                    >
-                      <option value="">{isEs ? 'Selecciona estado' : 'Select state'}</option>
-                      {initialState.trim() && !normalizedState && (
-                        <option value={initialState.trim()}>{initialState.trim()}</option>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.workspaceAddress}</p>
+                      {streetAddress.trim() || city.trim() || (stateValue || stateDefaultValue).trim() || zipCode.trim() ? (
+                        <div className="mt-1 text-sm font-medium text-slate-700 leading-relaxed">
+                          {streetAddress.trim() ? <p>{streetAddress.trim()}</p> : null}
+                          {(city.trim() || (stateValue || stateDefaultValue).trim() || zipCode.trim()) ? (
+                            <p>
+                              {[city.trim(), (stateValue || stateDefaultValue).trim()].filter(Boolean).join(', ')}
+                              {zipCode.trim() ? ` ${zipCode.trim()}` : ''}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-sm font-medium text-slate-700">{isEs ? 'Sin dirección' : 'No address'}</p>
                       )}
-                      {US_STATES.map((state) => (
-                        <option key={state.code} value={state.name}>
-                          {state.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="px-6 md:px-8 py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{translations.dashboard.zip}</p>
-                      <p className="mt-1 text-sm font-medium text-slate-700">{zipCode.trim() || (isEs ? 'Sin ZIP' : 'No ZIP')}</p>
                     </div>
-                    {renderFieldActions('zipCode')}
+                    {renderFieldActions('address')}
                   </div>
-                  <div className={editingField === 'zipCode' ? 'mt-3' : 'hidden'}>
-                    <input
-                      type="text"
-                      name="zipCode"
-                      value={zipCode}
-                      onChange={(event) => setZipCode(event.target.value)}
-                      placeholder={translations.dashboard.zip}
-                      maxLength={20}
-                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
-                    />
+
+                  <div className={editingField === 'address' ? 'mt-4 space-y-3' : 'hidden'}>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                        {translations.dashboard.streetAddress}
+                      </label>
+                      <AddressAutocompleteInput
+                        name="streetAddress"
+                        value={streetAddress}
+                        onChange={(event) => setStreetAddress(event.target.value)}
+                        onAddressResolved={(resolved) => {
+                          if (resolved.streetAddress) setStreetAddress(resolved.streetAddress);
+                          if (resolved.city) setCity(resolved.city);
+                          if (resolved.state) setStateValue(resolveStateName(resolved.state));
+                          if (resolved.zipCode) setZipCode(resolved.zipCode);
+                        }}
+                        placeholder={translations.dashboard.streetAddress}
+                        className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                      <div className="sm:col-span-5">
+                        <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                          {translations.dashboard.city}
+                        </label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={city}
+                          onChange={(event) => setCity(event.target.value)}
+                          placeholder={translations.dashboard.city}
+                          maxLength={120}
+                          className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-4">
+                        <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                          {translations.dashboard.state}
+                        </label>
+                        <select
+                          name="state"
+                          value={stateValue}
+                          onChange={(event) => setStateValue(event.target.value)}
+                          className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                        >
+                          <option value="">{isEs ? 'Selecciona estado' : 'Select state'}</option>
+                          {initialState.trim() && !normalizedState && (
+                            <option value={initialState.trim()}>{initialState.trim()}</option>
+                          )}
+                          {US_STATES.map((state) => (
+                            <option key={state.code} value={state.name}>
+                              {state.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="sm:col-span-3">
+                        <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                          {translations.dashboard.zip}
+                        </label>
+                        <input
+                          type="text"
+                          name="zipCode"
+                          value={zipCode}
+                          onChange={(event) => setZipCode(event.target.value)}
+                          placeholder={translations.dashboard.zip}
+                          maxLength={20}
+                          className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 transition"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </>
