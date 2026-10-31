@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { markInvoiceAsPaid, sendInvoiceOverdueReminderAction, triggerOverdueRemindersForWorkspaceAction } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
 import { AlertCircle, BellRing, CheckCircle2, Filter, Loader2, Plus, Image as ImageIcon } from 'lucide-react';
 import EditInvoiceModal from './EditInvoiceModal';
-import CreateInvoiceModal, { CustomerOption, ServiceOption } from './CreateInvoiceModal';
 import InvoiceRowActions from './InvoiceRowActions';
 
 type FilterType = 'all' | 'unpaid' | 'paid';
@@ -38,27 +37,19 @@ interface InvoiceRow {
 
 interface InvoicesLedgerTableProps {
   invoices: InvoiceRow[];
-  customers?: CustomerOption[];
-  services?: ServiceOption[];
   locale?: string;
   orgTaxRatePercent?: number;
-  orgCurrencyCode?: string;
 }
 
 export default function InvoicesLedgerTable({
   invoices,
-  customers = [],
-  services = [],
   locale = 'en',
   orgTaxRatePercent,
-  orgCurrencyCode = 'USD',
 }: InvoicesLedgerTableProps) {
-  const router = useRouter();
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
   const [invoiceRows, setInvoiceRows] = useState<InvoiceRow[]>(invoices);
   const [editingInvoice, setEditingInvoice] = useState<InvoiceRow | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
   const [pageSize, setPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -227,14 +218,13 @@ export default function InvoicesLedgerTable({
               : 'Monitor payment status for all invoices issued in your workspace.'}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsCreateModalOpen(true)}
+        <Link
+          href={`/${locale}/dashboard/invoices-ledger/new`}
           className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm inline-flex items-center justify-center gap-1.5 shrink-0"
         >
           <Plus className="w-3.5 h-3.5 text-white" />
           <span>{isEs ? 'Nueva Factura' : 'New Invoice'}</span>
-        </button>
+        </Link>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
@@ -545,21 +535,6 @@ export default function InvoicesLedgerTable({
         orgTaxRatePercent={orgTaxRatePercent}
       />
 
-      {isCreateModalOpen && (
-        <CreateInvoiceModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          customers={customers}
-          services={services}
-          locale={locale}
-          orgTaxRatePercent={orgTaxRatePercent}
-          orgCurrencyCode={orgCurrencyCode}
-          onSuccess={(createdInvoice) => {
-            setInvoiceRows((prev) => [createdInvoice, ...prev]);
-            router.refresh();
-          }}
-        />
-      )}
     </>
   );
 }

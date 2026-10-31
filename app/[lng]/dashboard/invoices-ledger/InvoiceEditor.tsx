@@ -372,7 +372,7 @@ export default function InvoiceEditor({
       : 'Standard';
 
   return (
-    <div className="flex-1 w-full min-h-screen bg-slate-50/50 pb-20">
+    <div className="min-h-screen bg-slate-50/50 pb-20">
       {/* Top sticky navigation bar */}
       <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur-sm px-4 sm:px-8 py-3.5 shadow-2xs">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -959,4 +959,3 @@ export default function InvoiceEditor({
     </div>
   );
 }
-

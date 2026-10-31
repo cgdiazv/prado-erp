@@ -1,13 +1,9 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import { checkTrialExpiry } from '@/lib/trialCheck';
-import { getTranslations } from '@/lib/translations';
 import InvoicesLedgerTable from '@/components/dashboard/InvoicesLedgerTable';
-import CreateInvoiceModal from '@/components/dashboard/CreateInvoiceModal';
 import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { getUserOrganization } from '@/lib/organization';
-
-const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
 interface InvoiceRow {
   id: string;
@@ -33,8 +29,6 @@ export default async function InvoicesLedgerPage({
 }) {
   const resolvedParams = await params;
   const locale = resolvedParams.lng ?? 'en';
-  const translations = getTranslations(locale);
-  const isEs = locale.toLowerCase().startsWith('es');
 
   const supabase = await createClient();
 
@@ -55,19 +49,11 @@ export default async function InvoicesLedgerPage({
     redirect(`/${locale}/dashboard?expired=true`);
   }
 
-  const [{ data: customers }, { data: services }] = await Promise.all([
-    supabase
-      .from('customers')
-      .select('id, first_name, last_name, company_name, email')
-      .eq('organization_id', org.id)
-      .order('first_name', { ascending: true }),
-    supabase
-      .from('services')
-      .select('id, name, base_price')
-      .eq('organization_id', org.id)
-      .not('name', 'like', `${ARCHIVED_SERVICE_PREFIX}%`)
-      .order('name', { ascending: true }),
-  ]);
+  const { data: customers } = await supabase
+    .from('customers')
+    .select('id, first_name, last_name, company_name, email')
+    .eq('organization_id', org.id)
+    .order('first_name', { ascending: true });
 
   const customerIds = customers?.map((customer) => customer.id) || [];
 
@@ -84,11 +70,8 @@ export default async function InvoicesLedgerPage({
       <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
         <InvoicesLedgerTable
           invoices={(invoices as InvoiceRow[]) ?? []}
-          customers={customers || []}
-          services={services || []}
           locale={locale}
           orgTaxRatePercent={Number(org.invoice_tax_rate_percent ?? 0)}
-          orgCurrencyCode={org.invoice_currency_code || 'USD'}
         />
       </div>
     </main>
