@@ -5,6 +5,7 @@ import CustomerDetailsForm from '@/components/dashboard/CustomerDetailsForm';
 import ServiceSitesSection from '@/components/dashboard/ServiceSitesSection';
 import CustomerJobLogTable from '@/components/dashboard/CustomerJobLogTable';
 import CustomerInvoicesTable from '@/components/dashboard/CustomerInvoicesTable';
+import DeleteCustomerModal from '@/components/dashboard/DeleteCustomerModal';
 
 export type CustomerTabId = 'client-details' | 'jobs-log' | 'invoice';
 
@@ -72,7 +73,7 @@ export default function CustomerDetailTabs({
   const tabs: Array<{ id: CustomerTabId; label: string }> = [
     {
       id: 'client-details',
-      label: isEs ? 'Detalles del Cliente' : 'Client Details',
+      label: isEs ? 'Detalles del Cliente' : 'Customer Details',
     },
     {
       id: 'jobs-log',
@@ -83,6 +84,11 @@ export default function CustomerDetailTabs({
       label: isEs ? 'Facturas' : 'Invoice',
     },
   ];
+
+  const customerDisplayName =
+    `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() ||
+    customer?.company_name ||
+    'Customer';
 
   return (
     <div className="space-y-6">
@@ -119,8 +125,8 @@ export default function CustomerDetailTabs({
 
       {/* Tab Panels */}
       <div>
-        {/* Tab 1: Client Details */}
-        <div className={activeTab === 'client-details' ? 'block' : 'hidden'}>
+        {/* Tab 1: Customer Details */}
+        <div className={activeTab === 'client-details' ? 'block space-y-6' : 'hidden'}>
           <div
             id="tabpanel-client-details"
             role="tabpanel"
@@ -141,6 +147,15 @@ export default function CustomerDetailTabs({
               customerId={customerId}
               locale={locale}
               properties={properties || []}
+            />
+          </div>
+
+          <div className="pt-2 flex justify-start">
+            <DeleteCustomerModal
+              customerId={customerId}
+              customerName={customerDisplayName}
+              locale={locale}
+              triggerClassName="w-full sm:w-auto justify-center bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-semibold py-2 px-4 rounded-lg transition shadow-xs cursor-pointer inline-flex items-center gap-1.5"
             />
           </div>
         </div>
@@ -166,7 +181,7 @@ export default function CustomerDetailTabs({
             <CustomerInvoicesTable
               invoices={invoices || []}
               customerId={customerId}
-              customerName={`${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || customer?.company_name || 'Customer'}
+              customerName={customerDisplayName}
               customerEmail={customer?.email || null}
               locale={locale}
               orgTaxRatePercent={orgTaxRatePercent}

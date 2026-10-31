@@ -63,7 +63,7 @@ export default function CustomerDetailsForm({
     }
 
     setEditing(false);
-    setSuccessMsg(isEs ? 'Perfil del cliente actualizado.' : 'Client profile updated.');
+    setSuccessMsg(isEs ? 'Perfil del cliente actualizado.' : 'Customer profile updated.');
   }
 
   return (

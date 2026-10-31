@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import CustomerDetailTabs from '@/components/dashboard/CustomerDetailTabs';
 import CustomerEmailModal from '@/components/dashboard/CustomerEmailModal';
-import DeleteCustomerModal from '@/components/dashboard/DeleteCustomerModal';
 import { hasDashboardModuleAccess } from '@/lib/dashboardRolePermissions';
 import { getTranslations } from '@/lib/translations';
 import { getUserOrganization } from '@/lib/organization';
@@ -71,85 +70,78 @@ export default async function CustomerDetailPage({ params, searchParams }: Custo
   }
 
   return (
-        <main className="flex-1 overflow-y-auto">
-          <div className="w-full px-6 md:px-10 pt-10 pb-8 space-y-8 text-left">
-            
-            {/* Navigation Breadcrumb Bar & Actions Layout */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex flex-col gap-1">
-                <Link 
-                  href="/dashboard/customers" 
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-600 hover:text-emerald-700 transition"
-                >
-                  {translations.dashboard.backToCustomers}
-                </Link>
-              </div>
-
-              <DeleteCustomerModal
-                customerId={customerId}
-                customerName={`${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.company_name || 'Customer'}
-                locale={locale}
-              />
-            </div>
-
-            {/* Client Master Profile Banner Section */}
-            <header className="space-y-2.5">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-                  {customer.first_name} {customer.last_name}
-                </h1>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
-                    {customer.company_name || translations.dashboard.individualResidentialAccount}
-                  </p>
-                  {customer.autopay_enabled ? (
-                    <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
-                      {isEs ? 'Auto cobro activo' : 'Auto Pay Active'}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Contact Details directly under company name */}
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs text-slate-600 pt-0.5">
-                <div>
-                  <strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide mr-1.5">{translations.dashboard.email}:</strong>
-                  {customer.email ? (
-                    <CustomerEmailModal
-                      locale={locale}
-                      customerId={customer.id}
-                      customerEmail={customer.email}
-                      customerName={`${customer.first_name} ${customer.last_name}`.trim()}
-                      context="customer_profile"
-                      className="cursor-pointer text-emerald-600 hover:text-emerald-700 hover:underline font-medium"
-                    />
-                  ) : (
-                    '—'
-                  )}
-                </div>
-                <div>
-                  <strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide mr-1.5">{translations.dashboard.phone}:</strong>
-                  <span className="text-slate-700 font-medium">{customer.phone || '—'}</span>
-                </div>
-                <div>
-                  <strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide mr-1.5">{translations.dashboard.billingAddressLabel}:</strong>
-                  <span className="text-slate-700 font-medium">{customer.billing_address || '—'}</span>
-                </div>
-              </div>
-            </header>
-
-            {/* Horizontal Sub-tabs (Client Details | Jobs Log | Invoice) */}
-            <CustomerDetailTabs
-              customerId={customerId}
-              locale={locale}
-              initialTab={initialTab}
-              customer={customer}
-              properties={properties || []}
-              customerJobs={customerJobs}
-              invoices={invoices || []}
-              orgTaxRatePercent={Number(org.invoice_tax_rate_percent ?? 0)}
-            />
+    <main className="flex-1 overflow-y-auto">
+      <div className="w-full px-6 md:px-10 pt-10 pb-8 space-y-8 text-left">
+        {/* Navigation Breadcrumb Bar */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <Link
+              href="/dashboard/customers"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-600 hover:text-emerald-700 transition"
+            >
+              {translations.dashboard.backToCustomers}
+            </Link>
           </div>
+        </div>
+
+        {/* Customer Master Profile Banner Section */}
+        <header className="space-y-2.5">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+              {customer.first_name} {customer.last_name}
+            </h1>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                {customer.company_name || translations.dashboard.individualResidentialAccount}
+              </p>
+              {customer.autopay_enabled ? (
+                <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                  {isEs ? 'Auto cobro activo' : 'Auto Pay Active'}
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Contact Details directly under company name */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs text-slate-600 pt-0.5">
+            <div>
+              <strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide mr-1.5">{translations.dashboard.email}:</strong>
+              {customer.email ? (
+                <CustomerEmailModal
+                  locale={locale}
+                  customerId={customer.id}
+                  customerEmail={customer.email}
+                  customerName={`${customer.first_name} ${customer.last_name}`.trim()}
+                  context="customer_profile"
+                  className="cursor-pointer text-emerald-600 hover:text-emerald-700 hover:underline font-medium"
+                />
+              ) : (
+                '—'
+              )}
+            </div>
+            <div>
+              <strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide mr-1.5">{translations.dashboard.phone}:</strong>
+              <span className="text-slate-700 font-medium">{customer.phone || '—'}</span>
+            </div>
+            <div>
+              <strong className="text-slate-400 uppercase font-bold text-[10px] tracking-wide mr-1.5">{translations.dashboard.billingAddressLabel}:</strong>
+              <span className="text-slate-700 font-medium">{customer.billing_address || '—'}</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Horizontal Sub-tabs (Customer Details | Jobs Log | Invoice) */}
+        <CustomerDetailTabs
+          customerId={customerId}
+          locale={locale}
+          initialTab={initialTab}
+          customer={customer}
+          properties={properties || []}
+          customerJobs={customerJobs}
+          invoices={invoices || []}
+          orgTaxRatePercent={Number(org.invoice_tax_rate_percent ?? 0)}
+        />
+      </div>
     </main>
   );
 }

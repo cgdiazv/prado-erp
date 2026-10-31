@@ -232,7 +232,7 @@ export default function PerformanceChart({ invoices, expenses, locale = 'en' }: 
               const { line, area, baseline, gridLines } = buildSparkline(metric.values);
 
               return (
-                <div key={metric.key} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-xs">
+                <div key={metric.key} className="w-full rounded-lg border border-slate-200 bg-slate-50 p-4 shadow-xs">
                   <div className="mb-3 flex items-center justify-between gap-3 text-xs font-semibold">
                     <span className="text-slate-500">{metric.label}</span>
                     <span className={`font-mono ${metric.textClassName}`}>${metric.total.toFixed(2)}</span>

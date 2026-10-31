@@ -33,7 +33,7 @@ export default function ScreenshotCarousel() {
   }, []);
 
   return (
-    <div className="w-full max-w-5xl rounded-[28px] border border-slate-800 bg-slate-900/40 p-3 shadow-2xl shadow-emerald-500/5 backdrop-blur-xs">
+    <div className="w-full max-w-5xl rounded-3xl border border-slate-800 bg-slate-900/40 p-3 shadow-2xl shadow-emerald-500/5 backdrop-blur-xs">
       <div className="relative overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950">
         <div
           className="flex transition-transform duration-700 ease-out"

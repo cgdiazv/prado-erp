@@ -63,7 +63,7 @@ export default function DeleteCustomerModal({
         }
       >
         <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-        <span>{isEs ? 'Eliminar perfil de cliente' : 'Delete Client Profile'}</span>
+        <span>{isEs ? 'Eliminar perfil de cliente' : 'Delete Customer Profile'}</span>
       </button>
 
       {isOpen && (
