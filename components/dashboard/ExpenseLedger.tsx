@@ -183,11 +183,11 @@ export default function ExpenseLedger({ expenses, locale = 'en' }: ExpenseLedger
             <tbody className="divide-y divide-gray-200 bg-white">
               {paginatedExpenses.map((exp) => (
                 <tr key={exp.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-slate-700 whitespace-nowrap table-date-column">
+                  <td className="px-4 py-3 text-xs text-slate-700 whitespace-nowrap table-date-column">
                     {new Date(exp.expense_date).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{exp.description || '—'}</td>
-                  <td className="px-4 py-3"><span className="bg-red-50 text-red-700 border border-red-100 px-2 py-0.5 rounded text-xs font-medium">{exp.category}</span></td>
+                  <td className="px-4 py-3 whitespace-nowrap"><span className="inline-flex items-center whitespace-nowrap bg-red-50 text-red-700 border border-red-100 px-2 py-0.5 rounded text-xs font-medium">{exp.category === 'Subcontractor Payout' ? 'Subcontractor' : exp.category}</span></td>
                   <td className="px-4 py-3 text-gray-600 text-xs">{exp.vendor || '—'}</td>
                   <td className="px-4 py-3 text-gray-600 text-xs">{exp.jobs?.job_type || (isEs ? 'Sin asignar' : 'Unassigned')}</td>
                   <td className="px-4 py-3 text-right text-red-600 font-mono font-semibold">-${exp.amount}</td>

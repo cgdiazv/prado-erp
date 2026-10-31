@@ -57,6 +57,12 @@ export default async function ExpenseLedgerPage({ params }: ExpenseLedgerPagePro
     redirect(`/${locale}/dashboard`);
   }
 
+  await supabase
+    .from('expenses')
+    .update({ category: 'Subcontractor' })
+    .eq('organization_id', org.id)
+    .eq('category', 'Subcontractor Payout');
+
   const { data: expensesData, error } = await supabase
     .from('expenses')
     .select('id, expense_date, category, vendor, description, amount, jobs(id, job_type, scheduled_date)')

@@ -691,7 +691,7 @@ export async function completeJob(
         .from('expenses')
         .select('id')
         .eq('job_id', job.id)
-        .eq('category', 'Subcontractor Payout')
+        .in('category', ['Subcontractor', 'Subcontractor Payout'])
         .maybeSingle();
 
       if (!existingExpense) {
@@ -716,7 +716,7 @@ export async function completeJob(
           .insert([
             {
               expense_date: expenseDate,
-              category: 'Subcontractor Payout',
+              category: 'Subcontractor',
               amount: payAmount,
               vendor: vendorName,
               description: `Subcontractor payout for Job (${job.job_type})`,

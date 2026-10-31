@@ -1,5 +1,5 @@
 export const EXPENSE_CATEGORIES_STORAGE_KEY = 'prado-expense-categories';
-export const DEFAULT_EXPENSE_CATEGORIES = ['Fuel', 'Equipment Maintenance', 'Labor', 'Materials & Supplies'];
+export const DEFAULT_EXPENSE_CATEGORIES = ['Fuel', 'Equipment Maintenance', 'Labor', 'Materials & Supplies', 'Subcontractor'];
 export const ARCHIVED_EXPENSE_CATEGORY_PREFIX = '[[ARCHIVED]] ';
 
 function normalizeExpenseCategory(value: string) {
