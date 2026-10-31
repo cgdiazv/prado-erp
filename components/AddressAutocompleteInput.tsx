@@ -122,18 +122,31 @@ export default function AddressAutocompleteInput({
   const activeQuery = (controlledValue ?? inputValue).trim();
 
   const fallbackInput = useMemo(
-    () => (
-      <input
-        type="text"
-        name={name}
-        defaultValue={defaultValue}
-        placeholder={placeholder}
-        required={required}
-        autoComplete="street-address"
-        className={className}
-      />
-    ),
-    [className, defaultValue, name, placeholder, required]
+    () =>
+      controlledValue !== undefined ? (
+        <input
+          type="text"
+          name={name}
+          value={controlledValue}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          autoComplete="street-address"
+          className={className}
+        />
+      ) : (
+        <input
+          type="text"
+          name={name}
+          defaultValue={defaultValue}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          autoComplete="street-address"
+          className={className}
+        />
+      ),
+    [className, controlledValue, defaultValue, name, onChange, placeholder, required]
   );
 
   useEffect(() => {

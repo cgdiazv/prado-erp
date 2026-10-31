@@ -1278,12 +1278,22 @@ export async function createExpense(formData: FormData) {
 }
 
 export async function createCustomer(formData: FormData) {
-  const firstName = formData.get('firstName') as string;
-  const lastName = formData.get('lastName') as string;
-  const companyName = formData.get('companyName') as string;
-  const email = formData.get('email') as string;
-  const phone = formData.get('phone') as string;
+  const firstName = (formData.get('firstName') as string)?.trim();
+  const lastName = (formData.get('lastName') as string)?.trim();
+  const companyName = (formData.get('companyName') as string)?.trim() || '';
+  const email = (formData.get('email') as string)?.trim() || '';
+  const phone = (formData.get('phone') as string)?.trim() || '';
+  const billingAddress = (formData.get('billingAddress') as string)?.trim() || '';
   const organizationId = formData.get('organizationId') as string;
+
+  const sameAsBilling = formData.get('sameAsBilling') === 'true';
+  const jobSiteStreetAddress = (formData.get('jobSiteStreetAddress') as string)?.trim() || '';
+  const jobSiteCity = (formData.get('jobSiteCity') as string)?.trim() || '';
+  const jobSiteState = (formData.get('jobSiteState') as string)?.trim() || '';
+  const jobSiteZipCode = (formData.get('jobSiteZipCode') as string)?.trim() || '';
+  const jobSiteNotes = (formData.get('jobSiteNotes') as string)?.trim() || null;
+  const rawJobSiteLat = formData.get('jobSiteLatitude') as string | null;
+  const rawJobSiteLng = formData.get('jobSiteLongitude') as string | null;
 
   if (!firstName || !lastName || !organizationId) {
     return { error: 'Missing required customer fields' };
@@ -1299,6 +1309,7 @@ export async function createCustomer(formData: FormData) {
         company_name: companyName || null,
         email: email || null,
         phone: phone || null,
+        billing_address: billingAddress || null,
         organization_id: organizationId
       }
     ])
@@ -1307,6 +1318,70 @@ export async function createCustomer(formData: FormData) {
   if (error) {
     console.error("Supabase Insertion Error details:", error.message);
     return { error: error.message };
+  }
+
+  const createdCustomerId = insertedCustomers?.[0]?.id;
+  const effectiveJobSiteStreet = sameAsBilling
+    ? (jobSiteStreetAddress || billingAddress)
+    : jobSiteStreetAddress;
+
+  if (createdCustomerId && effectiveJobSiteStreet) {
+    try {
+      let street = effectiveJobSiteStreet;
+      let city = jobSiteCity;
+      let state = jobSiteState;
+      let zipCode = jobSiteZipCode;
+
+      if (sameAsBilling && !city && !state && !zipCode && billingAddress.includes(',')) {
+        const parts = billingAddress.split(',').map((p) => p.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          street = parts[0];
+          city = parts[1] || '';
+          if (parts[2]) {
+            const stateZipMatch = parts[2].match(/^([A-Za-z\s]+?)(?:\s+(\d{5}(?:-\d{4})?))?$/);
+            if (stateZipMatch) {
+              state = stateZipMatch[1]?.trim() || '';
+              zipCode = stateZipMatch[2]?.trim() || '';
+            } else {
+              state = parts[2];
+            }
+          }
+        }
+      }
+
+      const parsedLat = rawJobSiteLat ? Number(rawJobSiteLat) : null;
+      const parsedLng = rawJobSiteLng ? Number(rawJobSiteLng) : null;
+      let latitude: number | null = parsedLat !== null && !Number.isNaN(parsedLat) ? parsedLat : null;
+      let longitude: number | null = parsedLng !== null && !Number.isNaN(parsedLng) ? parsedLng : null;
+
+      if (latitude === null || longitude === null) {
+        const fullAddressString = [street, city, [state, zipCode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+        const geocoded = await geocodeAddressServer(fullAddressString);
+        latitude = geocoded.latitude;
+        longitude = geocoded.longitude;
+      }
+
+      const { error: propInsertErr } = await supabaseAdmin
+        .from('properties')
+        .insert([
+          {
+            customer_id: createdCustomerId,
+            street_address: street,
+            city: city || '',
+            state: state || '',
+            zip_code: zipCode || '',
+            service_notes: jobSiteNotes,
+            latitude,
+            longitude,
+          },
+        ]);
+
+      if (propInsertErr) {
+        console.error('Failed to insert initial job site property:', propInsertErr.message);
+      }
+    } catch (propErr) {
+      console.error('Error creating initial job site property:', propErr);
+    }
   }
 
   // Dispatch Automated Welcome Email if customer email & Resend API Key are present

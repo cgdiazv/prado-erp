@@ -221,7 +221,11 @@ export default function ServiceSitesSection({ customerId, locale = 'en', propert
                     <DeleteSiteButton propertyId={prop.id} customerId={customerId} />
                   </div>
                   <p className="font-semibold text-slate-800 pr-6">{prop.street_address}</p>
-                  <p className="text-slate-400 mt-0.5">{prop.city}, {prop.state} {prop.zip_code}</p>
+                  {([prop.city, [prop.state, prop.zip_code].filter(Boolean).join(' ')].filter(Boolean).join(', ')) ? (
+                    <p className="text-slate-400 mt-0.5">
+                      {[prop.city, [prop.state, prop.zip_code].filter(Boolean).join(' ')].filter(Boolean).join(', ')}
+                    </p>
+                  ) : null}
                   {prop.service_notes ? (
                     <div className="mt-2 text-[11px] bg-amber-50/60 text-amber-900 p-2 rounded border border-amber-200/60 font-medium">
                       <strong>Notes:</strong> {prop.service_notes}
