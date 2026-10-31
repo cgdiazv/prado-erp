@@ -18,7 +18,7 @@ import {
   User,
   FileText,
   Image as ImageIcon,
-  Send,
+
   Plus,
 } from 'lucide-react';
 
@@ -834,7 +834,7 @@ export default function CreateInvoiceModal({
                   />
                   <div className="text-xs">
                     <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                      <Send className="w-3.5 h-3.5 text-emerald-600" />
+
                       {isEs ? 'Enviar factura por correo inmediatamente' : 'Send invoice email to customer immediately'}
                     </span>
                     <p className="text-[11px] text-slate-500 mt-0.5">
