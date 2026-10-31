@@ -266,14 +266,9 @@ export default function CompleteJobModal({
         {/* Header */}
         <div className="flex items-start justify-between p-5 border-b border-slate-100 bg-slate-50/70">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
-                ✓
-              </span>
-              <h2 id="complete-job-title" className="text-lg font-bold text-slate-900 tracking-tight">
-                {isEs ? 'Marcar Job como Completado' : 'Mark Job as Completed'}
-              </h2>
-            </div>
+            <h2 id="complete-job-title" className="text-lg font-bold text-slate-900 tracking-tight">
+              {isEs ? 'Marcar Job como Completado' : 'Mark Job as Completed'}
+            </h2>
             <p className="text-xs text-slate-500 mt-1">
               {job.job_type} • <span className="font-semibold text-slate-700">{customerName}</span>
             </p>
