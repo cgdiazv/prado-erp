@@ -29,6 +29,13 @@ import { findAuthUserIndexByEmail, findAuthUserIndexByUserIds, normalizeAuthEmai
 import { normalizeCurrencyCode, toStripeCurrency } from '@/lib/currency';
 import { formatDocumentNumber, normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
 import { reserveDocumentNumber } from '@/lib/documentNumbers';
+import {
+  isMissingLineItemsColumnError,
+  loadQuoteInternalCostsFallback,
+  logQuoteCostsToExpensesOnJobCompletion,
+  saveQuoteInternalCostsFallback,
+  type StoredQuoteLineItem,
+} from '@/lib/quoteCostSync';
 import { getResendFromAddress } from '@/lib/resend';
 import { canUseOnlineInvoicePayments, getSeatLimitForPlan, normalizeSubscriptionStatus } from '@/lib/subscriptionAccess';
 import Stripe from 'stripe';
@@ -311,7 +318,7 @@ export async function createJob(formData: FormData) {
     const { data: org } = await supabase2
       .from('organizations')
       .select('id, name, slogan, logo_url, document_email_header_color')
-      .eq('owner_id', user?.id)
+      .eq('id', user ? (await getUserOrganization(user.id)).organization?.id ?? '' : '')
       .single();
 
     const { data: property } = await supabase2
@@ -630,8 +637,8 @@ export async function completeJob(
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, slogan, logo_url, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, invoice_tax_rate_percent, invoice_currency_code, document_email_header_color')
-    .eq('owner_id', user?.id)
+    .select('id, name, slogan, logo_url, subscription_status, stripe_account_id, stripe_account_charges_enabled, stripe_account_payouts_enabled, invoice_tax_rate_percent, invoice_currency_code, document_email_header_color, default_labor_cost, default_materials_markup')
+    .eq('id', user ? (await getUserOrganization(user.id)).organization?.id ?? '' : '')
     .single();
 
   const organizationName = org?.name?.trim() || 'Prado ERP';
@@ -734,6 +741,21 @@ export async function completeJob(
       }
     } catch (expErr) {
       console.error('Failed to log automated subcontractor payout expense:', expErr);
+    }
+  }
+
+  // 2c. Automatically log Labor & Materials costs from the linked Quote into the Expense Ledger
+  await logQuoteCostsToExpensesOnJobCompletion({
+    supabase,
+    organizationId: org.id,
+    job,
+    defaultLaborCost: Number((org as any)?.default_labor_cost ?? 45),
+    defaultMaterialsMarkup: Number((org as any)?.default_materials_markup ?? 30),
+  });
+  revalidatePath('/dashboard/expense-ledger');
+  revalidatePath('/[lng]/dashboard/expense-ledger');
+  if (false) {
+    {
     }
   }
 
@@ -3042,6 +3064,34 @@ export async function createEstimate(formData: FormData) {
     revalidatePath('/dashboard/estimates');
     revalidatePath('/[lng]/dashboard/estimates');
     revalidatePath('/', 'layout');
+    if (lineItemsRaw && insertedData?.id) {
+      try {
+        const parsedItems = JSON.parse(lineItemsRaw) as StoredQuoteLineItem[];
+        const validItems = parsedItems.filter(
+          (item) => typeof item?.name === 'string' && item.name.trim().length > 0 && Number(item.price) > 0
+        );
+        if (validItems.length > 0) {
+          const { error: lineItemsErr } = await supabase
+            .from('estimates')
+            .update({ line_items: validItems })
+            .eq('id', insertedData.id)
+            .eq('organization_id', org.id);
+
+          if (lineItemsErr && isMissingLineItemsColumnError(lineItemsErr)) {
+            await saveQuoteInternalCostsFallback({
+              organizationId: org.id,
+              estimateId: insertedData.id,
+              actorUserId: user.id,
+              actorEmail: user.email || null,
+              lineItems: validItems,
+            });
+          }
+        }
+      } catch {
+        // Ignore malformed lineItemsJson
+      }
+    }
+
     return { success: true, estimateId: insertedData?.id };
   } catch (err: unknown) {
     return { error: (err as Error)?.message || 'Failed to create estimate.' };
@@ -3127,6 +3177,34 @@ export async function updateEstimate(estimateId: string, formData: FormData) {
       .eq('organization_id', org.id);
 
     if (error) return { error: error.message };
+
+    if (lineItemsRaw) {
+      try {
+        const parsedItems = JSON.parse(lineItemsRaw) as StoredQuoteLineItem[];
+        const validItems = parsedItems.filter(
+          (item) => typeof item?.name === 'string' && item.name.trim().length > 0 && Number(item.price) > 0
+        );
+        if (validItems.length > 0) {
+          const { error: lineItemsErr } = await supabase
+            .from('estimates')
+            .update({ line_items: validItems })
+            .eq('id', estimateId)
+            .eq('organization_id', org.id);
+
+          if (lineItemsErr && isMissingLineItemsColumnError(lineItemsErr)) {
+            await saveQuoteInternalCostsFallback({
+              organizationId: org.id,
+              estimateId,
+              actorUserId: user.id,
+              actorEmail: user.email || null,
+              lineItems: validItems,
+            });
+          }
+        }
+      } catch {
+        // Ignore malformed lineItemsJson
+      }
+    }
 
     // If estimate was already approved, synchronize the linked scheduled job in the calendar
     if (existingEstimate.status === 'approved') {
@@ -3449,6 +3527,16 @@ export async function getEstimateForEdit(estimateId: string) {
 
     if (estimateError || !estimate) {
       return { error: estimateError?.message || 'Estimate not found.' };
+    }
+
+    if (!Array.isArray((estimate as any).line_items) || (estimate as any).line_items.length === 0) {
+      const fallbackItems = await loadQuoteInternalCostsFallback({
+        organizationId: org.id,
+        estimateId: estimate.id,
+      });
+      if (fallbackItems && fallbackItems.length > 0) {
+        (estimate as any).line_items = fallbackItems;
+      }
     }
 
     let customerProperties: Array<{ id: string; street_address: string; city: string }> = [];

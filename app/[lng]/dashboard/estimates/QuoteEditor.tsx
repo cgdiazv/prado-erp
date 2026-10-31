@@ -237,6 +237,55 @@ export default function QuoteEditor({
       return [createDefaultLine('service')];
     }
 
+    if (Array.isArray(initialEstimate.line_items) && initialEstimate.line_items.length > 0) {
+      const hydrated = initialEstimate.line_items.map((item: any, idx: number): ServiceLine => {
+        const type: LineItemType =
+          item.type === 'labor' || item.type === 'material' ? item.type : 'service';
+        if (type === 'labor') {
+          const fallbackLabel = String(item.name || '').replace(/\s*\([0-9.]+\s*hrs?\)$/i, '').trim();
+          return {
+            id: Date.now() + idx,
+            type: 'labor',
+            serviceId: '__custom__',
+            customName: item.customName || fallbackLabel || (isEs ? 'Mano de obra' : 'Labor'),
+            hours: item.hours != null ? String(item.hours) : '1',
+            laborRate: item.laborRate != null ? String(item.laborRate) : defaultLaborRate.toFixed(2),
+            laborCost: item.laborCost != null ? String(item.laborCost) : defaultLaborCost.toFixed(2),
+            laborTier: item.laborTier || 'default',
+            price: Number(item.price || 0).toFixed(2),
+          };
+        }
+        if (type === 'material') {
+          return {
+            id: Date.now() + idx,
+            type: 'material',
+            serviceId: '__custom__',
+            customName: item.customName || item.name || (isEs ? 'Materiales y suministros' : 'Materials & Supplies'),
+            materialCost:
+              item.materialCost != null
+                ? String(item.materialCost)
+                : (Number(item.price || 0) / (1 + defaultMaterialsMarkup / 100)).toFixed(2),
+            materialMarkup:
+              item.materialMarkup != null ? String(item.materialMarkup) : defaultMaterialsMarkup.toFixed(0),
+            price: Number(item.price || 0).toFixed(2),
+          };
+        }
+        const matchedService = item.serviceId
+          ? services.find((service) => service.id === item.serviceId)
+          : services.find((service) => service.name.trim().toLowerCase() === String(item.name || '').trim().toLowerCase());
+        return {
+          id: Date.now() + idx,
+          type: 'service',
+          serviceId: matchedService ? matchedService.id : '__custom__',
+          customName: matchedService ? '' : (item.customName || item.name || ''),
+          price: Number(item.price || 0).toFixed(2),
+        };
+      });
+      if (hydrated.length > 0) {
+        return hydrated;
+      }
+    }
+
     const rawDescription = (initialEstimate.description || '').trim();
     const breakdownLabels = ['Detalle de servicios:', 'Service breakdown:'];
     const breakdownLabel = breakdownLabels.find((label) => rawDescription.includes(label));
@@ -510,6 +559,8 @@ export default function QuoteEditor({
           hours: line.hours,
           laborRate: line.laborRate,
           laborCost: line.laborCost,
+          laborTier: line.laborTier,
+          customName: line.customName?.trim() || '',
           materialCost: line.materialCost,
           materialMarkup: line.materialMarkup,
         };
