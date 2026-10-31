@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { MapPin, Navigation2, Pause, Play, Radio, RotateCcw, ShieldAlert } from "lucide-react";
+import { MapPin, Pause, Play, Radio, RotateCcw, ShieldAlert } from "lucide-react";
 
 export type LiveVehiclePin = {
   id: string;
@@ -18,6 +18,7 @@ export type LiveVehiclePin = {
 
 type LiveGpsMapProps = {
   vehicles: LiveVehiclePin[];
+  selectedVehicleId?: string | null;
   center?: [number, number];
   zoom?: number;
   className?: string;
@@ -43,6 +44,7 @@ const DEFAULT_CENTER: [number, number] = [-95.3698, 29.7604];
 
 export default function LiveGpsMap({
   vehicles,
+  selectedVehicleId = null,
   center = DEFAULT_CENTER,
   zoom = 9,
   className,
@@ -51,11 +53,16 @@ export default function LiveGpsMap({
 }: LiveGpsMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const playbackMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const vehiclesRef = useRef<LiveVehiclePin[]>(vehicles);
+  const selectedVehicleIdRef = useRef<string | null>(selectedVehicleId);
   const [mapReady, setMapReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackIndex, setPlaybackIndex] = useState(0);
+
+  vehiclesRef.current = vehicles;
+  selectedVehicleIdRef.current = selectedVehicleId;
 
   const hasToken = Boolean(process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN);
 
@@ -155,7 +162,7 @@ export default function LiveGpsMap({
 
     return () => {
       markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
+      markersRef.current.clear();
       playbackMarkerRef.current?.remove();
       playbackMarkerRef.current = null;
       map.remove();
@@ -164,6 +171,55 @@ export default function LiveGpsMap({
     };
   }, [center, hasToken, zoom]);
 
+  // Resize Mapbox canvas smoothly when switching back from a hidden tab
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    let wasHidden = container.clientWidth === 0 || container.clientHeight === 0;
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      const map = mapRef.current;
+      if (!entry || !map) return;
+
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) {
+        map.resize();
+
+        if (wasHidden) {
+          wasHidden = false;
+          const activeId = selectedVehicleIdRef.current;
+          const currentVehicles = vehiclesRef.current;
+          const targetVehicle = activeId
+            ? currentVehicles.find((v) => v.id === activeId)
+            : null;
+
+          if (targetVehicle) {
+            map.flyTo({
+              center: [targetVehicle.lng, targetVehicle.lat],
+              zoom: 14,
+              duration: 600,
+            });
+          } else if (currentVehicles.length > 0 && width > 180 && height > 180) {
+            const bounds = new mapboxgl.LngLatBounds();
+            currentVehicles.forEach((v) => bounds.extend([v.lng, v.lat]));
+            if (!bounds.isEmpty()) {
+              map.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 0 });
+            }
+          }
+        }
+      } else {
+        wasHidden = true;
+      }
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [mapReady]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) {
@@ -171,7 +227,7 @@ export default function LiveGpsMap({
     }
 
     markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
+    markersRef.current.clear();
 
     const bounds = new mapboxgl.LngLatBounds();
 
@@ -222,15 +278,43 @@ export default function LiveGpsMap({
         .setPopup(new mapboxgl.Popup({ offset: 18 }).setHTML(popupHtml))
         .addTo(map);
 
-      markersRef.current.push(marker);
+      markersRef.current.set(vehicle.id, marker);
       bounds.extend([vehicle.lng, vehicle.lat]);
     });
 
-    if (!bounds.isEmpty() && markersRef.current.length > 0) {
+    const container = mapContainerRef.current;
+    const isVisible = Boolean(container && container.clientWidth > 180 && container.clientHeight > 180);
+
+    if (isVisible && !selectedVehicleId && !bounds.isEmpty() && markersRef.current.size > 0) {
       map.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 800 });
     }
+  }, [vehicles, mapReady, selectedVehicleId]);
 
-  }, [vehicles, mapReady]);
+  useEffect(() => {
+    const map = mapRef.current;
+    const container = mapContainerRef.current;
+    if (!map || !mapReady || !selectedVehicleId || !container) {
+      return;
+    }
+
+    if (container.clientWidth === 0 || container.clientHeight === 0) {
+      return;
+    }
+
+    const target = vehiclesRef.current.find((v) => v.id === selectedVehicleId);
+    if (!target) return;
+
+    map.flyTo({
+      center: [target.lng, target.lat],
+      zoom: 14,
+      duration: 700,
+    });
+
+    const marker = markersRef.current.get(selectedVehicleId);
+    if (marker && !marker.getPopup()?.isOpen()) {
+      marker.togglePopup();
+    }
+  }, [selectedVehicleId, mapReady]);
 
   useEffect(() => {
     if (!isPlaying || !routePlayback || routePlayback.points.length < 2) {
@@ -324,23 +408,26 @@ export default function LiveGpsMap({
           </button>
         </div>
       )}
-      <div ref={mapContainerRef} className="h-[480px] w-full" />
+      <div ref={mapContainerRef} className="h-[520px] w-full" />
       {!mapReady && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/70 text-sm text-slate-600">
           Initializing live GPS map...
         </div>
       )}
-      <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-[11px] font-medium text-slate-600 backdrop-blur">
-        <Radio size={12} className="text-emerald-500 animate-pulse" /> Live Telematics Stream
-        {geofences && geofences.length > 0 && (
-          <span className="flex items-center gap-1 border-l border-slate-200 pl-2">
-            <ShieldAlert size={12} className="text-emerald-500" /> {geofences.length} Geofence{geofences.length > 1 ? "s" : ""}
-          </span>
-        )}
-        {playbackStatus && (
-          <span className="border-l border-slate-200 pl-2 text-slate-500">{playbackStatus}</span>
-        )}
-      </div>
+      {(geofences.length > 0 || playbackStatus) && (
+        <div className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-[11px] font-medium text-slate-600 backdrop-blur">
+          {geofences.length > 0 && (
+            <span className="flex items-center gap-1">
+              <ShieldAlert size={12} className="text-emerald-500" /> {geofences.length} Geofence{geofences.length > 1 ? "s" : ""}
+            </span>
+          )}
+          {playbackStatus && (
+            <span className={geofences.length > 0 ? "border-l border-slate-200 pl-2 text-slate-500" : "text-slate-500"}>
+              {playbackStatus}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
