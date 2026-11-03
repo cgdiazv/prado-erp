@@ -39,6 +39,7 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   });
+  const [timelineVehicle, setTimelineVehicle] = useState<string>('all');
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [editingDate, setEditingDate] = useState('');
   const [editingTruckId, setEditingTruckId] = useState('');
@@ -244,12 +245,13 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
     return Array.from({ length: timelineSpan }, (_, index) => {
       const date = new Date(timelineStart);
       date.setDate(timelineStart.getDate() + index);
+      const key = getDateKey(date);
       return {
-        key: getDateKey(date),
-        shortLabel: new Intl.DateTimeFormat(dateLocale, {
-          weekday: 'short',
-          day: 'numeric',
-        }).format(date),
+        key,
+        weekday: new Intl.DateTimeFormat(dateLocale, { weekday: 'short' }).format(date),
+        dayNumber: date.getDate(),
+        isWeekend: date.getDay() === 0 || date.getDay() === 6,
+        isToday: key === getDateKey(new Date()),
       };
     });
   }, [dateLocale, timelineSpan, timelineStart]);
@@ -261,66 +263,25 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
     return `${rangeFormat.format(timelineStart)} - ${rangeFormat.format(end)}`;
   }, [dateLocale, timelineSpan, timelineStart]);
 
-  const timelineRows = useMemo(() => {
-    const rows = [
-      {
-        id: '__unassigned__',
-        label: isEs ? 'Sin asignar' : 'Unassigned',
-        isUnassigned: true,
-      },
-      ...trucks.map((truck) => ({
-        id: truck.id,
-        label: truck.name,
-        isUnassigned: false,
-      })),
-    ];
-
-    return rows.map((row) => {
-      const jobsByDay = new Map<string, any[]>();
-
-      for (const day of timelineDays) {
-        const dayJobs = calendarJobs.filter((job) => {
-          const sameDay = toDateKey(job.scheduled_date) === day.key;
-          if (!sameDay) return false;
-          if (row.isUnassigned) return !job.truck_id;
-          return job.truck_id === row.id;
-        });
-        jobsByDay.set(day.key, dayJobs);
-      }
-
-      return {
-        ...row,
-        jobsByDay,
-      };
-    });
-  }, [calendarJobs, isEs, timelineDays, trucks]);
+  const timelineJobsByDay = useMemo(() => {
+    const jobsByDay = new Map<string, any[]>();
+    for (const day of timelineDays) {
+      jobsByDay.set(
+        day.key,
+        calendarJobs.filter((job) => {
+          if (toDateKey(job.scheduled_date) !== day.key) return false;
+          if (timelineVehicle === 'all') return true;
+          if (timelineVehicle === '__unassigned__') return !job.truck_id;
+          return job.truck_id === timelineVehicle;
+        })
+      );
+    }
+    return jobsByDay;
+  }, [calendarJobs, timelineDays, timelineVehicle]);
 
   return (
     <>
-      <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
-        <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-          <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">
-            {isEs ? 'Jobs Agendados' : 'Scheduled Jobs'}
-          </span>
-          <p className="text-xl font-bold text-slate-900 mt-1">{scheduledJobsCount}</p>
-        </div>
-
-        <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-          <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">
-            {isEs ? 'Jobs Completados' : 'Completed Jobs'}
-          </span>
-          <p className="text-xl font-bold text-slate-900 mt-1">{completedJobsCount}</p>
-        </div>
-
-        <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-          <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">
-            {isEs ? 'Sin Camion Asignado' : 'Unassigned Truck Jobs'}
-          </span>
-          <p className="text-xl font-bold text-slate-900 mt-1">{unassignedJobsCount}</p>
-        </div>
-      </div>
-
-      <div className="mb-3 sm:mb-6 md:mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 sm:mb-6 md:mb-3 flex flex-wrap items-center gap-2">
         <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-0.5 w-fit">
           <button
             type="button"
@@ -341,9 +302,19 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
             {isEs ? 'Calendario' : 'Calendar'}
           </button>
         </div>
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-          {calendarJobs.length} {isEs ? 'en calendario' : 'in calendar'}
-        </span>
+        {[
+          { label: isEs ? 'Agendados' : 'Scheduled', value: scheduledJobsCount },
+          { label: isEs ? 'Completados' : 'Completed', value: completedJobsCount },
+          { label: isEs ? 'Sin Vehículo' : 'Unassigned', value: unassignedJobsCount },
+        ].map((kpi) => (
+          <div
+            key={kpi.label}
+            className="inline-flex h-[30px] items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 shadow-xs"
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{kpi.label}</span>
+            <span className="text-sm font-bold text-slate-900">{kpi.value}</span>
+          </div>
+        ))}
       </div>
 
       {activeView === 'list' ? (
@@ -541,6 +512,20 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
               </button>
             </div>
             <div className="flex items-center justify-between gap-3 sm:justify-end">
+              <select
+                aria-label={isEs ? 'Filtrar por vehículo' : 'Filter by vehicle'}
+                value={timelineVehicle}
+                onChange={(event) => setTimelineVehicle(event.target.value)}
+                className="text-xs bg-white border border-gray-300 rounded-md px-2 py-1.5 text-slate-700 font-semibold max-w-[180px] cursor-pointer"
+              >
+                <option value="all">{isEs ? 'Todos los vehículos' : 'All vehicles'}</option>
+                <option value="__unassigned__">{isEs ? 'Sin asignar' : 'Unassigned'}</option>
+                {trucks.map((truck) => (
+                  <option key={truck.id} value={truck.id}>
+                    {truck.name}
+                  </option>
+                ))}
+              </select>
               <div className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white p-0.5">
                 {[7, 12, 14].map((span) => (
                   <button
@@ -560,59 +545,67 @@ export default function JobSchedule({ jobs, trucks, teamMembers, locale = 'en' }
           </div>
 
           <div className="overflow-x-auto">
-            <div className="min-w-[980px]">
-              <div className="grid grid-cols-[180px_1fr] border border-slate-200 rounded-t-lg bg-slate-50 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                <div className="px-3 py-2 border-r border-slate-200">{isEs ? 'Vehículo' : 'Vehicle'}</div>
-                <div
-                  className="grid"
-                  style={{ gridTemplateColumns: `repeat(${timelineDays.length}, minmax(68px, 1fr))` }}
-                >
-                  {timelineDays.map((day) => (
-                    <div key={day.key} className="px-2 py-2 text-center border-r last:border-r-0 border-slate-200">
-                      {day.shortLabel}
-                    </div>
-                  ))}
-                </div>
+            <div className="min-w-[760px] border border-slate-200 rounded-lg overflow-hidden bg-white">
+              <div
+                className="grid border-b border-slate-200 bg-white"
+                style={{ gridTemplateColumns: `repeat(${timelineDays.length}, minmax(0, 1fr))` }}
+              >
+                {timelineDays.map((day) => (
+                  <div
+                    key={day.key}
+                    className="flex flex-col items-center gap-0.5 py-2 border-r last:border-r-0 border-slate-200"
+                  >
+                    <span className="text-[10px] font-medium uppercase text-slate-500">{day.weekday}</span>
+                    <span
+                      className={`flex h-7 min-w-7 items-center justify-center rounded-full px-1 text-sm font-medium ${
+                        day.isToday ? 'bg-emerald-600 text-white' : 'text-slate-700'
+                      }`}
+                    >
+                      {day.dayNumber}
+                    </span>
+                  </div>
+                ))}
               </div>
 
-              {timelineRows.map((row) => (
-                <div key={row.id} className="grid grid-cols-[180px_1fr] border-x border-b border-slate-200 last:rounded-b-lg overflow-hidden">
-                  <div className="px-3 py-2.5 border-r border-slate-200 bg-white text-xs font-semibold text-slate-700 truncate">
-                    {row.label}
-                  </div>
-                  <div className="grid" style={{ gridTemplateColumns: `repeat(${timelineDays.length}, minmax(68px, 1fr))` }}>
-                    {timelineDays.map((day) => {
-                      const dayJobs = row.jobsByDay.get(day.key) || [];
-                      return (
-                        <div key={`${row.id}-${day.key}`} className="min-h-[78px] border-r last:border-r-0 border-slate-200 bg-white p-1.5">
-                          <div className="space-y-1">
-                            {dayJobs.slice(0, 2).map((job) => (
-                              <button
-                                key={job.id}
-                                type="button"
-                                onClick={() => openScheduleDetails(job)}
-                                className={`w-full truncate rounded-md px-1.5 py-1 text-left text-[10px] font-semibold transition ${
-                                  job.status === 'completed'
-                                    ? 'border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                                    : row.isUnassigned
-                                      ? 'border border-red-200 bg-red-50 text-red-800 hover:bg-red-100'
-                                      : 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                                }`}
-                                title={`${job.job_type} • ${job.properties?.street_address || ''}`}
-                              >
-                                {job.job_type}
-                              </button>
-                            ))}
-                            {dayJobs.length > 2 ? (
-                              <p className="text-[10px] font-semibold text-slate-500">+{dayJobs.length - 2}</p>
-                            ) : null}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+              <div
+                className="grid"
+                style={{ gridTemplateColumns: `repeat(${timelineDays.length}, minmax(0, 1fr))` }}
+              >
+                {timelineDays.map((day) => {
+                  const dayJobs = timelineJobsByDay.get(day.key) || [];
+                  return (
+                    <div
+                      key={day.key}
+                      className={`min-h-[420px] border-r last:border-r-0 border-slate-200 p-1 ${
+                        day.isWeekend ? 'bg-slate-100/70' : 'bg-white'
+                      }`}
+                    >
+                      <div className="space-y-0.5">
+                        {dayJobs.slice(0, 8).map((job) => (
+                          <button
+                            key={job.id}
+                            type="button"
+                            onClick={() => openScheduleDetails(job)}
+                            className={`w-full truncate rounded px-1.5 py-1 text-left text-[10px] font-semibold transition ${
+                              job.status === 'completed'
+                                ? 'border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                : !job.truck_id
+                                  ? 'border border-red-200 bg-red-50 text-red-800 hover:bg-red-100'
+                                  : 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                            }`}
+                            title={`${job.job_type} • ${job.properties?.street_address || ''}`}
+                          >
+                            {job.job_type}
+                          </button>
+                        ))}
+                        {dayJobs.length > 8 ? (
+                          <p className="px-1 text-[10px] font-semibold text-slate-500">+{dayJobs.length - 8}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
