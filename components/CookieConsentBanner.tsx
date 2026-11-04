@@ -220,9 +220,9 @@ export default function CookieConsentBanner() {
       aria-label="Cookie acknowledgment"
       className="fixed bottom-0 inset-x-0 w-full z-50 border-t border-emerald-500/25 bg-slate-950/95 backdrop-blur-md px-4 py-5 sm:px-6 sm:py-4.5 text-slate-300 shadow-[0_-8px_32px_rgba(0,0,0,0.65)]"
     >
-      <div className="mx-auto flex w-full max-w-7xl flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5 sm:gap-6 text-sm">
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5 sm:gap-6 text-sm">
         {/* Strip content */}
-        <div className="min-w-0">
+        <div className="min-w-0 pr-8 sm:pr-0">
           <p className="leading-relaxed">
             <span>{translations.cookies.message}</span>{" "}
             <Link
@@ -235,11 +235,11 @@ export default function CookieConsentBanner() {
         </div>
 
         {/* Action buttons */}
-        <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
+        <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto sm:self-center">
           <button
             type="button"
             onClick={acceptAll}
-            className="rounded-lg bg-emerald-500 px-5 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-emerald-400 active:scale-95 cursor-pointer shadow-md whitespace-nowrap"
+            className="w-full rounded-lg bg-emerald-500 px-5 py-2.5 text-center text-sm font-semibold text-slate-950 transition-all hover:bg-emerald-400 active:scale-95 cursor-pointer shadow-md whitespace-nowrap sm:w-auto sm:py-2"
           >
             {translations.cookies.accept}
           </button>
@@ -248,7 +248,7 @@ export default function CookieConsentBanner() {
             onClick={rejectNonEssential}
             aria-label={translations.cookies.dismiss}
             title={translations.cookies.dismiss}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-colors cursor-pointer"
+            className="absolute right-0 top-0 rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-colors cursor-pointer sm:static"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -322,14 +322,14 @@ export default function CookieConsentBanner() {
           <button
             type="button"
             onClick={rejectNonEssential}
-            className="rounded-xl border border-slate-800 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:text-white"
+            className="w-full rounded-xl border border-slate-800 px-4 py-3 text-center text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:text-white sm:w-auto"
           >
             {translations.cookies.rejectNonEssential}
           </button>
           <button
             type="button"
             onClick={saveCustomPreferences}
-            className="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400"
+            className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-emerald-400 sm:w-auto"
           >
             {translations.cookies.savePreferences}
           </button>
