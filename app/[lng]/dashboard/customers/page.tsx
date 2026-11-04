@@ -71,27 +71,28 @@ export default async function CustomersPage({
           {/* Main Grid Wrapper */}
           <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
             
-            {/* 1. Header Row - Spans completely across the entire width */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.customersTitle}</h1>
                 <p className="text-xs text-slate-400 mt-1">{translations.dashboard.customersSubtitle}</p>
               </div>
-              <AddCustomerModal organizationId={org.id} locale={locale} />
-            </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
-              <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-                <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">{isEs ? 'Total pendiente' : 'Total Unpaid'}</span>
-                <p className="text-xl font-bold text-slate-900 mt-1">${totalUnpaid.toFixed(2)}</p>
-              </div>
-              <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-                <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">{isEs ? 'Total pagado' : 'Total Paid'}</span>
-                <p className="text-xl font-bold text-slate-900 mt-1">${totalPaid.toFixed(2)}</p>
-              </div>
-              <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-                <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">{isEs ? 'Neto pendiente' : 'Net Outstanding'}</span>
-                <p className="text-xl font-bold text-slate-900 mt-1">${netOutstanding.toFixed(2)}</p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex h-8 min-w-0 items-center justify-between gap-2 whitespace-nowrap bg-white border border-gray-200 px-2 rounded-lg shadow-xs">
+                    <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Pendiente' : 'Unpaid'}</span>
+                    <p className="text-sm font-bold text-slate-900">${totalUnpaid.toFixed(2)}</p>
+                  </div>
+                  <div className="flex h-8 min-w-0 items-center justify-between gap-2 whitespace-nowrap bg-white border border-gray-200 px-2 rounded-lg shadow-xs">
+                    <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Pagado' : 'Paid'}</span>
+                    <p className="text-sm font-bold text-slate-900">${totalPaid.toFixed(2)}</p>
+                  </div>
+                  <div className="flex h-8 min-w-0 items-center justify-between gap-2 whitespace-nowrap bg-white border border-gray-200 px-2 rounded-lg shadow-xs">
+                    <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Saldo pendiente' : 'Outstanding'}</span>
+                    <p className="text-sm font-bold text-slate-900">${netOutstanding.toFixed(2)}</p>
+                  </div>
+                </div>
+                <AddCustomerModal organizationId={org.id} locale={locale} />
               </div>
             </div>
             
