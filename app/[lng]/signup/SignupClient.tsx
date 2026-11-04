@@ -1,7 +1,5 @@
 "use client";
 
-import { signup } from '../auth/actions';
-import { useRouter } from 'next/navigation';
 import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import PublicNavbar from '@/components/PublicNavbar';
 import { getTranslations } from '@/lib/translations';
@@ -9,18 +7,26 @@ import { getAppPageUrl } from '@/lib/appLinks';
 
 import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
 
+interface SignupInitialValues {
+  companyName: string;
+  email: string;
+  password: string;
+  intendedPlan: string;
+  organizationId: string;
+  organizationName: string;
+  referralCode: string;
+}
+
 interface SignUpClientProps {
   searchParams: Promise<{ plan?: string; email?: string; org_id?: string; org_name?: string }>;
   locale: string;
 }
 
 export default function SignUpClient({ searchParams, locale }: SignUpClientProps) {
-  const router = useRouter();
   const translations = getTranslations(locale);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
@@ -28,6 +34,7 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
   const [orgName, setOrgName] = useState('');
   const [targetPlan, setTargetPlan] = useState('trial');
   const [referralCode, setReferralCode] = useState('');
+  const [signupInitialValues, setSignupInitialValues] = useState<SignupInitialValues | null>(null);
   
   // States for Email Validation Checking
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
@@ -110,48 +117,31 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
     }
 
     setErrorMessage(null);
-    setLoading(true);
-
     const formData = new FormData(event.currentTarget);
-
-    try {
-      const result = await signup(formData);
-      
-      if (result?.error) {
-        setErrorMessage(result.error);
-        setLoading(false);
-        return;
-      }
-
-      // If a premium plan checkout URL was configured by the server action
-      if (result?.stripeUrl) {
-        // 1. Instantly open Stripe checkout link in a new tab securely
-        window.open(result.stripeUrl, '_blank', 'noopener,noreferrer');
-        
-        // 2. Pivot the underlying primary window page frame to the login page
-        router.push('/login?registered=true');
-        return;
-      }
-
-      // Fallback redirect pathing if they signed up for a regular free trial
-      if (result?.redirectTo) {
-        router.push(result.redirectTo);
-      }
-    } catch {
-      setErrorMessage(translations.signup.serverError);
-      setLoading(false);
-    }
+    setSignupInitialValues({
+      companyName: String(formData.get('companyName') || ''),
+      email: String(formData.get('email') || ''),
+      password: String(formData.get('password') || ''),
+      intendedPlan: String(formData.get('intendedPlan') || 'trial'),
+      organizationId: String(formData.get('organization_id') || ''),
+      organizationName: String(formData.get('organization_name') || ''),
+      referralCode: String(formData.get('referralCode') || ''),
+    });
+    setIsModalOpen(true);
   }
 
   return (
     <div className="min-h-screen bg-white flex flex-col selection:bg-emerald-500 selection:text-slate-950">
       <PublicNavbar theme="light" locale={locale} />
 
-      <WorkspaceSetupModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        locale={locale}
-      />
+      {isModalOpen && (
+        <WorkspaceSetupModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          locale={locale}
+          initialRegistrationData={signupInitialValues}
+        />
+      )}
 
       <main className="flex-1 flex items-center justify-center p-6 text-gray-900 bg-white">
         <div className="w-full max-w-md bg-white p-8 rounded-xl border border-gray-200 shadow-sm transition duration-150">
@@ -168,13 +158,6 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
                     ? translations.signup.subtitlePlan.replace('{plan}', targetPlan)
                     : translations.signup.subtitleTrial}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg transition cursor-pointer"
-                >
-                  Customize your workspace (Guided 30-Sec Setup) ➔
-                </button>
               </div>
             )}
           </header>
@@ -271,10 +254,10 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
 
             <button 
               type="submit" 
-              disabled={loading || emailAvailable === false}
+              disabled={emailAvailable === false}
               className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition text-sm shadow-sm mt-2 flex items-center justify-center outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
             >
-              {loading ? translations.signup.loadingButton : translations.signup.submitButton}
+              {translations.signup.submitButton}
             </button>
           </form>
 

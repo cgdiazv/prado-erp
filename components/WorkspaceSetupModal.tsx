@@ -36,12 +36,22 @@ interface WorkspaceSetupModalProps {
   onClose: () => void;
   locale?: string;
   initialStep?: number;
+  initialRegistrationData?: {
+    companyName: string;
+    email: string;
+    password: string;
+    intendedPlan: string;
+    organizationId: string;
+    organizationName: string;
+    referralCode: string;
+  } | null;
 }
 
 export default function WorkspaceSetupModal({
   isOpen,
   onClose,
   initialStep = 1,
+  initialRegistrationData,
 }: WorkspaceSetupModalProps) {
   const router = useRouter();
   const [step, setStep] = useState<number>(initialStep);
@@ -50,9 +60,9 @@ export default function WorkspaceSetupModal({
   const [tradeVertical, setTradeVertical] = useState<string>('');
   const [teamSize, setTeamSize] = useState<string>('');
   const [painPoint, setPainPoint] = useState<string>('');
-  const [companyName, setCompanyName] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
+  const [companyName, setCompanyName] = useState<string>(initialRegistrationData?.companyName || '');
+  const [email, setEmail] = useState<string>(initialRegistrationData?.email || '');
+  const [password, setPassword] = useState<string>(initialRegistrationData?.password || '');
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
   // Status & Error state
@@ -219,7 +229,18 @@ export default function WorkspaceSetupModal({
     formData.set('teamSize', teamSize);
     formData.set('painPoint', painPoint);
     formData.set('companyName', companyName);
-    formData.set('intendedPlan', 'trial');
+    formData.set('email', email);
+    formData.set('password', password);
+    formData.set('intendedPlan', initialRegistrationData?.intendedPlan || 'trial');
+    if (initialRegistrationData?.organizationId) {
+      formData.set('organization_id', initialRegistrationData.organizationId);
+    }
+    if (initialRegistrationData?.organizationName) {
+      formData.set('organization_name', initialRegistrationData.organizationName);
+    }
+    if (initialRegistrationData?.referralCode) {
+      formData.set('referralCode', initialRegistrationData.referralCode);
+    }
 
     try {
       const result = await signup(formData);
