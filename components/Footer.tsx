@@ -3,28 +3,17 @@
 import Link from 'next/link';
 import PradoLogo from '@/components/PradoLogo';
 import { useState } from 'react';
-import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
 import LiveDemoModal from '@/components/LiveDemoModal';
+import { getAppPageUrl } from '@/lib/appLinks';
 
 interface FooterProps {
   locale?: string;
-  onOpenTrial?: () => void;
   onOpenLiveDemo?: () => void;
 }
 
-export default function Footer({ locale = 'en', onOpenTrial, onOpenLiveDemo }: FooterProps) {
+export default function Footer({ locale = 'en', onOpenLiveDemo }: FooterProps) {
   const isEs = locale.toLowerCase().startsWith('es');
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
-
-  const handleOpenTrial = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (onOpenTrial) {
-      onOpenTrial();
-    } else {
-      setIsModalOpen(true);
-    }
-  };
 
   const handleOpenLiveDemo = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -112,18 +101,24 @@ export default function Footer({ locale = 'en', onOpenTrial, onOpenLiveDemo }: F
               </h4>
               <ul className="space-y-2.5 text-sm">
                 <li>
-                  <button
-                    type="button"
-                    onClick={handleOpenTrial}
+                  <a
+                    href={getAppPageUrl(locale, 'signup')}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-[#667085] hover:text-[#0a9d73] transition cursor-pointer font-medium text-left"
                   >
                     {isEs ? 'Prueba Gratis de 30 Días' : '30-day Free Trial'}
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <Link href={`/${locale}/login`} className="text-[#667085] hover:text-[#101828] transition">
+                  <a
+                    href={getAppPageUrl(locale, 'login')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#667085] hover:text-[#101828] transition"
+                  >
                     {isEs ? 'Iniciar Sesión' : 'Sign In'}
-                  </Link>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -143,14 +138,6 @@ export default function Footer({ locale = 'en', onOpenTrial, onOpenLiveDemo }: F
           </div>
         </div>
       </footer>
-
-      {!onOpenTrial && (
-        <WorkspaceSetupModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          locale={locale}
-        />
-      )}
 
       {!onOpenLiveDemo && (
         <LiveDemoModal

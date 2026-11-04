@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, FormEvent, useEffect } from 'react';
 import PublicNavbar from '@/components/PublicNavbar';
 import { getTranslations } from '@/lib/translations';
+import { getAppPageUrl } from '@/lib/appLinks';
 
 interface LoginPageClientProps {
   locale: string;
@@ -145,9 +146,14 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
           <div className="mt-6 text-center text-xs text-gray-500 border-t border-gray-100 pt-4 space-y-1.5">
             <div>
               {translations.login.registerPrompt}{' '}
-              <Link href={`/${locale}/signup`} className="text-emerald-600 hover:underline font-semibold">
+              <a
+                href={getAppPageUrl(locale, 'signup')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-600 hover:underline font-semibold"
+              >
                 {translations.login.registerLink}
-              </Link>
+              </a>
             </div>
             <div>
               {translations.login.forgotPasswordPrompt}{' '}

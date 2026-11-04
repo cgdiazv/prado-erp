@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { MailCheck } from 'lucide-react';
+import { APP_BASE_URL } from '@/lib/appLinks';
 
 export default function CheckEmailPage() {
   return (
@@ -16,12 +16,14 @@ export default function CheckEmailPage() {
         </header>
 
         <div className="mt-8 border-t pt-6">
-          <Link 
-            href="/login" 
+          <a
+            href={`${APP_BASE_URL}/login`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-6 rounded-lg transition text-sm shadow-sm"
           >
             Go to Login
-          </Link>
+          </a>
         </div>
       </div>
     </main>

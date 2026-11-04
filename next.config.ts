@@ -3,7 +3,7 @@ const nextConfig = {
   skipTrailingSlashRedirect: true,
   experimental: {
     serverActions: {
-      allowedOrigins: ['pradojob.com', 'www.pradojob.com'],
+      allowedOrigins: ['pradojob.com', 'www.pradojob.com', 'app.pradojob.com'],
     },
   },
   async redirects() {

@@ -1,10 +1,10 @@
 "use client";
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { acceptTeamInvitation, login } from '../actions';
 import { getTranslations } from '@/lib/translations';
+import { getAppPageUrl } from '@/lib/appLinks';
 
 interface AcceptInviteClientProps {
   locale: string;
@@ -122,9 +122,14 @@ export default function AcceptInviteClient({ locale, token, email, organizationN
           </form>
 
           <div className="mt-6 text-center text-xs text-gray-400 border-t border-gray-100 pt-4">
-            <Link href={`/${locale}/login`} className="text-emerald-600 hover:underline font-semibold">
+            <a
+              href={getAppPageUrl(locale, 'login')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-600 hover:underline font-semibold"
+            >
               Go to login
-            </Link>
+            </a>
           </div>
         </div>
       </main>

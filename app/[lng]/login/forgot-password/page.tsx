@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import PublicNavbar from '@/components/PublicNavbar';
 import { supabase } from '@/lib/supabaseClient';
+import { getAppPageUrl } from '@/lib/appLinks';
 
 export default function ForgotPasswordPage() {
   const params = useParams();
@@ -48,7 +49,12 @@ export default function ForgotPasswordPage() {
               <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-lg font-medium">
                 {message}
               </div>
-              <Link href={`/${locale}/login`} className="inline-block text-sm font-semibold text-emerald-600 hover:underline pt-2">
+              <Link
+                href={getAppPageUrl(locale, 'login')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-sm font-semibold text-emerald-600 hover:underline pt-2"
+              >
                 Return to Login
               </Link>
             </div>

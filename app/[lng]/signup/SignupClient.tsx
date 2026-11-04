@@ -1,11 +1,11 @@
 "use client";
 
 import { signup } from '../auth/actions';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import PublicNavbar from '@/components/PublicNavbar';
 import { getTranslations } from '@/lib/translations';
+import { getAppPageUrl } from '@/lib/appLinks';
 
 import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
 
@@ -281,9 +281,14 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
 
           <div className="mt-6 text-center text-xs text-gray-400 border-t border-gray-100 pt-4">
             {translations.signup.loginPrompt}{' '}
-            <Link href="/login" className="text-emerald-600 hover:underline font-semibold">
+            <a
+              href={getAppPageUrl(locale, 'login')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-600 hover:underline font-semibold"
+            >
               {translations.signup.loginLink}
-            </Link>
+            </a>
           </div>
         </div>
       </main>

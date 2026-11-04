@@ -11,6 +11,18 @@ export const config = {
 };
 
 export function middleware(req) {
+  const hostname = req.nextUrl.hostname.toLowerCase();
+  const isMainDomain = hostname === 'pradojob.com' || hostname === 'www.pradojob.com';
+  const isDashboardPath = /^\/(?:en\/|es\/)?dashboard(?:\/|$)/.test(req.nextUrl.pathname);
+
+  if (isMainDomain && isDashboardPath) {
+    const destination = req.nextUrl.clone();
+    destination.hostname = 'app.pradojob.com';
+    destination.protocol = 'https:';
+    destination.port = '';
+    return NextResponse.redirect(destination);
+  }
+
   if (PUBLIC_FILE.test(req.nextUrl.pathname)) {
     return NextResponse.next();
   }

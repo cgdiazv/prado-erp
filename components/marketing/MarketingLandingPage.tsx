@@ -6,8 +6,8 @@ import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
 import Footer from '@/components/Footer';
 import PradoLogo from '@/components/PradoLogo';
-import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
 import LiveDemoModal from '@/components/LiveDemoModal';
+import { getAppPageUrl } from '@/lib/appLinks';
 import {
   ArrowUpRight,
   ArrowRight,
@@ -36,7 +36,6 @@ interface MarketingLandingPageProps {
 
 export default function MarketingLandingPage({ locale = 'en' }: MarketingLandingPageProps) {
   const isEs = locale.toLowerCase().startsWith('es');
-  const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
   const [isLiveDemoModalOpen, setIsLiveDemoModalOpen] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
@@ -77,7 +76,6 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
       <PublicNavbar
         locale={locale}
         theme="light"
-        onOpenTrial={() => setIsTrialModalOpen(true)}
         onOpenLiveDemo={() => setIsLiveDemoModalOpen(true)}
       />
 
@@ -117,14 +115,15 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
             </p>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setIsTrialModalOpen(true)}
+              <a
+                href={getAppPageUrl(locale, 'signup')}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-[#0a9d73] hover:bg-[#088763] text-white px-6 py-3.5 rounded-xl transition shadow-sm hover:shadow-md cursor-pointer"
               >
                 <span>{isEs ? 'Iniciar Prueba de 30 Días' : 'Start 30-day Trial'}</span>
                 <ArrowUpRight className="w-4 h-4" />
-              </button>
+              </a>
 
               <button
                 type="button"
@@ -814,13 +813,14 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
                   <span className="text-sm text-[#667085]">/ {isEs ? 'mes' : 'month'}</span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsTrialModalOpen(true)}
+                <a
+                  href={getAppPageUrl(locale, 'signup')}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full text-center text-sm font-semibold bg-white hover:bg-[#f9fafb] text-[#101828] border border-[#d0d5dd] py-3.5 rounded-xl transition cursor-pointer"
                 >
                   {isEs ? 'Iniciar Prueba de 30 Días' : 'Start 30-day Trial'}
-                </button>
+                </a>
               </div>
 
               <div className="space-y-3.5 pt-6 border-t border-[#eaecf0]">
@@ -865,14 +865,15 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
                     <span className="text-sm text-[#667085]">/ {isEs ? 'mes' : 'month'}</span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setIsTrialModalOpen(true)}
+                  <a
+                    href={getAppPageUrl(locale, 'signup')}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-full inline-flex items-center justify-center gap-2 text-sm font-semibold bg-[#0a9d73] hover:bg-[#088763] text-white py-3.5 rounded-xl transition shadow-sm hover:shadow-md cursor-pointer"
                   >
                     <span>{isEs ? 'Iniciar Prueba de 30 Días' : 'Start 30-day Trial'}</span>
                     <ArrowUpRight className="w-4 h-4" />
-                  </button>
+                  </a>
                 </div>
 
                 <div className="space-y-3.5 pt-6 border-t border-[#eaecf0]">
@@ -919,13 +920,14 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
                   <span className="text-sm text-[#667085]">/ {isEs ? 'mes' : 'month'}</span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsTrialModalOpen(true)}
+                <a
+                  href={getAppPageUrl(locale, 'signup')}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full text-center text-sm font-semibold bg-white hover:bg-[#f9fafb] text-[#101828] border border-[#d0d5dd] py-3.5 rounded-xl transition cursor-pointer"
                 >
                   {isEs ? 'Iniciar Prueba de 30 Días' : 'Start 30-day Trial'}
-                </button>
+                </a>
               </div>
 
               <div className="space-y-3.5 pt-6 border-t border-[#eaecf0]">
@@ -1058,14 +1060,15 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
           </div>
 
           <div className="lg:col-span-4 space-y-3 lg:text-right">
-            <button
-              type="button"
-              onClick={() => setIsTrialModalOpen(true)}
+            <a
+              href={getAppPageUrl(locale, 'signup')}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-white hover:bg-[#f9fafb] text-[#0a9d73] px-7 py-4 rounded-xl transition shadow-lg cursor-pointer"
             >
               <span>{isEs ? 'Inicia tu prueba de 30 días' : 'Start your 30-day Trial'}</span>
               <ArrowUpRight className="w-4 h-4" />
-            </button>
+            </a>
             <p className="text-xs text-[#b6c2d8]">
               {isEs ? 'Sin tarjeta de crédito. Sin compromisos.' : 'No credit card required. No long-term commitments.'}
             </p>
@@ -1076,15 +1079,7 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
       {/* 10. Footer */}
       <Footer
         locale={locale}
-        onOpenTrial={() => setIsTrialModalOpen(true)}
         onOpenLiveDemo={() => setIsLiveDemoModalOpen(true)}
-      />
-
-      {/* Workspace Setup Modal */}
-      <WorkspaceSetupModal
-        isOpen={isTrialModalOpen}
-        onClose={() => setIsTrialModalOpen(false)}
-        locale={locale}
       />
 
       {/* Live Demo Modal */}
@@ -1096,4 +1091,3 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
     </div>
   );
 }
-

@@ -4,40 +4,27 @@ import Link from 'next/link';
 import PradoLogo from '@/components/PradoLogo';
 import { useState } from 'react';
 import { getTranslations } from '@/lib/translations';
-import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
 import LiveDemoModal from '@/components/LiveDemoModal';
 import { ArrowUpRight, Menu, X } from 'lucide-react';
+import { getAppPageUrl } from '@/lib/appLinks';
 
 interface PublicNavbarProps {
   theme?: 'dark' | 'light';
   locale?: string;
-  onOpenTrial?: () => void;
   onOpenLiveDemo?: () => void;
 }
 
 export default function PublicNavbar({
   theme = 'light',
   locale = 'en',
-  onOpenTrial,
   onOpenLiveDemo,
 }: PublicNavbarProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isInternalModalOpen, setIsInternalModalOpen] = useState(false);
   const [isInternalDemoModalOpen, setIsInternalDemoModalOpen] = useState(false);
   const isEs = locale.toLowerCase().startsWith('es');
   const translations = getTranslations(locale);
 
   const isLight = theme === 'light';
-
-  const handleOpenTrial = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDrawerOpen(false);
-    if (onOpenTrial) {
-      onOpenTrial();
-    } else {
-      setIsInternalModalOpen(true);
-    }
-  };
 
   const handleOpenLiveDemo = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
@@ -105,22 +92,25 @@ export default function PublicNavbar({
 
           {/* Desktop Right Actions */}
           <div className="hidden md:flex items-center gap-6">
-            <Link
-              href={`/${locale}/login`}
+            <a
+              href={getAppPageUrl(locale, 'login')}
+              target="_blank"
+              rel="noopener noreferrer"
               className={`text-sm font-medium transition cursor-pointer ${
                 isLight ? 'text-[#101828] hover:text-[#0a9d73]' : 'text-white hover:text-emerald-400'
               }`}
             >
               {isEs ? 'Iniciar Sesión' : 'Sign In'}
-            </Link>
-            <button
-              type="button"
-              onClick={handleOpenTrial}
+            </a>
+            <a
+              href={getAppPageUrl(locale, 'signup')}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-semibold bg-[#0a9d73] hover:bg-[#088763] text-white px-5 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer"
             >
               <span>{isEs ? 'Prueba Gratis de 30 Días' : '30-day Free Trial'}</span>
               <ArrowUpRight className="w-4 h-4" />
-            </button>
+            </a>
           </div>
 
           {/* Mobile menu trigger */}
@@ -193,36 +183,32 @@ export default function PublicNavbar({
                 >
                   {isEs ? 'Demo en Vivo' : 'Live Demo'}
                 </button>
-                <Link
-                  href={`/${locale}/login`}
+                <a
+                  href={getAppPageUrl(locale, 'login')}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={() => setIsDrawerOpen(false)}
                   className="px-3 py-2 text-base font-medium rounded-lg text-[#101828] hover:bg-slate-50"
                 >
                   {isEs ? 'Iniciar Sesión' : 'Sign In'}
-                </Link>
+                </a>
               </div>
             </div>
 
             <div className="pt-6 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={handleOpenTrial}
+              <a
+                href={getAppPageUrl(locale, 'signup')}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsDrawerOpen(false)}
                 className="w-full inline-flex items-center justify-center gap-2 text-sm font-semibold bg-[#0a9d73] hover:bg-[#088763] text-white px-4 py-3 rounded-xl transition shadow-md cursor-pointer"
               >
                 <span>{isEs ? 'Prueba Gratis de 30 Días' : '30-day Free Trial'}</span>
                 <ArrowUpRight className="w-4 h-4" />
-              </button>
+              </a>
             </div>
           </div>
         </div>
-      )}
-
-      {!onOpenTrial && (
-        <WorkspaceSetupModal
-          isOpen={isInternalModalOpen}
-          onClose={() => setIsInternalModalOpen(false)}
-          locale={locale}
-        />
       )}
 
       {!onOpenLiveDemo && (

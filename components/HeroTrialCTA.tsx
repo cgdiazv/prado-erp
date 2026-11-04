@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
-import WorkspaceSetupModal from '@/components/WorkspaceSetupModal';
 import LiveDemoModal from '@/components/LiveDemoModal';
 import { ArrowRight } from 'lucide-react';
+import { getAppPageUrl } from '@/lib/appLinks';
 
 interface HeroTrialCTAProps {
   primaryLabel?: string;
@@ -19,17 +18,10 @@ export default function HeroTrialCTA({
   variant = 'hero',
   locale = 'en',
 }: HeroTrialCTAProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
 
   return (
     <>
-      <WorkspaceSetupModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        locale={locale}
-      />
-
       <LiveDemoModal
         isOpen={isDemoModalOpen}
         onClose={() => setIsDemoModalOpen(false)}
@@ -38,14 +30,15 @@ export default function HeroTrialCTA({
 
       {variant === 'hero' && (
         <div className="mt-10 mb-12 flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
+          <a
+            href={getAppPageUrl(locale, 'signup')}
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-full sm:w-auto text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
           >
             <span>{primaryLabel}</span>
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </a>
           <button
             type="button"
             onClick={() => setIsDemoModalOpen(true)}
@@ -57,14 +50,15 @@ export default function HeroTrialCTA({
       )}
 
       {variant === 'section' && (
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
+        <a
+          href={getAppPageUrl(locale, 'signup')}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-2 text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-3.5 rounded-xl transition shadow-xl hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
         >
           <span>{primaryLabel}</span>
           <ArrowRight className="w-4 h-4" />
-        </button>
+        </a>
       )}
     </>
   );

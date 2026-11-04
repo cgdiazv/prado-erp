@@ -6,6 +6,7 @@ import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
 import Footer from '@/components/Footer';
 import { registerLiveMeetingAttendee } from '@/app/actions';
+import { getAppPageUrl } from '@/lib/appLinks';
 
 export default function LiveMeetingPage() {
   const params = useParams<{ lng?: string }>();
@@ -246,12 +247,14 @@ export default function LiveMeetingPage() {
                     <p className="text-xs text-slate-400">
                       {isEs ? '¿Quieres ir probando la plataforma hoy?' : 'Want to explore the platform today?'}
                     </p>
-                    <Link
-                      href={`/${locale}/signup`}
+                    <a
+                      href={getAppPageUrl(locale, 'signup')}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-block w-full text-center bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold rounded-xl py-2.5 px-4 text-xs shadow-lg transition"
                     >
                       {isEs ? 'Comenzar prueba gratuita de 30 días' : 'Start 30-day Free Trial'}
-                    </Link>
+                    </a>
                   </div>
                 </div>
               ) : (
@@ -393,12 +396,14 @@ export default function LiveMeetingPage() {
               : 'Create your account in 1 minute and start your 30-day free trial with full access to quotes, dispatch, invoicing, and reports.'}
           </p>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href={`/${locale}/signup`}
+            <a
+              href={getAppPageUrl(locale, 'signup')}
+              target="_blank"
+              rel="noopener noreferrer"
               className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition"
             >
               {isEs ? 'Comenzar Prueba Gratuita de 30 Días' : 'Start 30-Day Free Trial'}
-            </Link>
+            </a>
             <Link
               href={`/${locale}/demo`}
               className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-6 py-2.5 rounded-xl text-xs border border-slate-700 transition"

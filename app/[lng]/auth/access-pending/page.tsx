@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabaseServer';
 import { getUserOrganization } from '@/lib/organization';
 import { redirect } from 'next/navigation';
+import { getAppPageUrl } from '@/lib/appLinks';
 
 interface AccessPendingPageProps {
   params: Promise<{ lng?: string }>;
@@ -35,12 +36,14 @@ export default async function AccessPendingPage({ params }: AccessPendingPagePro
         </p>
 
         <div className="mt-6 flex flex-col sm:flex-row gap-3">
-          <Link
-            href={`/${locale}/login`}
+          <a
+            href={getAppPageUrl(locale, 'login')}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition"
           >
             {isEs ? 'Ir a login' : 'Go to login'}
-          </Link>
+          </a>
           <Link
             href={`/${locale}/auth/signout`}
             className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
