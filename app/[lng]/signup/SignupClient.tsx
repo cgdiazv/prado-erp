@@ -173,7 +173,6 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
                   onClick={() => setIsModalOpen(true)}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg transition cursor-pointer"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Customize your workspace (Guided 30-Sec Setup) ➔
                 </button>
               </div>
