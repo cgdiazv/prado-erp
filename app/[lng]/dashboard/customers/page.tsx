@@ -71,28 +71,28 @@ export default async function CustomersPage({
           {/* Main Grid Wrapper */}
           <div className="w-full px-6 md:px-10 pt-10 pb-8 grid grid-cols-1 gap-4 sm:gap-6 md:gap-6 text-left">
             
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.customersTitle}</h1>
-                <p className="text-xs text-slate-400 mt-1">{translations.dashboard.customersSubtitle}</p>
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="flex h-8 min-w-0 items-center justify-between gap-2 whitespace-nowrap bg-white border border-gray-200 px-2 rounded-lg shadow-xs">
-                    <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Pendiente' : 'Unpaid'}</span>
-                    <p className="text-sm font-bold text-slate-900">${totalUnpaid.toFixed(2)}</p>
-                  </div>
-                  <div className="flex h-8 min-w-0 items-center justify-between gap-2 whitespace-nowrap bg-white border border-gray-200 px-2 rounded-lg shadow-xs">
-                    <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Pagado' : 'Paid'}</span>
-                    <p className="text-sm font-bold text-slate-900">${totalPaid.toFixed(2)}</p>
-                  </div>
-                  <div className="flex h-8 min-w-0 items-center justify-between gap-2 whitespace-nowrap bg-white border border-gray-200 px-2 rounded-lg shadow-xs">
-                    <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Saldo pendiente' : 'Outstanding'}</span>
-                    <p className="text-sm font-bold text-slate-900">${netOutstanding.toFixed(2)}</p>
-                  </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-900">{translations.dashboard.customersTitle}</h1>
+                  <p className="text-xs text-slate-400 mt-1">{translations.dashboard.customersSubtitle}</p>
                 </div>
                 <AddCustomerModal organizationId={org.id} locale={locale} />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                <div className="flex w-full flex-col items-start gap-0.5 whitespace-nowrap bg-white border border-gray-200 px-2 py-1 rounded-lg shadow-xs sm:h-8 sm:w-fit sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:py-0">
+                  <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Pendiente' : 'Unpaid'}</span>
+                  <p className="text-sm font-bold text-slate-900">${totalUnpaid.toFixed(2)}</p>
+                </div>
+                <div className="flex w-full flex-col items-start gap-0.5 whitespace-nowrap bg-white border border-gray-200 px-2 py-1 rounded-lg shadow-xs sm:h-8 sm:w-fit sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:py-0">
+                  <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Pagado' : 'Paid'}</span>
+                  <p className="text-sm font-bold text-slate-900">${totalPaid.toFixed(2)}</p>
+                </div>
+                <div className="flex w-full flex-col items-start gap-0.5 whitespace-nowrap bg-white border border-gray-200 px-2 py-1 rounded-lg shadow-xs sm:h-8 sm:w-fit sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:py-0">
+                  <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Saldo pendiente' : 'Outstanding'}</span>
+                  <p className="text-sm font-bold text-slate-900">${netOutstanding.toFixed(2)}</p>
+                </div>
               </div>
             </div>
             
