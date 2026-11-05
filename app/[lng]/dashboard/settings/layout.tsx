@@ -65,7 +65,7 @@ export default async function SettingsLayout({
     },
     {
       id: 'document-settings',
-      label: locale.toLowerCase().startsWith('es') ? 'Documentos y correos' : 'Documents & Emails',
+      label: locale.toLowerCase().startsWith('es') ? 'Configuración de documentos' : 'Documents Settings',
       href: `/${locale}/dashboard/settings/document-settings`,
     },
   ];

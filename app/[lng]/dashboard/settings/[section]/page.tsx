@@ -6,6 +6,7 @@ import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
 import DeleteAccountSurveyCard from '../DeleteAccountSurveyCard';
 import ReferralProgramCard from '../ReferralProgramCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
+import DocumentSettingsTabs from '../DocumentSettingsTabs';
 import InvoiceTaxSettingsPanel from '../InvoiceTaxSettingsPanel';
 import LaborMarkupSettingsPanel from '../LaborMarkupSettingsPanel';
 import DocumentBrandingSettingsPanel from '../DocumentBrandingSettingsPanel';
@@ -207,38 +208,44 @@ export default async function SettingsSectionPage({
             )}
 
             {section === 'document-settings' && (
-              <>
-                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                  <InvoiceTaxSettingsPanel
-                    initialTaxRatePercent={org.invoice_tax_rate_percent ?? 8.25}
-                    initialCurrencyCode={org.invoice_currency_code || 'USD'}
-                    locale={locale}
-                  />
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                  <LaborMarkupSettingsPanel
-                    initialLaborRate={org.default_labor_rate ?? 95}
-                    initialLaborCost={org.default_labor_cost ?? 45}
-                    initialMaterialsMarkup={org.default_materials_markup ?? 30}
-                    initialNightLaborRate={org.default_night_labor_rate ?? 135}
-                    initialNightLaborCost={org.default_night_labor_cost ?? 65}
-                    initialHolidayEmergencyLaborRate={org.default_holiday_emergency_labor_rate ?? 165}
-                    initialHolidayEmergencyLaborCost={org.default_holiday_emergency_labor_cost ?? 75}
-                    locale={locale}
-                  />
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                  <DocumentBrandingSettingsPanel
-                    initialNextEstimateNumber={org.next_estimate_number ?? 1001}
-                    initialNextInvoiceNumber={org.next_invoice_number ?? 1001}
-                    initialHeaderColor={org.document_email_header_color || '#009966'}
-                    initialDefaultPaymentTerms={org.default_payment_terms || 'Due on Receipt'}
-                    locale={locale}
-                  />
-                </div>
-              </>
+              <DocumentSettingsTabs
+                locale={locale}
+                initialTab={initialTab}
+                billingDefaults={
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                    <InvoiceTaxSettingsPanel
+                      initialTaxRatePercent={org.invoice_tax_rate_percent ?? 8.25}
+                      initialCurrencyCode={org.invoice_currency_code || 'USD'}
+                      locale={locale}
+                    />
+                  </div>
+                }
+                laborMarkups={
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                    <LaborMarkupSettingsPanel
+                      initialLaborRate={org.default_labor_rate ?? 95}
+                      initialLaborCost={org.default_labor_cost ?? 45}
+                      initialMaterialsMarkup={org.default_materials_markup ?? 30}
+                      initialNightLaborRate={org.default_night_labor_rate ?? 135}
+                      initialNightLaborCost={org.default_night_labor_cost ?? 65}
+                      initialHolidayEmergencyLaborRate={org.default_holiday_emergency_labor_rate ?? 165}
+                      initialHolidayEmergencyLaborCost={org.default_holiday_emergency_labor_cost ?? 75}
+                      locale={locale}
+                    />
+                  </div>
+                }
+                docsEmails={
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                    <DocumentBrandingSettingsPanel
+                      initialNextEstimateNumber={org.next_estimate_number ?? 1001}
+                      initialNextInvoiceNumber={org.next_invoice_number ?? 1001}
+                      initialHeaderColor={org.document_email_header_color || '#009966'}
+                      initialDefaultPaymentTerms={org.default_payment_terms || 'Due on Receipt'}
+                      locale={locale}
+                    />
+                  </div>
+                }
+              />
             )}
 
             {section === 'team-settings' && canAccessTeamFeatures && (
@@ -287,9 +294,7 @@ export default async function SettingsSectionPage({
             )}
 
             {section === 'import-export' && canViewImportExport && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                <ImportExportPanel locale={locale} />
-              </div>
+              <ImportExportPanel locale={locale} initialTab={initialTab} />
             )}
 
             {section === 'manage-subscription' && canManageSubscription && (
