@@ -100,8 +100,14 @@ vbpx('event', 'page_view');`}
         <Script id="google-tag-manager-init" strategy="beforeInteractive">
           {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());`}
+gtag('js', new Date());
+gtag('config', 'G-E7DL3TMBG9');`}
         </Script>
+        <Script
+          id="google-analytics"
+          src="https://www.googletagmanager.com/gtag/js?id=G-E7DL3TMBG9"
+          strategy="beforeInteractive"
+        />
       </head>
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
         {children}
