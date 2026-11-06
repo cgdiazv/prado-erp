@@ -92,6 +92,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 vbpx('init','heV2ZR');
 vbpx('event', 'page_view');`}
         </Script>
+        <Script
+          id="google-tag-manager"
+          src="https://www.googletagmanager.com/gtm.js?id=GTM-5TJFVGHG"
+          strategy="beforeInteractive"
+        />
+        <Script id="google-tag-manager-init" strategy="beforeInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());`}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
         {children}
