@@ -23,11 +23,11 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'Prado Jobs | Streamlined Operations & Job Management',
-    template: '%s | Prado Jobs',
+    default: 'Prado | Streamlined Operations & Job Management',
+    template: '%s | Prado',
   },
   description:
-    'Prado Jobs helps field service businesses quote, schedule, and invoice jobs from the field — in seconds, not spreadsheets.',
+    'Prado helps field service businesses quote, schedule, and invoice jobs from the field — in seconds, not spreadsheets.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/icon-192.png',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Prado Jobs',
+    title: 'Prado',
     startupImage: [
       {
         url: '/splash/apple-splash-portrait.png',
