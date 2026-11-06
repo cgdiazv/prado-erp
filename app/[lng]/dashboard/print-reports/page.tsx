@@ -133,15 +133,22 @@ export default async function PrintReportsPage({
         periodQuarter: 'Trimestre actual',
         periodYear: 'Ano actual',
         periodCustom: 'Rango personalizado',
-        startDate: 'Fecha inicio',
-        endDate: 'Fecha fin',
         selectRange: 'Seleccionar rango',
+        cancel: 'Cancelar',
+        last30Days: 'Últimos 30 días',
+        thisQuarter: 'Este trimestre',
+        yearToDate: 'Este año',
         applyRange: 'Aplicar rango',
         generate: 'Generar Vista de Impresion',
         print: 'Imprimir / Guardar PDF',
         totalRevenue: 'Total facturado',
         totalPaid: 'Pagado',
         totalUnpaid: 'Pendiente',
+        outstandingBalance: 'Saldo pendiente neto',
+        totalInvoices: 'Facturas totales',
+        totalDraft: 'Total en borrador',
+        totalSent: 'Total enviado',
+        totalApproved: 'Total aprobado',
         records: 'Registros',
         thDate: 'Fecha',
         thCustomer: 'Cliente',
@@ -187,15 +194,22 @@ export default async function PrintReportsPage({
         periodQuarter: 'Current quarter',
         periodYear: 'Current year',
         periodCustom: 'Custom range',
-        startDate: 'Start date',
-        endDate: 'End date',
         selectRange: 'Select range',
+        cancel: 'Cancel',
+        last30Days: 'Last 30 days',
+        thisQuarter: 'This quarter',
+        yearToDate: 'Year to date',
         applyRange: 'Apply range',
         generate: 'Generate Print View',
         print: 'Print / Save PDF',
         totalRevenue: 'Total invoiced',
         totalPaid: 'Paid',
         totalUnpaid: 'Unpaid',
+        outstandingBalance: 'Net outstanding',
+        totalInvoices: 'Total invoices',
+        totalDraft: 'Total in draft',
+        totalSent: 'Total sent',
+        totalApproved: 'Total approved',
         records: 'Records',
         thDate: 'Date',
         thCustomer: 'Customer',
@@ -309,7 +323,7 @@ export default async function PrintReportsPage({
       { label: t.totalRevenue, value: formatCurrency(totalRevenue) },
       { label: t.totalPaid, value: formatCurrency(totalPaid) },
       { label: t.totalUnpaid, value: formatCurrency(totalUnpaid) },
-      { label: t.records, value: String(invoices?.length || 0) },
+      { label: t.totalInvoices, value: String(invoices?.length || 0) },
     ];
     reportHeaders = [t.thDate, t.thCustomer, t.thAmount, t.thStatus];
     reportRows = (invoices || []).map((inv) => [
@@ -448,11 +462,16 @@ export default async function PrintReportsPage({
     });
 
     const withDebt = Array.from(unpaidByCustomer.values()).filter((v) => v > 0).length;
+    const totalUnpaid = Array.from(unpaidByCustomer.values()).reduce((sum, amount) => sum + amount, 0);
+    const totalPaid = Array.from(paidByCustomer.values()).reduce((sum, amount) => sum + amount, 0);
 
     reportSummary = [
       { label: t.totalCustomers, value: String(customers?.length || 0) },
       { label: t.withDebt, value: String(withDebt) },
       { label: t.records, value: String(customers?.length || 0) },
+      { label: t.totalUnpaid, value: formatCurrency(totalUnpaid) },
+      { label: t.totalPaid, value: formatCurrency(totalPaid) },
+      { label: t.outstandingBalance, value: formatCurrency(Math.max(totalUnpaid - totalPaid, 0)) },
     ];
     reportHeaders = [t.thName, t.thEmail, t.thOutstanding, t.thPaid];
     reportRows = (customers || []).map((customer) => {
@@ -477,11 +496,18 @@ export default async function PrintReportsPage({
 
     const approvedCount = (estimates || []).filter((est) => est.status === 'approved').length;
     const conversionRate = estimates?.length ? Math.round((approvedCount / estimates.length) * 100) : 0;
+    const totalByStatus = (status: string) =>
+      (estimates || [])
+        .filter((estimate) => estimate.status === status)
+        .reduce((sum, estimate) => sum + Number(estimate.estimated_amount || 0), 0);
 
     reportSummary = [
       { label: t.estimatesCreated, value: String(estimates?.length || 0) },
       { label: t.approved, value: String(approvedCount) },
       { label: t.conversionRate, value: `${conversionRate}%` },
+      { label: t.totalDraft, value: formatCurrency(totalByStatus('draft')) },
+      { label: t.totalSent, value: formatCurrency(totalByStatus('sent')) },
+      { label: t.totalApproved, value: formatCurrency(totalByStatus('approved')) },
     ];
     reportHeaders = [t.thCreated, t.thTitle, t.thAmount, t.thStatus];
     reportRows = (estimates || []).map((est) => [
@@ -515,12 +541,16 @@ export default async function PrintReportsPage({
             selectedPeriod={selectedPeriod}
             customStartValue={customStartValue}
             customEndValue={customEndValue}
+            locale={locale}
             sectionTitle={t.sectionTitle}
             periodLabel={t.periodLabel}
             periodCustomLabel={t.periodCustom}
-            startDateLabel={t.startDate}
-            endDateLabel={t.endDate}
             selectRangeLabel={t.selectRange}
+            applyRangeLabel={t.applyRange}
+            cancelLabel={t.cancel}
+            last30DaysLabel={t.last30Days}
+            thisQuarterLabel={t.thisQuarter}
+            yearToDateLabel={t.yearToDate}
             generateLabel={t.generate}
           />
         </section>

@@ -195,15 +195,6 @@ export default function InvoicesLedgerTable({
     { key: 'paid', label: translations.dashboard.filterPaid },
   ];
 
-  const unpaidTotal = invoiceRows
-    .filter((invoice) => invoice.status === 'unpaid')
-    .reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
-  const paidTotal = invoiceRows
-    .filter((invoice) => invoice.status === 'paid')
-    .reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
-  const summaryCurrency = normalizeCurrencyCode(invoiceRows[0]?.currency_code);
-  const totalInvoices = invoiceRows.length;
-
   return (
     <>
       {/* 1. Header Row - Title & Subtitle on left, New Invoice Button on right end */}
@@ -225,29 +216,6 @@ export default function InvoicesLedgerTable({
           <Plus className="w-3.5 h-3.5 text-white" />
           <span>{isEs ? 'Nueva Factura' : 'New Invoice'}</span>
         </Link>
-      </div>
-
-      <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
-        <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-          <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">
-            {isEs ? 'Total Pendiente' : 'Unpaid Total'}
-          </span>
-          <p className="text-xl font-bold text-slate-900 mt-1">{formatCurrency(unpaidTotal, summaryCurrency)}</p>
-        </div>
-
-        <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-          <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">
-            {isEs ? 'Total Pagado' : 'Paid Total'}
-          </span>
-          <p className="text-xl font-bold text-slate-900 mt-1">{formatCurrency(paidTotal, summaryCurrency)}</p>
-        </div>
-
-        <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-          <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">
-            {isEs ? 'Facturas Totales' : 'Total Invoices'}
-          </span>
-          <p className="text-xl font-bold text-slate-900 mt-1">{totalInvoices}</p>
-        </div>
       </div>
 
       {reminderNotification && (

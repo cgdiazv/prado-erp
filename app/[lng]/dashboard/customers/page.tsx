@@ -61,11 +61,6 @@ export default async function CustomersPage({
     return accumulator;
   }, {});
 
-  const totalUnpaid = Object.values(unpaidBalances).reduce((sum, amount) => sum + amount, 0);
-  const totalPaid = Object.values(paidBalances).reduce((sum, amount) => sum + amount, 0);
-  const netOutstanding = Math.max(totalUnpaid - totalPaid, 0);
-  const isEs = locale.toLowerCase().startsWith('es');
-
   return (
         <main className="flex-1 overflow-y-auto">
           {/* Main Grid Wrapper */}
@@ -80,20 +75,6 @@ export default async function CustomersPage({
                 <AddCustomerModal organizationId={org.id} locale={locale} />
               </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center">
-                <div className="flex w-full flex-col items-start gap-0.5 whitespace-nowrap bg-white border border-gray-200 px-2 py-1 rounded-lg shadow-xs sm:h-8 sm:w-fit sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:py-0">
-                  <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Pendiente' : 'Unpaid'}</span>
-                  <p className="text-sm font-bold text-slate-900">${totalUnpaid.toFixed(2)}</p>
-                </div>
-                <div className="flex w-full flex-col items-start gap-0.5 whitespace-nowrap bg-white border border-gray-200 px-2 py-1 rounded-lg shadow-xs sm:h-8 sm:w-fit sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:py-0">
-                  <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Pagado' : 'Paid'}</span>
-                  <p className="text-sm font-bold text-slate-900">${totalPaid.toFixed(2)}</p>
-                </div>
-                <div className="flex w-full flex-col items-start gap-0.5 whitespace-nowrap bg-white border border-gray-200 px-2 py-1 rounded-lg shadow-xs sm:h-8 sm:w-fit sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:py-0">
-                  <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide text-slate-500">{isEs ? 'Saldo pendiente' : 'Outstanding'}</span>
-                  <p className="text-sm font-bold text-slate-900">${netOutstanding.toFixed(2)}</p>
-                </div>
-              </div>
             </div>
             
             {/* 2. Customers Section - Now full width */}

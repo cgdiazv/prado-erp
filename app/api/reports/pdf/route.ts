@@ -130,7 +130,7 @@ export async function GET(request: Request) {
           expenses: 'Resumen de Gastos',
           jobs: 'Rendimiento de Jobs',
           customers: 'Estado de Clientes',
-          estimates: 'Conversion de Estimaciones',
+          estimates: 'Conversión de Cotizaciones',
           schedule: 'Agenda Semanal',
         }
       : {
@@ -138,7 +138,7 @@ export async function GET(request: Request) {
           expenses: 'Expense Summary',
           jobs: 'Job Performance',
           customers: 'Customer Status',
-          estimates: 'Estimate Conversion',
+          estimates: 'Quote Conversion',
           schedule: 'Weekly Schedule',
         };
 
@@ -200,7 +200,7 @@ export async function GET(request: Request) {
         { label: 'Total', value: formatCurrency(totalRevenue) },
         { label: 'Paid', value: formatCurrency(totalPaid) },
         { label: 'Unpaid', value: formatCurrency(totalUnpaid) },
-        { label: 'Records', value: String(invoices?.length || 0) },
+        { label: lng.startsWith('es') ? 'Facturas totales' : 'Total invoices', value: String(invoices?.length || 0) },
       ];
       headers = ['Date', 'Customer', 'Amount', 'Status'];
       rows = (invoices || []).map((inv: any) => [
@@ -334,10 +334,18 @@ export async function GET(request: Request) {
       });
 
       const withDebt = Array.from(unpaidByCustomer.values()).filter((v) => v > 0).length;
+      const totalUnpaid = Array.from(unpaidByCustomer.values()).reduce((sum, amount) => sum + amount, 0);
+      const totalPaid = Array.from(paidByCustomer.values()).reduce((sum, amount) => sum + amount, 0);
 
       summary = [
         { label: 'Customers', value: String(customers?.length || 0) },
         { label: 'With debt', value: String(withDebt) },
+        { label: lng.startsWith('es') ? 'Pendiente' : 'Unpaid', value: formatCurrency(totalUnpaid) },
+        { label: lng.startsWith('es') ? 'Pagado' : 'Paid', value: formatCurrency(totalPaid) },
+        {
+          label: lng.startsWith('es') ? 'Saldo pendiente neto' : 'Net outstanding',
+          value: formatCurrency(Math.max(totalUnpaid - totalPaid, 0)),
+        },
       ];
       headers = ['Name', 'Email', 'Outstanding', 'Paid'];
       rows = (customers || []).map((customer: any) => {
@@ -362,11 +370,18 @@ export async function GET(request: Request) {
 
       const approved = (estimates || []).filter((est: any) => est.status === 'approved').length;
       const conversionRate = estimates?.length ? Math.round((approved / estimates.length) * 100) : 0;
+      const totalByStatus = (status: string) =>
+        (estimates || [])
+          .filter((est: any) => est.status === status)
+          .reduce((sum: number, est: any) => sum + Number(est.estimated_amount || 0), 0);
 
       summary = [
-        { label: 'Estimates', value: String(estimates?.length || 0) },
-        { label: 'Approved', value: String(approved) },
-        { label: 'Conversion', value: `${conversionRate}%` },
+        { label: lng.startsWith('es') ? 'Cotizaciones creadas' : 'Quotes created', value: String(estimates?.length || 0) },
+        { label: lng.startsWith('es') ? 'Aprobadas' : 'Approved', value: String(approved) },
+        { label: lng.startsWith('es') ? 'Tasa de conversión' : 'Conversion rate', value: `${conversionRate}%` },
+        { label: lng.startsWith('es') ? 'Total en borrador' : 'Total in draft', value: formatCurrency(totalByStatus('draft')) },
+        { label: lng.startsWith('es') ? 'Total enviado' : 'Total sent', value: formatCurrency(totalByStatus('sent')) },
+        { label: lng.startsWith('es') ? 'Total aprobado' : 'Total approved', value: formatCurrency(totalByStatus('approved')) },
       ];
       headers = ['Created', 'Title', 'Amount', 'Status'];
       rows = (estimates || []).map((est: any) => [

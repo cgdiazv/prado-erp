@@ -87,9 +87,6 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         pageTitle: 'Cotizaciones',
         pageSubtitle: 'Crea cotizaciones profesionales, envíalas a tus clientes y conviértelas en órdenes de trabajo.',
         newEstimate: 'Nueva Cotización',
-        totalDraft: 'Total en Borrador',
-        totalSent: 'Total Enviado',
-        totalApproved: 'Total Enviado a Job',
         filterAll: 'Todos',
         filterDraft: 'Borrador',
         filterSent: 'Enviados',
@@ -190,9 +187,6 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
         pageTitle: 'Quotes',
         pageSubtitle: 'Create professional quotes, send them to your customers, and convert them into work orders.',
         newEstimate: 'New Quote',
-        totalDraft: 'Total in Draft',
-        totalSent: 'Total Sent',
-        totalApproved: 'Total Sent to Job',
         filterAll: 'All',
         filterDraft: 'Draft',
         filterSent: 'Sent',
@@ -478,28 +472,6 @@ export default function EstimatesClient({ initialData }: EstimatesClientProps) {
             <span>{t.newEstimate}</span>
           </Link>
         </div>
-
-            {/* Tarjetas de Resumen Rapido */}
-            <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-x-visible mb-2 sm:mb-5 md:mb-2">
-              <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-                <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">{t.totalDraft}</span>
-                <p className="text-xl font-bold text-slate-900 mt-1">
-                  ${estimates.filter(e => e.status === 'draft').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
-                </p>
-              </div>
-              <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-                <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">{t.totalSent}</span>
-                <p className="text-xl font-bold text-slate-900 mt-1">
-                  ${estimates.filter(e => e.status === 'sent').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
-                </p>
-              </div>
-              <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white border border-gray-200 p-2.5 sm:p-4 rounded-xl shadow-xs">
-                <span className="text-xs uppercase font-semibold tracking-wider text-slate-500">{t.totalApproved}</span>
-                <p className="text-xl font-bold text-slate-900 mt-1">
-                  ${estimates.filter(e => e.status === 'approved').reduce((acc, curr) => acc + curr.estimated_amount, 0).toFixed(2)}
-                </p>
-              </div>
-            </div>
 
             {/* Barra de Filtros + Paginacion */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-6 md:mb-3">

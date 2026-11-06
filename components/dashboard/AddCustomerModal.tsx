@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import AddressAutocompleteInput, { ResolvedAddress } from '@/components/AddressAutocompleteInput';
 import { createCustomer } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
@@ -193,9 +193,10 @@ export default function AddCustomerModal({ organizationId, locale = 'en' }: AddC
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-sm"
+        className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm inline-flex items-center justify-center gap-1.5 shrink-0"
       >
-        + {translations.dashboard.addNewCustomer}
+        <Plus className="w-3.5 h-3.5" />
+        <span>{translations.dashboard.addNewCustomer}</span>
       </button>
 
       {isOpen && (
