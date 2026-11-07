@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import PradoLogo from '@/components/PradoLogo';
 import { useState } from 'react';
-import { getTranslations } from '@/lib/translations';
 import LiveDemoModal from '@/components/LiveDemoModal';
 import { ArrowUpRight, Menu, X } from 'lucide-react';
 import { getAppPageUrl } from '@/lib/appLinks';
@@ -12,17 +11,18 @@ interface PublicNavbarProps {
   theme?: 'dark' | 'light';
   locale?: string;
   onOpenLiveDemo?: () => void;
+  showMarketingLinks?: boolean;
 }
 
 export default function PublicNavbar({
   theme = 'light',
   locale = 'en',
   onOpenLiveDemo,
+  showMarketingLinks = true,
 }: PublicNavbarProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isInternalDemoModalOpen, setIsInternalDemoModalOpen] = useState(false);
   const isEs = locale.toLowerCase().startsWith('es');
-  const translations = getTranslations(locale);
 
   const isLight = theme === 'light';
 
@@ -54,41 +54,43 @@ export default function PublicNavbar({
           </div>
 
           {/* Desktop Center Navigation Links */}
-          <div className="hidden md:flex items-center gap-8">
-            <a
-              href="#platform"
-              className={`text-sm font-medium transition cursor-pointer ${
-                isLight ? 'text-[#344054] hover:text-[#101828]' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {isEs ? 'Plataforma' : 'Platform'}
-            </a>
-            <a
-              href="#industries"
-              className={`text-sm font-medium transition cursor-pointer ${
-                isLight ? 'text-[#344054] hover:text-[#101828]' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {isEs ? 'Industrias' : 'Industries'}
-            </a>
-            <a
-              href="#pricing"
-              className={`text-sm font-medium transition cursor-pointer ${
-                isLight ? 'text-[#344054] hover:text-[#101828]' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {isEs ? 'Precios' : 'Pricing'}
-            </a>
-            <button
-              type="button"
-              onClick={handleOpenLiveDemo}
-              className={`text-sm font-medium transition cursor-pointer ${
-                isLight ? 'text-[#344054] hover:text-[#101828]' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {isEs ? 'Demo en Vivo' : 'Live Demo'}
-            </button>
-          </div>
+          {showMarketingLinks && (
+            <div className="hidden md:flex items-center gap-8">
+              <a
+                href="#platform"
+                className={`text-sm font-medium transition cursor-pointer ${
+                  isLight ? 'text-[#344054] hover:text-[#101828]' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {isEs ? 'Plataforma' : 'Platform'}
+              </a>
+              <a
+                href="#industries"
+                className={`text-sm font-medium transition cursor-pointer ${
+                  isLight ? 'text-[#344054] hover:text-[#101828]' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {isEs ? 'Industrias' : 'Industries'}
+              </a>
+              <a
+                href="#pricing"
+                className={`text-sm font-medium transition cursor-pointer ${
+                  isLight ? 'text-[#344054] hover:text-[#101828]' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {isEs ? 'Precios' : 'Pricing'}
+              </a>
+              <button
+                type="button"
+                onClick={handleOpenLiveDemo}
+                className={`text-sm font-medium transition cursor-pointer ${
+                  isLight ? 'text-[#344054] hover:text-[#101828]' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {isEs ? 'Demo en Vivo' : 'Live Demo'}
+              </button>
+            </div>
+          )}
 
           {/* Desktop Right Actions */}
           <div className="hidden md:flex items-center gap-6">
@@ -155,34 +157,38 @@ export default function PublicNavbar({
               </div>
 
               <div className="flex flex-col gap-3">
-                <a
-                  href="#platform"
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="px-3 py-2 text-base font-medium rounded-lg text-[#344054] hover:bg-slate-50"
-                >
-                  {isEs ? 'Plataforma' : 'Platform'}
-                </a>
-                <a
-                  href="#industries"
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="px-3 py-2 text-base font-medium rounded-lg text-[#344054] hover:bg-slate-50"
-                >
-                  {isEs ? 'Industrias' : 'Industries'}
-                </a>
-                <a
-                  href="#pricing"
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="px-3 py-2 text-base font-medium rounded-lg text-[#344054] hover:bg-slate-50"
-                >
-                  {isEs ? 'Precios' : 'Pricing'}
-                </a>
-                <button
-                  type="button"
-                  onClick={handleOpenLiveDemo}
-                  className="px-3 py-2 text-base font-medium rounded-lg text-left text-[#344054] hover:bg-slate-50 cursor-pointer"
-                >
-                  {isEs ? 'Demo en Vivo' : 'Live Demo'}
-                </button>
+                {showMarketingLinks && (
+                  <>
+                    <a
+                      href="#platform"
+                      onClick={() => setIsDrawerOpen(false)}
+                      className="px-3 py-2 text-base font-medium rounded-lg text-[#344054] hover:bg-slate-50"
+                    >
+                      {isEs ? 'Plataforma' : 'Platform'}
+                    </a>
+                    <a
+                      href="#industries"
+                      onClick={() => setIsDrawerOpen(false)}
+                      className="px-3 py-2 text-base font-medium rounded-lg text-[#344054] hover:bg-slate-50"
+                    >
+                      {isEs ? 'Industrias' : 'Industries'}
+                    </a>
+                    <a
+                      href="#pricing"
+                      onClick={() => setIsDrawerOpen(false)}
+                      className="px-3 py-2 text-base font-medium rounded-lg text-[#344054] hover:bg-slate-50"
+                    >
+                      {isEs ? 'Precios' : 'Pricing'}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleOpenLiveDemo}
+                      className="px-3 py-2 text-base font-medium rounded-lg text-left text-[#344054] hover:bg-slate-50 cursor-pointer"
+                    >
+                      {isEs ? 'Demo en Vivo' : 'Live Demo'}
+                    </button>
+                  </>
+                )}
                 <a
                   href={getAppPageUrl(locale, 'login')}
                   target="_blank"

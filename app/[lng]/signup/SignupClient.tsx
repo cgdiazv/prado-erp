@@ -132,7 +132,7 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
 
   return (
     <div className="min-h-screen bg-white flex flex-col selection:bg-emerald-500 selection:text-slate-950">
-      <PublicNavbar theme="light" locale={locale} />
+      <PublicNavbar theme="light" locale={locale} showMarketingLinks={false} />
 
       {isModalOpen && (
         <WorkspaceSetupModal

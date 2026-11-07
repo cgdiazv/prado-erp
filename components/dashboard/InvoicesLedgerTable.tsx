@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { markInvoiceAsPaid, sendInvoiceOverdueReminderAction, triggerOverdueRemindersForWorkspaceAction } from '@/app/actions';
+import { markInvoiceAsPaid, sendInvoiceOverdueReminderAction } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
-import { AlertCircle, BellRing, CheckCircle2, Filter, Loader2, Plus, Image as ImageIcon } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Filter, Plus, Image as ImageIcon } from 'lucide-react';
 import EditInvoiceModal from './EditInvoiceModal';
 import InvoiceRowActions from './InvoiceRowActions';
 
@@ -56,19 +56,11 @@ export default function InvoicesLedgerTable({
   const [sortColumn, setSortColumn] = useState<SortColumn>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
-  const [isProcessingBatchReminders, setIsProcessingBatchReminders] = useState(false);
   const [reminderNotification, setReminderNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     setInvoiceRows(invoices);
   }, [invoices]);
-
-  const overdueCount = useMemo(() => {
-    const today = new Date();
-    return invoiceRows.filter(
-      (inv) => inv.status === 'unpaid' && inv.due_date && new Date(inv.due_date) < today
-    ).length;
-  }, [invoiceRows]);
 
   const handleSendRowReminder = async (invoiceId: string) => {
     setSendingReminderId(invoiceId);
@@ -97,29 +89,6 @@ export default function InvoicesLedgerTable({
     setInvoiceRows((prev) =>
       prev.map((r) => (r.id === invoiceId ? { ...r, status: 'paid' } : r))
     );
-  };
-
-  const handleTriggerBatchReminders = async () => {
-    setIsProcessingBatchReminders(true);
-    setReminderNotification(null);
-    try {
-      const res = await triggerOverdueRemindersForWorkspaceAction();
-      if (res.error) {
-        setReminderNotification({ type: 'error', text: res.error });
-      } else {
-        const count = res.remindersSent ?? 0;
-        setReminderNotification({
-          type: 'success',
-          text: isEs
-            ? `Se enviaron ${count} recordatorio(s) de facturas vencidas.`
-            : `Successfully sent ${count} overdue invoice reminder(s).`,
-        });
-      }
-    } catch (err: any) {
-      setReminderNotification({ type: 'error', text: err?.message || 'Error processing reminders.' });
-    } finally {
-      setIsProcessingBatchReminders(false);
-    }
   };
 
   const filteredInvoices =
@@ -273,24 +242,6 @@ export default function InvoicesLedgerTable({
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:ml-auto w-full sm:w-auto">
-          {overdueCount > 0 && (
-            <button
-              type="button"
-              onClick={handleTriggerBatchReminders}
-              disabled={isProcessingBatchReminders}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/80 hover:bg-amber-100 transition shadow-2xs cursor-pointer disabled:opacity-50"
-            >
-              {isProcessingBatchReminders ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <BellRing className="w-3.5 h-3.5 text-amber-600" />
-              )}
-              <span>
-                {isEs ? `Recordar vencidas (${overdueCount})` : `Remind Overdue (${overdueCount})`}
-              </span>
-            </button>
-          )}
-
           <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap sm:flex-nowrap">
             <label htmlFor="invoices-page-size" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
               {isEs ? 'Registros por pagina' : 'Rows per page'}
