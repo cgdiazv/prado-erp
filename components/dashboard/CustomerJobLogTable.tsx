@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getTranslations } from '@/lib/translations';
+import PhotoLightbox from './PhotoLightbox';
 
 interface JobRow {
   id: string;
   scheduled_date: string;
+  completed_at?: string | null;
   job_type: string;
   cost_amount: number | string | null;
   status: string | null;
+  completion_photos?: string[] | null;
   properties?: {
     street_address?: string | null;
   } | null;
@@ -27,6 +30,7 @@ export default function CustomerJobLogTable({ jobs, locale = 'en' }: CustomerJob
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+  const [lightboxPhotos, setLightboxPhotos] = useState<string[] | null>(null);
 
   const filteredJobs = useMemo(() => {
     if (statusFilter === 'all') return jobs;
@@ -143,8 +147,10 @@ export default function CustomerJobLogTable({ jobs, locale = 'en' }: CustomerJob
               <thead>
                 <tr className="border-b border-gray-200 bg-slate-50 text-slate-500 font-bold">
                   <th className="p-4 table-date-column">{translations.dashboard.date}</th>
+                  <th className="p-4">{isEs ? 'Fecha de finalización' : 'Completed Date'}</th>
                   <th className="p-4">{translations.dashboard.location}</th>
                   <th className="p-4">{translations.dashboard.type}</th>
+                  <th className="p-4">{isEs ? 'Fotos' : 'Photos'}</th>
                   <th className="p-4 text-right">{translations.dashboard.cost}</th>
                   <th className="p-4 text-right">{translations.dashboard.status}</th>
                 </tr>
@@ -164,11 +170,29 @@ export default function CustomerJobLogTable({ jobs, locale = 'en' }: CustomerJob
                       <td className="p-4 text-slate-700 whitespace-nowrap table-date-column">
                         {new Date(`${job.scheduled_date}T00:00:00`).toLocaleDateString(isEs ? 'es-ES' : 'en-US')}
                       </td>
+                      <td className="p-4 text-slate-700 whitespace-nowrap">
+                        {job.completed_at
+                          ? new Date(job.completed_at).toLocaleDateString(isEs ? 'es-ES' : 'en-US')
+                          : '—'}
+                      </td>
                       <td className="p-4">
                         <span className="font-bold text-slate-900">{job.properties?.street_address || '—'}</span>
                       </td>
                       <td className="p-4">
                         <span className="font-semibold text-slate-800">{job.job_type}</span>
+                      </td>
+                      <td className="p-4">
+                        {job.completion_photos && job.completion_photos.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => setLightboxPhotos(job.completion_photos ?? null)}
+                            className="cursor-pointer whitespace-nowrap font-semibold text-emerald-600 underline-offset-2 hover:text-emerald-700 hover:underline"
+                          >
+                            {isEs ? 'Ver Fotos' : 'View Photos'} ({job.completion_photos.length})
+                          </button>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
                       </td>
                       <td className="p-4 text-right font-bold text-slate-800">${Number(job.cost_amount || 0).toFixed(2)}</td>
                       <td className="p-4 text-right">
@@ -190,6 +214,14 @@ export default function CustomerJobLogTable({ jobs, locale = 'en' }: CustomerJob
           <div className="p-8 text-center text-slate-500 font-medium text-xs">{translations.dashboard.noJobsLogged}</div>
         )}
       </section>
+
+      <PhotoLightbox
+        key={lightboxPhotos?.join('|') ?? 'closed'}
+        photos={lightboxPhotos ?? []}
+        isOpen={lightboxPhotos !== null}
+        onClose={() => setLightboxPhotos(null)}
+        locale={locale}
+      />
     </div>
   );
 }

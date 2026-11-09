@@ -444,7 +444,10 @@ export async function updateJobStatusByDriver(jobId: string, status: 'scheduled'
 
     const { error } = await supabase
       .from('jobs')
-      .update({ status })
+      .update({
+        status,
+        completed_at: status === 'completed' ? new Date().toISOString() : null,
+      })
       .eq('id', jobId);
 
     if (error) return { error: error.message };
@@ -452,6 +455,8 @@ export async function updateJobStatusByDriver(jobId: string, status: 'scheduled'
     revalidatePath('/dashboard/driver-shift');
     revalidatePath('/dashboard/routing');
     revalidatePath('/dashboard/schedule');
+    revalidatePath('/dashboard/customers/[id]', 'page');
+    revalidatePath('/[lng]/dashboard/customers/[id]', 'page');
     return { success: true };
   } catch (err: unknown) {
     return { error: (err as Error)?.message || 'Failed to update job status.' };
@@ -625,6 +630,7 @@ export async function completeJob(
   completionData?: {
     photoUrls?: string[];
     notes?: string;
+    completionDate?: string;
     attachments?: Array<{ filename: string; content: Buffer }>;
   }
 ) {
@@ -661,8 +667,25 @@ export async function completeJob(
     return { error: fetchError?.message || 'Job not found' };
   }
 
+  const requestedCompletionDate = completionData?.completionDate?.trim();
+  let completedAt = new Date().toISOString();
+  if (requestedCompletionDate) {
+    const parsedCompletionDate = new Date(`${requestedCompletionDate}T12:00:00.000Z`);
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(requestedCompletionDate) ||
+      Number.isNaN(parsedCompletionDate.getTime()) ||
+      parsedCompletionDate.toISOString().slice(0, 10) !== requestedCompletionDate
+    ) {
+      return { error: 'Invalid completion date.' };
+    }
+    completedAt = parsedCompletionDate.toISOString();
+  }
+
   // 2. Update the job status to 'completed' with optional photos and notes
-  const updatePayload: Record<string, any> = { status: 'completed' };
+  const updatePayload: Record<string, any> = {
+    status: 'completed',
+    completed_at: completedAt,
+  };
   if (completionData?.photoUrls && completionData.photoUrls.length > 0) {
     updatePayload.completion_photos = completionData.photoUrls;
   }
@@ -676,12 +699,25 @@ export async function completeJob(
     .eq('id', jobId);
 
   if (updateError) {
-    // If completion_photos column is not yet migrated, fall back to basic status update
+    // Keep completion status and date when optional photo or notes columns are unavailable.
     const { error: retryError } = await supabase
       .from('jobs')
-      .update({ status: 'completed' })
+      .update({
+        status: 'completed',
+        completed_at: updatePayload.completed_at,
+      })
       .eq('id', jobId);
-    if (retryError) return { error: retryError.message };
+    if (retryError) {
+      return {
+        error: `Failed to save the Job completion date. Apply the completed_at migration and try again: ${retryError.message}`,
+      };
+    }
+    if (completionData?.photoUrls && completionData.photoUrls.length > 0) {
+      return {
+        error: `The Job was marked completed, but its photos could not be saved. Apply the completion photos migration and try again: ${updateError.message}`,
+      };
+    }
+    console.warn('Job completion photos or notes were not saved:', updateError.message);
   }
 
   // 2b. Automatically log Subcontractor Payout expense if applicable
@@ -1092,6 +1128,8 @@ export async function completeJob(
   revalidatePath('/dashboard/schedule');
   revalidatePath('/dashboard/routing');
   revalidatePath('/dashboard/print-reports');
+  revalidatePath('/dashboard/customers/[id]', 'page');
+  revalidatePath('/[lng]/dashboard/customers/[id]', 'page');
   return { success: true };
 }
 
@@ -1100,6 +1138,7 @@ export async function completeJobWithPhotos(formData: FormData) {
   if (!jobId) return { error: 'Missing Job ID' };
 
   const notes = (formData.get('notes') as string) || '';
+  const completionDate = (formData.get('completionDate') as string) || '';
   const photoFiles = formData.getAll('photos') as File[];
 
   const supabase = await createClient();
@@ -1135,6 +1174,7 @@ export async function completeJobWithPhotos(formData: FormData) {
 
   const photoUrls: string[] = [];
   const attachments: Array<{ filename: string; content: Buffer }> = [];
+  let photoUploadFailed = false;
 
   for (let i = 0; i < photoFiles.length; i++) {
     const file = photoFiles[i];
@@ -1166,16 +1206,23 @@ export async function completeJobWithPhotos(formData: FormData) {
           content: buffer,
         });
       } else {
+        photoUploadFailed = true;
         console.error(`Upload error for photo ${i}:`, uploadError.message);
       }
     } catch (err) {
+      photoUploadFailed = true;
       console.error(`Error processing photo ${i}:`, err);
     }
+  }
+
+  if (photoUploadFailed || photoUrls.length !== photoFiles.filter((file) => file instanceof File && file.size > 0).length) {
+    return { error: 'One or more photos could not be uploaded. The Job was not marked completed; please try again.' };
   }
 
   return await completeJob(jobId, {
     photoUrls,
     notes,
+    completionDate,
     attachments,
   });
 }

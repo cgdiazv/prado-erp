@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { markInvoiceAsPaid } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/currency';
-import { Printer, Pencil, Plus, Image as ImageIcon } from 'lucide-react';
+import { Printer, Pencil, Plus } from 'lucide-react';
 import EditInvoiceModal from './EditInvoiceModal';
 import CreateInvoiceModal from './CreateInvoiceModal';
 
@@ -195,10 +196,10 @@ export default function CustomerInvoicesTable({
                 <thead>
                   <tr className="border-b border-gray-200 bg-slate-50 text-slate-500 font-bold">
                     <th className="p-4 table-date-column">{translations.dashboard.dueDate}</th>
-                    <th className="p-4">{translations.dashboard.taxCharge}</th>
                     <th className="p-4 text-right">{translations.dashboard.totalOwed}</th>
                     <th className="p-4 text-right">{isEs ? 'Pago' : 'Payment'}</th>
                     <th className="p-4 text-right">{translations.dashboard.paymentStatus}</th>
+                    <th className="p-4">{isEs ? 'Fotos' : 'Photos'}</th>
                     <th className="p-4 text-right">{isEs ? 'Acciones' : 'Actions'}</th>
                   </tr>
                 </thead>
@@ -219,15 +220,6 @@ export default function CustomerInvoicesTable({
                                 {isEs ? 'Saldo' : 'Final'}
                               </span>
                             )}
-                            {inv.photos && inv.photos.length > 0 && (
-                              <span
-                                title={isEs ? `${inv.photos.length} fotos adjuntas` : `${inv.photos.length} photos attached`}
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              >
-                                <ImageIcon className="w-2.5 h-2.5" />
-                                {inv.photos.length}
-                              </span>
-                            )}
                           </div>
                           {inv.notes && (
                             <span className="text-[10px] text-slate-400 font-normal truncate max-w-[180px]">
@@ -236,7 +228,6 @@ export default function CustomerInvoicesTable({
                           )}
                         </div>
                       </td>
-                      <td className="p-4 text-slate-700">{formatCurrency(Number(inv.tax_amount || 0), normalizeCurrencyCode(inv.currency_code))}</td>
                       <td className="p-4 text-right font-bold text-slate-800">{formatCurrency(Number(inv.total_amount || 0), normalizeCurrencyCode(inv.currency_code))}</td>
                       <td className="p-4 text-right">
                         {inv.status !== 'paid' && inv.stripe_payment_url ? (
@@ -267,6 +258,37 @@ export default function CustomerInvoicesTable({
                           >
                             {translations.dashboard.unpaid}
                           </button>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {inv.photos && inv.photos.length > 0 ? (
+                          <div
+                            className="flex flex-wrap gap-1.5"
+                            aria-label={isEs ? `${inv.photos.length} fotos de la factura` : `${inv.photos.length} invoice photos`}
+                          >
+                            {inv.photos.map((url, index) => (
+                              <a
+                                key={`${inv.id}-${index}`}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={isEs ? `Ver foto ${index + 1} en tamaño completo` : `View photo ${index + 1} full size`}
+                                aria-label={isEs ? `Ver foto ${index + 1} de la factura` : `View invoice photo ${index + 1}`}
+                                className="block h-10 w-10 overflow-hidden rounded-md border border-slate-200 bg-slate-100"
+                              >
+                                <Image
+                                  src={url}
+                                  alt={isEs ? `Foto de la factura ${index + 1}` : `Invoice photo ${index + 1}`}
+                                  width={40}
+                                  height={40}
+                                  unoptimized
+                                  className="h-full w-full object-cover"
+                                />
+                              </a>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-slate-300">—</span>
                         )}
                       </td>
                       <td className="p-4 text-right">

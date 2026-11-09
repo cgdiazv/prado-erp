@@ -102,6 +102,7 @@ export default function CompleteJobModal({
   const isEs = locale.toLowerCase().startsWith('es');
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [notes, setNotes] = useState('');
+  const [completionDate, setCompletionDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -119,6 +120,7 @@ export default function CompleteJobModal({
     if (isOpen) {
       setPhotos([]);
       setNotes('');
+      setCompletionDate('');
       setErrorMessage(null);
       setIsSubmitting(false);
       setIsCompressing(false);
@@ -207,6 +209,7 @@ export default function CompleteJobModal({
         const formData = new FormData();
         formData.append('jobId', job.id);
         formData.append('notes', notes.trim());
+        formData.append('completionDate', completionDate);
         photos.forEach((item) => {
           formData.append('photos', item.file);
         });
@@ -219,7 +222,7 @@ export default function CompleteJobModal({
         }
       } else {
         // Complete without photos
-        const res = await completeJob(job.id, { notes: notes.trim() });
+        const res = await completeJob(job.id, { notes: notes.trim(), completionDate });
         if (res?.error) {
           setErrorMessage(res.error);
           setIsSubmitting(false);
@@ -241,7 +244,7 @@ export default function CompleteJobModal({
     setErrorMessage(null);
 
     try {
-      const res = await completeJob(job.id, { notes: notes.trim() });
+      const res = await completeJob(job.id, { notes: notes.trim(), completionDate });
       if (res?.error) {
         setErrorMessage(res.error);
         setIsSubmitting(false);
@@ -298,6 +301,23 @@ export default function CompleteJobModal({
                 <span>{scheduledDate}</span>
               </div>
             ) : null}
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="job-completion-date" className="block text-xs font-bold text-slate-700">
+              {isEs ? 'Fecha de finalización (opcional)' : 'Completion Date (optional)'}
+            </label>
+            <input
+              id="job-completion-date"
+              type="date"
+              value={completionDate}
+              onChange={(event) => setCompletionDate(event.target.value)}
+              disabled={isSubmitting}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50"
+            />
+            <p className="text-[11px] text-slate-500">
+              {isEs ? 'Si se deja en blanco, se usará la fecha de hoy.' : "Leave blank to use today's date."}
+            </p>
           </div>
 
           {/* Photo upload dropzone */}
