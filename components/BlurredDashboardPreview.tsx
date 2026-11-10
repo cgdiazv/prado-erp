@@ -130,7 +130,7 @@ export default function BlurredDashboardPreview({
               </div>
               <div className="px-3 py-2 text-slate-600 font-medium text-xs flex items-center gap-2.5">
                 <Users className="w-4 h-4 text-slate-400" />
-                <span>Customer CRM</span>
+                <span>Customers</span>
               </div>
               <div className="px-3 py-2 text-slate-600 font-medium text-xs flex items-center gap-2.5">
                 <Truck className="w-4 h-4 text-slate-400" />
