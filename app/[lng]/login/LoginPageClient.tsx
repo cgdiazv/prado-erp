@@ -4,7 +4,7 @@ import { login } from '../auth/actions';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, FormEvent, useEffect } from 'react';
-import PublicNavbar from '@/components/PublicNavbar';
+import PradoLogo from '@/components/PradoLogo';
 import { getTranslations } from '@/lib/translations';
 import { getAppPageUrl } from '@/lib/appLinks';
 
@@ -57,11 +57,12 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col selection:bg-emerald-500 selection:text-slate-950">
-      <PublicNavbar theme="light" locale={locale} showMarketingLinks={false} />
-
       <main className="flex-1 flex items-center justify-center p-6 text-gray-900 bg-white">
         <div className="w-full max-w-md bg-white p-8 rounded-xl border border-gray-200 shadow-sm transition duration-150">
           <header className="mb-6 text-center">
+            <div className="flex justify-center mb-4">
+              <PradoLogo />
+            </div>
             <h1 className="text-2xl font-bold text-emerald-700">{translations.login.title}</h1>
             <p className="text-sm text-gray-500 mt-1">{translations.login.subtitle}</p>
           </header>

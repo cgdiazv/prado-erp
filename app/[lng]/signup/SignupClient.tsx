@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
-import PublicNavbar from '@/components/PublicNavbar';
+import PradoLogo from '@/components/PradoLogo';
 import { getTranslations } from '@/lib/translations';
 import { getAppPageUrl } from '@/lib/appLinks';
 
@@ -132,8 +132,6 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
 
   return (
     <div className="min-h-screen bg-white flex flex-col selection:bg-emerald-500 selection:text-slate-950">
-      <PublicNavbar theme="light" locale={locale} showMarketingLinks={false} />
-
       {isModalOpen && (
         <WorkspaceSetupModal
           isOpen={isModalOpen}
@@ -146,6 +144,9 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
       <main className="flex-1 flex items-center justify-center p-6 text-gray-900 bg-white">
         <div className="w-full max-w-md bg-white p-8 rounded-xl border border-gray-200 shadow-sm transition duration-150">
           <header className="mb-6 text-center">
+            <div className="flex justify-center mb-4">
+              <PradoLogo />
+            </div>
             <h1 className="text-2xl font-bold text-emerald-700">{translations.signup.title}</h1>
             {orgName ? (
               <p className="text-sm text-emerald-600 mt-2 font-medium">
