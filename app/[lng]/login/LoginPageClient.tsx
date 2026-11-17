@@ -58,8 +58,8 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
   return (
     <div className="min-h-screen bg-white flex flex-col selection:bg-emerald-500 selection:text-slate-950">
       <main className="flex-1 flex flex-col items-center justify-center p-6 text-gray-900 bg-white">
-        <div className="w-full max-w-md bg-white p-8 rounded-xl border border-gray-200 shadow-sm transition duration-150">
-          <header className="mb-6 text-center">
+        <div className="w-full max-w-md bg-white p-10 rounded-xl border border-gray-200 shadow-sm transition duration-150">
+          <header className="mb-8 text-center">
             <div className="flex justify-center mb-4">
               <PradoLogo iconOnly />
             </div>
@@ -78,28 +78,28 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.login.emailLabel}</label>
               <input
                 type="email"
                 name="email"
                 required
                 disabled={loading}
-                placeholder="admin@company.com"
+                placeholder={translations.login.emailLabel}
+                aria-label={translations.login.emailLabel}
                 className="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 transition disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{translations.login.passwordLabel}</label>
               <div className="relative flex items-center">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   required
                   disabled={loading}
-                  placeholder="••••••••"
+                  placeholder={translations.login.passwordLabel}
+                  aria-label={translations.login.passwordLabel}
                   className="w-full rounded-lg border border-gray-300 p-2.5 pr-10 text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 transition disabled:bg-gray-50 disabled:cursor-not-allowed"
                 />
                 <button
@@ -137,13 +137,13 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition text-sm shadow-sm mt-2 focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 outline-none flex items-center justify-center cursor-pointer"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition text-sm shadow-sm mt-3 focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 outline-none flex items-center justify-center cursor-pointer"
             >
               {loading ? translations.login.loadingButton : translations.login.submitButton}
             </button>
           </form>
 
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-xs text-gray-500">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center text-xs text-gray-500">
             <span>
               {translations.login.registerPrompt}{' '}
               <a
