@@ -57,14 +57,13 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col selection:bg-emerald-500 selection:text-slate-950">
-      <main className="flex-1 flex items-center justify-center p-6 text-gray-900 bg-white">
+      <main className="flex-1 flex flex-col items-center justify-center p-6 text-gray-900 bg-white">
         <div className="w-full max-w-md bg-white p-8 rounded-xl border border-gray-200 shadow-sm transition duration-150">
           <header className="mb-6 text-center">
             <div className="flex justify-center mb-4">
               <PradoLogo iconOnly />
             </div>
-            <h1 className="text-2xl font-bold text-emerald-700">{translations.login.title}</h1>
-            <p className="text-sm text-gray-500 mt-1">{translations.login.subtitle}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{translations.login.title}</h1>
           </header>
 
           {successMessage && (
@@ -144,8 +143,8 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-gray-500 border-t border-gray-100 pt-4 space-y-1.5">
-            <div>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-xs text-gray-500">
+            <span>
               {translations.login.registerPrompt}{' '}
               <a
                 href={getAppPageUrl(locale, 'signup')}
@@ -155,14 +154,33 @@ export default function LoginPageClient({ locale }: LoginPageClientProps) {
               >
                 {translations.login.registerLink}
               </a>
-            </div>
-            <div>
+            </span>
+            <span>
               {translations.login.forgotPasswordPrompt}{' '}
               <Link href={`/${locale}/login/forgot-password`} className="text-emerald-600 hover:underline font-semibold">
                 {translations.login.forgotPasswordLink}
               </Link>
-            </div>
+            </span>
           </div>
+        </div>
+
+        <div className="mt-4 flex justify-center gap-4 text-xs text-gray-500">
+          <a
+            href={`https://pradojob.com/${locale}/privacy`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gray-900 hover:underline"
+          >
+            {locale.toLowerCase().startsWith('es') ? 'Política de Privacidad' : 'Privacy Policy'}
+          </a>
+          <a
+            href={`https://pradojob.com/${locale}/terms`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gray-900 hover:underline"
+          >
+            {locale.toLowerCase().startsWith('es') ? 'Términos y condiciones' : 'Terms & Condition'}
+          </a>
         </div>
       </main>
     </div>

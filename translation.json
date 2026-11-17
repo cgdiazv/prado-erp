@@ -122,8 +122,7 @@
       "submitButton": "Request Free Live Demo"
     },
     "login": {
-      "title": "Login",
-      "subtitle": "Access your operational dashboard hub",
+      "title": "Welcome back",
       "successMessage": "Account created successfully! Log in below to access your workspace.",
       "emailLabel": "Email Address",
       "passwordLabel": "Password",
@@ -548,8 +547,7 @@
       "submitButton": "Solicitar demo en vivo gratis"
     },
     "login": {
-      "title": "Iniciar sesión",
-      "subtitle": "Accede a tu panel de operaciones",
+      "title": "Bienvenido de nuevo",
       "successMessage": "¡Cuenta creada correctamente! Inicia sesión abajo para acceder a tu espacio de trabajo.",
       "emailLabel": "Correo electrónico",
       "passwordLabel": "Contraseña",
