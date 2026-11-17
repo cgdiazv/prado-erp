@@ -145,7 +145,7 @@ export default function SignUpClient({ searchParams, locale }: SignUpClientProps
         <div className="w-full max-w-md bg-white p-8 rounded-xl border border-gray-200 shadow-sm transition duration-150">
           <header className="mb-6 text-center">
             <div className="flex justify-center mb-4">
-              <PradoLogo />
+              <PradoLogo iconOnly />
             </div>
             <h1 className="text-2xl font-bold text-emerald-700">{translations.signup.title}</h1>
             {orgName ? (

@@ -12,6 +12,7 @@ interface PradoLogoProps {
   size?: 'sm' | 'md' | 'lg';
   iconType?: PradoIconType;
   className?: string;
+  iconOnly?: boolean;
 }
 
 export default function PradoLogo({
@@ -21,6 +22,7 @@ export default function PradoLogo({
   size = 'md',
   iconType = 'layers',
   className = '',
+  iconOnly = false,
 }: PradoLogoProps) {
   const isDark = theme === 'dark';
 
@@ -83,24 +85,25 @@ export default function PradoLogo({
         {renderIcon()}
       </div>
 
-      {/* Brand Text Stack */}
-      <div className="flex flex-col">
-        <div className="flex items-center gap-1.5 leading-none">
-          <span className={`font-sans ${titleSizeClasses} font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            Prado
-          </span>
-          {badgeText ? (
-            <span className="text-[10px] font-semibold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
-              {badgeText}
+      {!iconOnly && (
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1.5 leading-none">
+            <span className={`font-sans ${titleSizeClasses} font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              Prado
             </span>
+            {badgeText ? (
+              <span className="text-[10px] font-semibold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
+                {badgeText}
+              </span>
+            ) : null}
+          </div>
+          {subtitle ? (
+            <p className={`mt-0.5 text-[10px] font-medium uppercase tracking-widest ${isDark ? 'text-emerald-400/90' : 'text-slate-500'}`}>
+              {subtitle}
+            </p>
           ) : null}
         </div>
-        {subtitle ? (
-          <p className={`mt-0.5 text-[10px] font-medium uppercase tracking-widest ${isDark ? 'text-emerald-400/90' : 'text-slate-500'}`}>
-            {subtitle}
-          </p>
-        ) : null}
-      </div>
+      )}
     </div>
   );
 }
