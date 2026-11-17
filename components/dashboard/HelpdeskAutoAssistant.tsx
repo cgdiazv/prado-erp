@@ -65,8 +65,8 @@ export default function HelpdeskAutoAssistant({ locale = 'en' }: HelpdeskAutoAss
             required
             placeholder={
               isEs
-                ? 'Ejemplo: Programar un trabajo y asignar un camion'
-                : 'Example: Schedule a job and assign a truck'
+                ? 'Ejemplo: Programar un trabajo y asignar un vehículo'
+                : 'Example: Schedule a Job and assign a Vehicle'
             }
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
@@ -119,8 +119,8 @@ export default function HelpdeskAutoAssistant({ locale = 'en' }: HelpdeskAutoAss
             {matches.length === 0 ? (
               <p className="mt-2 text-xs text-slate-500">
                 {isEs
-                  ? 'No encontramos una guia exacta. Prueba palabras clave como cliente, programar, estimacion, factura, importar o equipo.'
-                  : 'No direct guide match found. Try keywords like customer, schedule, estimate, invoice, import, or team.'}
+                  ? 'No encontramos una guia exacta. Prueba palabras clave como cliente, programar, cotización, factura, importar o equipo.'
+                  : 'No direct guide match found. Try keywords like customer, schedule, quote, invoice, import, or team.'}
               </p>
             ) : (
               <ul className="mt-2 space-y-2">

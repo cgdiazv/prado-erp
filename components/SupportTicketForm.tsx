@@ -1,20 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import { X } from 'lucide-react';
 import { submitSupportTicket } from '@/app/actions';
 import { getTranslations } from '@/lib/translations';
 
 interface SupportTicketFormProps {
   locale?: string;
   theme?: 'dark' | 'light';
+  onClose?: () => void;
 }
 
-export default function SupportTicketForm({ locale = 'en', theme = 'light' }: SupportTicketFormProps) {
+export default function SupportTicketForm({ locale = 'en', theme = 'light', onClose }: SupportTicketFormProps) {
   const translations = getTranslations(locale);
   const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
   const isDark = theme === 'dark';
+  const isEs = locale.toLowerCase().startsWith('es');
 
   const panelClassName = isDark
     ? 'bg-slate-900/20 border border-slate-900 rounded-2xl p-6 md:p-8 shadow-xl'
@@ -50,7 +53,19 @@ export default function SupportTicketForm({ locale = 'en', theme = 'light' }: Su
 
   return (
     <div className={panelClassName}>
-      <h2 className={titleClassName}>{translations.support.formTitle}</h2>
+      <div className="flex items-start justify-between gap-4">
+        <h2 className={titleClassName}>{translations.support.formTitle}</h2>
+        {onClose ? (
+          <button
+            type="button"
+            aria-label={isEs ? 'Cerrar' : 'Close'}
+            onClick={onClose}
+            className="shrink-0 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : null}
+      </div>
       <p className={descriptionClassName}>{translations.support.formDescription}</p>
 
       {formStatus === 'success' ? (
