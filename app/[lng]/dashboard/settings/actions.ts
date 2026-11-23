@@ -11,6 +11,17 @@ import { getUserOrganization } from '@/lib/organization';
 import { normalizeCurrencyCode } from '@/lib/currency';
 import { normalizeDocumentEmailHeaderColor, normalizeDocumentSequenceNumber } from '@/lib/documentBranding';
 import { seedDefaultServicesForOrganization } from '@/lib/sampleData';
+import {
+  loadCustomLaborRates,
+  saveCustomLaborRates,
+  type CustomLaborRate,
+} from '@/lib/customLaborRates';
+import {
+  loadCustomMaterialsCatalog,
+  saveCustomMaterialsCatalog,
+  seedDefaultMaterialsForOrganization,
+  type CatalogMaterialItem,
+} from '@/lib/customMaterialsCatalog';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
@@ -493,6 +504,470 @@ export async function updateLaborMarkupSettings(formData: FormData) {
     holidayEmergencyLaborRate: normalizedHolidayEmergencyLaborRate,
     holidayEmergencyLaborCost: normalizedHolidayEmergencyLaborCost,
   };
+}
+
+export async function createCustomLaborRateAction({
+  name,
+  description,
+  hourlyCost,
+  hourlyPrice,
+}: {
+  name: string;
+  description?: string;
+  hourlyCost: number;
+  hourlyPrice: number;
+}) {
+  try {
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    const normalizedDescription = (description || '').trim();
+
+    if (!normalizedName) {
+      return { error: 'Labor rate name is required.' };
+    }
+    if (!Number.isFinite(hourlyCost) || hourlyCost < 0) {
+      return { error: 'Hourly cost must be a valid non-negative number.' };
+    }
+    if (!Number.isFinite(hourlyPrice) || hourlyPrice < 0) {
+      return { error: 'Hourly price must be a valid non-negative number.' };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage labor rates.' };
+
+    const { organization, role } = await getUserOrganization(user.id);
+    if (!organization) return { error: 'Workspace not found.' };
+
+    const normalizedRole = (role || '').toLowerCase();
+    if (normalizedRole !== 'owner' && normalizedRole !== 'admin') {
+      return { error: 'Only owners and admins can manage labor rates.' };
+    }
+
+    const adminClient = createAdminClient();
+    const existing = await loadCustomLaborRates(adminClient, organization.id);
+
+    if (existing.some((r) => r.name.toLowerCase() === normalizedName.toLowerCase())) {
+      return { error: 'A labor rate with that name already exists.' };
+    }
+
+    const newRate: CustomLaborRate = {
+      id: `labor_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      name: normalizedName,
+      description: normalizedDescription,
+      hourlyCost: Math.round(hourlyCost * 100) / 100,
+      hourlyPrice: Math.round(hourlyPrice * 100) / 100,
+    };
+
+    const nextRates = [...existing, newRate];
+    const saved = await saveCustomLaborRates(adminClient, organization.id, user.id, nextRates);
+    if (!saved.success) {
+      return { error: saved.error || 'Failed to save custom labor rate.' };
+    }
+
+    revalidatePath('/[lng]/dashboard/settings/[section]', 'page');
+    revalidatePath('/[lng]/dashboard/estimates', 'page');
+    revalidatePath('/[lng]/dashboard/estimates/new', 'page');
+    return { success: true, rate: newRate, rates: saved.rates };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to create custom labor rate.' };
+  }
+}
+
+export async function updateCustomLaborRateAction({
+  id,
+  name,
+  description,
+  hourlyCost,
+  hourlyPrice,
+}: {
+  id: string;
+  name: string;
+  description?: string;
+  hourlyCost: number;
+  hourlyPrice: number;
+}) {
+  try {
+    if (!id) return { error: 'Labor rate ID is required.' };
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    const normalizedDescription = (description || '').trim();
+
+    if (!normalizedName) {
+      return { error: 'Labor rate name is required.' };
+    }
+    if (!Number.isFinite(hourlyCost) || hourlyCost < 0) {
+      return { error: 'Hourly cost must be a valid non-negative number.' };
+    }
+    if (!Number.isFinite(hourlyPrice) || hourlyPrice < 0) {
+      return { error: 'Hourly price must be a valid non-negative number.' };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage labor rates.' };
+
+    const { organization, role } = await getUserOrganization(user.id);
+    if (!organization) return { error: 'Workspace not found.' };
+
+    const normalizedRole = (role || '').toLowerCase();
+    if (normalizedRole !== 'owner' && normalizedRole !== 'admin') {
+      return { error: 'Only owners and admins can manage labor rates.' };
+    }
+
+    const adminClient = createAdminClient();
+    const existing = await loadCustomLaborRates(adminClient, organization.id);
+
+    if (
+      existing.some(
+        (r) => r.id !== id && r.name.toLowerCase() === normalizedName.toLowerCase()
+      )
+    ) {
+      return { error: 'Another labor rate with that name already exists.' };
+    }
+
+    const updatedRate: CustomLaborRate = {
+      id,
+      name: normalizedName,
+      description: normalizedDescription,
+      hourlyCost: Math.round(hourlyCost * 100) / 100,
+      hourlyPrice: Math.round(hourlyPrice * 100) / 100,
+    };
+
+    const nextRates = existing.map((r) => (r.id === id ? updatedRate : r));
+    const saved = await saveCustomLaborRates(adminClient, organization.id, user.id, nextRates);
+    if (!saved.success) {
+      return { error: saved.error || 'Failed to update custom labor rate.' };
+    }
+
+    revalidatePath('/[lng]/dashboard/settings/[section]', 'page');
+    revalidatePath('/[lng]/dashboard/estimates', 'page');
+    revalidatePath('/[lng]/dashboard/estimates/new', 'page');
+    return { success: true, rate: updatedRate, rates: saved.rates };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to update custom labor rate.' };
+  }
+}
+
+export async function deleteCustomLaborRateAction(id: string) {
+  try {
+    if (!id) return { error: 'Labor rate ID is required.' };
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage labor rates.' };
+
+    const { organization, role } = await getUserOrganization(user.id);
+    if (!organization) return { error: 'Workspace not found.' };
+
+    const normalizedRole = (role || '').toLowerCase();
+    if (normalizedRole !== 'owner' && normalizedRole !== 'admin') {
+      return { error: 'Only owners and admins can manage labor rates.' };
+    }
+
+    const adminClient = createAdminClient();
+    const existing = await loadCustomLaborRates(adminClient, organization.id);
+    const nextRates = existing.filter((r) => r.id !== id);
+
+    const saved = await saveCustomLaborRates(adminClient, organization.id, user.id, nextRates);
+    if (!saved.success) {
+      return { error: saved.error || 'Failed to delete custom labor rate.' };
+    }
+
+    revalidatePath('/[lng]/dashboard/settings/[section]', 'page');
+    revalidatePath('/[lng]/dashboard/estimates', 'page');
+    revalidatePath('/[lng]/dashboard/estimates/new', 'page');
+    return { success: true, rates: saved.rates };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to delete custom labor rate.' };
+  }
+}
+
+export async function createCatalogMaterialAction({
+  name,
+  description,
+  unitCost,
+  markupPercent,
+}: {
+  name: string;
+  description?: string;
+  unitCost: number;
+  markupPercent: number;
+}) {
+  try {
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    const normalizedDescription = (description || '').trim();
+
+    if (!normalizedName) {
+      return { error: 'Material name is required.' };
+    }
+    if (!Number.isFinite(unitCost) || unitCost < 0) {
+      return { error: 'Unit cost must be a valid non-negative number.' };
+    }
+    if (!Number.isFinite(markupPercent) || markupPercent < 0 || markupPercent > 500) {
+      return { error: 'Markup must be between 0% and 500%.' };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage materials.' };
+
+    const { organization } = await getUserOrganization(user.id);
+    if (!organization) return { error: 'Workspace not found.' };
+
+    const adminClient = createAdminClient();
+    const existing = await loadCustomMaterialsCatalog(adminClient, organization.id);
+
+    const activeDuplicate = existing.find(
+      (item) => !item.archived && item.name.toLowerCase() === normalizedName.toLowerCase()
+    );
+    if (activeDuplicate) {
+      return { error: 'That material already exists.' };
+    }
+
+    const archivedDuplicate = existing.find(
+      (item) => item.archived && item.name.toLowerCase() === normalizedName.toLowerCase()
+    );
+
+    let nextItems: CatalogMaterialItem[];
+    let createdItem: CatalogMaterialItem;
+
+    if (archivedDuplicate) {
+      createdItem = {
+        ...archivedDuplicate,
+        name: normalizedName,
+        description: normalizedDescription,
+        unitCost: Math.round(unitCost * 100) / 100,
+        markupPercent: Math.round(markupPercent * 100) / 100,
+        archived: false,
+      };
+      nextItems = existing.map((item) => (item.id === archivedDuplicate.id ? createdItem : item));
+    } else {
+      createdItem = {
+        id: `mat_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name: normalizedName,
+        description: normalizedDescription,
+        unitCost: Math.round(unitCost * 100) / 100,
+        markupPercent: Math.round(markupPercent * 100) / 100,
+        archived: false,
+      };
+      nextItems = [...existing, createdItem];
+    }
+
+    const saved = await saveCustomMaterialsCatalog(
+      adminClient,
+      organization.id,
+      user.id,
+      nextItems
+    );
+    if (!saved.success) {
+      return { error: saved.error || 'Failed to save material.' };
+    }
+
+    revalidatePath('/[lng]/dashboard/settings/[section]', 'page');
+    revalidatePath('/[lng]/dashboard/estimates', 'page');
+    revalidatePath('/[lng]/dashboard/estimates/new', 'page');
+    return { success: true, item: createdItem, items: saved.items };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to create material.' };
+  }
+}
+
+export async function updateCatalogMaterialAction({
+  id,
+  name,
+  description,
+  unitCost,
+  markupPercent,
+}: {
+  id: string;
+  name: string;
+  description?: string;
+  unitCost: number;
+  markupPercent: number;
+}) {
+  try {
+    if (!id) return { error: 'Material ID is required.' };
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    const normalizedDescription = (description || '').trim();
+
+    if (!normalizedName) {
+      return { error: 'Material name is required.' };
+    }
+    if (!Number.isFinite(unitCost) || unitCost < 0) {
+      return { error: 'Unit cost must be a valid non-negative number.' };
+    }
+    if (!Number.isFinite(markupPercent) || markupPercent < 0 || markupPercent > 500) {
+      return { error: 'Markup must be between 0% and 500%.' };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage materials.' };
+
+    const { organization } = await getUserOrganization(user.id);
+    if (!organization) return { error: 'Workspace not found.' };
+
+    const adminClient = createAdminClient();
+    const existing = await loadCustomMaterialsCatalog(adminClient, organization.id);
+
+    if (
+      existing.some(
+        (item) =>
+          item.id !== id &&
+          !item.archived &&
+          item.name.toLowerCase() === normalizedName.toLowerCase()
+      )
+    ) {
+      return { error: 'Another material with that name already exists.' };
+    }
+
+    const nextItems = existing.map((item) =>
+      item.id === id
+        ? {
+            ...item,
+            name: normalizedName,
+            description: normalizedDescription,
+            unitCost: Math.round(unitCost * 100) / 100,
+            markupPercent: Math.round(markupPercent * 100) / 100,
+          }
+        : item
+    );
+
+    const saved = await saveCustomMaterialsCatalog(
+      adminClient,
+      organization.id,
+      user.id,
+      nextItems
+    );
+    if (!saved.success) {
+      return { error: saved.error || 'Failed to update material.' };
+    }
+
+    revalidatePath('/[lng]/dashboard/settings/[section]', 'page');
+    revalidatePath('/[lng]/dashboard/estimates', 'page');
+    revalidatePath('/[lng]/dashboard/estimates/new', 'page');
+    return { success: true, items: saved.items };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to update material.' };
+  }
+}
+
+export async function archiveCatalogMaterialAction(id: string) {
+  try {
+    if (!id) return { error: 'Material ID is required.' };
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage materials.' };
+
+    const { organization } = await getUserOrganization(user.id);
+    if (!organization) return { error: 'Workspace not found.' };
+
+    const adminClient = createAdminClient();
+    const existing = await loadCustomMaterialsCatalog(adminClient, organization.id);
+    const nextItems = existing.map((item) =>
+      item.id === id ? { ...item, archived: true } : item
+    );
+
+    const saved = await saveCustomMaterialsCatalog(
+      adminClient,
+      organization.id,
+      user.id,
+      nextItems
+    );
+    if (!saved.success) {
+      return { error: saved.error || 'Failed to archive material.' };
+    }
+
+    revalidatePath('/[lng]/dashboard/settings/[section]', 'page');
+    revalidatePath('/[lng]/dashboard/estimates', 'page');
+    revalidatePath('/[lng]/dashboard/estimates/new', 'page');
+    return { success: true, items: saved.items };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to archive material.' };
+  }
+}
+
+export async function restoreCatalogMaterialAction(id: string) {
+  try {
+    if (!id) return { error: 'Material ID is required.' };
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage materials.' };
+
+    const { organization } = await getUserOrganization(user.id);
+    if (!organization) return { error: 'Workspace not found.' };
+
+    const adminClient = createAdminClient();
+    const existing = await loadCustomMaterialsCatalog(adminClient, organization.id);
+    const nextItems = existing.map((item) =>
+      item.id === id ? { ...item, archived: false } : item
+    );
+
+    const saved = await saveCustomMaterialsCatalog(
+      adminClient,
+      organization.id,
+      user.id,
+      nextItems
+    );
+    if (!saved.success) {
+      return { error: saved.error || 'Failed to restore material.' };
+    }
+
+    revalidatePath('/[lng]/dashboard/settings/[section]', 'page');
+    revalidatePath('/[lng]/dashboard/estimates', 'page');
+    revalidatePath('/[lng]/dashboard/estimates/new', 'page');
+    return { success: true, items: saved.items };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to restore material.' };
+  }
+}
+
+export async function seedTradeMaterialsAction(tradeVertical?: string) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage materials.' };
+
+    const { organization } = await getUserOrganization(user.id);
+    if (!organization) return { error: 'Workspace not found.' };
+
+    const adminClient = createAdminClient();
+    const selectedTrade =
+      tradeVertical || user.user_metadata?.trade_vertical || 'Lawn Care & Landscaping';
+    const defaultMarkup = Number(organization.default_materials_markup ?? 30);
+
+    const items = await seedDefaultMaterialsForOrganization(
+      adminClient,
+      organization.id,
+      user.id,
+      selectedTrade,
+      defaultMarkup
+    );
+
+    revalidatePath('/[lng]/dashboard/settings/[section]', 'page');
+    revalidatePath('/[lng]/dashboard/estimates', 'page');
+    revalidatePath('/[lng]/dashboard/estimates/new', 'page');
+    return { success: true, items };
+  } catch (err: unknown) {
+    return { error: (err as Error)?.message || 'Failed to load default materials.' };
+  }
 }
 
 export async function updateDocumentBrandingSettings(formData: FormData) {

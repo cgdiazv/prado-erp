@@ -5,7 +5,10 @@ import ServicesPanel from './ServicesPanel';
 import TrucksPanel from './TrucksPanel';
 import ExpenseCategoriesPanel from './ExpenseCategoriesPanel';
 import LaborMarkupSettingsPanel from './LaborMarkupSettingsPanel';
+import MaterialsSettingsPanel from './MaterialsSettingsPanel';
 import { getTranslations } from '@/lib/translations';
+import type { CustomLaborRate } from '@/lib/customLaborRates';
+import type { CatalogMaterialItem } from '@/lib/customMaterialsCatalog';
 
 type Service = {
   id: string;
@@ -40,6 +43,9 @@ interface OperationsSettingsTabsProps {
   initialNightLaborCost?: number;
   initialHolidayEmergencyLaborRate?: number;
   initialHolidayEmergencyLaborCost?: number;
+  initialCustomLaborRates?: CustomLaborRate[];
+  initialMaterials?: CatalogMaterialItem[];
+  defaultTradeVertical?: string;
 }
 
 export default function OperationsSettingsTabs({
@@ -55,6 +61,9 @@ export default function OperationsSettingsTabs({
   initialNightLaborCost = 65,
   initialHolidayEmergencyLaborRate = 165,
   initialHolidayEmergencyLaborCost = 75,
+  initialCustomLaborRates = [],
+  initialMaterials = [],
+  defaultTradeVertical = 'Lawn Care & Landscaping',
 }: OperationsSettingsTabsProps) {
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
@@ -87,6 +96,14 @@ export default function OperationsSettingsTabs({
       id: 'services',
       label: translations.dashboard.servicesSection || (isEs ? 'Servicios' : 'Services'),
     },
+    {
+      id: 'labor',
+      label: isEs ? 'Mano de obra' : 'Labor',
+    },
+    {
+      id: 'materials',
+      label: isEs ? 'Materiales' : 'Materials',
+    },
     ...(!isIndividualAccount
       ? [
           {
@@ -101,14 +118,6 @@ export default function OperationsSettingsTabs({
           },
         ]
       : []),
-    {
-      id: 'labor',
-      label: isEs ? 'Mano de obra' : 'Labor',
-    },
-    {
-      id: 'materials',
-      label: isEs ? 'Materiales' : 'Materials',
-    },
   ];
 
   return (
@@ -152,7 +161,11 @@ export default function OperationsSettingsTabs({
           aria-labelledby="tab-services"
           className={activeTab === 'services' ? 'block' : 'hidden'}
         >
-          <ServicesPanel initialServices={services} locale={locale} />
+          <ServicesPanel
+            initialServices={services}
+            locale={locale}
+            defaultTradeVertical={defaultTradeVertical}
+          />
         </div>
 
         {!isIndividualAccount && (
@@ -192,6 +205,7 @@ export default function OperationsSettingsTabs({
             initialNightLaborCost={initialNightLaborCost}
             initialHolidayEmergencyLaborRate={initialHolidayEmergencyLaborRate}
             initialHolidayEmergencyLaborCost={initialHolidayEmergencyLaborCost}
+            initialCustomLaborRates={initialCustomLaborRates}
             locale={locale}
           />
         </div>
@@ -202,16 +216,17 @@ export default function OperationsSettingsTabs({
           aria-labelledby="tab-materials"
           className={activeTab === 'materials' ? 'block' : 'hidden'}
         >
-          <LaborMarkupSettingsPanel
-            mode="materials"
+          <MaterialsSettingsPanel
+            initialMaterials={initialMaterials}
+            initialMaterialsMarkup={initialMaterialsMarkup}
             initialLaborRate={initialLaborRate}
             initialLaborCost={initialLaborCost}
-            initialMaterialsMarkup={initialMaterialsMarkup}
             initialNightLaborRate={initialNightLaborRate}
             initialNightLaborCost={initialNightLaborCost}
             initialHolidayEmergencyLaborRate={initialHolidayEmergencyLaborRate}
             initialHolidayEmergencyLaborCost={initialHolidayEmergencyLaborCost}
             locale={locale}
+            defaultTradeVertical={defaultTradeVertical}
           />
         </div>
       </div>

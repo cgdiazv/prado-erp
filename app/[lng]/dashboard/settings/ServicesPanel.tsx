@@ -10,7 +10,7 @@ import {
 } from './actions';
 import { getTranslations } from '@/lib/translations';
 import { TRADE_VERTICAL_OPTIONS } from '@/lib/sampleData';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Pencil, Archive, Check, RotateCcw, Loader2 } from 'lucide-react';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
@@ -268,46 +268,18 @@ export default function ServicesPanel({
 
   return (
     <div className="pt-6 md:pt-8 space-y-6">
-      <div className="px-6 md:px-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">
-            {translations.dashboard.servicesSection || (isEs ? 'Servicios' : 'Services')}
-          </h3>
-          <p className="text-xs text-slate-400">
-            {translations.dashboard.servicesDescription ||
-              (isEs
-                ? 'Administra tu catálogo de servicios, descripciones detalladas y precios base editables.'
-                : 'Manage your service catalog, detailed descriptions, and editable base prices.')}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          <div className="flex items-center gap-1.5">
-            <select
-              value={selectedTradePreset}
-              onChange={(e) => setSelectedTradePreset(e.target.value)}
-              aria-label={isEs ? 'Seleccionar industria' : 'Select industry preset'}
-              className="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-slate-700 font-medium outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 cursor-pointer"
-            >
-              {TRADE_VERTICAL_OPTIONS.map((trade) => (
-                <option key={trade} value={trade}>
-                  {trade}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={handleLoadTradeDefaults}
-              disabled={loadingAction === 'seed-defaults'}
-              className="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition cursor-pointer disabled:opacity-50"
-            >
-              {loadingAction === 'seed-defaults'
-                ? isEs
-                  ? 'Cargando...'
-                  : 'Loading...'
-                : isEs
-                ? 'Cargar predeterminados'
-                : 'Load Default Services'}
-            </button>
+      <div className="px-6 md:px-8 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">
+              {translations.dashboard.servicesSection || (isEs ? 'Servicios' : 'Services')}
+            </h3>
+            <p className="text-xs text-slate-400">
+              {translations.dashboard.servicesDescription ||
+                (isEs
+                  ? 'Administra tu catálogo de servicios, descripciones detalladas y precios base editables.'
+                  : 'Manage your service catalog, detailed descriptions, and editable base prices.')}
+            </p>
           </div>
 
           <button
@@ -316,7 +288,7 @@ export default function ServicesPanel({
               setStatusMessage('');
               setEditingCreate((current) => !current);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-xs cursor-pointer self-start sm:self-auto shrink-0"
           >
             {editingCreate ? (
               <>
@@ -329,6 +301,35 @@ export default function ServicesPanel({
                 <span>{isEs ? 'Agregar servicio' : 'Add Service'}</span>
               </>
             )}
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={selectedTradePreset}
+            onChange={(e) => setSelectedTradePreset(e.target.value)}
+            aria-label={isEs ? 'Seleccionar industria' : 'Select industry preset'}
+            className="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-slate-700 font-medium outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+          >
+            {TRADE_VERTICAL_OPTIONS.map((trade) => (
+              <option key={trade} value={trade}>
+                {trade}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleLoadTradeDefaults}
+            disabled={loadingAction === 'seed-defaults'}
+            className="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition cursor-pointer disabled:opacity-50"
+          >
+            {loadingAction === 'seed-defaults'
+              ? isEs
+                ? 'Cargando...'
+                : 'Loading...'
+              : isEs
+              ? 'Cargar predeterminados'
+              : 'Load Default Services'}
           </button>
         </div>
       </div>
@@ -448,20 +449,9 @@ export default function ServicesPanel({
       )}
 
       {/* Complete List of Saved Services */}
-      <div className="border-t border-slate-200 px-6 md:px-8 py-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              {isEs ? 'Servicios guardados' : 'Saved Services'}
-            </p>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-              {activeServices.length}
-            </span>
-          </div>
-        </div>
-
+      <div className="border-t border-slate-200">
         {activeServices.length === 0 ? (
-          <div className="py-8 px-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
+          <div className="px-6 md:px-8 py-8 text-center">
             <p className="text-sm font-semibold text-slate-700">
               {isEs ? 'No hay servicios guardados' : 'No saved services'}
             </p>
@@ -472,186 +462,219 @@ export default function ServicesPanel({
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-            {activeServices.map((service) => {
-              const isEditingThis = editingServiceId === service.id;
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200 text-left">
+              <thead className="bg-slate-50/70">
+                <tr>
+                  <th className="px-6 md:px-8 py-3.5 text-xs font-semibold text-slate-500">
+                    {isEs ? 'Descripción' : 'Description'}
+                  </th>
+                  <th className="px-4 py-3.5 text-xs font-semibold text-slate-500 whitespace-nowrap">
+                    {isEs ? 'Frecuencia' : 'Frequency'}
+                  </th>
+                  <th className="px-4 py-3.5 text-xs font-semibold text-slate-500 whitespace-nowrap">
+                    {isEs ? 'Precio base' : 'Base price'}
+                  </th>
+                  <th className="px-6 md:px-8 py-3.5 text-xs font-semibold text-slate-500 text-right whitespace-nowrap">
+                    {isEs ? 'Acciones' : 'Actions'}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 bg-white">
+                {activeServices.map((service) => {
+                  const isEditingThis = editingServiceId === service.id;
 
-              if (isEditingThis) {
-                return (
-                  <form
-                    key={service.id}
-                    onSubmit={(e) => handleUpdateService(e, service.id)}
-                    className="p-4 bg-emerald-50/40 border-l-4 border-l-emerald-600 space-y-3"
-                  >
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <div className="flex-1 space-y-1">
-                        <label className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                          {isEs ? 'Nombre del servicio' : 'Service Name'}
-                        </label>
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          required
-                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
-                        />
-                      </div>
-
-                      <div className="w-full sm:w-44 space-y-1">
-                        <label className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                          {isEs ? 'Precio Base ($)' : 'Base Price ($)'}
-                        </label>
-                        <div className="relative">
-                          <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 text-xs">
-                            $
-                          </span>
+                  if (isEditingThis) {
+                    return (
+                      <tr key={service.id} className="bg-emerald-50/30 align-top">
+                        <td className="px-6 md:px-8 py-4 space-y-2 min-w-[260px]">
                           <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={editBasePrice}
-                            onChange={(e) => setEditBasePrice(e.target.value)}
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            placeholder={isEs ? 'Nombre del servicio' : 'Service name'}
                             required
-                            autoFocus
-                            className="w-full rounded-lg border border-emerald-400 bg-white pl-6 pr-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                            className="w-full rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
                           />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                        {isEs ? 'Descripción detallada' : 'Detailed Description'}
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={editDescription}
-                        onChange={(e) => setEditDescription(e.target.value)}
-                        placeholder={isEs ? 'Descripción detallada del servicio...' : 'Detailed scope and description...'}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 resize-y"
-                      />
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={editIsRecurring}
-                            onChange={(e) => setEditIsRecurring(e.target.checked)}
-                            className="h-3.5 w-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                          <textarea
+                            rows={2}
+                            value={editDescription}
+                            onChange={(e) => setEditDescription(e.target.value)}
+                            placeholder={
+                              isEs
+                                ? 'Descripción detallada del servicio...'
+                                : 'Detailed scope and description...'
+                            }
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 resize-y"
                           />
-                          <span>{isEs ? 'Recurrente' : 'Recurring'}</span>
-                        </label>
+                        </td>
 
-                        {editIsRecurring && (
-                          <div className="inline-flex items-center gap-1.5 text-xs text-slate-600">
-                            <span>{isEs ? 'Cada' : 'Every'}</span>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="space-y-2">
+                            <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={editIsRecurring}
+                                onChange={(e) => setEditIsRecurring(e.target.checked)}
+                                className="h-3.5 w-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                              />
+                              <span>{isEs ? 'Recurrente' : 'Recurring'}</span>
+                            </label>
+
+                            {editIsRecurring && (
+                              <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                <span>{isEs ? 'Cada' : 'Every'}</span>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  step="1"
+                                  value={editRecurrenceIntervalDays}
+                                  onChange={(e) => setEditRecurrenceIntervalDays(e.target.value)}
+                                  className="w-16 rounded-lg border border-emerald-300 bg-white px-2 py-1 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-600"
+                                />
+                                <span>{isEs ? 'días' : 'days'}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="relative w-32">
+                            <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 text-xs">
+                              $
+                            </span>
                             <input
                               type="number"
-                              min="1"
-                              step="1"
-                              value={editRecurrenceIntervalDays}
-                              onChange={(e) => setEditRecurrenceIntervalDays(e.target.value)}
-                              className="w-16 rounded border border-gray-300 bg-white px-2 py-1 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500"
+                              min="0"
+                              step="0.01"
+                              value={editBasePrice}
+                              onChange={(e) => setEditBasePrice(e.target.value)}
+                              required
+                              autoFocus
+                              className="w-full rounded-lg border border-emerald-300 bg-white pl-6 pr-2.5 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
                             />
-                            <span>{isEs ? 'días' : 'days'}</span>
                           </div>
-                        )}
-                      </div>
+                        </td>
 
-                      <div className="flex items-center gap-2">
+                        <td className="px-6 md:px-8 py-4 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={cancelEditingService}
+                              disabled={loadingAction === `update-${service.id}`}
+                              title={isEs ? 'Cancelar' : 'Cancel'}
+                              aria-label={isEs ? 'Cancelar' : 'Cancel'}
+                              className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition cursor-pointer disabled:opacity-50"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) =>
+                                void handleUpdateService(
+                                  e as unknown as FormEvent<HTMLFormElement>,
+                                  service.id
+                                )
+                              }
+                              disabled={loadingAction === `update-${service.id}`}
+                              title={isEs ? 'Actualizar' : 'Update'}
+                              aria-label={isEs ? 'Actualizar' : 'Update'}
+                              className="inline-flex items-center justify-center p-1.5 rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/80 transition cursor-pointer disabled:opacity-50"
+                            >
+                              {loadingAction === `update-${service.id}` ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Check className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return (
+                    <tr key={service.id} className="hover:bg-slate-50/60 transition">
+                      <td className="px-6 md:px-8 py-4">
+                        <p className="text-xs sm:text-sm font-semibold text-slate-900">
+                          {service.name}
+                        </p>
+                        {service.description ? (
+                          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed max-w-2xl">
+                            {service.description}
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-slate-400 mt-0.5 italic">
+                            {isEs ? 'Sin descripción' : 'No description'}
+                          </p>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-4 whitespace-nowrap text-xs text-slate-600">
+                        {service.is_recurring_default ? (
+                          <span>
+                            {isEs ? 'Cada' : 'Every'} {service.recurrence_interval_days || 30}{' '}
+                            {isEs ? 'días' : 'days'}
+                            {service.auto_charge_default
+                              ? ` • ${isEs ? 'Auto-cobro' : 'Auto-charge'}`
+                              : ''}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">
+                            {isEs ? 'Único' : 'One-time'}
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <button
                           type="button"
-                          onClick={cancelEditingService}
-                          disabled={loadingAction === `update-${service.id}`}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-200/60 transition cursor-pointer"
+                          onClick={() => startEditingService(service)}
+                          title={isEs ? 'Haz clic para editar el precio' : 'Click to edit price'}
+                          className="text-xs sm:text-sm font-medium text-slate-800 hover:text-emerald-700 cursor-pointer"
                         >
-                          {isEs ? 'Cancelar' : 'Cancel'}
+                          ${(service.base_price ?? 0).toFixed(2)}
                         </button>
-                        <button
-                          type="submit"
-                          disabled={loadingAction === `update-${service.id}`}
-                          className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer disabled:opacity-50"
-                        >
-                          {loadingAction === `update-${service.id}`
-                            ? isEs
-                              ? 'Guardando...'
-                              : 'Saving...'
-                            : isEs
-                            ? 'Guardar cambios'
-                            : 'Save Changes'}
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                );
-              }
+                      </td>
 
-              return (
-                <div
-                  key={service.id}
-                  className="px-4 py-3.5 flex items-start justify-between gap-4 hover:bg-slate-50/60 transition"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className="text-sm font-semibold text-slate-900">
-                        {service.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => startEditingService(service)}
-                        title={isEs ? 'Haz clic para editar el precio' : 'Click to edit price'}
-                        className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded transition cursor-pointer"
-                      >
-                        ${(service.base_price ?? 0).toFixed(2)}
-                      </button>
-                      {service.is_recurring_default ? (
-                        <span className="text-[11px] font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
-                          {isEs ? 'Cada' : 'Every'} {service.recurrence_interval_days || 30} {isEs ? 'días' : 'days'}
-                          {service.auto_charge_default ? ` • ${isEs ? 'Auto-cobro' : 'Auto-charge'}` : ''}
-                        </span>
-                      ) : null}
-                    </div>
-                    {service.description ? (
-                      <p className="text-xs text-slate-500 mt-1 leading-relaxed max-w-2xl">
-                        {service.description}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-slate-400 mt-1 italic">
-                        {isEs ? 'Sin descripción' : 'No description'}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
-                    <button
-                      type="button"
-                      onClick={() => startEditingService(service)}
-                      className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 px-2.5 py-1.5 rounded-lg hover:bg-emerald-50 transition cursor-pointer"
-                    >
-                      {isEs ? 'Editar' : 'Edit'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteService(service.id, service.name)}
-                      disabled={loadingAction === service.id}
-                      className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:text-red-300 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition cursor-pointer"
-                    >
-                      {loadingAction === service.id
-                        ? (isEs ? 'Archivando...' : 'Archiving...')
-                        : (isEs ? 'Archivar' : 'Archive')}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                      <td className="px-6 md:px-8 py-4 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => startEditingService(service)}
+                            title={isEs ? 'Editar servicio' : 'Edit service'}
+                            aria-label={isEs ? 'Editar servicio' : 'Edit service'}
+                            className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition duration-150 cursor-pointer border border-transparent hover:border-emerald-100"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteService(service.id, service.name)}
+                            disabled={loadingAction === service.id}
+                            title={isEs ? 'Archivar servicio' : 'Archive service'}
+                            aria-label={isEs ? 'Archivar servicio' : 'Archive service'}
+                            className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-red-600 hover:bg-red-50 transition duration-150 cursor-pointer border border-transparent hover:border-red-100 disabled:opacity-50"
+                          >
+                            {loadingAction === service.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-red-600" />
+                            ) : (
+                              <Archive className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
 
         {/* Archived Services Section (if any) */}
         {archivedServices.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-slate-100">
+          <div className="px-6 md:px-8 py-4 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setShowArchived((prev) => !prev)}
@@ -687,11 +710,15 @@ export default function ServicesPanel({
                         type="button"
                         onClick={() => handleRestoreService(service.id, service.name)}
                         disabled={loadingAction === service.id}
-                        className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-emerald-300 px-2.5 py-1 rounded hover:bg-emerald-50 transition cursor-pointer"
+                        title={isEs ? 'Restaurar servicio' : 'Restore service'}
+                        aria-label={isEs ? 'Restaurar servicio' : 'Restore service'}
+                        className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition cursor-pointer disabled:opacity-50"
                       >
-                        {loadingAction === service.id
-                          ? (isEs ? 'Restaurando...' : 'Restoring...')
-                          : (isEs ? 'Restaurar' : 'Restore')}
+                        {loadingAction === service.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                        ) : (
+                          <RotateCcw className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   );

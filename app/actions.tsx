@@ -28,6 +28,8 @@ import { getUserOrganization, verifyUserOrganizationAccess } from '@/lib/organiz
 import { findAuthUserIndexByEmail, findAuthUserIndexByUserIds, normalizeAuthEmail, upsertAuthUserIndex } from '@/lib/userAuthIndex';
 import { normalizeCurrencyCode, toStripeCurrency } from '@/lib/currency';
 import { formatDocumentNumber, normalizeDocumentEmailHeaderColor } from '@/lib/documentBranding';
+import { loadCustomLaborRates } from '@/lib/customLaborRates';
+import { loadCustomMaterialsCatalog } from '@/lib/customMaterialsCatalog';
 import { reserveDocumentNumber } from '@/lib/documentNumbers';
 import {
   isMissingLineItemsColumnError,
@@ -3570,6 +3572,8 @@ export async function getEstimatesDashboardData() {
       defaultNightLaborCost: org.default_night_labor_cost != null ? Number(org.default_night_labor_cost) : 65,
       defaultHolidayEmergencyLaborRate: org.default_holiday_emergency_labor_rate != null ? Number(org.default_holiday_emergency_labor_rate) : 165,
       defaultHolidayEmergencyLaborCost: org.default_holiday_emergency_labor_cost != null ? Number(org.default_holiday_emergency_labor_cost) : 75,
+      customLaborRates: await loadCustomLaborRates(createAdminClient(), org.id),
+      customMaterialsCatalog: await loadCustomMaterialsCatalog(createAdminClient(), org.id),
       currentUserRole: normalizedRole,
       estimates: estimatesData || [],
       customers: customersData || [],

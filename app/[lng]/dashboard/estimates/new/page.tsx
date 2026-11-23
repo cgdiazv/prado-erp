@@ -50,6 +50,8 @@ export default async function NewQuotePage({
       defaultNightLaborCost={Number(dashboardData.defaultNightLaborCost ?? 65)}
       defaultHolidayEmergencyLaborRate={Number(dashboardData.defaultHolidayEmergencyLaborRate ?? 165)}
       defaultHolidayEmergencyLaborCost={Number(dashboardData.defaultHolidayEmergencyLaborCost ?? 75)}
+      customLaborRates={(dashboardData as any).customLaborRates || []}
+      customMaterialsCatalog={(dashboardData as any).customMaterialsCatalog || []}
       defaultPaymentTerms={dashboardData.defaultPaymentTerms || 'Due on Receipt'}
       preselectedCustomerId={resolvedSearchParams.customerId}
     />

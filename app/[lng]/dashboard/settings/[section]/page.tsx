@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabaseServer';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 import { seedDefaultServicesForOrganization } from '@/lib/sampleData';
+import { loadCustomLaborRates, type CustomLaborRate } from '@/lib/customLaborRates';
+import {
+  loadCustomMaterialsCatalog,
+  seedDefaultMaterialsForOrganization,
+  type CatalogMaterialItem,
+} from '@/lib/customMaterialsCatalog';
 import { redirect } from 'next/navigation';
 import OperationsSettingsTabs from '../OperationsSettingsTabs';
 import TeamsPanel from '../TeamsPanel';
@@ -135,10 +141,14 @@ export default async function SettingsSectionPage({
     auto_charge_default: boolean | null;
   }> = [];
   let trucks: Array<{ id: string; name: string; plate_number: string | null; is_active: boolean | null; status: string | null }> = [];
+  let customLaborRates: CustomLaborRate[] = [];
+  let customMaterials: CatalogMaterialItem[] = [];
+  const userTradeVertical = user.user_metadata?.trade_vertical || 'Lawn Care & Landscaping';
   const initialRolePermissions = canAccessTeamFeatures ? await getOrganizationRolePermissions(org.id) : null;
 
   if (section === 'operations-settings') {
-    const [{ data: serviceRows }, { data: truckRows }] = await Promise.all([
+    const adminClient = createAdminClient();
+    const [{ data: serviceRows }, { data: truckRows }, loadedCustomRates, loadedMaterials] = await Promise.all([
       supabase
         .from('services')
         .select('id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
@@ -149,13 +159,24 @@ export default async function SettingsSectionPage({
         .select('id, name, plate_number, is_active, status')
         .eq('organization_id', org.id)
         .order('name', { ascending: true }),
+      loadCustomLaborRates(adminClient, org.id),
+      loadCustomMaterialsCatalog(adminClient, org.id),
     ]);
 
+    customLaborRates = loadedCustomRates;
+    customMaterials = loadedMaterials;
+    if (customMaterials.length === 0) {
+      customMaterials = await seedDefaultMaterialsForOrganization(
+        adminClient,
+        org.id,
+        user.id,
+        userTradeVertical,
+        Number(org.default_materials_markup ?? 30)
+      );
+    }
     services = serviceRows || [];
     if (services.length === 0) {
-      const adminClient = createAdminClient();
-      const userTrade = user.user_metadata?.trade_vertical || 'Lawn Care & Landscaping';
-      await seedDefaultServicesForOrganization(adminClient, org.id, userTrade);
+      await seedDefaultServicesForOrganization(adminClient, org.id, userTradeVertical);
       const { data: seededRows } = await supabase
         .from('services')
         .select('id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
@@ -227,6 +248,9 @@ export default async function SettingsSectionPage({
                 initialNightLaborCost={org.default_night_labor_cost ?? 65}
                 initialHolidayEmergencyLaborRate={org.default_holiday_emergency_labor_rate ?? 165}
                 initialHolidayEmergencyLaborCost={org.default_holiday_emergency_labor_cost ?? 75}
+                initialCustomLaborRates={customLaborRates}
+                initialMaterials={customMaterials}
+                defaultTradeVertical={userTradeVertical}
               />
             )}
 

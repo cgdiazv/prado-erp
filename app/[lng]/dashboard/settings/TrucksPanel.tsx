@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { createTruck, deactivateTruck, reactivateTruck, updateTruck } from './actions';
 import { getTranslations } from '@/lib/translations';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Pencil, Archive, Check, RotateCcw, Loader2 } from 'lucide-react';
 
 type TruckItem = {
   id: string;
@@ -194,7 +194,10 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
             {translations.dashboard.trucksSection || (isEs ? 'Vehículos' : 'Vehicles')}
           </h3>
           <p className="text-xs text-slate-400">
-            {translations.dashboard.trucksDescription || (isEs ? 'Crea y administra los vehículos de tu flota.' : 'Create and manage fleet vehicles for your dispatch operations.')}
+            {translations.dashboard.trucksDescription ||
+              (isEs
+                ? 'Crea y administra los vehículos de tu flota.'
+                : 'Create and manage fleet vehicles for your dispatch operations.')}
           </p>
         </div>
         <button
@@ -235,7 +238,7 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
               type="text"
               value={draftName}
               onChange={(event) => setDraftName(event.target.value)}
-              placeholder={translations.dashboard.truckName || (isEs ? 'Nombre del vehículo (ej. Camión 1)' : 'Vehicle name (e.g. Van #1)')}
+              placeholder={translations.dashboard.truckName || (isEs ? 'Nombre del vehículo (ej. Van #1)' : 'Vehicle name (e.g. Van #1)')}
               className="flex-1 rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
               autoFocus
             />
@@ -257,21 +260,10 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
         </div>
       )}
 
-      {/* Complete List of Saved Vehicles */}
-      <div className="border-t border-slate-200 px-6 md:px-8 py-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              {isEs ? 'Vehículos guardados' : 'Saved Vehicles'}
-            </p>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-              {activeTrucks.length}
-            </span>
-          </div>
-        </div>
-
+      {/* Vehicles Table */}
+      <div className="border-t border-slate-200">
         {activeTrucks.length === 0 ? (
-          <div className="py-8 px-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
+          <div className="px-6 md:px-8 py-8 text-center">
             <p className="text-sm font-semibold text-slate-700">
               {isEs ? 'No hay vehículos guardados' : 'No saved vehicles'}
             </p>
@@ -282,134 +274,170 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-            {activeTrucks.map((truck) =>
-              editingTruckId === truck.id ? (
-                <div
-                  key={truck.id}
-                  className="px-4 py-3.5 bg-emerald-50/40 border-l-4 border-l-emerald-600 transition"
-                >
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                          {isEs ? 'Nombre del vehículo' : 'Vehicle name'}
-                        </label>
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          placeholder={translations.dashboard.truckName || (isEs ? 'Nombre del vehículo' : 'Vehicle name')}
-                          className="w-full rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleUpdateTruck(truck.id);
-                            } else if (e.key === 'Escape') {
-                              cancelEditing();
-                            }
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                          {isEs ? 'Número de placa' : 'Plate number'}
-                        </label>
-                        <input
-                          type="text"
-                          value={editPlateNumber}
-                          onChange={(e) => setEditPlateNumber(e.target.value)}
-                          placeholder={translations.dashboard.plateNumber || (isEs ? 'Número de placa' : 'Plate number')}
-                          className="w-full rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-2xs"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleUpdateTruck(truck.id);
-                            } else if (e.key === 'Escape') {
-                              cancelEditing();
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 justify-end shrink-0 sm:self-end sm:mb-0.5">
-                      <button
-                        type="button"
-                        onClick={cancelEditing}
-                        disabled={loadingAction === `update_${truck.id}`}
-                        className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-slate-700 transition"
-                      >
-                        {isEs ? 'Cancelar' : 'Cancel'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateTruck(truck.id)}
-                        disabled={loadingAction === `update_${truck.id}`}
-                        className="cursor-pointer text-xs font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400 transition"
-                      >
-                        {loadingAction === `update_${truck.id}`
-                          ? (isEs ? 'Guardando...' : 'Saving...')
-                          : (isEs ? 'Guardar' : 'Save')}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  key={truck.id}
-                  className="px-4 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/60 transition"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-slate-900 truncate">
-                        {truck.name}
-                      </span>
-                      {truck.plate_number ? (
-                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-medium">
-                          {truck.plate_number}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-400 italic">
-                          {isEs ? 'Sin placa' : 'No plate'}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {isEs
-                        ? 'Disponible para programación y rutas'
-                        : 'Available for scheduling and routing'}
-                    </p>
-                  </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200 text-left">
+              <thead className="bg-slate-50/70">
+                <tr>
+                  <th className="px-6 md:px-8 py-3.5 text-xs font-semibold text-slate-500">
+                    {isEs ? 'Descripción' : 'Description'}
+                  </th>
+                  <th className="px-4 py-3.5 text-xs font-semibold text-slate-500 whitespace-nowrap">
+                    {isEs ? 'Número de placa' : 'Plate number'}
+                  </th>
+                  <th className="px-6 md:px-8 py-3.5 text-xs font-semibold text-slate-500 text-right whitespace-nowrap">
+                    {isEs ? 'Acciones' : 'Actions'}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 bg-white">
+                {activeTrucks.map((truck) => {
+                  const isEditingThis = editingTruckId === truck.id;
+                  const isUpdating = loadingAction === `update_${truck.id}`;
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => startEditing(truck)}
-                      className="cursor-pointer text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition"
-                    >
-                      {isEs ? 'Editar' : 'Edit'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeactivateTruck(truck.id, truck.name)}
-                      disabled={loadingAction === truck.id}
-                      className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:text-red-300 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition cursor-pointer"
-                    >
-                      {loadingAction === truck.id
-                        ? (isEs ? 'Archivando...' : 'Archiving...')
-                        : (isEs ? 'Archivar' : 'Archive')}
-                    </button>
-                  </div>
-                </div>
-              )
-            )}
+                  if (isEditingThis) {
+                    return (
+                      <tr key={truck.id} className="bg-emerald-50/30">
+                        <td className="px-6 md:px-8 py-4 min-w-[220px]">
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            placeholder={translations.dashboard.truckName || (isEs ? 'Nombre del vehículo' : 'Vehicle name')}
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                void handleUpdateTruck(truck.id);
+                              } else if (e.key === 'Escape') {
+                                cancelEditing();
+                              }
+                            }}
+                            className="w-full max-w-md rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                          />
+                        </td>
+
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <input
+                            type="text"
+                            value={editPlateNumber}
+                            onChange={(e) => setEditPlateNumber(e.target.value)}
+                            placeholder={translations.dashboard.plateNumber || (isEs ? 'Número de placa' : 'Plate number')}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                void handleUpdateTruck(truck.id);
+                              } else if (e.key === 'Escape') {
+                                cancelEditing();
+                              }
+                            }}
+                            className="w-40 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-mono text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                          />
+                        </td>
+
+                        <td className="px-6 md:px-8 py-4 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={cancelEditing}
+                              disabled={isUpdating}
+                              title={isEs ? 'Cancelar' : 'Cancel'}
+                              aria-label={isEs ? 'Cancelar' : 'Cancel'}
+                              className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition cursor-pointer disabled:opacity-50"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleUpdateTruck(truck.id)}
+                              disabled={isUpdating}
+                              title={isEs ? 'Actualizar' : 'Update'}
+                              aria-label={isEs ? 'Actualizar' : 'Update'}
+                              className="inline-flex items-center justify-center p-1.5 rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/80 transition cursor-pointer disabled:opacity-50"
+                            >
+                              {isUpdating ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Check className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return (
+                    <tr key={truck.id} className="hover:bg-slate-50/60 transition">
+                      <td className="px-6 md:px-8 py-4">
+                        <p className="text-xs sm:text-sm font-semibold text-slate-900">
+                          {truck.name}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {isEs
+                            ? 'Disponible para programación y rutas'
+                            : 'Available for scheduling and routing'}
+                        </p>
+                      </td>
+
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {truck.plate_number ? (
+                          <button
+                            type="button"
+                            onClick={() => startEditing(truck)}
+                            title={isEs ? 'Haz clic para editar' : 'Click to edit'}
+                            className="font-mono text-xs px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200/70 text-slate-700 border border-slate-200 font-medium transition cursor-pointer"
+                          >
+                            {truck.plate_number}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startEditing(truck)}
+                            className="text-xs text-slate-400 hover:text-slate-600 italic cursor-pointer"
+                          >
+                            {isEs ? 'Sin placa' : 'No plate'}
+                          </button>
+                        )}
+                      </td>
+
+                      <td className="px-6 md:px-8 py-4 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => startEditing(truck)}
+                            title={isEs ? 'Editar vehículo' : 'Edit vehicle'}
+                            aria-label={isEs ? 'Editar vehículo' : 'Edit vehicle'}
+                            className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition duration-150 cursor-pointer border border-transparent hover:border-emerald-100"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeactivateTruck(truck.id, truck.name)}
+                            disabled={loadingAction === truck.id}
+                            title={isEs ? 'Archivar vehículo' : 'Archive vehicle'}
+                            aria-label={isEs ? 'Archivar vehículo' : 'Archive vehicle'}
+                            className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-red-600 hover:bg-red-50 transition duration-150 cursor-pointer border border-transparent hover:border-red-100 disabled:opacity-50"
+                          >
+                            {loadingAction === truck.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-red-600" />
+                            ) : (
+                              <Archive className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
 
         {/* Archived Vehicles Section (if any) */}
         {archivedTrucks.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-slate-100">
+          <div className="px-6 md:px-8 py-4 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setShowArchived((prev) => !prev)}
@@ -442,11 +470,15 @@ export default function TrucksPanel({ initialTrucks, locale = 'en' }: TrucksPane
                       type="button"
                       onClick={() => handleReactivateTruck(truck.id, truck.name)}
                       disabled={loadingAction === truck.id}
-                      className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-emerald-300 px-2.5 py-1 rounded hover:bg-emerald-50 transition cursor-pointer"
+                      title={isEs ? 'Restaurar vehículo' : 'Restore vehicle'}
+                      aria-label={isEs ? 'Restaurar vehículo' : 'Restore vehicle'}
+                      className="inline-flex items-center justify-center p-1.5 rounded-md text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition cursor-pointer disabled:opacity-50"
                     >
-                      {loadingAction === truck.id
-                        ? (isEs ? 'Restaurando...' : 'Restoring...')
-                        : (isEs ? 'Restaurar' : 'Restore')}
+                      {loadingAction === truck.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                      ) : (
+                        <RotateCcw className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 ))}

@@ -26,6 +26,10 @@ import {
   updateEstimate,
   getEstimateCustomerProperties,
 } from '@/app/actions';
+import type { CustomLaborRate } from '@/lib/customLaborRates';
+import type { CatalogMaterialItem } from '@/lib/customMaterialsCatalog';
+import {
+} from '@/app/actions';
 
 export type LineItemType = 'service' | 'labor' | 'material';
 
@@ -38,7 +42,7 @@ export interface ServiceLine {
   hours?: string;
   laborRate?: string;
   laborCost?: string;
-  laborTier?: 'default' | 'night' | 'emergency';
+  laborTier?: string;
   materialCost?: string;
   materialMarkup?: string;
 }
@@ -76,6 +80,8 @@ interface QuoteEditorProps {
   defaultNightLaborCost?: number;
   defaultHolidayEmergencyLaborRate?: number;
   defaultHolidayEmergencyLaborCost?: number;
+  customLaborRates?: CustomLaborRate[];
+  customMaterialsCatalog?: CatalogMaterialItem[];
   defaultPaymentTerms: string;
   preselectedCustomerId?: string;
 }
@@ -94,6 +100,8 @@ export default function QuoteEditor({
   defaultNightLaborCost = 65,
   defaultHolidayEmergencyLaborRate = 165,
   defaultHolidayEmergencyLaborCost = 75,
+  customLaborRates = [],
+  customMaterialsCatalog = [],
   defaultPaymentTerms,
   preselectedCustomerId,
 }: QuoteEditorProps) {
@@ -438,7 +446,7 @@ export default function QuoteEditor({
     setServiceLines((prev) => prev.filter((line) => line.id !== id));
   };
 
-  const applyLaborTier = (id: number, tier: 'default' | 'night' | 'emergency') => {
+  const applyLaborTier = (id: number, tier: string) => {
     setServiceLines((prev) =>
       prev.map((line) => {
         if (line.id !== id || line.type !== 'labor') return line;
@@ -452,6 +460,12 @@ export default function QuoteEditor({
         } else if (tier === 'emergency') {
           newRate = defaultHolidayEmergencyLaborRate;
           newCost = defaultHolidayEmergencyLaborCost;
+        } else {
+          const customMatch = customLaborRates.find((r) => r.id === tier);
+          if (customMatch) {
+            newRate = customMatch.hourlyPrice;
+            newCost = customMatch.hourlyCost;
+          }
         }
 
         const hrs = Number.parseFloat(line.hours || '0') || 0;
@@ -973,6 +987,29 @@ export default function QuoteEditor({
                                 >
                                   {isEs ? 'Emergencia' : 'Emergency'}
                                 </button>
+                                {customLaborRates.map((customRate) => {
+                                  const isCustomSelected = line.laborTier === customRate.id;
+                                  return (
+                                    <button
+                                      key={customRate.id}
+                                      type="button"
+                                      onClick={() => {
+                                        applyLaborTier(line.id, customRate.id);
+                                        updateServiceLine(line.id, 'customName', customRate.name);
+                                      }}
+                                      className={`cursor-pointer px-2 py-0.5 rounded-md transition ${
+                                        isCustomSelected
+                                          ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                                          : 'text-slate-500 hover:text-slate-800'
+                                      }`}
+                                      title={`${customRate.name}: $${customRate.hourlyPrice.toFixed(2)}/hr`}
+                                    >
+                                      {customRate.name}
+                                    </button>
+                                  );
+                                })}
+                                <button type="button" className="hidden">
+                                </button>
                               </div>
                             </>
                           ) : line.type === 'material' ? (
@@ -1101,6 +1138,32 @@ export default function QuoteEditor({
                               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                                 {isEs ? 'Materiales / Suministros' : 'Materials / Supplies'}
                               </label>
+                              {customMaterialsCatalog.filter((m) => !m.archived).length > 0 && (
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    const mat = customMaterialsCatalog.find((m) => m.id === e.target.value);
+                                    if (!mat) return;
+                                    updateServiceLine(line.id, 'customName', mat.name);
+                                    updateServiceLine(line.id, 'materialCost', mat.unitCost.toFixed(2));
+                                    updateServiceLine(line.id, 'materialMarkup', mat.markupPercent.toFixed(2));
+                                  }}
+                                  className="w-full mb-1.5 bg-white border border-gray-300 rounded-lg p-1.5 text-slate-700 text-xs focus:ring-1 focus:ring-amber-500"
+                                >
+                                  <option value="">
+                                    {isEs
+                                      ? 'Seleccionar material del catálogo...'
+                                      : 'Select from materials catalog...'}
+                                  </option>
+                                  {customMaterialsCatalog
+                                    .filter((m) => !m.archived)
+                                    .map((mat) => (
+                                      <option key={mat.id} value={mat.id}>
+                                        {mat.name} (${mat.unitCost.toFixed(2)} + {mat.markupPercent.toFixed(0)}%)
+                                      </option>
+                                    ))}
+                                </select>
+                              )}
                               <input
                                 type="text"
                                 value={line.customName || ''}
