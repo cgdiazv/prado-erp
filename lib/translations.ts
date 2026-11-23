@@ -124,7 +124,6 @@ type TranslationBundle = {
   };
   login: {
     title: string;
-    subtitle: string;
     successMessage: string;
     emailLabel: string;
     passwordLabel: string;
