@@ -4,19 +4,34 @@ interface MetricsProps {
   totalRevenue: number;
   totalExpenses: number;
   netProfit: number;
+  outstandingReceivables: number;
   trends: {
     revenue: { direction: 'up' | 'down'; percentage: number };
     expenses: { direction: 'up' | 'down'; percentage: number };
     netProfit: { direction: 'up' | 'down'; percentage: number };
+    receivables: { direction: 'up' | 'down'; percentage: number };
   };
   locale?: string;
 }
 
-export default function Metrics({ totalRevenue, totalExpenses, netProfit, trends, locale = 'en' }: MetricsProps) {
+export default function Metrics({
+  totalRevenue,
+  totalExpenses,
+  netProfit,
+  outstandingReceivables,
+  trends,
+  locale = 'en',
+}: MetricsProps) {
   const translations = getTranslations(locale);
 
-  const renderTrend = (trend: { direction: 'up' | 'down'; percentage: number }) => {
-    const colorClass = trend.direction === 'up' ? 'text-emerald-600' : 'text-rose-600';
+  const renderTrend = (
+    trend: { direction: 'up' | 'down'; percentage: number },
+    invertColor = false
+  ) => {
+    const isPositive = invertColor
+      ? trend.direction === 'down' || trend.percentage === 0
+      : trend.direction === 'up';
+    const colorClass = isPositive ? 'text-emerald-600' : 'text-rose-600';
 
     return (
       <span className={`mt-1 flex items-center gap-1 text-[10px] sm:text-xs font-semibold ${colorClass}`}>
@@ -37,7 +52,7 @@ export default function Metrics({ totalRevenue, totalExpenses, netProfit, trends
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">{translations.dashboard.businessPerformance}</h2>
-      <section className="tour-metrics flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-3.5 mb-2 sm:mb-5 md:mb-8 sm:overflow-x-visible">
+      <section className="tour-metrics flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-3.5 mb-2 sm:mb-5 md:mb-8 sm:overflow-x-visible">
       <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white p-2.5 sm:p-5 rounded-lg shadow-sm border border-gray-200">
         <span className="text-[10px] sm:text-xs uppercase font-medium text-gray-400 block mb-1">{translations.dashboard.totalInvoicedRevenue}</span>
         <span className="text-xl font-extrabold text-emerald-600">${totalRevenue.toFixed(2)}</span>
@@ -54,6 +69,11 @@ export default function Metrics({ totalRevenue, totalExpenses, netProfit, trends
           ${netProfit.toFixed(2)}
         </span>
         {renderTrend(trends.netProfit)}
+      </div>
+      <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white p-2.5 sm:p-5 rounded-lg shadow-sm border border-gray-200">
+        <span className="text-[10px] sm:text-xs uppercase font-medium text-gray-400 block mb-1">{translations.dashboard.outstandingReceivables}</span>
+        <span className="text-xl font-extrabold text-amber-600">${outstandingReceivables.toFixed(2)}</span>
+        {renderTrend(trends.receivables, true)}
       </div>
     </section>
     </div>

@@ -203,6 +203,9 @@ export default async function DashboardHome({
   const totalRevenue = invoices.reduce((acc, inv) => acc + Number(inv.total_amount), 0);
   const totalExpenses = expenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
   const netProfit = totalRevenue - totalExpenses;
+  const outstandingReceivables = invoices
+    .filter((inv) => inv.status === 'unpaid')
+    .reduce((acc, inv) => acc + Number(inv.total_amount || 0), 0);
 
   const parseIsoDate = (value: string | null | undefined) => {
     if (!value) return null;
@@ -243,13 +246,24 @@ export default async function DashboardHome({
     }, 0);
   };
 
+  const sumUnpaidInvoiceAmountInRange = (rangeStart: Date, rangeEnd: Date) => {
+    return invoices.reduce((total, invoice) => {
+      if (invoice.status !== 'unpaid') return total;
+      const invoiceDate = parseIsoDate(invoice.due_date);
+      if (!invoiceDate || !isWithinRange(invoiceDate, rangeStart, rangeEnd)) return total;
+      return total + Number(invoice.total_amount || 0);
+    }, 0);
+  };
+
   const currentRevenueWindow = sumInvoiceAmountInRange(currentPeriodStart, periodEnd);
   const currentExpensesWindow = sumExpenseAmountInRange(currentPeriodStart, periodEnd);
   const currentNetWindow = currentRevenueWindow - currentExpensesWindow;
+  const currentReceivablesWindow = sumUnpaidInvoiceAmountInRange(currentPeriodStart, periodEnd);
 
   const previousRevenueWindow = sumInvoiceAmountInRange(previousPeriodStart, previousPeriodEnd);
   const previousExpensesWindow = sumExpenseAmountInRange(previousPeriodStart, previousPeriodEnd);
   const previousNetWindow = previousRevenueWindow - previousExpensesWindow;
+  const previousReceivablesWindow = sumUnpaidInvoiceAmountInRange(previousPeriodStart, previousPeriodEnd);
 
   const buildTrend = (currentValue: number, previousValue: number): MetricTrend => {
     const delta = currentValue - previousValue;
@@ -273,6 +287,7 @@ export default async function DashboardHome({
     revenue: buildTrend(currentRevenueWindow, previousRevenueWindow),
     expenses: buildTrend(currentExpensesWindow, previousExpensesWindow),
     netProfit: buildTrend(currentNetWindow, previousNetWindow),
+    receivables: buildTrend(currentReceivablesWindow, previousReceivablesWindow),
   };
 
   const toDayKey = (value: Date) => {
@@ -481,6 +496,7 @@ export default async function DashboardHome({
                 totalRevenue={totalRevenue}
                 totalExpenses={totalExpenses}
                 netProfit={netProfit}
+                outstandingReceivables={outstandingReceivables}
                 trends={metricTrends}
                 locale={locale}
               />
@@ -496,6 +512,7 @@ export default async function DashboardHome({
                 totalRevenue={totalRevenue}
                 totalExpenses={totalExpenses}
                 netProfit={netProfit}
+                outstandingReceivables={outstandingReceivables}
                 trends={metricTrends}
                 locale={locale}
               />

@@ -234,6 +234,7 @@ type TranslationBundle = {
     totalInvoicedRevenue: string;
     trackedExpenses: string;
     netIncome: string;
+    outstandingReceivables: string;
     operationsHub: string;
     overviewTerminal: string;
     customerCrm: string;
