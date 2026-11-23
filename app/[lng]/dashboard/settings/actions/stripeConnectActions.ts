@@ -52,6 +52,7 @@ function getAppBaseUrl(): string {
 function revalidatePaymentPaths(locale: string): void {
   revalidatePath(`/${locale}/dashboard/settings/integrations`);
   revalidatePath(`/${locale}/dashboard/settings`);
+  revalidatePath(`/${locale}/dashboard/payouts`);
 }
 
 export async function createStripeConnectAccountLink(locale = 'en'): Promise<{ url?: string; error?: string }> {
@@ -135,6 +136,38 @@ export async function createStripeConnectAccountLink(locale = 'en'): Promise<{ u
 
     revalidatePaymentPaths(normalizedLocale);
     return { url: accountLink.url };
+  } catch (error: unknown) {
+    return { error: formatStripeConnectError(error) };
+  }
+}
+
+export async function createStripeExpressDashboardLink(): Promise<{ url?: string; error?: string }> {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return { error: 'Stripe is not configured on the server.' };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be signed in.' };
+  }
+
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id, stripe_account_id, stripe_soft_disconnected')
+    .eq('owner_id', user.id)
+    .maybeSingle();
+
+  if (!org?.stripe_account_id || org.stripe_soft_disconnected) {
+    return { error: 'No active Stripe account is connected to this workspace.' };
+  }
+
+  try {
+    const loginLink = await stripe.accounts.createLoginLink(org.stripe_account_id);
+    return { url: loginLink.url };
   } catch (error: unknown) {
     return { error: formatStripeConnectError(error) };
   }

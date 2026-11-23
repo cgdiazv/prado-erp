@@ -86,8 +86,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
-      <head>
-        <Script id="vibe-pixel" strategy="beforeInteractive">
+      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
+        {children}
+        <CookieConsentBanner />
+        <Script id="vibe-pixel" strategy="afterInteractive">
           {`!function(v,i,b,e,c,o){if(!v[c]){var s=v[c]=function(){s.process?s.process.apply(s,arguments):s.queue.push(arguments)};s.queue=[],s.b=1*new Date;var t=i.createElement(b);t.async=!0,t.src=e;var n=i.getElementsByTagName(b)[0];n.parentNode.insertBefore(t,n)}}(window,document,"script","https://s.vibe.co/vbpx.js","vbpx");
 vbpx('init','heV2ZR');
 vbpx('event', 'page_view');`}
@@ -95,9 +97,9 @@ vbpx('event', 'page_view');`}
         <Script
           id="google-tag-manager"
           src="https://www.googletagmanager.com/gtm.js?id=GTM-5TJFVGHG"
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
         />
-        <Script id="google-tag-manager-init" strategy="beforeInteractive">
+        <Script id="google-tag-manager-init" strategy="afterInteractive">
           {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
@@ -106,12 +108,8 @@ gtag('config', 'G-E7DL3TMBG9');`}
         <Script
           id="google-analytics"
           src="https://www.googletagmanager.com/gtag/js?id=G-E7DL3TMBG9"
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
         />
-      </head>
-      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
-        {children}
-        <CookieConsentBanner />
       </body>
     </html>
   );

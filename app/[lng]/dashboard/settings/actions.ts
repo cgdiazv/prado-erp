@@ -10,6 +10,7 @@ import { clearRememberToken, revokeAllRememberTokensForUser, revokeOtherRemember
 import { getUserOrganization } from '@/lib/organization';
 import { normalizeCurrencyCode } from '@/lib/currency';
 import { normalizeDocumentEmailHeaderColor, normalizeDocumentSequenceNumber } from '@/lib/documentBranding';
+import { seedDefaultServicesForOrganization } from '@/lib/sampleData';
 
 const ARCHIVED_SERVICE_PREFIX = '[[ARCHIVED]] ';
 
@@ -836,6 +837,130 @@ export async function restoreService(serviceId: string) {
     return { success: true, service: data };
   } catch (error: unknown) {
     return { error: (error as Error)?.message || 'Failed to restore service.' };
+  }
+}
+
+export async function updateService({
+  id,
+  name,
+  description,
+  basePrice,
+  isRecurringDefault = false,
+  recurrenceIntervalDays,
+  autoChargeDefault = false,
+}: {
+  id: string;
+  name: string;
+  description?: string;
+  basePrice: number;
+  isRecurringDefault?: boolean;
+  recurrenceIntervalDays?: number | null;
+  autoChargeDefault?: boolean;
+}) {
+  try {
+    if (!id) return { error: 'Service ID is required.' };
+
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    const normalizedDescription = description?.trim() || null;
+
+    if (!normalizedName) {
+      return { error: 'Service name is required.' };
+    }
+
+    if (!Number.isFinite(basePrice) || basePrice < 0) {
+      return { error: 'Base price must be a valid non-negative number.' };
+    }
+
+    const normalizedRecurrenceInterval = isRecurringDefault
+      ? Number.isFinite(recurrenceIntervalDays) && Number(recurrenceIntervalDays) > 0
+        ? Math.floor(Number(recurrenceIntervalDays))
+        : null
+      : null;
+
+    if (isRecurringDefault && !normalizedRecurrenceInterval) {
+      return { error: 'Recurring services require a valid recurrence interval.' };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage services.' };
+
+    const { organization: org } = await getUserOrganization(user.id);
+    if (!org) return { error: 'Workspace not found.' };
+
+    const { data: duplicateService } = await supabase
+      .from('services')
+      .select('id, name')
+      .eq('organization_id', org.id)
+      .eq('name', normalizedName)
+      .neq('id', id)
+      .limit(1)
+      .maybeSingle();
+
+    if (duplicateService) {
+      return { error: 'Another service with that name already exists.' };
+    }
+
+    const { data, error } = await supabase
+      .from('services')
+      .update({
+        name: normalizedName,
+        description: normalizedDescription,
+        base_price: Math.round(basePrice * 100) / 100,
+        is_recurring_default: isRecurringDefault,
+        recurrence_interval_days: normalizedRecurrenceInterval,
+        auto_charge_default: isRecurringDefault ? Boolean(autoChargeDefault) : false,
+      })
+      .eq('id', id)
+      .eq('organization_id', org.id)
+      .select('id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
+      .single();
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard/settings');
+    revalidatePath('/[lng]/dashboard/settings/[section]', 'page');
+    revalidatePath('/[lng]/dashboard/estimates', 'page');
+    revalidatePath('/[lng]/dashboard/estimates/new', 'page');
+    revalidatePath('/[lng]/dashboard/invoices-ledger/new', 'page');
+    return { success: true, service: data };
+  } catch (error: unknown) {
+    return { error: (error as Error)?.message || 'Failed to update service.' };
+  }
+}
+
+export async function seedTradeServicesAction(tradeVertical?: string) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: 'You must be signed in to manage services.' };
+
+    const { organization: org } = await getUserOrganization(user.id);
+    if (!org) return { error: 'Workspace not found.' };
+
+    const adminClient = createAdminClient();
+    const selectedTrade =
+      tradeVertical || user.user_metadata?.trade_vertical || 'Lawn Care & Landscaping';
+
+    await seedDefaultServicesForOrganization(adminClient, org.id, selectedTrade);
+
+    const { data: services, error } = await supabase
+      .from('services')
+      .select('id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
+      .eq('organization_id', org.id)
+      .order('name', { ascending: true });
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard/settings');
+    revalidatePath('/[lng]/dashboard/settings/[section]', 'page');
+    return { success: true, services: services || [] };
+  } catch (error: unknown) {
+    return { error: (error as Error)?.message || 'Failed to load default services.' };
   }
 }
 

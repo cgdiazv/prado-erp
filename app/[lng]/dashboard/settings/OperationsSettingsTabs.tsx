@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ServicesPanel from './ServicesPanel';
 import TrucksPanel from './TrucksPanel';
 import ExpenseCategoriesPanel from './ExpenseCategoriesPanel';
+import LaborMarkupSettingsPanel from './LaborMarkupSettingsPanel';
 import { getTranslations } from '@/lib/translations';
 
 type Service = {
@@ -24,7 +25,7 @@ type TruckItem = {
   status: string | null;
 };
 
-export type OperationsTabId = 'services' | 'vehicles' | 'expense-categories';
+export type OperationsTabId = 'services' | 'vehicles' | 'expense-categories' | 'labor' | 'materials';
 
 interface OperationsSettingsTabsProps {
   services: Service[];
@@ -32,6 +33,13 @@ interface OperationsSettingsTabsProps {
   locale?: string;
   isIndividualAccount?: boolean;
   initialTab?: string;
+  initialLaborRate?: number;
+  initialLaborCost?: number;
+  initialMaterialsMarkup?: number;
+  initialNightLaborRate?: number;
+  initialNightLaborCost?: number;
+  initialHolidayEmergencyLaborRate?: number;
+  initialHolidayEmergencyLaborCost?: number;
 }
 
 export default function OperationsSettingsTabs({
@@ -40,6 +48,13 @@ export default function OperationsSettingsTabs({
   locale = 'en',
   isIndividualAccount = false,
   initialTab,
+  initialLaborRate = 95,
+  initialLaborCost = 45,
+  initialMaterialsMarkup = 30,
+  initialNightLaborRate = 135,
+  initialNightLaborCost = 65,
+  initialHolidayEmergencyLaborRate = 165,
+  initialHolidayEmergencyLaborCost = 75,
 }: OperationsSettingsTabsProps) {
   const translations = getTranslations(locale);
   const isEs = locale.toLowerCase().startsWith('es');
@@ -47,6 +62,8 @@ export default function OperationsSettingsTabs({
   const normalizeInitialTab = (tab?: string): OperationsTabId => {
     if (tab === 'vehicles' && !isIndividualAccount) return 'vehicles';
     if (tab === 'expense-categories' && !isIndividualAccount) return 'expense-categories';
+    if (tab === 'labor' || tab === 'labor-markups') return 'labor';
+    if (tab === 'materials') return 'materials';
     return 'services';
   };
 
@@ -84,6 +101,14 @@ export default function OperationsSettingsTabs({
           },
         ]
       : []),
+    {
+      id: 'labor',
+      label: isEs ? 'Mano de obra' : 'Labor',
+    },
+    {
+      id: 'materials',
+      label: isEs ? 'Materiales' : 'Materials',
+    },
   ];
 
   return (
@@ -151,6 +176,44 @@ export default function OperationsSettingsTabs({
             <ExpenseCategoriesPanel locale={locale} />
           </div>
         )}
+
+        <div
+          id="tabpanel-labor"
+          role="tabpanel"
+          aria-labelledby="tab-labor"
+          className={activeTab === 'labor' ? 'block' : 'hidden'}
+        >
+          <LaborMarkupSettingsPanel
+            mode="labor"
+            initialLaborRate={initialLaborRate}
+            initialLaborCost={initialLaborCost}
+            initialMaterialsMarkup={initialMaterialsMarkup}
+            initialNightLaborRate={initialNightLaborRate}
+            initialNightLaborCost={initialNightLaborCost}
+            initialHolidayEmergencyLaborRate={initialHolidayEmergencyLaborRate}
+            initialHolidayEmergencyLaborCost={initialHolidayEmergencyLaborCost}
+            locale={locale}
+          />
+        </div>
+
+        <div
+          id="tabpanel-materials"
+          role="tabpanel"
+          aria-labelledby="tab-materials"
+          className={activeTab === 'materials' ? 'block' : 'hidden'}
+        >
+          <LaborMarkupSettingsPanel
+            mode="materials"
+            initialLaborRate={initialLaborRate}
+            initialLaborCost={initialLaborCost}
+            initialMaterialsMarkup={initialMaterialsMarkup}
+            initialNightLaborRate={initialNightLaborRate}
+            initialNightLaborCost={initialNightLaborCost}
+            initialHolidayEmergencyLaborRate={initialHolidayEmergencyLaborRate}
+            initialHolidayEmergencyLaborCost={initialHolidayEmergencyLaborCost}
+            locale={locale}
+          />
+        </div>
       </div>
     </div>
   );

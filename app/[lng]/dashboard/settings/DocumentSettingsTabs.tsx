@@ -2,32 +2,30 @@
 
 import { useState, type ReactNode } from 'react';
 
-type DocumentSettingsTabId = 'billing-defaults' | 'labor-markups' | 'docs-emails';
+type DocumentSettingsTabId = 'docs-emails' | 'billing-defaults';
 
 interface DocumentSettingsTabsProps {
-  billingDefaults: ReactNode;
-  laborMarkups: ReactNode;
   docsEmails: ReactNode;
+  billingDefaults: ReactNode;
   locale?: string;
   initialTab?: string;
 }
 
 export default function DocumentSettingsTabs({
-  billingDefaults,
-  laborMarkups,
   docsEmails,
+  billingDefaults,
   locale = 'en',
   initialTab,
 }: DocumentSettingsTabsProps) {
   const isEs = locale.toLowerCase().startsWith('es');
   const initialTabId: DocumentSettingsTabId =
-    initialTab === 'labor-markups' || initialTab === 'docs-emails' ? initialTab : 'billing-defaults';
+    initialTab === 'billing-defaults' ? 'billing-defaults' : 'docs-emails';
   const [activeTab, setActiveTab] = useState<DocumentSettingsTabId>(initialTabId);
 
   const handleTabChange = (tabId: DocumentSettingsTabId) => {
     setActiveTab(tabId);
     const url = new URL(window.location.href);
-    if (tabId === 'billing-defaults') {
+    if (tabId === 'docs-emails') {
       url.searchParams.delete('tab');
     } else {
       url.searchParams.set('tab', tabId);
@@ -36,9 +34,8 @@ export default function DocumentSettingsTabs({
   };
 
   const tabs: Array<{ id: DocumentSettingsTabId; label: string }> = [
-    { id: 'billing-defaults', label: isEs ? 'Preferencias de facturación' : 'Billing Defaults' },
-    { id: 'labor-markups', label: isEs ? 'Mano de obra y márgenes' : 'Labor & Markups' },
     { id: 'docs-emails', label: isEs ? 'Documentos y correos' : 'Docs & Emails' },
+    { id: 'billing-defaults', label: isEs ? 'Preferencias de facturación' : 'Billing Defaults' },
   ];
 
   return (
@@ -74,28 +71,21 @@ export default function DocumentSettingsTabs({
       </div>
 
       <div
-        id="tabpanel-billing-defaults"
-        role="tabpanel"
-        aria-labelledby="tab-billing-defaults"
-        className={activeTab === 'billing-defaults' ? 'block' : 'hidden'}
-      >
-        {billingDefaults}
-      </div>
-      <div
-        id="tabpanel-labor-markups"
-        role="tabpanel"
-        aria-labelledby="tab-labor-markups"
-        className={activeTab === 'labor-markups' ? 'block' : 'hidden'}
-      >
-        {laborMarkups}
-      </div>
-      <div
         id="tabpanel-docs-emails"
         role="tabpanel"
         aria-labelledby="tab-docs-emails"
         className={activeTab === 'docs-emails' ? 'block' : 'hidden'}
       >
         {docsEmails}
+      </div>
+
+      <div
+        id="tabpanel-billing-defaults"
+        role="tabpanel"
+        aria-labelledby="tab-billing-defaults"
+        className={activeTab === 'billing-defaults' ? 'block' : 'hidden'}
+      >
+        {billingDefaults}
       </div>
     </div>
   );

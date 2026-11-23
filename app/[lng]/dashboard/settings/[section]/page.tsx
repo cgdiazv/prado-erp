@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
+import { seedDefaultServicesForOrganization } from '@/lib/sampleData';
 import { redirect } from 'next/navigation';
 import OperationsSettingsTabs from '../OperationsSettingsTabs';
 import TeamsPanel from '../TeamsPanel';
@@ -8,7 +10,6 @@ import ReferralProgramCard from '../ReferralProgramCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
 import DocumentSettingsTabs from '../DocumentSettingsTabs';
 import InvoiceTaxSettingsPanel from '../InvoiceTaxSettingsPanel';
-import LaborMarkupSettingsPanel from '../LaborMarkupSettingsPanel';
 import DocumentBrandingSettingsPanel from '../DocumentBrandingSettingsPanel';
 import XeroConnectionCard from '../XeroConnectionCard';
 import QBOConnectionCard from '../QBOConnectionCard';
@@ -60,6 +61,10 @@ export default async function SettingsSectionPage({
 
   if (sectionParam === 'payments') {
     redirect(`/${locale}/dashboard/settings/integrations`);
+  }
+
+  if (sectionParam === 'document-settings' && initialTab === 'labor-markups') {
+    redirect(`/${locale}/dashboard/settings/operations-settings?tab=labor-markups`);
   }
 
   if (!isSectionId(sectionParam)) {
@@ -147,6 +152,17 @@ export default async function SettingsSectionPage({
     ]);
 
     services = serviceRows || [];
+    if (services.length === 0) {
+      const adminClient = createAdminClient();
+      const userTrade = user.user_metadata?.trade_vertical || 'Lawn Care & Landscaping';
+      await seedDefaultServicesForOrganization(adminClient, org.id, userTrade);
+      const { data: seededRows } = await supabase
+        .from('services')
+        .select('id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
+        .eq('organization_id', org.id)
+        .order('name', { ascending: true });
+      services = seededRows || [];
+    }
     trucks = truckRows || [];
   }
 
@@ -204,6 +220,13 @@ export default async function SettingsSectionPage({
                 locale={locale}
                 isIndividualAccount={isIndividualAccount}
                 initialTab={initialTab}
+                initialLaborRate={org.default_labor_rate ?? 95}
+                initialLaborCost={org.default_labor_cost ?? 45}
+                initialMaterialsMarkup={org.default_materials_markup ?? 30}
+                initialNightLaborRate={org.default_night_labor_rate ?? 135}
+                initialNightLaborCost={org.default_night_labor_cost ?? 65}
+                initialHolidayEmergencyLaborRate={org.default_holiday_emergency_labor_rate ?? 165}
+                initialHolidayEmergencyLaborCost={org.default_holiday_emergency_labor_cost ?? 75}
               />
             )}
 
@@ -211,29 +234,6 @@ export default async function SettingsSectionPage({
               <DocumentSettingsTabs
                 locale={locale}
                 initialTab={initialTab}
-                billingDefaults={
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                    <InvoiceTaxSettingsPanel
-                      initialTaxRatePercent={org.invoice_tax_rate_percent ?? 8.25}
-                      initialCurrencyCode={org.invoice_currency_code || 'USD'}
-                      locale={locale}
-                    />
-                  </div>
-                }
-                laborMarkups={
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                    <LaborMarkupSettingsPanel
-                      initialLaborRate={org.default_labor_rate ?? 95}
-                      initialLaborCost={org.default_labor_cost ?? 45}
-                      initialMaterialsMarkup={org.default_materials_markup ?? 30}
-                      initialNightLaborRate={org.default_night_labor_rate ?? 135}
-                      initialNightLaborCost={org.default_night_labor_cost ?? 65}
-                      initialHolidayEmergencyLaborRate={org.default_holiday_emergency_labor_rate ?? 165}
-                      initialHolidayEmergencyLaborCost={org.default_holiday_emergency_labor_cost ?? 75}
-                      locale={locale}
-                    />
-                  </div>
-                }
                 docsEmails={
                   <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                     <DocumentBrandingSettingsPanel
@@ -241,6 +241,15 @@ export default async function SettingsSectionPage({
                       initialNextInvoiceNumber={org.next_invoice_number ?? 1001}
                       initialHeaderColor={org.document_email_header_color || '#009966'}
                       initialDefaultPaymentTerms={org.default_payment_terms || 'Due on Receipt'}
+                      locale={locale}
+                    />
+                  </div>
+                }
+                billingDefaults={
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                    <InvoiceTaxSettingsPanel
+                      initialTaxRatePercent={org.invoice_tax_rate_percent ?? 8.25}
+                      initialCurrencyCode={org.invoice_currency_code || 'USD'}
                       locale={locale}
                     />
                   </div>
