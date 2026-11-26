@@ -24,6 +24,14 @@ export default function Metrics({
 }: MetricsProps) {
   const translations = getTranslations(locale);
 
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+
   const renderTrend = (
     trend: { direction: 'up' | 'down'; percentage: number },
     invertColor = false
@@ -53,26 +61,26 @@ export default function Metrics({
     <div className="space-y-3">
       <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">{translations.dashboard.businessPerformance}</h2>
       <section className="tour-metrics flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-3.5 mb-2 sm:mb-5 md:mb-8 sm:overflow-x-visible">
-      <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white p-2.5 sm:p-5 rounded-lg shadow-sm border border-gray-200">
-        <span className="text-[10px] sm:text-xs uppercase font-medium text-gray-400 block mb-1">{translations.dashboard.totalInvoicedRevenue}</span>
-        <span className="text-xl font-extrabold text-emerald-600">${totalRevenue.toFixed(2)}</span>
+      <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white p-3.5 sm:p-5 rounded-lg shadow-2xs border border-slate-200">
+        <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-medium text-slate-500 block mb-1.5">{translations.dashboard.totalInvoicedRevenue}</span>
+        <span className="text-lg sm:text-xl font-semibold tracking-tight tabular-nums text-slate-900 block">{formatCurrency(totalRevenue)}</span>
         {renderTrend(trends.revenue)}
       </div>
-      <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white p-2.5 sm:p-5 rounded-lg shadow-sm border border-gray-200">
-        <span className="text-[10px] sm:text-xs uppercase font-medium text-gray-400 block mb-1">{translations.dashboard.trackedExpenses}</span>
-        <span className="text-xl font-extrabold text-red-600">${totalExpenses.toFixed(2)}</span>
+      <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white p-3.5 sm:p-5 rounded-lg shadow-2xs border border-slate-200">
+        <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-medium text-slate-500 block mb-1.5">{translations.dashboard.trackedExpenses}</span>
+        <span className="text-lg sm:text-xl font-semibold tracking-tight tabular-nums text-slate-900 block">{formatCurrency(totalExpenses)}</span>
         {renderTrend(trends.expenses)}
       </div>
-      <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white p-2.5 sm:p-5 rounded-lg shadow-sm border border-gray-200">
-        <span className="text-[10px] sm:text-xs uppercase font-medium text-gray-400 block mb-1">{translations.dashboard.netIncome}</span>
-        <span className={`text-xl font-extrabold ${netProfit >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-          ${netProfit.toFixed(2)}
+      <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white p-3.5 sm:p-5 rounded-lg shadow-2xs border border-slate-200">
+        <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-medium text-slate-500 block mb-1.5">{translations.dashboard.netIncome}</span>
+        <span className="text-lg sm:text-xl font-semibold tracking-tight tabular-nums text-slate-900 block">
+          {formatCurrency(netProfit)}
         </span>
         {renderTrend(trends.netProfit)}
       </div>
-      <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white p-2.5 sm:p-5 rounded-lg shadow-sm border border-gray-200">
-        <span className="text-[10px] sm:text-xs uppercase font-medium text-gray-400 block mb-1">{translations.dashboard.outstandingReceivables}</span>
-        <span className="text-xl font-extrabold text-amber-600">${outstandingReceivables.toFixed(2)}</span>
+      <div className="flex-shrink-0 w-[calc(50%-4px)] sm:w-auto bg-white p-3.5 sm:p-5 rounded-lg shadow-2xs border border-slate-200">
+        <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-medium text-slate-500 block mb-1.5">{translations.dashboard.outstandingReceivables}</span>
+        <span className="text-lg sm:text-xl font-semibold tracking-tight tabular-nums text-slate-900 block">{formatCurrency(outstandingReceivables)}</span>
         {renderTrend(trends.receivables, true)}
       </div>
     </section>
