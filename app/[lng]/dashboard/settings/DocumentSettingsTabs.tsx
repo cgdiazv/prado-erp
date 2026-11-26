@@ -39,10 +39,10 @@ export default function DocumentSettingsTabs({
   ];
 
   return (
-    <div className="space-y-4 min-w-0">
-      <div className="border-b border-slate-200">
+    <div className="min-w-0">
+      <div className="px-4">
         <nav
-          className="flex items-center space-x-8 -mb-px overflow-x-auto no-scrollbar"
+          className="flex items-center space-x-8 -mb-px overflow-x-auto no-scrollbar relative z-10"
           role="tablist"
           aria-label={isEs ? 'Pestañas de documentos y correos' : 'Documents and emails tabs'}
         >

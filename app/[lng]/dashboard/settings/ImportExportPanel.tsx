@@ -107,11 +107,11 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
       };
 
   return (
-    <div className="space-y-4 min-w-0">
+    <div className="min-w-0">
       {/* Horizontal Sub-tabs */}
-      <div className="border-b border-slate-200">
+      <div className="px-4">
         <nav
-          className="flex items-center space-x-8 -mb-px overflow-x-auto no-scrollbar"
+          className="flex items-center space-x-8 -mb-px overflow-x-auto no-scrollbar relative z-10"
           role="tablist"
           aria-label={isEs ? 'Pestañas de importar y exportar' : 'Import and export sub-tabs'}
         >

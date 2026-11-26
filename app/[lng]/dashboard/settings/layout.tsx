@@ -124,7 +124,7 @@ export default async function SettingsLayout({
           </div>
         </div>
 
-        <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+        <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-3 lg:items-start">
           <SettingsSidebar links={sectionLinks} locale={locale} />
           <div className="min-w-0">{children}</div>
         </div>
