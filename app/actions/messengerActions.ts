@@ -432,3 +432,334 @@ export async function markMessengerConversationRead() {
 export async function linkMessengerConversationCustomer() {
   return { success: true };
 }
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function getPublicSupportThread({
+  ticketId,
+  visitorEmail,
+}: {
+  ticketId: string;
+  visitorEmail: string;
+}) {
+  const normalizedTicketId = (ticketId || '').trim();
+  const normalizedEmail = (visitorEmail || '').trim().toLowerCase();
+
+  if (!normalizedTicketId || !UUID_REGEX.test(normalizedTicketId) || !normalizedEmail) {
+    return {
+      ticketStatus: null,
+      ticketPriority: null,
+      messages: [] as SupportChatMessage[],
+    };
+  }
+
+  const { client: supabaseAdmin, hasHelpdeskTables } = await getHelpdeskAdminClient();
+
+  if (!hasHelpdeskTables) {
+    const fallbackKey = `public:${normalizedTicketId}`;
+    const fallbackMessages = memorySupportThreads.get(fallbackKey) || [];
+    return {
+      ticketStatus: fallbackMessages.length > 0 ? 'open' : null,
+      ticketPriority: fallbackMessages.length > 0 ? 'medium' : null,
+      messages: fallbackMessages,
+    };
+  }
+
+  const { data: ticket, error: ticketError } = await supabaseAdmin
+    .from('helpdesk_tickets')
+    .select('id, status, priority, requested_by_email, updated_at')
+    .eq('id', normalizedTicketId)
+    .eq('escalated_from', 'public_chat')
+    .maybeSingle();
+
+  if (ticketError) {
+    if (isMissingHelpdeskTableError(ticketError)) {
+      const fallbackKey = `public:${normalizedTicketId}`;
+      const fallbackMessages = memorySupportThreads.get(fallbackKey) || [];
+      return {
+        ticketStatus: fallbackMessages.length > 0 ? 'open' : null,
+        ticketPriority: fallbackMessages.length > 0 ? 'medium' : null,
+        messages: fallbackMessages,
+      };
+    }
+    return { error: ticketError.message };
+  }
+
+  if (!ticket?.id || (ticket.requested_by_email || '').trim().toLowerCase() !== normalizedEmail) {
+    return {
+      ticketStatus: null,
+      ticketPriority: null,
+      messages: [] as SupportChatMessage[],
+    };
+  }
+
+  const ticketStatus = typeof ticket.status === 'string' ? ticket.status.toLowerCase() : null;
+
+  if (ticketStatus === 'closed') {
+    return {
+      ticketStatus: 'closed',
+      ticketPriority: typeof ticket.priority === 'string' ? ticket.priority : null,
+      messages: [] as SupportChatMessage[],
+    };
+  }
+
+  const { data: comments, error: commentsError } = await supabaseAdmin
+    .from('helpdesk_ticket_comments')
+    .select('id, author_user_id, author_email, comment, created_at')
+    .eq('ticket_id', ticket.id)
+    .order('created_at', { ascending: true });
+
+  if (commentsError) {
+    return { error: commentsError.message };
+  }
+
+  await supabaseAdmin
+    .from('helpdesk_tickets')
+    .update({ unread_for_user_count: 0, updated_at: new Date().toISOString() })
+    .eq('id', ticket.id);
+
+  return {
+    ticketId: ticket.id as string,
+    ticketStatus: typeof ticket.status === 'string' ? ticket.status : null,
+    ticketPriority: typeof ticket.priority === 'string' ? ticket.priority : null,
+    messages: (comments || []).map((item: any) => ({
+      id: item.id,
+      author_user_id: item.author_user_id || null,
+      author_email: item.author_email || null,
+      comment: typeof item.comment === 'string' ? item.comment : '',
+      created_at: item.created_at,
+    })),
+  };
+}
+
+export async function sendPublicSupportMessage({
+  ticketId,
+  visitorName,
+  visitorEmail,
+  message,
+  locale = 'en',
+}: {
+  ticketId?: string | null;
+  visitorName?: string;
+  visitorEmail: string;
+  message: string;
+  locale?: string;
+}) {
+  const isEs = locale.toLowerCase().startsWith('es');
+  const normalizedMessage = typeof message === 'string' ? message.trim().slice(0, 4000) : '';
+  const normalizedEmail = typeof visitorEmail === 'string' ? visitorEmail.trim().toLowerCase() : '';
+  const normalizedName = typeof visitorName === 'string' ? visitorName.trim().slice(0, 120) : '';
+
+  if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return {
+      error: isEs
+        ? 'Por favor ingresa un correo electrónico válido.'
+        : 'Please enter a valid email address.',
+    };
+  }
+
+  if (!normalizedMessage) {
+    return {
+      error: isEs ? 'El mensaje no puede estar vacío.' : 'Message cannot be empty.',
+    };
+  }
+
+  const { client: supabaseAdmin, hasHelpdeskTables } = await getHelpdeskAdminClient();
+  const isOnline = isWithinSupportBusinessHours();
+  const visitorLabel = normalizedName ? `${normalizedName} <${normalizedEmail}>` : normalizedEmail;
+
+  const ensureFallbackThread = (resolvedId: string) => {
+    const fallbackKey = `public:${resolvedId}`;
+    const existing = memorySupportThreads.get(fallbackKey) || [];
+    const nowIso = new Date().toISOString();
+    const nextMessages: SupportChatMessage[] = [
+      ...existing,
+      {
+        id: randomUUID(),
+        author_user_id: null,
+        author_email: normalizedEmail,
+        comment: normalizedMessage,
+        created_at: nowIso,
+      },
+    ];
+
+    if (!isOnline) {
+      nextMessages.push({
+        id: randomUUID(),
+        author_user_id: null,
+        author_email: 'support@pradojob.com',
+        comment: getSupportAutoReplyMessage(locale),
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    memorySupportThreads.set(fallbackKey, nextMessages);
+  };
+
+  if (!hasHelpdeskTables) {
+    const resolvedTicketId =
+      ticketId && UUID_REGEX.test(ticketId.trim()) ? ticketId.trim() : randomUUID();
+    ensureFallbackThread(resolvedTicketId);
+    return {
+      success: true,
+      ticketId: resolvedTicketId,
+      offHoursAutoReplied: !isOnline,
+    };
+  }
+
+  let activeTicketId: string | null = null;
+
+  if (ticketId && UUID_REGEX.test(ticketId.trim())) {
+    const { data: existingTicket, error: existingErr } = await supabaseAdmin
+      .from('helpdesk_tickets')
+      .select('id, status, requested_by_email')
+      .eq('id', ticketId.trim())
+      .eq('escalated_from', 'public_chat')
+      .maybeSingle();
+
+    if (existingErr && isMissingHelpdeskTableError(existingErr)) {
+      const resolvedTicketId = ticketId.trim();
+      ensureFallbackThread(resolvedTicketId);
+      return {
+        success: true,
+        ticketId: resolvedTicketId,
+        offHoursAutoReplied: !isOnline,
+      };
+    }
+
+    if (
+      existingTicket?.id &&
+      (existingTicket.requested_by_email || '').trim().toLowerCase() === normalizedEmail &&
+      String(existingTicket.status || '').toLowerCase() !== 'closed'
+    ) {
+      activeTicketId = existingTicket.id as string;
+    }
+  }
+
+  if (!activeTicketId) {
+    const subjectLabel = normalizedName || normalizedEmail;
+    const { data: createdTicket, error: createError } = await supabaseAdmin
+      .from('helpdesk_tickets')
+      .insert({
+        organization_id: null,
+        requested_by_user_id: null,
+        requested_by_email: normalizedEmail,
+        subject: `Website Support Chat (${subjectLabel})`,
+        description: `Conversation started from public website support chat by ${visitorLabel}.`,
+        priority: 'medium',
+        status: 'open',
+        escalated_from: 'public_chat',
+        waiting_on: 'agent',
+        unread_for_agent_count: 0,
+        unread_for_user_count: 0,
+        last_comment_author_email: normalizedEmail,
+      })
+      .select('id')
+      .single();
+
+    if (createError || !createdTicket?.id) {
+      if (isMissingHelpdeskTableError(createError)) {
+        const resolvedTicketId = randomUUID();
+        ensureFallbackThread(resolvedTicketId);
+        return {
+          success: true,
+          ticketId: resolvedTicketId,
+          offHoursAutoReplied: !isOnline,
+        };
+      }
+      return {
+        error: createError?.message || 'Failed to start support conversation.',
+      };
+    }
+
+    activeTicketId = createdTicket.id as string;
+
+    await supabaseAdmin.from('helpdesk_ticket_events').insert({
+      ticket_id: activeTicketId,
+      event_type: 'escalated',
+      event_note: `Conversation opened from public website support chat by ${visitorLabel}.`,
+      actor_user_id: null,
+      actor_email: normalizedEmail,
+      metadata: {
+        source: 'public_chat',
+        visitor_name: normalizedName || null,
+        visitor_email: normalizedEmail,
+      },
+    });
+  }
+
+  const { error: commentError } = await supabaseAdmin
+    .from('helpdesk_ticket_comments')
+    .insert({
+      ticket_id: activeTicketId,
+      author_user_id: null,
+      author_email: normalizedEmail,
+      comment: normalizedMessage,
+    });
+
+  if (commentError) {
+    return { error: commentError.message };
+  }
+
+  const { data: currentTicket } = await supabaseAdmin
+    .from('helpdesk_tickets')
+    .select('unread_for_agent_count')
+    .eq('id', activeTicketId)
+    .maybeSingle();
+
+  const unreadForAgent = Number(currentTicket?.unread_for_agent_count || 0) + 1;
+
+  await supabaseAdmin
+    .from('helpdesk_tickets')
+    .update({
+      status: 'open',
+      unread_for_agent_count: unreadForAgent,
+      unread_for_user_count: 0,
+      waiting_on: 'agent',
+      last_comment_at: new Date().toISOString(),
+      last_comment_author_email: normalizedEmail,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', activeTicketId);
+
+  await supabaseAdmin.from('helpdesk_ticket_events').insert({
+    ticket_id: activeTicketId,
+    event_type: 'comment',
+    event_note: normalizedMessage,
+    actor_user_id: null,
+    actor_email: normalizedEmail,
+    metadata: {
+      source: 'public_chat',
+      visitor_name: normalizedName || null,
+    },
+  });
+
+  if (!isOnline) {
+    const autoReplyText = getSupportAutoReplyMessage(locale);
+    await supabaseAdmin.from('helpdesk_ticket_comments').insert({
+      ticket_id: activeTicketId,
+      author_user_id: null,
+      author_email: 'support@pradojob.com',
+      comment: autoReplyText,
+    });
+
+    await supabaseAdmin.from('helpdesk_ticket_events').insert({
+      ticket_id: activeTicketId,
+      event_type: 'comment',
+      event_note: autoReplyText,
+      actor_user_id: null,
+      actor_email: 'support@pradojob.com',
+      metadata: { source: 'public_chat_auto_reply', off_hours: true },
+    });
+  }
+
+  for (const path of getLocaleRevalidationPaths(locale)) {
+    revalidatePath(path);
+  }
+
+  return {
+    success: true,
+    ticketId: activeTicketId,
+    offHoursAutoReplied: !isOnline,
+  };
+}

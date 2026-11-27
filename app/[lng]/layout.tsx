@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import PublicSupportChatModal from "@/components/PublicSupportChatModal";
 
 export const metadata: Metadata = {
   title: {
@@ -19,6 +20,7 @@ export default function LngLayout({
   return (
     <>
       {children}
+      <PublicSupportChatModal />
     </>
   );
 }
