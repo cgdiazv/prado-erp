@@ -58,6 +58,8 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
         importJobs: 'Importar Jobs',
         importExpenses: 'Importar Gastos',
         importEstimates: 'Importar Cotizaciones',
+        importServices: 'Importar Servicios',
+        importMaterials: 'Importar Materiales',
         noFileSelected: 'Selecciona un archivo CSV antes de importar.',
         importing: 'Importando...',
         importDone: 'Importación completada.',
@@ -67,6 +69,8 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
         templateJobs: 'Plantilla Jobs',
         templateExpenses: 'Plantilla Gastos',
         templateEstimates: 'Plantilla Cotizaciones',
+        templateServices: 'Plantilla Servicios',
+        templateMaterials: 'Plantilla Materiales',
         exportTitle: 'Exportar Datos (CSV)',
         exportDescription:
           'Descarga los registros actuales de tu cuenta en formato CSV para respaldos, migraciones o análisis externo.',
@@ -74,6 +78,8 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
         exportJobs: 'Exportar Jobs',
         exportExpenses: 'Exportar Gastos',
         exportEstimates: 'Exportar Cotizaciones',
+        exportServices: 'Exportar Servicios',
+        exportMaterials: 'Exportar Materiales',
       }
     : {
         importTab: 'Import',
@@ -88,6 +94,8 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
         importJobs: 'Import Jobs',
         importExpenses: 'Import Expenses',
         importEstimates: 'Import Quotes',
+        importServices: 'Import Services',
+        importMaterials: 'Import Materials',
         noFileSelected: 'Please select a CSV file before importing.',
         importing: 'Importing...',
         importDone: 'Import completed.',
@@ -97,6 +105,8 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
         templateJobs: 'Jobs Template',
         templateExpenses: 'Expenses Template',
         templateEstimates: 'Quotes Template',
+        templateServices: 'Services Template',
+        templateMaterials: 'Materials Template',
         exportTitle: 'Export Data (CSV)',
         exportDescription:
           'Download your current records in CSV format for external reporting, accounting backups, or migration.',
@@ -104,6 +114,8 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
         exportJobs: 'Export Jobs',
         exportExpenses: 'Export Expenses',
         exportEstimates: 'Export Quotes',
+        exportServices: 'Export Services',
+        exportMaterials: 'Export Materials',
       };
 
   return (
@@ -163,6 +175,8 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
                 importJobs={t.importJobs}
                 importExpenses={t.importExpenses}
                 importEstimates={t.importEstimates}
+                importServices={t.importServices}
+                importMaterials={t.importMaterials}
                 noFileSelected={t.noFileSelected}
                 importing={t.importing}
                 importDone={t.importDone}
@@ -172,7 +186,7 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
 
             <div className="pt-4 border-t border-gray-200">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">{t.templatesTitle}</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <a
                   href="/api/import/template?entity=customers"
                   download
@@ -201,6 +215,20 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
                 >
                   {t.templateEstimates}
                 </a>
+                <a
+                  href="/api/import/template?entity=services"
+                  download
+                  className="text-center text-xs font-semibold px-3 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition shadow-2xs"
+                >
+                  {t.templateServices}
+                </a>
+                <a
+                  href="/api/import/template?entity=materials"
+                  download
+                  className="text-center text-xs font-semibold px-3 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition shadow-2xs"
+                >
+                  {t.templateMaterials}
+                </a>
               </div>
             </div>
           </div>
@@ -219,7 +247,7 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
               <p className="text-xs text-slate-500 mt-0.5">{t.exportDescription}</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
               <a
                 href="/api/export/csv?entity=customers"
                 download
@@ -259,6 +287,26 @@ export default function ImportExportPanel({ locale = 'en', initialTab }: ImportE
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                 </svg>
                 <span>{t.exportEstimates}</span>
+              </a>
+              <a
+                href="/api/export/csv?entity=services"
+                download
+                className="flex items-center justify-center gap-2 text-center text-xs font-semibold px-4 py-3 rounded-lg border border-gray-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition shadow-2xs"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-emerald-600 shrink-0">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+                <span>{t.exportServices}</span>
+              </a>
+              <a
+                href="/api/export/csv?entity=materials"
+                download
+                className="flex items-center justify-center gap-2 text-center text-xs font-semibold px-4 py-3 rounded-lg border border-gray-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition shadow-2xs"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-emerald-600 shrink-0">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+                <span>{t.exportMaterials}</span>
               </a>
             </div>
           </div>

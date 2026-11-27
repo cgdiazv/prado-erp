@@ -2,10 +2,17 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
 import { getUserOrganization } from '@/lib/organization';
 
-type ImportEntity = 'customers' | 'jobs' | 'expenses' | 'estimates';
+type ImportEntity = 'customers' | 'jobs' | 'expenses' | 'estimates' | 'services' | 'materials';
 
 function isImportEntity(value: string | null): value is ImportEntity {
-  return value === 'customers' || value === 'jobs' || value === 'expenses' || value === 'estimates';
+  return (
+    value === 'customers' ||
+    value === 'jobs' ||
+    value === 'expenses' ||
+    value === 'estimates' ||
+    value === 'services' ||
+    value === 'materials'
+  );
 }
 
 const templates: Record<ImportEntity, { headers: string[]; sample: string[] }> = {
@@ -24,6 +31,14 @@ const templates: Record<ImportEntity, { headers: string[]; sample: string[] }> =
   estimates: {
     headers: ['customer_id', 'property_id', 'title', 'description', 'estimated_amount', 'status'],
     sample: ['customer_uuid_here', 'property_uuid_here', 'Roof Repair', 'Replace damaged shingles', '950.00', 'draft'],
+  },
+  services: {
+    headers: ['name', 'description', 'base_price', 'is_recurring_default', 'recurrence_interval_days', 'auto_charge_default'],
+    sample: ['Standard Lawn Mowing & Edging', 'Weekly turf mowing, line trimming, hard-surface edging, and debris blow-off', '65.00', 'true', '7', 'false'],
+  },
+  materials: {
+    headers: ['name', 'description', 'unit_cost', 'markup_percent'],
+    sample: ['Double-Shredded Hardwood Mulch (per cu. yd.)', 'Aged dark brown double-shredded hardwood bark mulch for landscape beds', '38.00', '30.0'],
   },
 };
 

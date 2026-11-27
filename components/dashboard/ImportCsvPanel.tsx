@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState } from 'react';
 
-type ImportEntity = 'customers' | 'jobs' | 'expenses' | 'estimates';
+type ImportEntity = 'customers' | 'jobs' | 'expenses' | 'estimates' | 'services' | 'materials';
 
 interface ImportCsvPanelProps {
   uploadLabel: string;
@@ -12,6 +12,8 @@ interface ImportCsvPanelProps {
   importJobs: string;
   importExpenses: string;
   importEstimates: string;
+  importServices: string;
+  importMaterials: string;
   noFileSelected: string;
   importing: string;
   importDone: string;
@@ -26,6 +28,8 @@ export default function ImportCsvPanel({
   importJobs,
   importExpenses,
   importEstimates,
+  importServices,
+  importMaterials,
   noFileSelected,
   importing,
   importDone,
@@ -43,8 +47,10 @@ export default function ImportCsvPanel({
       { key: 'jobs' as const, label: importJobs },
       { key: 'expenses' as const, label: importExpenses },
       { key: 'estimates' as const, label: importEstimates },
+      { key: 'services' as const, label: importServices },
+      { key: 'materials' as const, label: importMaterials },
     ],
-    [importCustomers, importJobs, importExpenses, importEstimates]
+    [importCustomers, importJobs, importExpenses, importEstimates, importServices, importMaterials]
   );
 
   const runImport = async (entity: ImportEntity) => {
@@ -110,7 +116,7 @@ export default function ImportCsvPanel({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {buttons.map((button) => {
           const isBusy = busyEntity === button.key;
           return (

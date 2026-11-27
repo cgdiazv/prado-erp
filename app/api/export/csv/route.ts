@@ -1,11 +1,20 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { getUserOrganization } from '@/lib/organization';
+import { loadCustomMaterialsCatalog } from '@/lib/customMaterialsCatalog';
 
-type ExportEntity = 'customers' | 'jobs' | 'expenses' | 'estimates';
+type ExportEntity = 'customers' | 'jobs' | 'expenses' | 'estimates' | 'services' | 'materials';
 
 function isExportEntity(value: string | null): value is ExportEntity {
-  return value === 'customers' || value === 'jobs' || value === 'expenses' || value === 'estimates';
+  return (
+    value === 'customers' ||
+    value === 'jobs' ||
+    value === 'expenses' ||
+    value === 'estimates' ||
+    value === 'services' ||
+    value === 'materials'
+  );
 }
 
 function csvEscape(value: unknown): string {
@@ -177,6 +186,54 @@ export async function GET(request: Request) {
           truck_id: job.truck_id,
         };
       });
+    }
+
+    if (entityParam === 'services') {
+      const { data, error } = await supabase
+        .from('services')
+        .select('id, organization_id, name, description, base_price, is_recurring_default, recurrence_interval_days, auto_charge_default')
+        .eq('organization_id', org.id)
+        .order('name', { ascending: true });
+
+      if (error) {
+        return new NextResponse(error.message, { status: 500 });
+      }
+
+      headers = [
+        'id',
+        'organization_id',
+        'name',
+        'description',
+        'base_price',
+        'is_recurring_default',
+        'recurrence_interval_days',
+        'auto_charge_default',
+      ];
+      rows = (data || []) as Array<Record<string, unknown>>;
+    }
+
+    if (entityParam === 'materials') {
+      const adminClient = createAdminClient();
+      const items = await loadCustomMaterialsCatalog(adminClient, org.id);
+
+      headers = [
+        'id',
+        'name',
+        'description',
+        'unit_cost',
+        'markup_percent',
+        'customer_price',
+        'archived',
+      ];
+      rows = items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description || '',
+        unit_cost: Number(item.unitCost || 0).toFixed(2),
+        markup_percent: Number(item.markupPercent || 0).toFixed(2),
+        customer_price: (Number(item.unitCost || 0) * (1 + Number(item.markupPercent || 0) / 100)).toFixed(2),
+        archived: Boolean(item.archived),
+      }));
     }
 
     const csv = toCsv(headers, rows);

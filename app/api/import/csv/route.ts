@@ -1,14 +1,27 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 import { getUserOrganization } from '@/lib/organization';
 import { reserveDocumentNumber } from '@/lib/documentNumbers';
+import {
+  loadCustomMaterialsCatalog,
+  saveCustomMaterialsCatalog,
+  type CatalogMaterialItem,
+} from '@/lib/customMaterialsCatalog';
 
-type ImportEntity = 'customers' | 'jobs' | 'expenses' | 'estimates';
+type ImportEntity = 'customers' | 'jobs' | 'expenses' | 'estimates' | 'services' | 'materials';
 
 type RowRecord = Record<string, string>;
 
 function isImportEntity(value: string | null): value is ImportEntity {
-  return value === 'customers' || value === 'jobs' || value === 'expenses' || value === 'estimates';
+  return (
+    value === 'customers' ||
+    value === 'jobs' ||
+    value === 'expenses' ||
+    value === 'estimates' ||
+    value === 'services' ||
+    value === 'materials'
+  );
 }
 
 function normalizeHeader(value: string): string {
@@ -307,10 +320,124 @@ export async function POST(request: Request) {
       }
     };
 
+    const importServices = async () => {
+      for (let i = 0; i < parsedRows.length; i += 1) {
+        const row = parsedRows[i];
+        const name = getValue(row, ['name', 'service_name', 'title']);
+        if (!name) {
+          fail(i, 'Missing required service name.');
+          continue;
+        }
+
+        const rawPrice = getValue(row, ['base_price', 'price', 'rate', 'amount']);
+        const basePrice = rawPrice ? toNumber(rawPrice) : 0;
+        if (basePrice === null || basePrice < 0) {
+          fail(i, 'Invalid base_price.');
+          continue;
+        }
+
+        const rawRecurring = getValue(row, ['is_recurring_default', 'recurring', 'is_recurring']).toLowerCase();
+        const isRecurring = rawRecurring === 'true' || rawRecurring === '1' || rawRecurring === 'yes';
+
+        const rawInterval = getValue(row, ['recurrence_interval_days', 'interval_days']);
+        const parsedInterval = rawInterval ? toNumber(rawInterval) : null;
+        const recurrenceIntervalDays =
+          isRecurring && parsedInterval && parsedInterval > 0 ? Math.round(parsedInterval) : isRecurring ? 7 : null;
+
+        const rawAutoCharge = getValue(row, ['auto_charge_default', 'auto_charge']).toLowerCase();
+        const autoChargeDefault = isRecurring && (rawAutoCharge === 'true' || rawAutoCharge === '1' || rawAutoCharge === 'yes');
+
+        const payload = {
+          organization_id: org.id,
+          name,
+          description: getValue(row, ['description', 'notes']) || null,
+          base_price: Math.round(basePrice * 100) / 100,
+          is_recurring_default: isRecurring,
+          recurrence_interval_days: recurrenceIntervalDays,
+          auto_charge_default: autoChargeDefault,
+        };
+
+        const { error } = await supabase.from('services').insert([payload]);
+        if (error) {
+          fail(i, error.message);
+          continue;
+        }
+        imported += 1;
+      }
+    };
+
+    const importMaterials = async () => {
+      const adminClient = createAdminClient();
+      const existingItems = await loadCustomMaterialsCatalog(adminClient, org.id);
+      const nextItems: CatalogMaterialItem[] = [...existingItems];
+      const defaultMarkup = Number(org.default_materials_markup ?? 30);
+
+      for (let i = 0; i < parsedRows.length; i += 1) {
+        const row = parsedRows[i];
+        const name = getValue(row, ['name', 'material_name', 'title']);
+        if (!name) {
+          fail(i, 'Missing required material name.');
+          continue;
+        }
+
+        const rawCost = getValue(row, ['unit_cost', 'unitcost', 'cost', 'price']);
+        const unitCost = rawCost ? toNumber(rawCost) : 0;
+        if (unitCost === null || unitCost < 0) {
+          fail(i, 'Invalid unit_cost.');
+          continue;
+        }
+
+        const rawMarkup = getValue(row, ['markup_percent', 'markuppercent', 'markup']);
+        const parsedMarkup = rawMarkup ? toNumber(rawMarkup) : defaultMarkup;
+        if (parsedMarkup === null || parsedMarkup < 0 || parsedMarkup > 500) {
+          fail(i, 'Invalid markup_percent (must be between 0 and 500).');
+          continue;
+        }
+
+        const description = getValue(row, ['description', 'notes']);
+        const rawArchived = getValue(row, ['archived']).toLowerCase();
+        const archived = rawArchived === 'true' || rawArchived === '1' || rawArchived === 'yes';
+
+        const existingIndex = nextItems.findIndex(
+          (item) => item.name.trim().toLowerCase() === name.trim().toLowerCase()
+        );
+
+        if (existingIndex >= 0) {
+          nextItems[existingIndex] = {
+            ...nextItems[existingIndex],
+            name,
+            description,
+            unitCost: Math.round(unitCost * 100) / 100,
+            markupPercent: Math.round(parsedMarkup * 100) / 100,
+            archived,
+          };
+        } else {
+          nextItems.push({
+            id: `mat_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+            name,
+            description,
+            unitCost: Math.round(unitCost * 100) / 100,
+            markupPercent: Math.round(parsedMarkup * 100) / 100,
+            archived,
+          });
+        }
+        imported += 1;
+      }
+
+      if (imported > 0) {
+        const saveRes = await saveCustomMaterialsCatalog(adminClient, org.id, user.id, nextItems);
+        if (!saveRes.success) {
+          throw new Error(saveRes.error || 'Failed to save imported materials catalog.');
+        }
+      }
+    };
+
     if (entity === 'customers') await importCustomers();
     if (entity === 'expenses') await importExpenses();
     if (entity === 'estimates') await importEstimates();
     if (entity === 'jobs') await importJobs();
+    if (entity === 'services') await importServices();
+    if (entity === 'materials') await importMaterials();
 
     return NextResponse.json({
       success: true,

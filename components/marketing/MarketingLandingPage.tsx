@@ -387,12 +387,12 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
             </div>
 
             {/* High-res rendered Map Route from Figma */}
-            <div className="relative w-full aspect-[16/9] bg-white rounded-2xl overflow-hidden shadow-2xs border border-[#eaecf0]">
+            <div className="relative w-full aspect-[1392/560] bg-[#e5ebed] rounded-2xl overflow-hidden">
               <Image
                 src="/marketing/dispatch_illustration_2x.png"
                 alt="Smart Dispatch Route Map"
                 fill
-                className="object-contain p-2"
+                className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 700px"
               />
             </div>
@@ -817,7 +817,7 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
                   href={getAppPageUrl(locale, 'signup')}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full text-center text-sm font-semibold bg-white hover:bg-[#f9fafb] text-[#101828] border border-[#d0d5dd] py-3.5 rounded-xl transition cursor-pointer"
+                  className="w-full inline-flex items-center justify-center px-6 py-3.5 text-center text-sm font-semibold bg-white hover:bg-[#f9fafb] text-[#101828] border border-[#d0d5dd] rounded-xl transition cursor-pointer"
                 >
                   {isEs ? 'Iniciar Prueba de 30 Días' : 'Start 30-day Trial'}
                 </a>
@@ -869,7 +869,7 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
                     href={getAppPageUrl(locale, 'signup')}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-2 text-sm font-semibold bg-[#0a9d73] hover:bg-[#088763] text-white py-3.5 rounded-xl transition shadow-sm hover:shadow-md cursor-pointer"
+                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold bg-[#0a9d73] hover:bg-[#088763] text-white rounded-xl transition shadow-sm hover:shadow-md cursor-pointer"
                   >
                     <span>{isEs ? 'Iniciar Prueba de 30 Días' : 'Start 30-day Trial'}</span>
                     <ArrowUpRight className="w-4 h-4" />
@@ -924,7 +924,7 @@ export default function MarketingLandingPage({ locale = 'en' }: MarketingLanding
                   href={getAppPageUrl(locale, 'signup')}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full text-center text-sm font-semibold bg-white hover:bg-[#f9fafb] text-[#101828] border border-[#d0d5dd] py-3.5 rounded-xl transition cursor-pointer"
+                  className="w-full inline-flex items-center justify-center px-6 py-3.5 text-center text-sm font-semibold bg-white hover:bg-[#f9fafb] text-[#101828] border border-[#d0d5dd] rounded-xl transition cursor-pointer"
                 >
                   {isEs ? 'Iniciar Prueba de 30 Días' : 'Start 30-day Trial'}
                 </a>
