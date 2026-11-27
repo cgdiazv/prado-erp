@@ -11,6 +11,8 @@ import { redirect } from 'next/navigation';
 import OperationsSettingsTabs from '../OperationsSettingsTabs';
 import TeamsPanel from '../TeamsPanel';
 import SubscriptionCancellationCard from '../SubscriptionCancellationCard';
+import SubscriptionBillingInvoicesCard from '../SubscriptionBillingInvoicesCard';
+import ManageSubscriptionTabs from '../ManageSubscriptionTabs';
 import DeleteAccountSurveyCard from '../DeleteAccountSurveyCard';
 import ReferralProgramCard from '../ReferralProgramCard';
 import WorkspaceIdentityForm from '../WorkspaceIdentityForm';
@@ -331,35 +333,52 @@ export default async function SettingsSectionPage({
             )}
 
             {section === 'manage-subscription' && canManageSubscription && (
-              <>
-                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                  <ReferralProgramCard
-                    referralCode={org.referral_code}
-                    referralDiscountActive={Boolean(org.referral_discount_active)}
-                    referralDiscountEndsAt={org.referral_discount_ends_at}
-                    locale={locale}
-                  />
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                  <SubscriptionCancellationCard currentSubscriptionStatus={org.subscription_status} locale={locale} />
-                </div>
-
-                <div className="bg-white rounded-xl border border-red-200 shadow-xs overflow-hidden">
-                  <div className="p-6 md:p-8 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-red-700 uppercase tracking-wider mb-1">{translations.dashboard.deleteAccountTitle}</h3>
-                      <p className="text-xs text-slate-400">{translations.dashboard.deleteAccountDescription}</p>
-                    </div>
-
-                    <DeleteAccountSurveyCard
+              <ManageSubscriptionTabs
+                locale={locale}
+                initialTab={initialTab}
+                billingPanel={
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                    <SubscriptionBillingInvoicesCard
+                      currentSubscriptionStatus={org.subscription_status}
                       locale={locale}
-                      actionPath={`/${locale}/auth/delete-account`}
-                      buttonLabel={translations.dashboard.deleteAccountButton}
                     />
                   </div>
-                </div>
-              </>
+                }
+                referralsPanel={
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                    <ReferralProgramCard
+                      referralCode={org.referral_code}
+                      referralDiscountActive={Boolean(org.referral_discount_active)}
+                      referralDiscountEndsAt={org.referral_discount_ends_at}
+                      locale={locale}
+                    />
+                  </div>
+                }
+                cancelPanel={
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden divide-y divide-gray-200">
+                    <SubscriptionCancellationCard
+                      currentSubscriptionStatus={org.subscription_status}
+                      locale={locale}
+                    />
+                    <div className="p-6 md:p-8 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between bg-red-50/20">
+                      <div>
+                        <h3 className="text-sm font-bold text-red-700 uppercase tracking-wider mb-1">
+                          {translations.dashboard.deleteAccountTitle}
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          {translations.dashboard.deleteAccountDescription}
+                        </p>
+                      </div>
+
+                      <DeleteAccountSurveyCard
+                        locale={locale}
+                        actionPath={`/${locale}/auth/delete-account`}
+                        buttonLabel={translations.dashboard.deleteAccountButton}
+                      />
+                    </div>
+                  </div>
+                }
+              />
             )}
     </div>
   );

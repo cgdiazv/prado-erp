@@ -34,7 +34,6 @@ export default function DeleteAccountSurveyCard({
     : 'Select one or more reasons (optional but helpful).';
   const otherReasonPlaceholder = isEs ? 'Cuentanos mas' : 'Tell us more';
   const closeModalLabel = isEs ? 'Cerrar modal de eliminacion de cuenta' : 'Close account deletion modal';
-  const cancelButtonLabel = isEs ? 'Volver' : 'Go back';
   const deleteWithoutAnsweringLabel = isEs ? 'Eliminar sin responder' : 'Delete without answering';
   const deleteAndSendFeedbackLabel = isEs ? 'Eliminar y enviar comentarios' : 'Delete and send feedback';
 
@@ -128,14 +127,6 @@ export default function DeleteAccountSurveyCard({
             </div>
 
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                {cancelButtonLabel}
-              </button>
-
               <form action={actionPath} method="POST" className="contents">
                 <input type="hidden" name="surveyReasons" value="[]" />
                 <button

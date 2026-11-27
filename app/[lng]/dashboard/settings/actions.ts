@@ -1812,3 +1812,300 @@ export async function getOrganizationReferralData() {
     },
   };
 }
+
+export interface SubscriptionInvoiceItem {
+  id: string;
+  number: string;
+  created: number;
+  periodStart: number | null;
+  periodEnd: number | null;
+  amount: number;
+  currency: string;
+  status: string;
+  hostedInvoiceUrl: string | null;
+  invoicePdfUrl: string | null;
+  description: string | null;
+}
+
+export interface SubscriptionBillingSummary {
+  planTier: string;
+  planName: string;
+  monthlyRate: number;
+  currency: string;
+  subscriptionStatus: string;
+  nextBillingDate: number | null;
+  cancelAtPeriodEnd: boolean;
+  referralDiscountActive: boolean;
+  paymentMethod: {
+    brand: string;
+    last4: string;
+    expMonth: number | null;
+    expYear: number | null;
+  } | null;
+  hasStripeCustomer: boolean;
+  invoices: SubscriptionInvoiceItem[];
+}
+
+function getPlanMonthlyRate(status: string | null | undefined, discountActive: boolean): { name: string; rate: number } {
+  const normalized = (status || 'trial').toLowerCase();
+  const multiplier = discountActive ? 0.5 : 1;
+  switch (normalized) {
+    case 'individual':
+      return { name: 'Individual Plan', rate: 29 * multiplier };
+    case 'growth':
+      return { name: 'Growth Plan', rate: 59 * multiplier };
+    case 'enterprise':
+      return { name: 'Enterprise Plan', rate: 99 * multiplier };
+    default:
+      return { name: '30-Day Free Trial', rate: 0 };
+  }
+}
+
+export async function getOrganizationSubscriptionBillingData(): Promise<{
+  success?: boolean;
+  data?: SubscriptionBillingSummary;
+  error?: string;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Not authenticated' };
+  }
+
+  const { organization: org } = await getUserOrganization(user.id);
+  if (!org) {
+    return { error: 'Organization not found' };
+  }
+
+  const discountActive = Boolean(org.referral_discount_active);
+  const planDefaults = getPlanMonthlyRate(org.subscription_status, discountActive);
+
+  const summary: SubscriptionBillingSummary = {
+    planTier: (org.subscription_status || 'trial').toLowerCase(),
+    planName: planDefaults.name,
+    monthlyRate: planDefaults.rate,
+    currency: 'USD',
+    subscriptionStatus: org.subscription_status === 'trial' ? 'trialing' : 'active',
+    nextBillingDate: null,
+    cancelAtPeriodEnd: false,
+    referralDiscountActive: discountActive,
+    paymentMethod: null,
+    hasStripeCustomer: false,
+    invoices: [],
+  };
+
+  if (org.subscription_status === 'trial' && org.trial_starts_at) {
+    const trialStart = new Date(org.trial_starts_at);
+    if (!Number.isNaN(trialStart.getTime())) {
+      const trialEnd = new Date(trialStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+      summary.nextBillingDate = Math.floor(trialEnd.getTime() / 1000);
+    }
+  }
+
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
+    return { success: true, data: summary };
+  }
+
+  try {
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2026-02-25.clover' as any,
+    });
+
+    let customerId = org.stripe_customer_id || null;
+    const subscriptionId = org.stripe_subscription_id || null;
+
+    if (subscriptionId) {
+      try {
+        const sub: any = await stripe.subscriptions.retrieve(subscriptionId, {
+          expand: ['default_payment_method'],
+        });
+
+        if (sub) {
+          if (!customerId && typeof sub.customer === 'string') {
+            customerId = sub.customer;
+          }
+          if (typeof sub.current_period_end === 'number') {
+            summary.nextBillingDate = sub.current_period_end;
+          }
+          summary.cancelAtPeriodEnd = Boolean(sub.cancel_at_period_end);
+          if (typeof sub.status === 'string') {
+            summary.subscriptionStatus = sub.status;
+          }
+
+          const firstItem = sub.items?.data?.[0];
+          const unitAmount = firstItem?.price?.unit_amount;
+          if (typeof unitAmount === 'number') {
+            summary.monthlyRate = (unitAmount / 100) * (discountActive ? 0.5 : 1);
+          }
+          if (typeof firstItem?.price?.currency === 'string') {
+            summary.currency = firstItem.price.currency.toUpperCase();
+          }
+
+          const pm = sub.default_payment_method;
+          if (pm && typeof pm === 'object' && pm.card) {
+            summary.paymentMethod = {
+              brand: (pm.card.brand || 'Card').toUpperCase(),
+              last4: pm.card.last4 || '••••',
+              expMonth: pm.card.exp_month ?? null,
+              expYear: pm.card.exp_year ?? null,
+            };
+          }
+        }
+      } catch (subErr) {
+        console.warn('Could not retrieve Stripe subscription details:', subErr);
+      }
+    }
+
+    if (!customerId && user.email) {
+      try {
+        const customers = await stripe.customers.list({
+          email: user.email,
+          limit: 1,
+        });
+        if (customers.data.length > 0) {
+          customerId = customers.data[0].id;
+        }
+      } catch (custErr) {
+        console.warn('Could not lookup Stripe customer by email:', custErr);
+      }
+    }
+
+    if (customerId) {
+      summary.hasStripeCustomer = true;
+
+      if (!summary.paymentMethod) {
+        try {
+          const pms = await stripe.paymentMethods.list({
+            customer: customerId,
+            type: 'card',
+            limit: 1,
+          });
+          const card = pms.data[0]?.card;
+          if (card) {
+            summary.paymentMethod = {
+              brand: (card.brand || 'Card').toUpperCase(),
+              last4: card.last4 || '••••',
+              expMonth: card.exp_month ?? null,
+              expYear: card.exp_year ?? null,
+            };
+          }
+        } catch {
+          // Ignore payment method list failure
+        }
+      }
+
+      try {
+        const invoicesRes = await stripe.invoices.list({
+          customer: customerId,
+          limit: 24,
+        });
+
+        summary.invoices = invoicesRes.data.map((inv: any) => {
+          const firstLine = inv.lines?.data?.[0];
+          const amountCents =
+            typeof inv.amount_paid === 'number' && inv.amount_paid > 0
+              ? inv.amount_paid
+              : typeof inv.total === 'number'
+              ? inv.total
+              : inv.amount_due || 0;
+
+          return {
+            id: inv.id,
+            number: inv.number || inv.id.slice(0, 12).toUpperCase(),
+            created: inv.created,
+            periodStart: firstLine?.period?.start ?? inv.period_start ?? null,
+            periodEnd: firstLine?.period?.end ?? inv.period_end ?? null,
+            amount: amountCents / 100,
+            currency: (inv.currency || 'usd').toUpperCase(),
+            status: inv.status || 'paid',
+            hostedInvoiceUrl: inv.hosted_invoice_url || null,
+            invoicePdfUrl: inv.invoice_pdf || null,
+            description: firstLine?.description || null,
+          };
+        });
+      } catch (invErr) {
+        console.warn('Could not fetch Stripe subscription invoices:', invErr);
+      }
+    }
+  } catch (err) {
+    console.warn('Error loading Stripe billing summary:', err);
+  }
+
+  return {
+    success: true,
+    data: summary,
+  };
+}
+
+export async function createSubscriptionBillingPortalSession(locale = 'en'): Promise<{
+  url?: string;
+  error?: string;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Not authenticated' };
+  }
+
+  const { organization: org } = await getUserOrganization(user.id);
+  if (!org) {
+    return { error: 'Organization not found' };
+  }
+
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
+    return { error: 'Stripe is not configured.' };
+  }
+
+  try {
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2026-02-25.clover' as any,
+    });
+
+    let customerId = org.stripe_customer_id || null;
+    if (!customerId && org.stripe_subscription_id) {
+      const sub = await stripe.subscriptions.retrieve(org.stripe_subscription_id);
+      if (typeof sub.customer === 'string') {
+        customerId = sub.customer;
+      }
+    }
+
+    if (!customerId && user.email) {
+      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+      }
+    }
+
+    if (!customerId) {
+      return {
+        error: locale.toLowerCase().startsWith('es')
+          ? 'No se encontró una cuenta de facturación activa en Stripe para este espacio.'
+          : 'No active Stripe billing profile was found for this workspace.',
+      };
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pradojob.com';
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${baseUrl}/${locale}/dashboard/settings/manage-subscription`,
+    });
+
+    return { url: session.url };
+  } catch (err: any) {
+    return {
+      error:
+        err?.message ||
+        (locale.toLowerCase().startsWith('es')
+          ? 'No se pudo abrir el portal de facturación.'
+          : 'Failed to open billing portal.'),
+    };
+  }
+}

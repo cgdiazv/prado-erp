@@ -134,7 +134,7 @@ export default function ReferralProgramCard({
           <p className="text-[11px] font-bold text-[#0a9d73] uppercase tracking-wider mb-1.5">
             {isEs ? 'Programa de Referidos' : 'Contractor Referral Program'}
           </p>
-          <h3 className="text-xl font-black text-slate-900 tracking-tight">
+          <h3 className="text-lg font-semibold text-slate-900 tracking-tight">
             {isEs ? 'Invita a un colega y obtén 50% de descuento por 1 año' : 'Give an invite, get 50% off for 1 full year'}
           </h3>
           <p className="text-sm text-slate-600 max-w-2xl mt-1">

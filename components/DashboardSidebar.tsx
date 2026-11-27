@@ -490,7 +490,7 @@ export default function DashboardSidebar({
             </Link>
 
             <Link
-              href={localizedHref('/dashboard/settings/manage-subscription')}
+              href={localizedHref('/dashboard/settings/manage-subscription?tab=referrals')}
               onClick={closeSidebar}
               title={isEs ? 'Invita y Gana 50%' : 'Invite & Earn 50%'}
               className={`mt-2 group flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border border-emerald-200/80 transition shadow-2xs ${
